@@ -1,0 +1,8 @@
+click==8.1.8
+fabric @ git+https://github.com/Fabric-Development/fabric.git@5ab94b5e64ba342af2ef2abf829d1f2b0d9a032a
+loguru==0.7.3
+pillow==11.1.0
+pycairo==1.27.0
+PyGObject==3.50.0
+python-xlib==0.33
+six==1.17.0

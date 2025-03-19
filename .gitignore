@@ -1,0 +1,9 @@
+# Ignore virtual environments
+venv/
+gengir/
+# Ignore compiled Python files
+__pycache__/
+*.pyc
+*.pyo
+#
+/fabric-cli

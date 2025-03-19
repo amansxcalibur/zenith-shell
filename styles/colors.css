@@ -1,0 +1,38 @@
+:vars {
+    --status-bar-background-color: #1900ff;
+    --foreground: #dfe3e7;
+    --background: #101417;
+    --cursor: #dfe3e7;
+
+    --color0: #101417;
+    --color1: #92cef5;
+    --color2: #92cef5;
+    --color3: #92cef5;
+    --color4: #92cef5;
+    --color5: #92cef5;
+    --color6: #92cef5;
+    --color7: #92cef5;
+    --color8: #92cef5;
+    --color9: #92cef5;
+    --color10: #92cef5;
+    --color11: #92cef5;
+    --color12: #92cef5;
+    --color13: #92cef5;
+    --color14: #92cef5;
+    --color15: #92cef5;
+
+    --primary: #92cef5;
+    --on-primary: #00344b;
+    --secondary: #b6c9d8;
+    --on-secondary: #21323e;
+    --tertiary: #ccc1e9;
+    --on-tertiary: #332b4b;
+    --surface: #101417;
+    --surface-bright: #353a3d;
+    --error: #ffb4ab;
+    --error-dim: #ff8678;
+    --on-error: #690005;
+    --error-container: #93000a;
+    --outline: #8b9198;
+    --shadow: #000000;    
+  }

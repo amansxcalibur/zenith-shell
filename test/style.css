@@ -1,0 +1,12 @@
+#expanding-bar {
+    color: blue;
+    min-height: 50px;
+}
+#collapsed-bar {
+    color: red;
+    min-height: 500px;
+}
+#toggle-bar {
+    background-color: black;
+    color: aquamarine;
+}

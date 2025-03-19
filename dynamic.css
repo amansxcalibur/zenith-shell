@@ -1,0 +1,123 @@
+
+@import url("./launcher.css");
+@import url("./colors.css");
+@import url("./wallpapers.css");
+
+:vars {
+    --status-bar-background-color: #1900ff;  /* You can change this to any color */
+  }
+  
+  .status-bar {
+    background-color: var(--status-bar-background-color);  /* Apply the background color */
+  }
+  
+  #date-time {
+    font-size: 18px;  /* Optional: You can style the DateTime widget here */
+    color: rgb(255, 24, 24);     /* Optional: You can change the text color */
+  }
+
+  #right, #left{
+    padding: 4px;
+    box-shadow: 0px -25px 0 0 black;
+    /* margin-bottom: 5px; */
+  }
+
+  * {
+    /* font-family: "ZedMono NF", sans-serif; */
+  }
+
+  #right{
+    border-top-left-radius: 20px;
+    
+  }
+  
+  #middle{
+    background-color: black;
+    margin-bottom: 5px;
+    padding-top: 7px;
+    padding-bottom: 12px;
+    color: white;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    min-width: 225px;
+    font-size: 15px;
+  }
+
+  #left{
+    border-top-right-radius: 20px;
+  }
+  #right-in, #left-in{
+    color: white;
+    background-color: black;
+    min-width: 37px;
+    border-radius: 45%;
+  }
+
+  #expanding-bar, #collapsed-bar{
+    color: white;
+    margin-bottom: 5px;
+    padding-top: 7px;
+    padding-bottom: 8px;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+    background-image: none;
+    background-color: black;
+    border: none;
+  }
+
+  #collapsed-bar{
+    min-width: 194px;
+  }
+
+  #right-dum, #left-dum{
+    color: white;
+    background-color: black;
+    min-width: 37px;
+    min-height: 37px;
+    border-radius: 45%;
+  }
+  /* .hidden {
+    opacity: 0;
+  } */
+
+  .contract{
+    transition: padding 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+    animation: loadSlot2 0.5s ease;
+  }
+
+  .expand{
+    min-height: 194px;
+    min-width: 500px;
+    transition: padding 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+    animation: loadSlot1 0.5s ease;
+  }
+
+  #notch-content{
+    background-color: black;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+}
+
+@keyframes loadSlot1 {
+  0% {
+    min-width: 0px;
+    min-height: 0px;
+  }
+  100% {
+    min-width: 500px;
+    min-height: 245px;
+  }
+}
+
+@keyframes loadSlot2 {
+  0% {
+    min-width: 500px;
+    min-height: 245px;
+  }
+  100% {
+    min-width: 194px;
+    min-height: 0px;
+  }
+}
