@@ -3,6 +3,7 @@
 @import url("./colors.css");
 @import url("./wallpapers.css");
 @import url("./volume.css");
+@import url("./workspaces.css");
 
   .status-bar {
     background-color: var(--status-bar-background-color);  /* Apply the background color */

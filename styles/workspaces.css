@@ -1,0 +1,10 @@
+.active-workspace{
+    background-color: antiquewhite;
+    min-width: 300px;
+}
+
+.workspace-button{
+    background-color: rgb(59, 54, 48);
+    min-width: 5px;
+    min-height: 5px;
+}

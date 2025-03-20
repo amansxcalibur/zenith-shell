@@ -9,6 +9,7 @@ from fabric.utils import get_relative_path
 from fabric.widgets.x11 import X11Window as Window
 from launcher import AppLauncher
 from corner import Corners, MyCorner
+from workspaces import Workspaces
 from fabric.utils.helpers import exec_shell_command_async
 import time
 import gi
@@ -93,10 +94,16 @@ class StatusBar(Window):
 
         self.stack.set_visible_child(self.collapsed)
         self.add_keybinding("Escape", lambda *_: self.close())
+
+        self.workspaces = Workspaces()
+        
         self.children = Box(
             orientation="v",
             children=[
                 CenterBox(
+                    start_children=[
+                        self.workspaces,
+                    ],
                     center_children=[
                         CenterBox(
                             label="L",
