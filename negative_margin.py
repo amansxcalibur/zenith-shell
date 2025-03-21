@@ -9,7 +9,7 @@ from fabric.utils import get_relative_path
 from fabric.widgets.x11 import X11Window as Window
 from launcher import AppLauncher
 from corner import Corners, MyCorner
-from workspaces import Workspaces
+from workspaces import Workspaces, ActiveWindow
 from fabric.utils.helpers import exec_shell_command_async
 import time
 import gi
@@ -23,57 +23,93 @@ class DockBar(Window):
     def __init__(self, **kwargs):
         super().__init__(
             name="status-bar",
-            layer="overlay",
+            layer="top",
             geometry="top",
             type_hint="dock",
+            margin="-4px -4px -8px -4px",
+            visible=True,
+            all_visible=True,
             **kwargs
         )
-        self.children = Box(
-            name="placeholder",
-            orientation="v",
-            children=[
-                CenterBox(
-                    center_children=[
-                        Label(label="aman@brewery", name="middle"),
-                    ],
-                ),
-            ],
-        )
-        self.set_properties("_NET_WM_STATE", ["_NET_WM_STATE_ABOVE"])
-        self.set_properties("_NET_WM_WINDOW_TYPE", ["_NET_WM_WINDOW_TYPE_DOCK"])
 
-class StatusBar(Window):
+        self.notch = kwargs.get("notch", None)
+        self.workspaces = Workspaces()
+
+        self.bar_inner = CenterBox(
+            name="bar-inner",
+            orientation="h",
+            h_align="fill",
+            v_align="center",
+            start_children=Box(
+                name="start-container",
+                spacing=4,
+                orientation="h",
+                children=[
+                    # self.button_apps,
+                    self.workspaces
+                ]
+            ),
+            # end_children=Box(
+            #     name="end-container",
+            #     spacing=4,
+            #     orientation="h",
+            #     children=[
+            #         self.systray,
+            #         self.date_time,
+            #         self.button_power,
+            #     ],
+            # ),
+        )
+
+        self.children = self.bar_inner
+        self.hidden = False
+        # self.set_properties("_NET_WM_STATE", ["_NET_WM_STATE_ABOVE"])
+        # self.set_properties("_NET_WM_WINDOW_TYPE", ["_NET_WM_WINDOW_TYPE_DOCK"])
+
+class Notch(Window):
     def __init__(self, **kwargs):
         super().__init__(
-            name="bar",
+            name="notch",
             layer="top",
             geometry="top",
             # margin="-8px -4px -8px -4px",
-            # keyboard_mode="auto",,
-            # type="popup"
-            type_hint="notification",
+            # keyboard_mode="auto",
+            type_hint="normal",
             # focusable=False
+            margin="-8px -4px -8px -4px",
+            visible=True,
+            all_visible=True,
         )
-        # self.set_name("status-bar")
         self.launcher = AppLauncher(notch = self)
         self.volume = VolumeSlider(notch = self)
         self.vol_small = VolumeSmall(notch = self)
         self.brightness = BrightnessSmall(device="intel_backlight")
         self.switch = True
         self.wall = WallpaperSelector()
-        
-        self.collapsed = Button(
-            label=". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .", 
-            name="collapsed-bar", 
-            on_clicked=lambda b, *_:b.set_label(self.toggle_name(b))
-            )
-        
-        # self.expanding = Box(
-        #     children=[
-        #         # Button(label="Collapse", name="expanding-bar", on_clicked=self.toggle),
-        #         self.launcher,
-        #         # Button(label="Collapse", name="expanding-bar", on_clicked=self.toggle),
-        #         ])
+
+        self.active_window = ActiveWindow()
+        self.active_window.active_window.add_style_class("hide")
+        self.user = Label(label="aman@amansbrewery", name="user-label")
+        self.dot_placeholder = Label(label=". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .", name="collapsed-bar")
+
+        self.notch_compact = Stack(
+            name="collapsed",
+            transition_type="slide-down",
+            transition_duration=100,
+            children=[
+                self.user,
+                self.active_window.active_window,
+                self.dot_placeholder
+            ]
+        )
+        self.notch_compact.set_visible_child(self.dot_placeholder)
+
+        # EventBox with click event for toggling visibility
+        self.collapsed = Gtk.EventBox(name="notch-compact")
+        self.collapsed.set_visible(True)
+        self.collapsed.add(self.notch_compact)
+
+        self.collapsed.connect("button-press-event", self.toggle_collapse_child)
 
         self.expanding = self.launcher
         
@@ -95,15 +131,16 @@ class StatusBar(Window):
         self.stack.set_visible_child(self.collapsed)
         self.add_keybinding("Escape", lambda *_: self.close())
 
-        self.workspaces = Workspaces()
+        # self.workspaces = Workspaces()
+        # self.active_window
         
         self.children = Box(
             orientation="v",
             children=[
                 CenterBox(
-                    start_children=[
-                        self.workspaces,
-                    ],
+                    # start_children=[
+                    #     self.workspaces,
+                    # ],
                     center_children=[
                         CenterBox(
                             label="L",
@@ -128,11 +165,21 @@ class StatusBar(Window):
         self.set_properties("_NET_WM_STATE", ["_NET_WM_STATE_ABOVE"])
         self.set_properties("_NET_WM_WINDOW_TYPE", ["_NET_WM_WINDOW_TYPE_DOCK"])
 
-    def toggle_name(self, *_):
-        if self.collapsed.get_label()=="aman@brewery":
-            return ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."
+    # def toggle_name(self, *_):
+    #     if self.collapsed.get_label()=="aman@brewery":
+    #         return ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."
+    #     else:
+    #         return "aman@brewery"
+
+    def toggle_collapse_child(self, *_):
+        if self.notch_compact.get_visible_child() == self.user:
+            self.active_window.active_window.remove_style_class("hide")
+            self.notch_compact.set_visible_child(self.active_window.active_window)
+        elif self.notch_compact.get_visible_child() == self.active_window.active_window:
+            self.active_window.active_window.add_style_class("hide")
+            self.notch_compact.set_visible_child(self.dot_placeholder)
         else:
-            return "aman@brewery"
+            self.notch_compact.set_visible_child(self.user)
 
     def open(self, *_):
         if self.stack.get_visible_child() == self.collapsed:
@@ -172,10 +219,11 @@ class StatusBar(Window):
         self.stack.set_visible_child(self.wall)
 
 if __name__ == "__main__":
-    bar = StatusBar()
-    # dockBar = DockBar()
+    bar = Notch()
+    dockBar = DockBar()
+    dockBar.notch = bar
     # dockApp = Application('placeholder-dock', dockBar)
-    app = Application("bar-example", bar)
+    app = Application("bar-example", bar, dockBar)
     # import builtins
     # builtins.bar = bar
     # FASS-based CSS file

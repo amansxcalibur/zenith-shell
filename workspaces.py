@@ -18,7 +18,8 @@ class i3Connector:
         return cls._instance
 
     def __init__(self, **kwargs):
-        self.workspace = kwargs["workspace"]
+        self.workspace = kwargs.get("workspace", None)
+        self.active_window = kwargs.get("active", None)
         self.i3 = Connection()
 
         self.callbacks = {
@@ -46,9 +47,9 @@ class i3Connector:
 
     def on_window_focus(self, i3, e):
         focused = i3.get_tree().find_focused()
-        ws_name = "%s %s" % (focused.workspace().num, focused.window_class)
-        print(ws_name)
-        self.workspace.setter_label(ws_name)
+        # ws_name = "%s %s" % (focused.workspace().num, focused.window_class)
+        print(focused.name)
+        self.active_window.setter_label(focused.name)
 
     def start(self):
         if self._thread is None or not self.thread.is_alive():
@@ -61,6 +62,9 @@ class i3Connector:
             self.callbacks[event_type].append(callback)
             print("its in there")
 
+    def command(self, cmd):
+        return self.i3.command(cmd)
+
 class Workspaces(Box):
     def __init__(self, **kwargs):
         super().__init__(
@@ -72,24 +76,19 @@ class Workspaces(Box):
             v_align="center"
         )
 
-        self.i3 = i3Connector._get_instance(workspace=self)
-        self.i3.start()
+        self.i3_connector = i3Connector._get_instance(workspace=self)
+        self.i3_connector.start()
 
-        self.i3.register_callback(Event.WORKSPACE, self.set_active_window)
+        self.i3_connector.register_callback(Event.WORKSPACE, self.set_active_window)
 
-        self.active_window = Label(label="hello workspaces")
-        self.all_workspaces = Box(children = self.buttons())
-        self.children = Box(children=[self.active_window, self.all_workspaces])
-    
-    def setter_label(self, ws_name):
-        # change label
-        self.active_window.set_label(ws_name)
-        # print("Printing label window")
+        
+        self.all_workspaces = Box(name="workspace-container", spacing=8, orientation="h", children = self.buttons())
+        self.children = Box(children=[self.all_workspaces])
 
     def buttons(self):
         buttons=[]
         for i in range(10):
-            buttons.append(Button(name="%i" % (i+1), label="%i" % (i+1)))
+            buttons.append(Button(name="%i" % (i+1), on_clicked=lambda b, num=i: self.switch_workspace(num)))
             if i==0:
                 buttons[i].add_style_class("active-workspace")
             else:
@@ -108,3 +107,25 @@ class Workspaces(Box):
             else:
                 btn.remove_style_class("active-workspace")
                 btn.add_style_class("workspace-button")
+
+    def switch_workspace(self, num):
+        self.i3_connector.command(f"workspace {num+1}")
+
+class ActiveWindow(Box):
+    def __init__(self, **kwargs):
+        super().__init__(
+            name="active-windows",
+            visible=True,
+            all_visible=True,
+            orientation="h",
+            h_align="center",
+            v_align="center",
+            **kwargs
+        )
+        self.active_window = Label(label="", name="active-window")
+        self.i3_connector = i3Connector._get_instance(active=self)
+
+        
+    def setter_label(self, curr_window):
+        self.active_window.set_label(curr_window)
+        # print("Printing label window")

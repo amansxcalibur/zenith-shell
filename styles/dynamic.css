@@ -69,7 +69,7 @@
   }
 
   #collapsed-bar{
-    min-width: 194px;
+    min-width: 290px;
   }
 
   #right-dum, #left-dum{
@@ -123,6 +123,10 @@
     min-width: 194px;
     min-height: 0px;
   }
+}
+
+#user-label{
+  color: white;
 }
 
 /* #placeholder{
