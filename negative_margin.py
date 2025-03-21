@@ -9,6 +9,7 @@ from fabric.utils import get_relative_path
 from fabric.widgets.x11 import X11Window as Window
 from launcher import AppLauncher
 from corner import Corners, MyCorner
+from systray import SystemTray
 from workspaces import Workspaces, ActiveWindow
 from fabric.utils.helpers import exec_shell_command_async
 import time
@@ -34,6 +35,7 @@ class DockBar(Window):
 
         self.notch = kwargs.get("notch", None)
         self.workspaces = Workspaces()
+        self.systray = SystemTray()
 
         self.bar_inner = CenterBox(
             name="bar-inner",
@@ -49,17 +51,18 @@ class DockBar(Window):
                     self.workspaces
                 ]
             ),
-            # end_children=Box(
-            #     name="end-container",
-            #     spacing=4,
-            #     orientation="h",
-            #     children=[
-            #         self.systray,
-            #         self.date_time,
-            #         self.button_power,
-            #     ],
-            # ),
+            end_children=Box(
+                name="end-container",
+                spacing=4,
+                orientation="h",
+                children=[
+                    self.systray,
+                    # self.date_time,
+                    # self.button_power,
+                ],
+            ),
         )
+        self.systray._update_visibility()
 
         self.children = self.bar_inner
         self.hidden = False

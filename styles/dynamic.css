@@ -4,6 +4,7 @@
 @import url("./wallpapers.css");
 @import url("./volume.css");
 @import url("./workspaces.css");
+@import url("./systray.css");
 
   .status-bar {
     background-color: var(--status-bar-background-color);  /* Apply the background color */
