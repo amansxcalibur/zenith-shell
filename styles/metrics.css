@@ -1,0 +1,161 @@
+#metrics-small {
+    background-color: var(--shadow);
+    padding: 0px;
+    min-width: 100px;
+    border-radius: 16px;
+    /*margin-top: 4px;*/
+    margin-top: 3px;
+    margin-bottom: 3px;
+  }
+
+  #bat-small{
+    background-color: var(--shadow);
+    padding: 0px;
+    min-width: 34px;
+    border-radius: 16px;
+    /*margin-top: 4px;*/
+    margin: 3px;
+  }
+  
+  #metrics-circle {
+    color: var(--surface-bright);
+    /* border: 3px solid var(--primary); */
+    border: 3px solid rgb(228, 83, 83);
+  }
+  
+  #metrics-circle.bat {
+    border: 3px solid var(--green);
+  }
+  
+  #metrics-circle.alert {
+    border: 3px solid var(--red-dim);
+  }
+  
+  .metrics-icon {
+    font-size: 20px;
+  }
+
+  #bat-icon{
+    font-size: 20px;
+    margin-left: 0px;
+  }
+
+  #disk-icon{
+    font-size: 20px;
+    margin-left: -2px;
+  }
+
+  #ram-icon{
+    font-size: 20px;
+    margin-left: -3px;
+  }
+
+  #cpu-icon {
+    font-size: 20px;
+    margin-left: -9px;
+  }
+  
+  #metrics-icon.alert {
+    color: var(--red-dim);
+  }
+  
+  #metrics-level {
+    font-weight: bold;
+    margin: 0 4px;
+  }
+  
+  #metrics-sep {
+    min-width: 4px;
+  }
+  
+  #network-icon-label {
+    color: var(--foreground);
+    font-size: 20px;
+    padding: 4px;
+    border-radius: 11px;
+    transition: all 0.1s ease;
+  }
+  
+  #download-label {
+    color: var(--green);
+    font-size: 14px;
+    font-weight: bold;
+    padding: 4px;
+    border-radius: 11px;
+    transition: all 0.1s ease;
+  }
+  
+  #download-label.urgent {
+    color: var(--shadow);
+  }
+  
+  #network-icon-label.urgent {
+    color: var(--shadow);
+  }
+  
+  #button-bar.download {
+    background-color: var(--green);
+  }
+  
+  #button-bar.upload {
+    background-color: var(--yellow);
+  }
+  
+  
+  #download-icon-label {
+    color: var(--green);
+    font-size: 16px;
+  }
+  
+  #download-icon-label.urgent {
+    color: var(--shadow);
+  }
+  
+  #upload-icon-label {
+    color: var(--yellow);
+    font-size: 16px;
+  }
+  
+  #upload-label {
+    color: var(--yellow);
+    font-size: 14px;
+    font-weight: bold;
+    padding: 4px;
+    border-radius: 11px;
+    transition: all 0.1s ease;
+  }
+  
+  #upload-label.urgent {
+    color: var(--shadow);
+  }
+  
+  #upload-icon-label.urgent {
+    color: var(--shadow);
+  }
+
+  .full-bat{
+    border: #00ffb3;
+    color: #00ffb3;
+  }
+
+  .low-bat{
+    animation: blink 0.5s ease infinite;
+  }
+  
+  @keyframes blink {
+    0% {
+      background-color: #ff0000;
+      color: white;
+      border: white;
+    }
+    50% {
+      background-color: white;
+      color: black;
+      border: red;
+    }
+    100% {
+      background-color: #ff0000;
+      color: white;
+      border: white;
+    }
+  }

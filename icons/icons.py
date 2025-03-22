@@ -26,10 +26,19 @@ close : str = "&#xeb55;"
 
 # Circles
 temp: str = "&#xeb38;"
-disk: str = "&#xea88;"
-battery: str = "&#xea38;"
-memory: str = "&#xfa97;"
-cpu: str = "&#xef8e;"
+# disk: str = "&#xea88;"
+disk: str = chr(0xf1632)
+# battery: str = chr(0xea38)
+battery: str = chr(0xf140c)
+# memory: str = "&#xfa97;"
+memory: str = chr(0xf01a7)
+# cpu: str = chr(0xef8e)
+cpu: str = chr(0xf4bc)
+
+#battery
+bat_low: str = chr(0xf007a)
+bat_charging: str = chr(0xf0085)
+bat_full: str = chr(0xf120f)
 
 # AIchat
 reload: str = "&#xf3ae;"
@@ -57,8 +66,8 @@ shutdown: str = "&#xeb0d;"
 power_saving: str = "&#xed4f;"
 power_balanced: str = "&#xfa77;"
 power_performance: str = "&#xec45;"
-charging: str = "&#xefef;"
-discharging: str = "&#xefe9;"
+charging: str = chr(0xefef)
+discharging: str = chr(0xefe9)
 alert: str = "&#xefb4;"
 
 # Applets

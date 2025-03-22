@@ -10,7 +10,9 @@ from fabric.widgets.x11 import X11Window as Window
 from launcher import AppLauncher
 from corner import Corners, MyCorner
 from systray import SystemTray
+from fabric.widgets.datetime import DateTime
 from workspaces import Workspaces, ActiveWindow
+from metrics import MetricsSmall, Battery
 from fabric.utils.helpers import exec_shell_command_async
 import time
 import gi
@@ -36,6 +38,10 @@ class DockBar(Window):
         self.notch = kwargs.get("notch", None)
         self.workspaces = Workspaces()
         self.systray = SystemTray()
+        self.date_time = DateTime(name="date-time", formatters=["%H:%M"], h_align="center", v_align="center", h_expand=True, v_expand=True)
+
+        self.metrics = MetricsSmall()
+        self.battery = Battery()
 
         self.bar_inner = CenterBox(
             name="bar-inner",
@@ -53,10 +59,13 @@ class DockBar(Window):
             ),
             end_children=Box(
                 name="end-container",
-                spacing=4,
+                # spacing=4,
                 orientation="h",
                 children=[
+                    self.date_time,
                     self.systray,
+                    self.metrics,
+                    self.battery,
                     # self.date_time,
                     # self.button_power,
                 ],

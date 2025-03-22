@@ -5,6 +5,8 @@
 @import url("./volume.css");
 @import url("./workspaces.css");
 @import url("./systray.css");
+@import url("./date_time.css");
+@import url("./metrics.css");
 
   .status-bar {
     background-color: var(--status-bar-background-color);  /* Apply the background color */

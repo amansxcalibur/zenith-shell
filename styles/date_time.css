@@ -1,0 +1,14 @@
+#date-time{
+    background-color: black;
+    padding: 0px;
+    margin: 0px;
+    min-height: 34px;
+    padding-left: 5px;
+    padding-right: 5px;
+    border-radius: 15px;
+}
+
+#date-time, label{
+    color: white;
+    font-size: 15px;
+}

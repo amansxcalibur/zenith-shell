@@ -5,7 +5,8 @@
     border-radius: 15px;
 }
 #tray-button{
-    background-color: #1c1c1c;
+    /* background-color: #1c1c1c; */
+    background-color: rgb(43, 35, 37);
     border: none;
     border-radius: 16px;
 }
