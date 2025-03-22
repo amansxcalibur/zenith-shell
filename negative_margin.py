@@ -62,12 +62,10 @@ class DockBar(Window):
                 # spacing=4,
                 orientation="h",
                 children=[
-                    self.date_time,
                     self.systray,
                     self.metrics,
                     self.battery,
-                    # self.date_time,
-                    # self.button_power,
+                    self.date_time,
                 ],
             ),
         )

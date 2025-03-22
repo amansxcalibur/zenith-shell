@@ -30,12 +30,12 @@ class AppLauncher(Box):
         self._all_apps = get_desktop_applications()
 
         # Calculator history initialization
-        self.calc_history_path = os.path.expanduser("~/.cache/ax-shell/calc.json")
-        if os.path.exists(self.calc_history_path):
-            with open(self.calc_history_path, "r") as f:
-                self.calc_history = json.load(f)
-        else:
-            self.calc_history = []
+        # self.calc_history_path = os.path.expanduser("~/.cache/ax-shell/calc.json")
+        # if os.path.exists(self.calc_history_path):
+        #     with open(self.calc_history_path, "r") as f:
+        #         self.calc_history = json.load(f)
+        # else:
+        #     self.calc_history = []
         
         self.viewport = Box(name="viewport", spacing=4, orientation="v")
         self.search_entry = Entry(
@@ -293,9 +293,9 @@ class AppLauncher(Box):
         new_index = max(0, min(new_index, len(children) - 1))
         self.update_selection(new_index)
 
-    def save_calc_history(self):
-        with open(self.calc_history_path, "w") as f:
-            json.dump(self.calc_history, f)
+    # def save_calc_history(self):
+    #     with open(self.calc_history_path, "w") as f:
+    #         json.dump(self.calc_history, f)
 
     def evaluate_calculator_expression(self, text: str):
         # Remove the '=' prefix and extra spaces

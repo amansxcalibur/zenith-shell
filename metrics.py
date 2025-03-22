@@ -283,7 +283,6 @@ class MetricsSmall(Button):
             child=self.disk_overlay
         )
 
-        # Agregamos cada widget métrico al contenedor principal
         # main_box.add(self.disk_box)
         # main_box.add(Box(name="metrics-sep"))
         # main_box.add(self.ram_box)
@@ -307,10 +306,10 @@ class MetricsSmall(Button):
         self.connect("enter-notify-event", self.on_mouse_enter)
         self.connect("leave-notify-event", self.on_mouse_leave)
 
+        # Metrics update every second
         GLib.timeout_add_seconds(1, self.update_metrics)
-        # Actualización de métricas cada segundo
 
-        # Estado inicial de los revealers y variables para la gestión del hover
+        # Initial state of the revealers and variables for hover management
         self.hide_timer = None
         self.hover_counter = 0
 
@@ -324,7 +323,7 @@ class MetricsSmall(Button):
         if self.hide_timer is not None:
             GLib.source_remove(self.hide_timer)
             self.hide_timer = None
-        # Revelar niveles en hover para todas las métricas
+        # Reveal levels on hover for all metrics
         self.cpu_revealer.set_reveal_child(True)
         self.ram_revealer.set_reveal_child(True)
         self.disk_revealer.set_reveal_child(True)
@@ -349,12 +348,12 @@ class MetricsSmall(Button):
         return False
 
     def update_metrics(self):
-        # Recuperar datos centralizados
+        # Recover centralized data
         cpu, mem, disk = shared_provider.get_metrics()
         self.cpu_circle.set_value(cpu / 100.0)
         self.ram_circle.set_value(mem / 100.0)
         self.disk_circle.set_value(disk / 100.0)
-        # Actualizar etiquetas con el porcentaje formateado
+        # Update labels with formatted percentage
         self.cpu_level.set_label(self._format_percentage(int(cpu)))
         self.ram_level.set_label(self._format_percentage(int(mem)))
         self.disk_level.set_label(self._format_percentage(int(disk)))
@@ -413,7 +412,7 @@ class Battery(Button):
         self.connect("enter-notify-event", self.on_mouse_enter)
         self.connect("leave-notify-event", self.on_mouse_leave)
 
-        # Actualización de la batería cada segundo
+        # Battery update every second
         self.batt_fabricator = Fabricator(
             poll_from=lambda v: shared_provider.get_battery(),
             on_changed=lambda f, v: self.update_battery,
@@ -424,7 +423,7 @@ class Battery(Button):
         self.batt_fabricator.changed.connect(self.update_battery)
         GLib.idle_add(self.update_battery, None, shared_provider.get_battery())
 
-        # Estado inicial de los revealers y variables para la gestión del hover
+        # Initial state of the revealers and variables for hover management
         self.hide_timer = None
         self.hover_counter = 0
 
@@ -438,7 +437,7 @@ class Battery(Button):
             if self.hide_timer is not None:
                 GLib.source_remove(self.hide_timer)
                 self.hide_timer = None
-            # Revelar niveles en hover para todas las métricas
+            # Reveal levels on hover for all metrics
             self.bat_revealer.set_reveal_child(True)
             return False
 
@@ -467,8 +466,7 @@ class Battery(Button):
             self.bat_circle.set_value(value / 100)
         percentage = int(value)
         self.bat_level.set_label(self._format_percentage(percentage))
-        
-        # Apply alert styling if battery is low, regardless of charging status
+
         if percentage <= 15:
             self.bat_icon.add_style_class("alert")
             self.bat_circle.add_style_class("alert")
@@ -498,5 +496,5 @@ class Battery(Button):
             self.bat_icon.set_markup(icons.battery)
             charging_status = "Battery"
             
-        # Set a descriptive tooltip with battery percentage
+        # tooltip with battery percentage
         self.set_tooltip_markup(f"{charging_status}")
