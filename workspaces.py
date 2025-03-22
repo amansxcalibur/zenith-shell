@@ -4,9 +4,6 @@ from fabric.widgets.box import Box
 from fabric.widgets.button import Button
 import threading
 
-# class i3Window:
-#     def __init__(self):
-#         pass
 class i3Connector:
     _instance = None
     _thread = None
@@ -37,13 +34,12 @@ class i3Connector:
 
     def on_workspace_focus(self, i3, e):
         if e.current:
-            print("Window in workspacez", e.current.num)
+            print("Window in workspace", e.current.num)
             # for w in e.current.leaves():
             #     print(w)
             # self.workspace.set_active_window(e.current.num)
             for callback in self.callbacks[Event.WORKSPACE]:
                 callback(i3, e)
-                print("hihi")
 
     def on_window_focus(self, i3, e):
         focused = i3.get_tree().find_focused()
@@ -78,12 +74,17 @@ class Workspaces(Box):
 
         self.i3_connector = i3Connector._get_instance(workspace=self)
         self.i3_connector.start()
-
         self.i3_connector.register_callback(Event.WORKSPACE, self.set_active_window)
 
         
         self.all_workspaces = Box(name="workspace-container", spacing=8, orientation="h", children = self.buttons())
         self.children = Box(children=[self.all_workspaces])
+
+        # mock event for initializing workspace thing module
+        mock_event = type('', (), {})()
+        mock_event.current = type('', (), {})()
+        mock_event.current.num = 1
+        self.set_active_window(self.i3_connector.i3, mock_event)
 
     def buttons(self):
         buttons=[]
@@ -96,9 +97,12 @@ class Workspaces(Box):
         return buttons
     
     def set_active_window(self, i3, e):
-        print("hererer", e.current.num)
         # curr_workspace = self.i3.get_tree().find_focused().workspace()
         curr_workspace = e.current.num-1
+        used_workspaces=[]
+        for con in i3.get_workspaces():
+            used_workspaces.append(int(con.name))
+        print("all workspaces here used ", used_workspaces)
         for i, btn in enumerate(self.all_workspaces.children):
             if i==curr_workspace:
                 btn.remove_style_class("workspace-button")
@@ -107,6 +111,11 @@ class Workspaces(Box):
             else:
                 btn.remove_style_class("active-workspace")
                 btn.add_style_class("workspace-button")
+                if (i+1) in used_workspaces:
+                    btn.add_style_class("used-workspace")
+                else:
+                    btn.remove_style_class("used-workspace")
+        
 
     def switch_workspace(self, num):
         self.i3_connector.command(f"workspace {num+1}")
@@ -128,4 +137,3 @@ class ActiveWindow(Box):
         
     def setter_label(self, curr_window):
         self.active_window.set_label(curr_window)
-        # print("Printing label window")
