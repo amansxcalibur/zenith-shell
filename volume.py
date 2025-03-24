@@ -54,23 +54,24 @@ class VolumeSlider(Scale):
             **kwargs,
         )
         self.add_style_class("vol")
-        self.update_volume()
-        self.connect("value-changed", self.on_value_changed)
-
-    def on_value_changed(self, _):
-        new_volume = int(self.value * 100)
-        # subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{new_volume}%"])
-        self.update_volume()
-
-    def update_volume(self):
-        """Update slider based on current volume."""
         volume, _ = get_current_volume()
+        self.update_volume(volume)
+        # self.connect("value-changed", self.on_value_changed)
+
+    # def on_value_changed(self, _):
+    #     new_volume = int(self.value * 100)
+        # subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{new_volume}%"])
+        # self.update_volume()
+
+    def update_volume(self, volume):
+        """Update slider based on current volume."""
+        # volume, _ = get_current_volume()
         print(volume)
         if volume is not None:
             self.value = volume / 100
 
 class VolumeSmall(Box):
-    def __init__(self, **kwargs):
+    def __init__(self, slider_instance, **kwargs):
         super().__init__(name="button-bar-vol", **kwargs)
         self.progress_bar = CircularProgressBar(
             name="button-volume", size=28, line_width=2,
@@ -93,6 +94,9 @@ class VolumeSmall(Box):
                 overlays=self.vol_button
             ),
         )
+        self.hide_timer = None
+        self.hover_counter = 0
+        self.vol_revealer = slider_instance
         # self.event_box.connect("scroll-event", self.on_scroll)
         self.add(self.event_box)
         self.update_volume_widget()
@@ -109,10 +113,38 @@ class VolumeSmall(Box):
     #         case 1:
     #             subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "-2%"])
     #     self.update_volume_widget()
+    
+    def reveal_revealer(self):
+        self.hover_counter += 1
+        if self.hide_timer is not None:
+            GLib.source_remove(self.hide_timer)
+            self.hide_timer = None
+        # Reveal levels on hover for all metrics
+        self.vol_revealer.set_reveal_child(True)
+        return False
+    
+    def await_hide(self):
+        if self.hover_counter > 0:
+            self.hover_counter -= 1
+        if self.hover_counter == 0:
+            if self.hide_timer is not None:
+                GLib.source_remove(self.hide_timer)
+            self.hide_timer = GLib.timeout_add(1000, self.hide_revealer)
+        return False
+
+    def hide_revealer(self):
+        self.vol_revealer.set_reveal_child(False)
+        self.hide_timer = None
+        return False
 
     def update_volume_widget(self):
         """Update the UI elements based on the current volume."""
         volume, muted = get_current_volume()
+        # self.vol_revealer.set_reveal_child(True)
+        self.reveal_revealer()
+        self.vol_revealer.get_child().update_volume(volume)
+        self.await_hide()
+        
         if volume is None:
             return
 

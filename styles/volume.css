@@ -1,5 +1,5 @@
 #control-slider {
-    background-color: var(--surface-bright);
+    /* background-color: var(--primary); */
     margin: 12px 14px;
   }
   
@@ -7,6 +7,9 @@
     min-height: 4px;
     padding: 0 14px;
     margin: -12px -14px;
+    background-color: black;
+    border-radius: 20px;
+    border: 2px solid #3f3f3f
   }
   
   #control-slider trough highlight {
@@ -25,7 +28,7 @@
   }
   
   #control-slider.vol slider {
-    /* background-image: url("./.config/Ax-Shell/assets/icons/volume.png"); */
+    background-image: url("../icons/volume.png");
     background-size: contain;
   }
   
@@ -35,7 +38,7 @@
   }
   
   #control-slider.brightness slider {
-    /* background-image: url("./.config/Ax-Shell/assets/icons/brightness.png"); */
+    background-image: url("../icons/brightness.png");
     background-size: contain;
   }
   

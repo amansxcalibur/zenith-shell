@@ -9,12 +9,12 @@ from fabric.utils import get_relative_path
 from fabric.widgets.x11 import X11Window as Window
 from launcher import AppLauncher
 from corner import Corners, MyCorner
+from fabric.widgets.revealer import Revealer
 from systray import SystemTray
 from fabric.widgets.datetime import DateTime
 from workspaces import Workspaces, ActiveWindow
 from metrics import MetricsSmall, Battery
 from fabric.utils.helpers import exec_shell_command_async
-import time
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gdk, Gtk
@@ -91,15 +91,22 @@ class Notch(Window):
             all_visible=True,
         )
         self.launcher = AppLauncher(notch = self)
-        self.volume = VolumeSlider(notch = self)
-        self.vol_small = VolumeSmall(notch = self)
+        # self.vol_slider = VolumeSlider(notch = self),
+        self.volume_revealer = Revealer(
+                    # name="metrics-cpu-revealer",
+                    transition_duration=250,
+                    transition_type="slide-down",
+                    child=VolumeSlider(notch = self),
+                    child_revealed=False,
+                )
+        self.vol_small = VolumeSmall(notch = self, slider_instance=self.volume_revealer)
         self.brightness = BrightnessSmall(device="intel_backlight")
         self.switch = True
         self.wall = WallpaperSelector()
 
         self.active_window = ActiveWindow()
         self.active_window.active_window.add_style_class("hide")
-        self.user = Label(label="aman@amansbrewery", name="user-label")
+        self.user = Label(label="aman@brewery", name="user-label")
         self.dot_placeholder = Label(label=". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .", name="collapsed-bar")
 
         self.notch_compact = Stack(
@@ -166,10 +173,10 @@ class Notch(Window):
                             v_align="start",
                             center_children=[Box(label="R", name="right-dum",children=[self.vol_small], v_expand=False)],
                             v_expand=False
-                        )
+                        ),
                     ],
                 ),
-                # self.volume,
+                self.volume_revealer,
             ]
         )
         self.set_properties("_NET_WM_STATE", ["_NET_WM_STATE_ABOVE"])
