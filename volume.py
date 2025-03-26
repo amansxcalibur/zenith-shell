@@ -10,17 +10,6 @@ import icons.icons as icons
 
 from gi.repository import GLib
 
-def supports_backlight():
-    try:
-        output = subprocess.check_output(["brightnessctl", "-l"]).decode("utf-8").lower()
-        return "backlight" in output
-    except Exception:
-        return False
-
-BACKLIGHT_SUPPORTED = supports_backlight()
-
-import subprocess
-
 def get_current_volume():
     try:
         output = subprocess.run(
@@ -141,25 +130,30 @@ class VolumeSmall(Box):
         """Update the UI elements based on the current volume."""
         volume, muted = get_current_volume()
         # self.vol_revealer.set_reveal_child(True)
+
         self.reveal_revealer()
         self.vol_revealer.get_child().update_volume(volume)
         self.await_hide()
         
         if volume is None:
             return
+        
+        self.progress_bar.value = volume / 100
 
         if muted:
+            self.vol_revealer.get_child().add_style_class("muted-slider")
             self.vol_button.get_child().set_markup(icons.vol_off)
             # self.vol_button.get_child().set_label("M")
             self.progress_bar.add_style_class("muted")
             self.vol_label.add_style_class("muted")
             self.set_tooltip_text("Muted")
         else:
+            self.vol_revealer.get_child().remove_style_class("muted-slider")
             # self.vol_button.get_child().set_label("H")
             self.progress_bar.remove_style_class("muted")
             self.vol_label.remove_style_class("muted")
             self.set_tooltip_text(f"{volume}%")
-            self.progress_bar.value = volume / 100
+            # self.progress_bar.value = volume / 100
 
             if volume > 74:
                 self.vol_button.get_child().set_markup(icons.vol_high)

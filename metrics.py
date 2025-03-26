@@ -13,13 +13,9 @@ from fabric.widgets.label import Label
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.revealer import Revealer
 from fabric.core.fabricator import Fabricator
-from fabric.utils.helpers import exec_shell_command_async, invoke_repeater
 from fabric.widgets.scale import Scale
 
 import icons.icons as icons
-import info as data
-# from services.network import NetworkClient
-import time
 
 class MetricsProvider:
     """
@@ -289,7 +285,6 @@ class MetricsSmall(Button):
         # main_box.add(Box(name="metrics-sep"))
         # main_box.add(self.cpu_box)
 
-        # Set the main box as the button's child
         self.main_box = Box(
             spacing=0,
             orientation="h",
@@ -314,11 +309,9 @@ class MetricsSmall(Button):
         self.hover_counter = 0
 
     def _format_percentage(self, value: int) -> str:
-        """Formato natural del porcentaje sin forzar ancho fijo."""
         return f"{value}%"
 
     def on_mouse_enter(self, widget, event):
-        # if not data.VERTICAL:
         self.hover_counter += 1
         if self.hide_timer is not None:
             GLib.source_remove(self.hide_timer)
@@ -330,7 +323,6 @@ class MetricsSmall(Button):
         return False
 
     def on_mouse_leave(self, widget, event):
-        # if not data.VERTICAL:
         if self.hover_counter > 0:
             self.hover_counter -= 1
         if self.hover_counter == 0:
@@ -340,7 +332,6 @@ class MetricsSmall(Button):
         return False
 
     def hide_revealer(self):
-        # if not data.VERTICAL:
         self.cpu_revealer.set_reveal_child(False)
         self.ram_revealer.set_reveal_child(False)
         self.disk_revealer.set_reveal_child(False)
@@ -428,34 +419,30 @@ class Battery(Button):
         self.hover_counter = 0
 
     def _format_percentage(self, value: int) -> str:
-        """Formato natural del porcentaje sin forzar ancho fijo."""
         return f"{value}%"
 
     def on_mouse_enter(self, widget, event):
-        # if not data.VERTICAL:
-            self.hover_counter += 1
-            if self.hide_timer is not None:
-                GLib.source_remove(self.hide_timer)
-                self.hide_timer = None
-            # Reveal levels on hover for all metrics
-            self.bat_revealer.set_reveal_child(True)
-            return False
+        self.hover_counter += 1
+        if self.hide_timer is not None:
+            GLib.source_remove(self.hide_timer)
+            self.hide_timer = None
+        # Reveal levels on hover for all metrics
+        self.bat_revealer.set_reveal_child(True)
+        return False
 
     def on_mouse_leave(self, widget, event):
-        # if not data.VERTICAL:
-            if self.hover_counter > 0:
-                self.hover_counter -= 1
-            if self.hover_counter == 0:
-                if self.hide_timer is not None:
-                    GLib.source_remove(self.hide_timer)
-                self.hide_timer = GLib.timeout_add(500, self.hide_revealer)
-            return False
+        if self.hover_counter > 0:
+            self.hover_counter -= 1
+        if self.hover_counter == 0:
+            if self.hide_timer is not None:
+                GLib.source_remove(self.hide_timer)
+            self.hide_timer = GLib.timeout_add(500, self.hide_revealer)
+        return False
 
     def hide_revealer(self):
-        # if not data.VERTICAL:
-            self.bat_revealer.set_reveal_child(False)
-            self.hide_timer = None
-            return False
+        self.bat_revealer.set_reveal_child(False)
+        self.hide_timer = None
+        return False
 
     def update_battery(self, sender, battery_data):
         value, charging = battery_data
@@ -467,7 +454,7 @@ class Battery(Button):
         percentage = int(value)
         self.bat_level.set_label(self._format_percentage(percentage))
 
-        if percentage <= 15:
+        if percentage <= 15 and charging == False:
             self.bat_icon.add_style_class("alert")
             self.bat_circle.add_style_class("alert")
             self.bat_circle.add_style_class("low-bat")
