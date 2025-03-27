@@ -17,7 +17,7 @@ class i3Connector:
     def __init__(self, **kwargs):
         self.workspace = kwargs.get("workspace", None)
         self.active_window = kwargs.get("active", None)
-        self.i3 = Connection()
+        self.i3 = Connection(auto_reconnect=True)
 
         self.callbacks = {
             Event.WORKSPACE: []
@@ -30,6 +30,8 @@ class i3Connector:
             print(con.name)
         self.i3.on(Event.WORKSPACE_FOCUS, self.on_workspace_focus)
         self.i3.on(Event.WINDOW_FOCUS, self.on_window_focus)
+        self.i3.on(Event.WINDOW_TITLE, self.on_window_title_change)
+        # self.i3.on(Event.SHUTDOWN_RESTART, self.on_i3_restart)
         # self.i3.main()
 
     def on_workspace_focus(self, i3, e):
@@ -46,6 +48,9 @@ class i3Connector:
         # ws_name = "%s %s" % (focused.workspace().num, focused.window_class)
         print(focused.name)
         self.active_window.setter_label(focused.name)
+
+    def on_window_title_change(self, i3, e):
+        self.active_window.setter_label(e.container.name)
 
     def start(self):
         if self._thread is None or not self.thread.is_alive():
