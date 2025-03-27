@@ -53,7 +53,7 @@ class DockBar(Window):
                 spacing=4,
                 orientation="h",
                 children=[
-                    # self.button_apps,
+                    # Button(name="hide-bar-toggle", on_clicked=lambda b: self.hide_bar_toggle()),
                     self.workspaces
                 ]
             ),
@@ -71,10 +71,33 @@ class DockBar(Window):
         )
         self.systray._update_visibility()
 
-        self.children = self.bar_inner
+        self.hidden_bar = Box()
+        self.visibility_stack = Stack(
+            transition_type="over-down", 
+            transition_duration=100,
+            children=[self.bar_inner,self.hidden_bar]
+        )
+        self.children = self.visibility_stack
         self.hidden = False
         # self.set_properties("_NET_WM_STATE", ["_NET_WM_STATE_ABOVE"])
         # self.set_properties("_NET_WM_WINDOW_TYPE", ["_NET_WM_WINDOW_TYPE_DOCK"])
+
+    def hide_bar_toggle(self):
+        """Runs through i3 keybindings"""
+        if self.visibility_stack.get_visible_child() == self.bar_inner:
+            # self.bar_inner.remove_style_class("reveal-bar")
+            self.bar_inner.add_style_class("hide-bar")            
+            self.notch.full_notch.add_style_class("hide-notch")
+
+            self.visibility_stack.set_visible_child(self.hidden_bar)
+            self.notch.visibility_stack.set_visible_child(self.notch.hidden_notch)
+        else:
+            # self.bar_inner.add_style_class("reveal-bar")
+            self.bar_inner.remove_style_class("hide-bar")
+            self.notch.full_notch.remove_style_class("hide-notch")
+            
+            self.visibility_stack.set_visible_child(self.bar_inner)
+            self.notch.visibility_stack.set_visible_child(self.notch.full_notch)
 
 class Notch(Window):
     def __init__(self, **kwargs):
@@ -111,7 +134,7 @@ class Notch(Window):
 
         self.notch_compact = Stack(
             name="collapsed",
-            transition_type="slide-down",
+            transition_type="crossfade",
             transition_duration=100,
             children=[
                 self.user,
@@ -135,10 +158,10 @@ class Notch(Window):
             h_expand=True, 
             v_expand=True, 
             transition_type="crossfade", 
-            transition_duration=100,
+            transition_duration=250,
             children=[
-                self.expanding,
                 self.collapsed,
+                self.expanding,
                 self.wall
             ])
         
@@ -148,16 +171,10 @@ class Notch(Window):
         self.stack.set_visible_child(self.collapsed)
         self.add_keybinding("Escape", lambda *_: self.close())
 
-        # self.workspaces = Workspaces()
-        # self.active_window
-        
-        self.children = Box(
+        self.full_notch = Box(
             orientation="v",
             children=[
                 CenterBox(
-                    # start_children=[
-                    #     self.workspaces,
-                    # ],
                     center_children=[
                         CenterBox(
                             label="L",
@@ -179,6 +196,17 @@ class Notch(Window):
                 self.volume_revealer,
             ]
         )
+        self.hidden_notch = Box()
+        self.visibility_stack = Stack(
+            transition_type="over-down", 
+            transition_duration=100,
+            children=[
+                self.full_notch,
+                self.hidden_notch
+            ]
+        )
+
+        self.children = self.visibility_stack
         self.set_properties("_NET_WM_STATE", ["_NET_WM_STATE_ABOVE"])
         self.set_properties("_NET_WM_WINDOW_TYPE", ["_NET_WM_WINDOW_TYPE_DOCK"])
 
@@ -199,8 +227,9 @@ class Notch(Window):
             self.notch_compact.set_visible_child(self.user)
 
     def open(self, *_):
-        if self.stack.get_visible_child() == self.collapsed:
+        if self.stack.get_visible_child() == self.collapsed and self.visibility_stack.get_visible_child() == self.full_notch:
             # self.steal_input()
+            exec_shell_command_async('i3-msg [class="Negative_margin.py"] focus')
             self.stack.remove_style_class("contract")
             self.stack.add_style_class("expand")
             self.remove_style_class("wallpaper-init")
@@ -212,6 +241,8 @@ class Notch(Window):
             self.launcher.open_launcher()
             self.launcher.search_entry.set_text("")
             self.launcher.search_entry.grab_focus()
+        else:
+            print("Notch is hidden")
         self.show_all()
     
     def close(self, *_):
