@@ -12,16 +12,18 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.widgets.label import Label
 from fabric.utils.helpers import exec_shell_command_async
 import info as data
+import icons.icons as icons
 from PIL import Image
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 
 class WallpaperSelector(Box):
-    CACHE_DIR = os.path.expanduser("~/.cache/ax-shell/thumbs")  # Changed from wallpapers to thumbs
+    CACHE_DIR = os.path.expanduser("~/.cache/zenith-shell/thumbs")  # Changed from wallpapers to thumbs
 
     def __init__(self, **kwargs):
+        self.notch = kwargs["notch"]
         # Delete the old cache directory if it exists
-        old_cache_dir = os.path.expanduser("~/.cache/ax-shell/wallpapers")
+        old_cache_dir = os.path.expanduser("~/.cache/zenith-shell/wallpapers")
         if os.path.exists(old_cache_dir):
             shutil.rmtree(old_cache_dir)
         
@@ -111,7 +113,7 @@ class WallpaperSelector(Box):
         # self.matugen_switcher.set_active(True)
 
         self.mat_icon = Label(name="mat-label", 
-                              #markup=icons.palette
+                              markup=icons.palette
                               )
 
         # Add the switcher to the header_box's start_children
@@ -120,8 +122,16 @@ class WallpaperSelector(Box):
             spacing=8,
             orientation="h",
             # start_children=[self.matugen_switcher, self.mat_icon],
-            center_children=[self.search_entry],
-            end_children=[self.scheme_dropdown],
+            # start_children=[self.scheme_dropdown,],
+            start_children=[self.search_entry,self.scheme_dropdown],
+            end_children=[
+                Button(
+                    name="close-button",
+                    child=Label(name="close-label", markup=icons.cancel),
+                    tooltip_text="Exit",
+                    on_clicked=lambda *_: self.notch.close()
+                )
+            ],
         )
 
         self.add(self.header_box)

@@ -59,7 +59,7 @@ class AppLauncher(Box):
         )
 
         self.header_box = Box(
-            name="header_box",
+            name="header-box",
             spacing=10,
             orientation="h",
             children=[

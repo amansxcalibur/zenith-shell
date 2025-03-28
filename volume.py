@@ -44,7 +44,7 @@ class VolumeSlider(Scale):
         )
         self.add_style_class("vol")
         volume, _ = get_current_volume()
-        self.update_volume(volume)
+        self.update_volume_slider(volume)
         # self.connect("value-changed", self.on_value_changed)
 
     # def on_value_changed(self, _):
@@ -52,7 +52,7 @@ class VolumeSlider(Scale):
         # subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{new_volume}%"])
         # self.update_volume()
 
-    def update_volume(self, volume):
+    def update_volume_slider(self, volume):
         """Update slider based on current volume."""
         # volume, _ = get_current_volume()
         print(volume)
@@ -132,7 +132,7 @@ class VolumeSmall(Box):
         # self.vol_revealer.set_reveal_child(True)
 
         self.reveal_revealer()
-        self.vol_revealer.get_child().update_volume(volume)
+        self.vol_revealer.get_child().update_volume_slider(volume)
         self.await_hide()
         
         if volume is None:

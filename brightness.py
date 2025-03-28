@@ -4,6 +4,7 @@ from fabric.widgets.label import Label
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.button import Button
+from fabric.widgets.scale import Scale
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gdk
@@ -20,8 +21,23 @@ def supports_backlight():
 
 BACKLIGHT_SUPPORTED = supports_backlight()
 
+class BrightnessSlider(Scale):
+    def __init__(self, **kwargs):
+        super().__init__(
+            name="control-slider",
+            orientation="h",
+            h_expand=True,
+            has_origin=True,
+            increments=(0.01, 0.1),
+            **kwargs,
+        )
+        self.add_style_class("brightness")
+
+    def update_brightness_slider(self, brightness):
+        self.value = brightness / 100
+
 class BrightnessSmall(Box):
-    def __init__(self, device: str, **kwargs):
+    def __init__(self, device: str, slider_instance, **kwargs):
         super().__init__(name="button-bar-brightness", **kwargs)
         # self.brightness = Brightness.get_initial()
         # if self.brightness.screen_brightness == -1:
@@ -32,6 +48,9 @@ class BrightnessSmall(Box):
         self.max = 0
         self.percentage = 0
         self.exist = supports_backlight
+        self.brightness_revealer = slider_instance
+        self.hide_timer = None
+        self.hover_counter = 0
 
         self.progress_bar = CircularProgressBar(
             name="button-brightness", size=28, line_width=2,
@@ -51,7 +70,7 @@ class BrightnessSmall(Box):
         # self.event_box.connect("scroll-event", self.on_scroll)
         self.add(self.event_box)
         self.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.SMOOTH_SCROLL_MASK)
-        self.update()
+        self.update_brightness()
 
         # self._updating_from_brightness = False
         # self._pending_value = None
@@ -61,7 +80,7 @@ class BrightnessSmall(Box):
         # self.brightness.connect("screen", self.on_brightness_changed)
         # self.on_brightness_changed()
 
-    def update(self):
+    def update_brightness(self):
         if self.exist:
             init = subprocess.check_output(["brightnessctl", "-d" , self.device]).decode("utf-8").lower()
             self.current = int(re.search(r"current brightness:\s+(\d+)", init).group(1))
@@ -102,6 +121,28 @@ class BrightnessSmall(Box):
     #         self._update_source_id = None
     #         return False
 
+    def reveal_revealer(self):
+        self.hover_counter += 1
+        if self.hide_timer is not None:
+            GLib.source_remove(self.hide_timer)
+            self.hide_timer = None
+        self.brightness_revealer.set_reveal_child(True)
+        return False
+
+    def await_hide(self):
+        if self.hover_counter > 0:
+            self.hover_counter -= 1
+        if self.hover_counter == 0:
+            if self.hide_timer is not None:
+                GLib.source_remove(self.hide_timer)
+            self.hide_timer = GLib.timeout_add(1000, self.hide_revealer)
+        return False
+
+    def hide_revealer(self):
+        self.brightness_revealer.set_reveal_child(False)
+        self.hide_timer = None
+        return False
+
     def on_brightness_changed(self, *args):
         # if self.brightness.max_screen == -1:
         #     return
@@ -110,6 +151,9 @@ class BrightnessSmall(Box):
         # self.progress_bar.value = normalized
         # self.progress_bar.value = self.percentage/100
         self.progress_bar.value = self.percentage/100
+        self.reveal_revealer()
+        self.brightness_revealer.get_child().update_brightness_slider(self.percentage)
+        self.await_hide()
         # self._updating_from_brightness = False
 
         # brightness_percentage = int(normalized * 100)

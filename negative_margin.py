@@ -20,7 +20,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gdk, Gtk
 from wallpaper import WallpaperSelector
 from volume import VolumeSlider, VolumeSmall
-from brightness import BrightnessSmall
+from brightness import BrightnessSlider, BrightnessSmall
 
 class DockBar(Window):
     def __init__(self, **kwargs):
@@ -83,7 +83,7 @@ class DockBar(Window):
         # self.set_properties("_NET_WM_WINDOW_TYPE", ["_NET_WM_WINDOW_TYPE_DOCK"])
 
     def hide_bar_toggle(self):
-        """Runs through i3 keybindings"""
+        # this function runs through i3 keybindings
         if self.visibility_stack.get_visible_child() == self.bar_inner:
             # self.bar_inner.remove_style_class("reveal-bar")
             self.bar_inner.add_style_class("hide-bar")            
@@ -114,18 +114,26 @@ class Notch(Window):
             all_visible=True,
         )
         self.launcher = AppLauncher(notch = self)
-        # self.vol_slider = VolumeSlider(notch = self),
+
         self.volume_revealer = Revealer(
-                    # name="metrics-cpu-revealer",
                     transition_duration=250,
                     transition_type="slide-down",
                     child=VolumeSlider(notch = self),
                     child_revealed=False,
                 )
         self.vol_small = VolumeSmall(notch = self, slider_instance=self.volume_revealer)
-        self.brightness = BrightnessSmall(device="intel_backlight")
+
+        self.brightness_revealer = Revealer(
+            name="brightness",
+            transition_duration=250,
+            transition_type="slide-down",
+            child=BrightnessSlider(),
+            child_revealed=True
+        )
+        self.brightness = BrightnessSmall(device="intel_backlight", slider_instance=self.brightness_revealer)
+        
         self.switch = True
-        self.wall = WallpaperSelector()
+        self.wallpapers = WallpaperSelector(notch = self)
 
         self.active_window = ActiveWindow()
         self.active_window.active_window.add_style_class("hide")
@@ -162,11 +170,11 @@ class Notch(Window):
             children=[
                 self.collapsed,
                 self.expanding,
-                self.wall
+                self.wallpapers
             ])
         
         self.launcher.add_style_class("launcher-contract-init")
-        self.wall.add_style_class("wallpaper-contract")
+        self.wallpapers.add_style_class("wallpaper-contract")
 
         self.stack.set_visible_child(self.collapsed)
         self.add_keybinding("Escape", lambda *_: self.close())
@@ -194,6 +202,7 @@ class Notch(Window):
                     ],
                 ),
                 self.volume_revealer,
+                self.brightness_revealer
             ]
         )
         self.hidden_notch = Box()
@@ -250,8 +259,8 @@ class Notch(Window):
             self.stack.remove_style_class("expand")
             self.stack.add_style_class("contract")
             # self.unsteal_input()
-            self.wall.remove_style_class("wallpaper-expand")
-            self.wall.add_style_class("wallpaper-contract")
+            self.wallpapers.remove_style_class("wallpaper-expand")
+            self.wallpapers.add_style_class("wallpaper-contract")
             self.launcher.remove_style_class("launcher-expand")
             self.launcher.add_style_class("launcher-contract")
             self.stack.set_visible_child(self.collapsed)
@@ -261,10 +270,10 @@ class Notch(Window):
 
     def open_notch(self, *_):
         self.remove_style_class("launcher-contract")
-        self.wall.remove_style_class("wallpaper-init")
-        self.wall.add_style_class("wallpaper-expand")
-        # self.stack.add(self.wall)
-        self.stack.set_visible_child(self.wall)
+        self.wallpapers.remove_style_class("wallpaper-init")
+        self.wallpapers.add_style_class("wallpaper-expand")
+        # self.stack.add(self.wallpapers)
+        self.stack.set_visible_child(self.wallpapers)
 
 if __name__ == "__main__":
     bar = Notch()

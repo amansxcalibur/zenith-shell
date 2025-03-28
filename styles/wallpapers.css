@@ -5,12 +5,20 @@
   
   #scheme-dropdown {
     background-color: var(--surface);
-    padding: 8px;
+    border-radius: 16px;
   }
   
   #scheme-dropdown > * > * {
     font-weight: bold;
-    color: var(--shadow);
+    color: var(--outline);
+    border: transparent 1px solid;
+    border-radius: 16px;
+  }
+
+  #scheme-dropdown > * > *:hover,
+  #scheme-dropdown> * > *:focus {
+    background-color: var(--surface-bright);
+    color: whitesmoke;
   }
   
   #scheme-dropdown.box button.box.cellview {
@@ -22,7 +30,10 @@
   }
   
   #search-entry-walls {
-    min-width: 512px;
+    min-width: 500px;
+    border-radius: 16px;
+    background-color: var(--surface);
+    margin-right: 10px;
   }
   
   /* Customize the overall switch appearance */
@@ -70,7 +81,7 @@
   }
 
   .wallpaper-expand{
-    min-width: 855px;
+    min-width: 740px;
     min-height: 500px;
     margin: 0px;
     transition: padding 0.25s cubic-bezier(0.5, 0.25, 0, 1);
@@ -85,7 +96,7 @@
     }
     100% {
       margin: 0px;
-      min-width: 855px;
+      min-width: 740px;
       min-height: 500px;
     }
   }
@@ -108,11 +119,15 @@
 }
 #scrolled-window{
   border-bottom-left-radius: 20px;
-    border-bottom-right-radius: 20px;
-    padding: 8px;
+  border-bottom-right-radius: 20px;
+  padding: 8px;
 }
 
 *{
   background-image: none;
   border-image: none;
+}
+
+#wallpapers{
+  padding: 10px;
 }
