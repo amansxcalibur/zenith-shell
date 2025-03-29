@@ -44,10 +44,11 @@ class i3Connector:
                 callback(i3, e)
 
     def on_window_focus(self, i3, e):
-        focused = i3.get_tree().find_focused()
+        # focused = i3.get_tree().find_focused()
         # ws_name = "%s %s" % (focused.workspace().num, focused.window_class)
-        print(focused.name)
-        self.active_window.setter_label(focused.name)
+        print(e.container.name)
+        # self.active_window.setter_label(focused.name)
+        self.active_window.setter_label(e.container.name)
 
     def on_window_title_change(self, i3, e):
         self.active_window.setter_label(e.container.name)

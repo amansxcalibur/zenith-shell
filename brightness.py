@@ -59,7 +59,8 @@ class BrightnessSmall(Box):
         self.brightness_label = Label(name="brightness-label", markup=icons.brightness)
         self.brightness_button = Button(name="brightness-button", child=self.brightness_label)
         self.event_box = EventBox(
-            events=["scroll", "smooth-scroll"],
+            # events=["scroll", "smooth-scroll"],
+            events="scroll",
             v_expand=True,
             h_expand=True,
             child=Overlay(
@@ -67,7 +68,7 @@ class BrightnessSmall(Box):
                 overlays=self.brightness_button
             ),
         )
-        # self.event_box.connect("scroll-event", self.on_scroll)
+        self.event_box.connect("scroll-event", self.on_scroll)
         self.add(self.event_box)
         self.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.SMOOTH_SCROLL_MASK)
         self.update_brightness()
@@ -88,6 +89,15 @@ class BrightnessSmall(Box):
             self.percentage = int(re.search(r"\((\d+)%\)", init).group(1))
             print("exists and updating")
             self.on_brightness_changed()
+
+    def on_scroll(self, widget, event):
+        print("here ", event.direction)
+        match event.direction:
+            case 0:
+                subprocess.run(["brightnessctl", "set", "+5%"])
+            case 1:
+                subprocess.run(["brightnessctl", "set", "5%-"])
+        self.update_brightness()
 
     # def on_scroll(self, widget, event):
     #     if self.brightness.max_screen == -1:

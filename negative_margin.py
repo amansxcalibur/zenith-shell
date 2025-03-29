@@ -115,13 +115,25 @@ class Notch(Window):
         )
         self.launcher = AppLauncher(notch = self)
 
+        volume_slider = VolumeSlider(notch = self)
+        volume_overflow_slider = VolumeSlider(notch = self)
+        volume_overflow_slider.add_style_class("vol-overflow-slider")
+
         self.volume_revealer = Revealer(
                     transition_duration=250,
                     transition_type="slide-down",
-                    child=VolumeSlider(notch = self),
+                    child=volume_slider,
                     child_revealed=False,
                 )
-        self.vol_small = VolumeSmall(notch = self, slider_instance=self.volume_revealer)
+        
+        self.volume_overflow_revealer = Revealer(
+                    transition_duration=250,
+                    transition_type="slide-down",
+                    child=volume_overflow_slider,
+                    child_revealed=False,
+                )
+        
+        self.vol_small = VolumeSmall(notch = self, slider_instance=self.volume_revealer, overflow_instance = self.volume_overflow_revealer)
 
         self.brightness_revealer = Revealer(
             name="brightness",
@@ -202,6 +214,7 @@ class Notch(Window):
                     ],
                 ),
                 self.volume_revealer,
+                self.volume_overflow_revealer,
                 self.brightness_revealer
             ]
         )

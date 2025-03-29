@@ -23,6 +23,15 @@
   #control-slider.muted-slider highlight {
     background-color: #3f3f3f;
   }
+
+  #control-slider.muted-slider slider {
+    background-image: url("/home/aman/fabric/icons/mute.png");
+    background-size: contain;
+  }
+
+  #control-slider.vol-overflow-slider highlight{
+    background-color: rgb(228, 83, 83);
+  }
   
   #control-slider slider {
     border-radius: 100%;

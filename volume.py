@@ -44,7 +44,7 @@ class VolumeSlider(Scale):
         )
         self.add_style_class("vol")
         volume, _ = get_current_volume()
-        self.update_volume_slider(volume)
+        # self.update_volume_slider(volume, False)
         # self.connect("value-changed", self.on_value_changed)
 
     # def on_value_changed(self, _):
@@ -52,22 +52,26 @@ class VolumeSlider(Scale):
         # subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{new_volume}%"])
         # self.update_volume()
 
-    def update_volume_slider(self, volume):
+    def update_volume_slider(self, volume, overflow):
         """Update slider based on current volume."""
         # volume, _ = get_current_volume()
         print(volume)
         if volume is not None:
-            self.value = volume / 100
+            if overflow:
+                self.value = max(0, (volume - 100) / 100)
+            else:
+                self.value = min(1, volume / 100) 
 
 class VolumeSmall(Box):
-    def __init__(self, slider_instance, **kwargs):
+    def __init__(self, slider_instance, overflow_instance, **kwargs):
         super().__init__(name="button-bar-vol", **kwargs)
         self.progress_bar = CircularProgressBar(
             name="button-volume", size=28, line_width=2,
             start_angle=150, end_angle=390,
         )
+
         self.vol_label = Label(name="vol-label", markup=icons.vol_high)
-        # self.vol_label = Label(name="vol-label", label="H")
+
         self.vol_button = Button(
             name="vol-button",
             on_clicked=self.toggle_mute,
@@ -86,7 +90,21 @@ class VolumeSmall(Box):
         self.hide_timer = None
         self.hover_counter = 0
         self.vol_revealer = slider_instance
-        # self.event_box.connect("scroll-event", self.on_scroll)
+        self.vol_overflow_revealer = overflow_instance
+        # self.vol_event = EventBox(
+        #     name="eventer",
+        #     v_expand=True,
+        #     h_expand=True,
+        #     events="scroll",
+        #     child=Overlay(
+        #         child=self.vol_revealer,
+        #         # overlays=self.vol_button
+        #     ),
+        # )
+        # self.vol_event.get_child().connect("scroll-event", self.on_scroll)
+        # self.vol_overflow_revealer.get_child().connect("scroll-event", self.on_scroll)
+        # self.f = EventBox(events="")
+        self.event_box.connect("scroll-event", self.on_scroll)
         self.add(self.event_box)
         self.update_volume_widget()
 
@@ -94,14 +112,22 @@ class VolumeSmall(Box):
         subprocess.run(["pactl", "set-sink-mute", "@DEFAULT_SINK@", "toggle"])
         self.update_volume_widget()
 
-    # def on_scroll(self, _, event):
-    #     """Increase or decrease volume using scroll wheel."""
-    #     match event.direction:
-    #         case 0:
-    #             subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "+2%"])
-    #         case 1:
-    #             subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "-2%"])
-    #     self.update_volume_widget()
+    # def on_slider_scroll(self, _, event):
+    #     val_y = event.delta_y
+
+    #     if val_y > 0:
+    #         subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "+5%"])
+    #     else:
+    #         subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "-5%"])
+    
+    def on_scroll(self, _, event):
+        """Increase or decrease volume using scroll wheel."""
+        match event.direction:
+            case 0:
+                subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "+5%"])
+            case 1:
+                subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "-5%"])
+        self.update_volume_widget()
     
     def reveal_revealer(self):
         self.hover_counter += 1
@@ -110,6 +136,7 @@ class VolumeSmall(Box):
             self.hide_timer = None
         # Reveal levels on hover for all metrics
         self.vol_revealer.set_reveal_child(True)
+        self.vol_overflow_revealer.set_reveal_child(True)
         return False
     
     def await_hide(self):
@@ -123,6 +150,7 @@ class VolumeSmall(Box):
 
     def hide_revealer(self):
         self.vol_revealer.set_reveal_child(False)
+        self.vol_overflow_revealer.set_reveal_child(False)
         self.hide_timer = None
         return False
 
@@ -132,7 +160,16 @@ class VolumeSmall(Box):
         # self.vol_revealer.set_reveal_child(True)
 
         self.reveal_revealer()
-        self.vol_revealer.get_child().update_volume_slider(volume)
+        if volume > 100:
+            # if self.vol_overflow_revealer.get_child().value != (volume - 100) / 100:
+            self.vol_overflow_revealer.get_child().update_volume_slider(volume, overflow=True)
+            self.vol_overflow_revealer.set_reveal_child(True)
+            self.vol_revealer.set_reveal_child(False)
+        else:
+            # if self.vol_revealer.get_child().value != volume / 100:
+            self.vol_revealer.get_child().update_volume_slider(volume, overflow=False)
+            self.vol_revealer.set_reveal_child(True)
+            self.vol_overflow_revealer.set_reveal_child(False)
         self.await_hide()
         
         if volume is None:
@@ -141,19 +178,28 @@ class VolumeSmall(Box):
         self.progress_bar.value = volume / 100
 
         if muted:
+            self.vol_overflow_revealer.get_child().remove_style_class("vol")
+            self.vol_overflow_revealer.get_child().remove_style_class("vol-overflow-slider")
+            self.vol_revealer.get_child().remove_style_class("vol")
+
             self.vol_revealer.get_child().add_style_class("muted-slider")
-            self.vol_button.get_child().set_markup(icons.vol_off)
-            # self.vol_button.get_child().set_label("M")
+            self.vol_overflow_revealer.get_child().add_style_class("muted-slider")
             self.progress_bar.add_style_class("muted")
             self.vol_label.add_style_class("muted")
+
+            self.vol_button.get_child().set_markup(icons.vol_off)
             self.set_tooltip_text("Muted")
         else:
             self.vol_revealer.get_child().remove_style_class("muted-slider")
-            # self.vol_button.get_child().set_label("H")
+            self.vol_overflow_revealer.get_child().remove_style_class("muted-slider")
             self.progress_bar.remove_style_class("muted")
             self.vol_label.remove_style_class("muted")
+
+            self.vol_overflow_revealer.get_child().add_style_class("vol-overflow-slider")
+            self.vol_revealer.get_child().add_style_class("vol")
+            self.vol_overflow_revealer.get_child().add_style_class("vol")
+
             self.set_tooltip_text(f"{volume}%")
-            # self.progress_bar.value = volume / 100
 
             if volume > 74:
                 self.vol_button.get_child().set_markup(icons.vol_high)
