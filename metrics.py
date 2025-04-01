@@ -189,8 +189,10 @@ class MetricsSmall(Button):
             value=0,
             size=28,
             line_width=2,
-            start_angle=150,
-            end_angle=390,
+            # start_angle=150,
+            # end_angle=390,
+            start_angle=-90,
+            end_angle=270,
             style_classes="cpu",
         )
         self.cpu_overlay = Overlay(
@@ -221,8 +223,8 @@ class MetricsSmall(Button):
             value=0,
             size=28,
             line_width=2,
-            start_angle=150,
-            end_angle=390,
+            start_angle=-90,
+            end_angle=270,
             style_classes="ram",
         )
         self.ram_overlay = Overlay(
@@ -253,8 +255,8 @@ class MetricsSmall(Button):
             value=0,
             size=28,
             line_width=2,
-            start_angle=150,
-            end_angle=390,
+            start_angle=-90,
+            end_angle=270,
             # style_classes="disk",
         )
         self.disk_overlay = Overlay(
@@ -363,8 +365,8 @@ class Battery(Button):
             value=0,
             size=28,
             line_width=2,
-            start_angle=150,
-            end_angle=390,
+            start_angle=-90,
+            end_angle=270,
         )
         self.bat_level = Label(name="metrics-level", style_classes="bat", label="100%")
         self.bat_revealer = Revealer(

@@ -66,8 +66,11 @@ class VolumeSmall(Box):
     def __init__(self, slider_instance, overflow_instance, **kwargs):
         super().__init__(name="button-bar-vol", **kwargs)
         self.progress_bar = CircularProgressBar(
-            name="button-volume", size=28, line_width=2,
-            start_angle=150, end_angle=390,
+            name="button-volume", 
+            size=28, 
+            line_width=2,
+            start_angle=-90,
+            end_angle=270,
         )
 
         self.vol_label = Label(name="vol-label", markup=icons.vol_high)
