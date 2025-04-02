@@ -5,16 +5,19 @@ from fabric.widgets.box import Box
 from fabric.widgets.button import Button
 from fabric.widgets.centerbox import CenterBox
 from fabric.widgets.stack import Stack
-from fabric.utils import get_relative_path
+from fabric.widgets.datetime import DateTime
 from fabric.widgets.x11 import X11Window as Window
+from fabric.utils import get_relative_path
+from fabric.utils.helpers import exec_shell_command_async
+
 from launcher import AppLauncher
 from corner import Corners, MyCorner
 from fabric.widgets.revealer import Revealer
 from systray import SystemTray
-from fabric.widgets.datetime import DateTime
 from workspaces import Workspaces, ActiveWindow
 from metrics import MetricsSmall, Battery
-from fabric.utils.helpers import exec_shell_command_async
+from player import Player
+
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gdk, Gtk
@@ -147,6 +150,9 @@ class Notch(Window):
         self.switch = True
         self.wallpapers = WallpaperSelector(notch = self)
 
+        self.player = Player()
+        self.player.add_style_class("hide-player")
+
         self.active_window = ActiveWindow()
         self.active_window.active_window.add_style_class("hide")
         self.user = Label(label="aman@brewery", name="user-label")
@@ -159,7 +165,7 @@ class Notch(Window):
             children=[
                 self.user,
                 self.active_window.active_window,
-                self.dot_placeholder
+                self.dot_placeholder,
             ]
         )
         self.notch_compact.set_visible_child(self.dot_placeholder)
@@ -182,7 +188,8 @@ class Notch(Window):
             children=[
                 self.collapsed,
                 self.expanding,
-                self.wallpapers
+                self.wallpapers,
+                self.player
             ])
         
         self.launcher.add_style_class("launcher-contract-init")
@@ -247,6 +254,14 @@ class Notch(Window):
             self.notch_compact.set_visible_child(self.dot_placeholder)
         else:
             self.notch_compact.set_visible_child(self.user)
+
+    def toggle_player(self, *_):
+        if self.stack.get_visible_child() != self.player:
+            self.player.remove_style_class("hide-player")
+            self.stack.set_visible_child(self.player)
+        else:
+            self.player.add_style_class("hide-player")
+            self.stack.set_visible_child(self.collapsed)
 
     def open(self, *_):
         if self.stack.get_visible_child() == self.collapsed and self.visibility_stack.get_visible_child() == self.full_notch:

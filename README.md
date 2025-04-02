@@ -25,6 +25,8 @@ A SOSS shell for <b>X11</b> and <b>i3wm</b>, crafted using [fabric](https://gith
 - pactl
 - feh
 - gray
+- playerctl
+  - (apt) gir1.2-playerctl-2.0
 
 ## Gray installation
 Zenith uses [Gray](https://github.com/Fabric-Development/gray?tab=readme-ov-file) for menu handling. Follow the installation steps in the official documentation.

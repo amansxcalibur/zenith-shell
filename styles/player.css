@@ -1,0 +1,67 @@
+#player{
+    /* background-color: aqua; */
+    min-height: 100px;
+    min-width: 400px;
+    box-shadow: 
+        inset 0 100px 100px black, 
+        inset 0 10px 10px rgba(0, 0, 0, 1);
+    border-bottom-right-radius: 20px;
+    border-bottom-left-radius: 20px;
+    padding: 20px;
+}
+
+.hide-player{
+    margin: -999px;
+}
+
+#artist{
+    color: var(--error-dim);
+}
+
+#song{
+    color: whitesmoke;
+}
+
+#source{
+    /* background-color: antiquewhite; */
+}
+#details{
+    /* background-color: rebeccapurple; */
+}
+#controls{
+    margin-bottom: -10px;
+}
+
+/* #player-image{
+    border-radius: 20px;
+    min-width: 400px;
+    padding: 0px;
+    margin: 0px;
+    background-color: chartreuse;
+    background-image: url('wallhaven-weprlq_1920x1080.png');
+} */
+
+#play-next, #play-previous{
+    font-size: 30px;
+}
+
+#progress{
+    /* min-height: 1px; */
+    background-color: antiquewhite;
+}
+
+#pause-button {
+    /* background-color: var(--surface); */
+    background-color: whitesmoke;
+    border-radius: 16px;
+    padding: 10px;
+}
+
+#pause-label {
+    color: var(--shadow);
+    /* background-color: var(--error-dim); */
+    font-size: 20px;
+    padding: 2px;
+    border-radius: 999px;
+    min-width: 25px;
+}

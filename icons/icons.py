@@ -154,6 +154,12 @@ loader: str = "&#xeca3;"
 radar: str = "&#xf017;"
 emoji: str = "&#xeaf7;"
 
+# Music
+next: str = chr(0xf0f27)
+previous: str = chr(0xf0f28)
+pause: str = chr(0xf04c)
+shuffle: str = chr(0xf074)
+
 exceptions: list[str] = ['font_family', 'font_weight', 'span']
 
 def apply_span() -> None:

@@ -7,6 +7,7 @@
 @import url("./systray.css");
 @import url("./date_time.css");
 @import url("./metrics.css");
+@import url("./player.css");
 
   .status-bar {
     background-color: var(--status-bar-background-color);  /* Apply the background color */

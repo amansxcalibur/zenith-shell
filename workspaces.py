@@ -24,10 +24,10 @@ class i3Connector:
         }
 
         self.focused = self.i3.get_tree().find_focused()
-        print(self.focused.name, self.focused.workspace().name)
+        #print(self.focused.name, self.focused.workspace().name)
         # i3.command("focus left")
-        for con in self.i3.get_tree():
-            print(con.name)
+        #for con in self.i3.get_tree():
+        #    print(con.name)
         self.i3.on(Event.WORKSPACE_FOCUS, self.on_workspace_focus)
         self.i3.on(Event.WINDOW_FOCUS, self.on_window_focus)
         self.i3.on(Event.WINDOW_TITLE, self.on_window_title_change)
@@ -36,9 +36,9 @@ class i3Connector:
 
     def on_workspace_focus(self, i3, e):
         if e.current:
-            print("Window in workspace", e.current.num)
+            #print("Window in workspace", e.current.num)
             # for w in e.current.leaves():
-            #     print(w)
+            #     #print(w)
             # self.workspace.set_active_window(e.current.num)
             for callback in self.callbacks[Event.WORKSPACE]:
                 callback(i3, e)
@@ -46,7 +46,7 @@ class i3Connector:
     def on_window_focus(self, i3, e):
         # focused = i3.get_tree().find_focused()
         # ws_name = "%s %s" % (focused.workspace().num, focused.window_class)
-        print(e.container.name)
+        #print(e.container.name)
         # self.active_window.setter_label(focused.name)
         self.active_window.setter_label(e.container.name)
 
@@ -59,10 +59,10 @@ class i3Connector:
             self._thread.start()
 
     def register_callback(self, event_type, callback):
-        print(event_type)
+        #print(event_type)
         if event_type in self.callbacks:
             self.callbacks[event_type].append(callback)
-            print("its in there")
+            #print("its in there")
 
     def command(self, cmd):
         return self.i3.command(cmd)
@@ -108,12 +108,12 @@ class Workspaces(Box):
         used_workspaces=[]
         for con in i3.get_workspaces():
             used_workspaces.append(int(con.name))
-        print("all workspaces here used ", used_workspaces)
+        #print("all workspaces here used ", used_workspaces)
         for i, btn in enumerate(self.all_workspaces.children):
             if i==curr_workspace:
                 btn.remove_style_class("workspace-button")
                 btn.add_style_class("active-workspace")
-                print(btn)
+                #print(btn)
             else:
                 btn.remove_style_class("active-workspace")
                 btn.add_style_class("workspace-button")
