@@ -53,3 +53,8 @@
       margin: -999px;
     }
   }
+
+#workspaces{
+    box-shadow: -25px -30px 0 10px black;
+    border-radius: 20px;
+}

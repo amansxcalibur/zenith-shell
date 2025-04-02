@@ -6,10 +6,18 @@
     padding-left: 5px;
     padding-right: 5px;
     border-radius: 15px;
-    margin-right: 3px;
+    /* margin-right: 3px; */
 }
 
 #date-time, label{
     color: white;
     font-size: 15px;
+}
+
+#date-time-container{
+    padding: 3px;
+    padding-left: 0px;
+    border-radius: 17px;
+    margin: 0px;
+    box-shadow: 25px -30px 0 10px black;
 }

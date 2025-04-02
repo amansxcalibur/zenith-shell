@@ -41,7 +41,7 @@ class DockBar(Window):
         self.notch = kwargs.get("notch", None)
         self.workspaces = Workspaces()
         self.systray = SystemTray()
-        self.date_time = DateTime(name="date-time", formatters=["%H:%M"], h_align="center", v_align="center", h_expand=True, v_expand=True)
+        self.date_time = Box(name="date-time-container", children=DateTime(name="date-time", formatters=["%H:%M"], h_align="center", v_align="center", h_expand=True, v_expand=True))
 
         self.metrics = MetricsSmall()
         self.battery = Battery()
