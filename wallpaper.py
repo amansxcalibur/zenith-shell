@@ -224,6 +224,16 @@ class WallpaperSelector(Box):
         f.write(full_path)
         f.close()
 
+        # for player placeholder image
+        try:
+            img = Image.open(full_path)
+            img.thumbnail((400, 200))
+            cache_path = f"/home/aman/.cache/walls/low_rez.png"
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            img.save(cache_path, format="PNG", quality=100)
+        except Exception as e:
+            print(f"Failed to generate low-res image: {e}")
+
     def on_scheme_changed(self, combo):
         selected_scheme = combo.get_active_id()
         print(f"Color scheme selected: {selected_scheme}")

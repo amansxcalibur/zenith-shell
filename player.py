@@ -17,9 +17,9 @@ class Player(Box):
             **kwargs)
         
         self.manager = manager
-        # self.manager.connect("meta-change", self.on_metadata)
         self.manager.connect("pause", self.on_pause)
         self.manager.connect("play", self.on_play)
+
         self.player_name = Label(name=player.props.player_name, style_classes="player-icon", markup=getattr(icons, player.props.player_name, icons.disc))
         
         # self.image = Image(
@@ -30,8 +30,8 @@ class Player(Box):
         #     v_align="center",
         # )
 
-        # self.set_style(f"background-image:url('/home/aman/Pictures/Wallpapers/wallhaven-weprlq_1920x1080.png')")
-        self.set_style(f"background-image:url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRJuuhJICIX3v4QLAEIggpZmODSrSEX73xSDA&s')")
+        self.set_style(f"background-image:url('/home/aman/.cache/walls/low_rez.png')")
+        # self.set_style(f"background-image:url('/home/aman/fabric/assets/player-placeholder.jpg')")
 
         self.song = Label(name="song", label="song", justification="left", h_align="start")
         self.artist = Label(name="artist", label="artist", justification="left", h_align="start")
