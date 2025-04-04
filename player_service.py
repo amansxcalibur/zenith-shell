@@ -11,7 +11,7 @@ class PlayerService(Service):
         self._manager = Playerctl.PlayerManager()
         self._manager.connect('name-appeared', self.on_name_appeared)
         self._manager.connect('player-vanished', self.on_player_vanished)
-        self.init_all_players()
+        # self.init_all_players()
         print("playerctl init done")
 
     def init_new_player(self, name):
@@ -20,30 +20,51 @@ class PlayerService(Service):
             player = Playerctl.Player.new_from_name(name)
             print("initing ", name.name)
             player.connect('playback-status::playing', self.on_play, self._manager)
+            player.connect('playback-status::paused', self.on_pause, self._manager)
             player.connect('metadata', self.on_metadata, self._manager)
             self._manager.manage_player(player)
+            print(type(player))
+            self.new_player(player)
 
     def init_all_players(self):
         for player_obj in self._manager.props.player_names:
             player = Playerctl.Player.new_from_name(player_obj)
             player.connect('playback-status::playing', self.on_play, self._manager)
+            player.connect('playback-status::paused', self.on_pause, self._manager)
             player.connect('metadata', self.on_metadata, self._manager)
             self._manager.manage_player(player)
             print("this",player_obj.name)
+            # print(dir(player), "hihih")
+            # print(player.props.player_name,"hihih")
+            self.new_player(player)
 
     def on_play(self, player, status, manager):
         print('player is playing: {}'.format(player.props.player_name))
+        self.play()
+
+    def on_pause(self, player, status, manager):
+        print('player is paused: {}'.format(player.props.player_name))
+        self.pause()
+
+    
+    @Signal
+    def new_player(self, player: Playerctl.Player)->Playerctl.Player:...
+    
+    @Signal
+    def meta_change(self, metadata: GLib.Variant, player: Playerctl.Player) -> None:...
 
     @Signal
-    def meta_change(self, metadata: GLib.Variant) -> GLib.Variant:...
+    def pause(self) -> None:...
+
+    @Signal
+    def play(self) -> None:...
 
     def on_metadata(self, player, metadata, manager):
         keys = metadata.keys()
-        # print("here is type brotha",type(metadata))
         if 'xesam:artist' in keys and 'xesam:title' in keys:
             print('{} - {}'.format(metadata['xesam:artist'][0],
                                 metadata['xesam:title']))
-        self.meta_change(metadata)
+        self.meta_change(metadata, player)
 
     def on_name_appeared(self, manager, name):
         print(name, "this appeated")

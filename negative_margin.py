@@ -16,7 +16,7 @@ from fabric.widgets.revealer import Revealer
 from systray import SystemTray
 from workspaces import Workspaces, ActiveWindow
 from metrics import MetricsSmall, Battery
-from player import Player
+from player import PlayerContainer
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -150,7 +150,7 @@ class Notch(Window):
         self.switch = True
         self.wallpapers = WallpaperSelector(notch = self)
 
-        self.player = Player()
+        self.player = PlayerContainer()
         self.player.add_style_class("hide-player")
 
         self.active_window = ActiveWindow()
