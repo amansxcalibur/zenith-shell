@@ -21,6 +21,7 @@ class PlayerService(Service):
             print("initing ", name.name)
             player.connect('playback-status::playing', self.on_play, self._manager)
             player.connect('playback-status::paused', self.on_pause, self._manager)
+            player.connect('shuffle', self.on_shuffle, self._manager)
             player.connect('metadata', self.on_metadata, self._manager)
             self._manager.manage_player(player)
             print(type(player))
@@ -31,6 +32,7 @@ class PlayerService(Service):
             player = Playerctl.Player.new_from_name(player_obj)
             player.connect('playback-status::playing', self.on_play, self._manager)
             player.connect('playback-status::paused', self.on_pause, self._manager)
+            player.connect('shuffle', self.on_shuffle, self._manager)
             player.connect('metadata', self.on_metadata, self._manager)
             self._manager.manage_player(player)
             print("this",player_obj.name)
@@ -46,6 +48,13 @@ class PlayerService(Service):
         print('player is paused: {}'.format(player.props.player_name))
         self.pause()
 
+    def on_shuffle(self, player, status, manager):
+        print("suffle status changed for: {}".format(player.props.player_name))
+        print(type(status), "here is the status type")
+        self.shuffle(player, status)
+
+    @Signal
+    def shuffle(self, player: Playerctl.Player, status: bool) -> None: ...
     
     @Signal
     def new_player(self, player: Playerctl.Player) -> Playerctl.Player: ...

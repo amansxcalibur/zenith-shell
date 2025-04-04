@@ -19,6 +19,7 @@ class Player(Box):
         self.manager = manager
         self.manager.connect("pause", self.on_pause)
         self.manager.connect("play", self.on_play)
+        self.manager.connect("shuffle", self.on_shuffle)
 
         self.player_name = Label(name=player.props.player_name, style_classes="player-icon", markup=getattr(icons, player.props.player_name, icons.disc))
         
@@ -33,7 +34,7 @@ class Player(Box):
         self.set_style(f"background-image:url('/home/aman/.cache/walls/low_rez.png')")
         # self.set_style(f"background-image:url('/home/aman/fabric/assets/player-placeholder.jpg')")
 
-        self.song = Label(name="song", label="song", justification="left", h_align="start")
+        self.song = Label(name="song", label="song", justification="left", h_align="start", max_chars_width=10,)
         self.artist = Label(name="artist", label="artist", justification="left", h_align="start")
         self.music = Box(
             name="music",
@@ -49,9 +50,12 @@ class Player(Box):
         self.play_pause_button = Button(
                     name="pause-button",
                     child=Label(name="pause-label", markup=icons.play),
+                    style_classes="pause-track",
                     tooltip_text="Exit",
-                    # on_clicked=lambda *_: self.close_launcher()
+                    on_clicked=lambda b, *_: self.handle_play_pause(player)
         )
+
+        self.shuffle_button = Button(name="shuffle-button", child=Label(name="shuffle", markup=icons.shuffle), on_clicked=lambda b, *_: self.handle_shuffle(b, player))
 
         self.children = [
             Box(name="source", h_expand=True, v_expand=True, children=self.player_name),
@@ -65,9 +69,9 @@ class Player(Box):
             Box(name="controls", 
                 # h_expand=True, 
                 # v_expand=True,
-                spacing=20,
+                spacing=5,
                 children=[
-                    Button(name="prev-button",child=Label(name="play-previous", markup=icons.previous)),
+                    Button(name="prev-button",child=Label(name="play-previous", markup=icons.previous), on_clicked=lambda b, *_: self.handle_prev(player)),
                     CenterBox(
                         name="progress-container",
                         h_expand=True,
@@ -75,25 +79,100 @@ class Player(Box):
                         orientation='v',
                         center_children=Box(name="progress")
                     ),
-                    Button(name="next-button", child=Label(name="play-next", markup=icons.next)),
-                    Button(name="shuffle-button", child=Label(name="shuffle", markup=icons.shuffle)),
+                    Button(name="next-button", child=Label(name="play-next", markup=icons.next), on_clicked=lambda b, *_:self.handle_next(player)),
+                    self.shuffle_button
                 ]
             )
         ]
 
+        self.on_metadata(manager, metadata=player.props.metadata, player=player)
+
     def on_metadata(self, manager, metadata, player):
         keys = metadata.keys()
         if 'xesam:artist' in keys and 'xesam:title' in keys:
-            self.song.set_label(metadata['xesam:title'])
-            self.artist.set_label(metadata['xesam:artist'][0])
+            _max_chars = 43
+            song_title = metadata['xesam:title']
+            if len(song_title) > _max_chars:
+                song_title = song_title[:_max_chars - 1] + "…"
+            self.song.set_label(song_title)
+
+            artist_name = metadata['xesam:artist'][0]
+            if len(artist_name) > _max_chars:
+                artist_name = artist_name[:_max_chars - 1] + "…"
+            self.artist.set_label(artist_name)
             self.set_style(f"background-image:url('{metadata['mpris:artUrl']}')")
-        # self.player_name.set_label(player.props.player_name)
+
+        if player.props.playback_status.value_name == "PLAYERCTL_PLAYBACK_STATUS_PLAYING":
+            self.on_play(manager)
+
+        if player.props.shuffle == True:
+            self.shuffle_button.get_child().set_markup(icons.disable_shuffle)
+            self.shuffle_button.get_child().set_name("disable-shuffle")
+        else:
+            self.shuffle_button.get_child().set_markup(icons.shuffle)
+            self.shuffle_button.get_child().set_name("shuffle")
 
     def on_pause(self, manager):
         self.play_pause_button.get_child().set_markup(icons.play)
+        self.play_pause_button.get_child().set_name("pause-label")
+        self.play_pause_button.add_style_class("pause-track")
 
     def on_play(self, manager):
         self.play_pause_button.get_child().set_markup(icons.pause)
+        self.play_pause_button.get_child().set_name("play-label")
+        self.play_pause_button.remove_style_class("pause-track")
+
+    def on_shuffle(self, manager, player, status):
+        print("callback status",status)
+        if status == False:
+            self.shuffle_button.get_child().set_markup(icons.shuffle)
+            self.shuffle_button.get_child().set_name("shuffle")
+        else:
+            self.shuffle_button.get_child().set_markup(icons.disable_shuffle)
+            self.shuffle_button.get_child().set_name("disable-shuffle")
+            
+        self.shuffle_button.get_child().set_style("color: white")
+
+    def handle_next(self, player):
+        player.next()
+
+    def handle_prev(self, player):
+        player.previous()
+
+    def handle_play_pause(self, player):
+        is_playing = self.play_pause_button.get_child().get_name() == "play-label"
+
+        if is_playing:
+            self.play_pause_button.get_child().set_markup(icons.play)
+            self.play_pause_button.add_style_class("pause-track")
+            self.play_pause_button.get_child().set_name("play-label")
+            
+        else:
+            self.play_pause_button.get_child().set_markup(icons.pause)
+            self.play_pause_button.remove_style_class("pause-track")
+            self.play_pause_button.get_child().set_name("pause-label")
+
+        try:
+            player.play_pause()
+        except Exception as e:
+            # revert if signal failed
+            if is_playing:
+                self.play_pause_button.get_child().set_markup(icons.play)
+                self.play_pause_button.add_style_class("pause-track")
+                self.play_pause_button.get_child().set_name("play-label")
+            else:
+                self.play_pause_button.get_child().set_markup(icons.pause)
+                self.play_pause_button.remove_style_class("pause-track")
+                self.play_pause_button.get_child().set_name("pause-label")
+            print("Failed to toggle playback:", e)
+
+    def handle_shuffle(self, shuffle_button, player):
+        print("shuffle", player.props.shuffle)
+        if player.props.shuffle == False:
+            player.set_shuffle(True)
+        else:
+            player.set_shuffle(False)
+        shuffle_button.get_child().set_style("color: var(--outline)")
 
 class PlayerContainer(Box):
     def __init__(self, **kwargs):

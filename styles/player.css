@@ -92,7 +92,11 @@
     padding: 10px;
 }
 
-#pause-label {
+#pause-button.pause-track {
+    border-radius: 100%;
+}
+
+#pause-label, #play-label {
     color: var(--shadow);
     /* background-color: var(--error-dim); */
     font-size: 20px;
@@ -104,6 +108,15 @@
 #shuffle-button, #next-button, #prev-button{
     border: none;
     padding: 0px;
+    padding-left: 11px;
+    padding-right: 11px;
+}
+
+#shuffle-button:hover, #next-button:hover, #prev-button:hover{
+    border-radius: 100%;
+    /* background-color: white; */
+    /* opacity: .3; */
+    box-shadow: inset rgba(255, 255, 255, 0.5) 0 0 10px;
 }
 
 .player-button{
@@ -132,4 +145,12 @@
 
 .player-icon{
     font-size: 20px;
+}
+
+#shuffle{
+    font-size: 17px;
+}
+
+#disable-shuffle{
+    font-size: 27px;
 }

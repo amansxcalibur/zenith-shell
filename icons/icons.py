@@ -160,6 +160,7 @@ previous: str = chr(0xf0f28)
 pause: str = chr(0xf04c)
 play: str = chr(0xf04b)
 shuffle: str = chr(0xf074)
+disable_shuffle: str = chr(0xf049e)
 
 exceptions: list[str] = ['font_family', 'font_weight', 'span']
 

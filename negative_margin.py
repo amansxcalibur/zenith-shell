@@ -257,6 +257,7 @@ class Notch(Window):
 
     def toggle_player(self, *_):
         if self.stack.get_visible_child() != self.player:
+            exec_shell_command_async('i3-msg [class="Negative_margin.py"] focus')
             self.player.remove_style_class("hide-player")
             self.player.add_style_class("reveal-player")
             self.stack.set_visible_child(self.player)
