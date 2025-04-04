@@ -12,7 +12,7 @@ import os
 class Player(Box):
     def __init__(self, manager, player, **kwargs):
         super().__init__(
-            name="player",
+            style_classes="player",
             orientation="v",
             **kwargs)
         
@@ -30,7 +30,8 @@ class Player(Box):
         #     v_align="center",
         # )
 
-        self.set_style(f"background-image:url('/home/aman/Pictures/Wallpapers/wallhaven-weprlq_1920x1080.png')")
+        # self.set_style(f"background-image:url('/home/aman/Pictures/Wallpapers/wallhaven-weprlq_1920x1080.png')")
+        self.set_style(f"background-image:url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRJuuhJICIX3v4QLAEIggpZmODSrSEX73xSDA&s')")
 
         self.song = Label(name="song", label="song", justification="left", h_align="start")
         self.artist = Label(name="artist", label="artist", justification="left", h_align="start")
@@ -85,7 +86,7 @@ class Player(Box):
         if 'xesam:artist' in keys and 'xesam:title' in keys:
             self.song.set_label(metadata['xesam:title'])
             self.artist.set_label(metadata['xesam:artist'][0])
-        print("everuthgin fine here")
+            self.set_style(f"background-image:url('{metadata['mpris:artUrl']}')")
         # self.player_name.set_label(player.props.player_name)
 
     def on_pause(self, manager):
@@ -105,6 +106,7 @@ class PlayerContainer(Box):
         self.manager = PlayerService()
         self.manager.connect("new-player", self.new_player)
         self.manager.connect("meta-change", self.on_metadata)
+        self.manager.connect("player-vanish", self.on_player_vanish)
         self.stack = Stack(
             name="player-container",
             transition_type="crossfade",
@@ -130,12 +132,20 @@ class PlayerContainer(Box):
         
     def new_player(self, manager, player):
         print(player.props.player_name,"here is the appended hcild name")
+        print(player)
         new_player = Player(manager = self.manager, player = player)
+        new_player.set_name(player.props.player_name)
         self.player.append(new_player)
         print("stacking dis bitvch")
         self.stack.add_named(new_player, player.props.player_name)
         self.player_switch_container.add_center(
-            Button(name="player-button", on_clicked=lambda b: self.switch_player(player.props.player_name, b)))
+            Button(
+                name=player.props.player_name, 
+                style_classes="player-button", 
+                on_clicked=lambda b: self.switch_player(player.props.player_name, b)
+                )
+            )
+        self.update_player_list()
 
     def switch_player(self, player_name, b):
         self.stack.set_visible_child_name(player_name)
@@ -153,3 +163,23 @@ class PlayerContainer(Box):
             if player_instance.player_name.get_name() == player.props.player_name:
                 player_instance.on_metadata(manager, metadata, player)
                 break
+
+    def on_player_vanish(self, manager, player):
+        for player_instance in self.player:
+            if player_instance.get_name() == player.props.player_name:
+                self.stack.remove(player_instance)
+                self.player.remove(player_instance)
+                for btn in self.player_switch_container.center_children:
+                    if btn.get_name() == player_instance.get_name():
+                        self.player_switch_container.remove_center(btn)
+                self.update_player_list()
+                break
+
+    def update_player_list(self):
+        curr = self.stack.get_visible_child()
+        for btn in self.player_switch_container.center_children:
+            print(btn.get_name())
+            if btn.get_name() == curr.get_name():
+                btn.add_style_class("active")
+            else:
+                btn.remove_style_class("active")

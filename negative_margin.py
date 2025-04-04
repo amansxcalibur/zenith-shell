@@ -283,7 +283,11 @@ class Notch(Window):
         self.show_all()
     
     def close(self, *_):
-        if self.stack.get_visible_child() != self.collapsed:
+        if self.stack.get_visible_child() == self.player:
+            self.player.add_style_class("hide-player")
+            self.stack.set_visible_child(self.collapsed)
+
+        elif self.stack.get_visible_child() != self.collapsed:
             self.stack.remove_style_class("expand")
             self.stack.add_style_class("contract")
             # self.unsteal_input()

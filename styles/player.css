@@ -1,13 +1,19 @@
-#player{
+.player{
     /* background-color: aqua; */
     min-height: 100px;
     min-width: 400px;
     box-shadow: 
+        /* inset 0 100px 100px black, 
+        inset 0 10px 10px rgba(0, 0, 0, 1); */
+        /* inset 0 100px 100px black,  */
         inset 0 100px 100px black, 
-        inset 0 10px 10px rgba(0, 0, 0, 1);
+        inset 10px 0px 10px rgba(0, 0, 0, 0.5),
+        inset -10px 0px 10px rgba(0, 0, 0, 0.5);
     border-bottom-right-radius: 20px;
     border-bottom-left-radius: 20px;
     padding: 20px;
+    background-position: center;
+    background-size: cover;
 }
 
 .hide-player{
@@ -74,11 +80,11 @@
     padding: 0px;
 }
 
-#player-button{
+.player-button{
     border-radius: 5px;
     /* background-color: var(--secondary); */
     background-color: white;
-    opacity: 0.4;
+    opacity: 0.5;
     min-width: 10px;
     min-height: 10px;
     padding: 0px;
@@ -87,7 +93,7 @@
     margin-left: 5px;
 }
 
-#player-button.active{
+.player-button.active{
     opacity: 1;
     /* min-width: 40px; */
     /* border-radius: 5px; */

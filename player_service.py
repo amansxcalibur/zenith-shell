@@ -48,16 +48,19 @@ class PlayerService(Service):
 
     
     @Signal
-    def new_player(self, player: Playerctl.Player)->Playerctl.Player:...
+    def new_player(self, player: Playerctl.Player) -> Playerctl.Player: ...
     
     @Signal
-    def meta_change(self, metadata: GLib.Variant, player: Playerctl.Player) -> None:...
+    def meta_change(self, metadata: GLib.Variant, player: Playerctl.Player) -> None: ...
 
     @Signal
-    def pause(self) -> None:...
+    def pause(self) -> None: ...
 
     @Signal
-    def play(self) -> None:...
+    def play(self) -> None: ...
+
+    @Signal
+    def player_vanish(self, player: Playerctl.Player) -> None: ...
 
     def on_metadata(self, player, metadata, manager):
         keys = metadata.keys()
@@ -73,3 +76,5 @@ class PlayerService(Service):
 
     def on_player_vanished(self, manager, player):
         print('player has exited: {}'.format(player.props.player_name))
+        print(type(player))
+        self.player_vanish(player)
