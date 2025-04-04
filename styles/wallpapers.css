@@ -76,16 +76,16 @@
 
   .wallpaper-contract{
     margin: -300px;
-    transition: padding 0.25s cubic-bezier(0.5, 0.25, 0, 1);
-    animation: wallContract 0.5s ease;
+    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+    /* animation: wallContract 0.5s ease; */
   }
 
   .wallpaper-expand{
     min-width: 740px;
     min-height: 500px;
     margin: 0px;
-    transition: padding 0.25s cubic-bezier(0.5, 0.25, 0, 1);
-    animation: wallExpand 0.5s ease;
+    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+    /* animation: wallExpand 0.5s ease; */
   }
 
   @keyframes wallExpand {
@@ -108,6 +108,7 @@
       margin: -300px;
     }
   }
+  
   *:not(entry) {
     background-image: none;
 }

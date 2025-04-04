@@ -17,8 +17,34 @@
 }
 
 .hide-player{
-    margin: -999px;
+    margin: -100px;
+    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+    /* animation: hidePlayer 0.5s ease; */
 }
+
+@keyframes hidePlayer {
+    0% {
+      margin: 0px;
+    }
+    100% {
+      margin: -999px;
+    }
+  }
+
+.reveal-player{
+    margin: 0px;
+    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+    /* animation: revealPlayer 0.5s ease; */
+}
+
+/* @keyframes revealPlayer {
+    0% {
+      margin: -100px;
+    }
+    100% {
+      margin: 0px;
+    }
+  } */
 
 #artist{
     color: var(--error-dim);

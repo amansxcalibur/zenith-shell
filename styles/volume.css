@@ -21,7 +21,7 @@
   }
 
   #control-slider.muted-slider highlight {
-    background-color: #3f3f3f;
+    background-color: var(--outline);
   }
 
   #control-slider.muted-slider slider {

@@ -258,32 +258,47 @@ class Notch(Window):
     def toggle_player(self, *_):
         if self.stack.get_visible_child() != self.player:
             self.player.remove_style_class("hide-player")
+            self.player.add_style_class("reveal-player")
             self.stack.set_visible_child(self.player)
         else:
+            self.player.remove_style_class("reveal-player")
             self.player.add_style_class("hide-player")
             self.stack.set_visible_child(self.collapsed)
 
     def open(self, *_):
-        if self.stack.get_visible_child() == self.collapsed and self.visibility_stack.get_visible_child() == self.full_notch:
+        if self.visibility_stack.get_visible_child() == self.full_notch:
             # self.steal_input()
             exec_shell_command_async('i3-msg [class="Negative_margin.py"] focus')
-            self.stack.remove_style_class("contract")
-            self.stack.add_style_class("expand")
-            self.remove_style_class("wallpaper-init")
-            self.remove_style_class("launcher-contract-init")
-            self.launcher.remove_style_class("launcher-contract")
-            self.launcher.add_style_class("launcher-expand")
-            self.stack.set_visible_child(self.expanding)
-            
-            self.launcher.open_launcher()
-            self.launcher.search_entry.set_text("")
-            self.launcher.search_entry.grab_focus()
+            if self.stack.get_visible_child() == self.collapsed:
+                # self.stack.remove_style_class("contract")
+                # self.stack.add_style_class("expand")
+                # # self.remove_style_class("wallpaper-init")
+                # self.remove_style_class("launcher-contract-init")
+                self.launcher.remove_style_class("launcher-contract")
+                self.launcher.add_style_class("launcher-expand")
+                self.stack.set_visible_child(self.expanding)
+                
+                self.launcher.open_launcher()
+                self.launcher.search_entry.set_text("")
+                self.launcher.search_entry.grab_focus()
+
+            elif self.stack.get_visible_child() == self.player:
+                self.player.remove_style_class("reveal-player")
+                # self.player.add_style_class("hide-player")
+                self.launcher.remove_style_class("launcher-contract")
+                self.launcher.add_style_class("launcher-expand")
+                self.stack.set_visible_child(self.expanding)
+                
+                self.launcher.open_launcher()
+                self.launcher.search_entry.set_text("")
+                self.launcher.search_entry.grab_focus()
         else:
             print("Notch is hidden")
         self.show_all()
     
     def close(self, *_):
         if self.stack.get_visible_child() == self.player:
+            self.player.remove_style_class("reveal-player")
             self.player.add_style_class("hide-player")
             self.stack.set_visible_child(self.collapsed)
 
@@ -298,13 +313,13 @@ class Notch(Window):
             self.stack.set_visible_child(self.collapsed)
             exec_shell_command_async(f'i3-msg focus mode_toggle')
             # self.launcher.close_launcher()
+        self.player.add_style_class("hide-player") # for cases where player->dmenu->close()
         self.show_all()
 
     def open_notch(self, *_):
         self.remove_style_class("launcher-contract")
         self.wallpapers.remove_style_class("wallpaper-init")
         self.wallpapers.add_style_class("wallpaper-expand")
-        # self.stack.add(self.wallpapers)
         self.stack.set_visible_child(self.wallpapers)
 
 if __name__ == "__main__":
