@@ -333,6 +333,8 @@ if __name__ == "__main__":
     # builtins.bar = bar
     # FASS-based CSS file
     
+    bar.show_all() # for the sperm wiggle widget
+
     app.set_stylesheet_from_file(get_relative_path("./styles/dynamic.css"))    
     app.run()
 

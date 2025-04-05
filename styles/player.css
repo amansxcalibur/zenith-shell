@@ -154,3 +154,17 @@
 #disable-shuffle{
     font-size: 27px;
 }
+
+#progress-slider{
+    background-color: white;
+    margin-left: -3px;
+    margin-right: -2px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    border-radius: 2px;
+}
+
+#progress-other-end{
+    min-width: 50px; 
+    background-color: white;
+}

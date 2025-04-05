@@ -6,8 +6,13 @@ from fabric.widgets.image import Image
 from fabric.widgets.stack import Stack
 
 from player_service import PlayerService
+from wiggle_bar import WigglyWidget
 import icons.icons as icons
 import os
+
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, Gdk, GLib
 
 class Player(Box):
     def __init__(self, manager, player, **kwargs):
@@ -57,6 +62,16 @@ class Player(Box):
 
         self.shuffle_button = Button(name="shuffle-button", child=Label(name="shuffle", markup=icons.shuffle), on_clicked=lambda b, *_: self.handle_shuffle(b, player))
 
+        self.wiggly = WigglyWidget()
+
+        # Wrap Gtk.DrawingArea in a Gtk.Box that expands
+        self.gtk_wrapper = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.gtk_wrapper.set_hexpand(True)
+        self.gtk_wrapper.set_vexpand(True)
+        self.gtk_wrapper.set_halign(Gtk.Align.FILL)
+        self.gtk_wrapper.set_valign(Gtk.Align.FILL)
+        self.gtk_wrapper.add(self.wiggly)
+
         self.children = [
             Box(name="source", h_expand=True, v_expand=True, children=self.player_name),
             CenterBox(
@@ -75,9 +90,9 @@ class Player(Box):
                     CenterBox(
                         name="progress-container",
                         h_expand=True,
-                        v_expand=False,
+                        v_expand=True,
                         orientation='v',
-                        center_children=Box(name="progress")
+                        center_children=[self.gtk_wrapper]
                     ),
                     Button(name="next-button", child=Label(name="play-next", markup=icons.next), on_clicked=lambda b, *_:self.handle_next(player)),
                     self.shuffle_button
