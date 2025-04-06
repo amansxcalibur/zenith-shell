@@ -5,7 +5,7 @@ from fabric.widgets.button import Button
 from fabric.widgets.image import Image
 from fabric.widgets.stack import Stack
 
-from player_service import PlayerService
+from player_service import PlayerManager, PlayerService
 from wiggle_bar import WigglyWidget
 import icons.icons as icons
 import os
@@ -15,26 +15,20 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib
 
 class Player(Box):
-    def __init__(self, manager, player, **kwargs):
+    def __init__(self, player, **kwargs):
         super().__init__(
             style_classes="player",
             orientation="v",
             **kwargs)
         
-        self.manager = manager
-        self.manager.connect("pause", self.on_pause)
-        self.manager.connect("play", self.on_play)
-        self.manager.connect("shuffle", self.on_shuffle)
+        self._player = PlayerService(player=player)
+
+        self._player.connect("pause", self.on_pause)
+        self._player.connect("play", self.on_play)
+        self._player.connect("meta-change", self.on_metadata)
+        self._player.connect("shuffle-toggle", self.on_shuffle)
 
         self.player_name = Label(name=player.props.player_name, style_classes="player-icon", markup=getattr(icons, player.props.player_name, icons.disc))
-        
-        # self.image = Image(
-        #     name="player-image",
-        #     image_file=os.path.expanduser("/home/aman/Pictures/Wallpapers/wallhaven-rr9dlm_1848x1500.png"),
-        #     size=500,
-        #     h_align="center",
-        #     v_align="center",
-        # )
 
         self.set_style(f"background-image:url('/home/aman/.cache/walls/low_rez.png')")
         # self.set_style(f"background-image:url('/home/aman/fabric/assets/player-placeholder.jpg')")
@@ -100,9 +94,9 @@ class Player(Box):
             )
         ]
 
-        self.on_metadata(manager, metadata=player.props.metadata, player=player)
+        self.on_metadata(self._player, metadata=player.props.metadata, player=player)
 
-    def on_metadata(self, manager, metadata, player):
+    def on_metadata(self, sender, metadata, player):
         keys = metadata.keys()
         if 'xesam:artist' in keys and 'xesam:title' in keys:
             _max_chars = 43
@@ -111,14 +105,15 @@ class Player(Box):
                 song_title = song_title[:_max_chars - 1] + "…"
             self.song.set_label(song_title)
 
-            artist_name = metadata['xesam:artist'][0]
+            artist_list = metadata['xesam:artist']
+            artist_name = artist_list[0] if artist_list else "Unknown Artist"
             if len(artist_name) > _max_chars:
                 artist_name = artist_name[:_max_chars - 1] + "…"
             self.artist.set_label(artist_name)
             self.set_style(f"background-image:url('{metadata['mpris:artUrl']}')")
 
         if player.props.playback_status.value_name == "PLAYERCTL_PLAYBACK_STATUS_PLAYING":
-            self.on_play(manager)
+            self.on_play(self._player)
 
         if player.props.shuffle == True:
             self.shuffle_button.get_child().set_markup(icons.disable_shuffle)
@@ -127,17 +122,17 @@ class Player(Box):
             self.shuffle_button.get_child().set_markup(icons.shuffle)
             self.shuffle_button.get_child().set_name("shuffle")
 
-    def on_pause(self, manager):
+    def on_pause(self, sender):
         self.play_pause_button.get_child().set_markup(icons.play)
         self.play_pause_button.get_child().set_name("pause-label")
         self.play_pause_button.add_style_class("pause-track")
 
-    def on_play(self, manager):
+    def on_play(self, sender):
         self.play_pause_button.get_child().set_markup(icons.pause)
         self.play_pause_button.get_child().set_name("play-label")
         self.play_pause_button.remove_style_class("pause-track")
 
-    def on_shuffle(self, manager, player, status):
+    def on_shuffle(self, sender, player, status):
         print("callback status",status)
         if status == False:
             self.shuffle_button.get_child().set_markup(icons.shuffle)
@@ -185,6 +180,7 @@ class Player(Box):
         print("shuffle", player.props.shuffle)
         if player.props.shuffle == False:
             player.set_shuffle(True)
+            print("setting to true", player.props.player_name)
         else:
             player.set_shuffle(False)
         shuffle_button.get_child().set_style("color: var(--outline)")
@@ -197,9 +193,9 @@ class PlayerContainer(Box):
             **kwargs
         )
         
-        self.manager = PlayerService()
+        self.manager = PlayerManager()
         self.manager.connect("new-player", self.new_player)
-        self.manager.connect("meta-change", self.on_metadata)
+        # self.manager.connect("meta-change", self.on_metadata)
         self.manager.connect("player-vanish", self.on_player_vanish)
         self.stack = Stack(
             name="player-container",
@@ -227,7 +223,7 @@ class PlayerContainer(Box):
     def new_player(self, manager, player):
         print(player.props.player_name,"here is the appended hcild name")
         print(player)
-        new_player = Player(manager = self.manager, player = player)
+        new_player = Player(player = player)
         new_player.set_name(player.props.player_name)
         self.player.append(new_player)
         print("stacking dis bitvch")
@@ -247,16 +243,6 @@ class PlayerContainer(Box):
             btn.remove_style_class("active")
         b.add_style_class("active")
         # print(self.stack.get_visible_child().player_name.get_label())
-
-    def on_metadata(self, manager, metadata, player):
-        keys = metadata.keys()
-        if 'xesam:artist' in keys and 'xesam:title' in keys:
-            print('{} - {}'.format(metadata['xesam:artist'][0], metadata['xesam:title']))
-        # Find the Player instance in PlayerContainer and update only it
-        for player_instance in self.player:
-            if player_instance.player_name.get_name() == player.props.player_name:
-                player_instance.on_metadata(manager, metadata, player)
-                break
 
     def on_player_vanish(self, manager, player):
         for player_instance in self.player:
