@@ -31,7 +31,6 @@ class Player(Box):
         self.player_name = Label(name=player.props.player_name, style_classes="player-icon", markup=getattr(icons, player.props.player_name, icons.disc))
 
         self.set_style(f"background-image:url('/home/aman/.cache/walls/low_rez.png')")
-        # self.set_style(f"background-image:url('/home/aman/fabric/assets/player-placeholder.jpg')")
 
         self.song = Label(name="song", label="song", justification="left", h_align="start", max_chars_width=10,)
         self.artist = Label(name="artist", label="artist", justification="left", h_align="start")
@@ -57,14 +56,7 @@ class Player(Box):
         self.shuffle_button = Button(name="shuffle-button", child=Label(name="shuffle", markup=icons.shuffle), on_clicked=lambda b, *_: self.handle_shuffle(b, player))
 
         self.wiggly = WigglyWidget()
-
-        # Wrap Gtk.DrawingArea in a Gtk.Box that expands
-        self.gtk_wrapper = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.gtk_wrapper.set_hexpand(True)
-        self.gtk_wrapper.set_vexpand(True)
-        self.gtk_wrapper.set_halign(Gtk.Align.FILL)
-        self.gtk_wrapper.set_valign(Gtk.Align.FILL)
-        self.gtk_wrapper.add(self.wiggly)
+        self.gtk_wrapper = Box(orientation='v', h_expand=True, v_expand=True, h_align="fill", v_align="fill", children=self.wiggly)
 
         self.children = [
             Box(name="source", h_expand=True, v_expand=True, children=self.player_name),
@@ -110,7 +102,8 @@ class Player(Box):
             if len(artist_name) > _max_chars:
                 artist_name = artist_name[:_max_chars - 1] + "…"
             self.artist.set_label(artist_name)
-            self.set_style(f"background-image:url('{metadata['mpris:artUrl']}')")
+            if 'mpris:artUrl' in keys:
+                self.set_style(f"background-image:url('{metadata['mpris:artUrl']}')")
 
         if player.props.playback_status.value_name == "PLAYERCTL_PLAYBACK_STATUS_PLAYING":
             self.on_play(self._player)
@@ -224,6 +217,7 @@ class PlayerContainer(Box):
         print(player.props.player_name,"here is the appended hcild name")
         print(player)
         new_player = Player(player = player)
+        new_player.gtk_wrapper.queue_draw()
         new_player.set_name(player.props.player_name)
         self.player.append(new_player)
         print("stacking dis bitvch")
@@ -237,12 +231,12 @@ class PlayerContainer(Box):
             )
         self.update_player_list()
 
-    def switch_player(self, player_name, b):
+    def switch_player(self, player_name, button):
         self.stack.set_visible_child_name(player_name)
-        for i, btn in enumerate(self.player_switch_container.center_children):
+
+        for btn in self.player_switch_container.center_children:
             btn.remove_style_class("active")
-        b.add_style_class("active")
-        # print(self.stack.get_visible_child().player_name.get_label())
+        button.add_style_class("active")
 
     def on_player_vanish(self, manager, player):
         for player_instance in self.player:

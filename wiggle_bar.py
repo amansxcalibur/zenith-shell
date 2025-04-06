@@ -30,13 +30,7 @@ class WigglyWidget(Gtk.DrawingArea):
         self.amplitude = 2
         self.dragging = False
 
-    # def on_click(self, widget, event):
-    #     self.update_value_from_x(event.x)
-    #     return True
-
-    # def on_drag(self, widget, event):
-    #     self.update_value_from_x(event.x)
-    #     return True
+        self.show_all()
 
     def animate_amplitude_to(self):
         if abs(self.amplitude - self.amplitude_target) < 0.01:
