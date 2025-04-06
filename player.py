@@ -23,10 +23,13 @@ class Player(Box):
         
         self._player = PlayerService(player=player)
 
+        self.duration = 0.0
+
         self._player.connect("pause", self.on_pause)
         self._player.connect("play", self.on_play)
         self._player.connect("meta-change", self.on_metadata)
         self._player.connect("shuffle-toggle", self.on_shuffle)
+        self._player.connect("track-position", self.on_update_track_position)
 
         self.player_name = Label(name=player.props.player_name, style_classes="player-icon", markup=getattr(icons, player.props.player_name, icons.disc))
 
@@ -56,6 +59,7 @@ class Player(Box):
         self.shuffle_button = Button(name="shuffle-button", child=Label(name="shuffle", markup=icons.shuffle), on_clicked=lambda b, *_: self.handle_shuffle(b, player))
 
         self.wiggly = WigglyWidget()
+        self.wiggly.connect("on-seek", self.on_seek)
         self.gtk_wrapper = Box(orientation='v', h_expand=True, v_expand=True, h_align="fill", v_align="fill", children=self.wiggly)
 
         self.children = [
@@ -88,6 +92,17 @@ class Player(Box):
 
         self.on_metadata(self._player, metadata=player.props.metadata, player=player)
 
+    def on_update_track_position(self, sender, pos, dur):
+        # self.wiggly.update()
+        # print(pos,dur,pos/dur,"in UI")
+        self.duration = dur
+        self.wiggly.update_value_from_signal(pos/dur)
+
+    def on_seek(self, sender, ratio):
+        pos = ratio * self.duration  # duration in seconds
+        print(f"Seeking to {pos:.2f}s")
+        self._player.set_position(int(pos)) 
+
     def on_metadata(self, sender, metadata, player):
         keys = metadata.keys()
         if 'xesam:artist' in keys and 'xesam:title' in keys:
@@ -118,11 +133,17 @@ class Player(Box):
     def on_pause(self, sender):
         self.play_pause_button.get_child().set_markup(icons.play)
         self.play_pause_button.get_child().set_name("pause-label")
+        self.wiggly.dragging = True
+        self.wiggly.update_amplitude(True)
+        self.wiggly.pause = True
         self.play_pause_button.add_style_class("pause-track")
 
     def on_play(self, sender):
         self.play_pause_button.get_child().set_markup(icons.pause)
         self.play_pause_button.get_child().set_name("play-label")
+        self.wiggly.pause = False
+        self.wiggly.dragging = False
+        self.wiggly.update_amplitude(False)
         self.play_pause_button.remove_style_class("pause-track")
 
     def on_shuffle(self, sender, player, status):

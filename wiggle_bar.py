@@ -7,9 +7,10 @@ import sys
 from fabric.widgets.box import Box
 from fabric.widgets.x11 import X11Window as Window
 from fabric import Application
+from fabric.core.service import Service, Signal
 from fabric.utils import get_relative_path
 
-class WigglyWidget(Gtk.DrawingArea):
+class WigglyWidget(Gtk.DrawingArea, Service):
     def __init__(self):
         super().__init__()
         self.phase = 0
@@ -29,8 +30,12 @@ class WigglyWidget(Gtk.DrawingArea):
         self.value = 0.0
         self.amplitude = 2
         self.dragging = False
+        self.pause = False
 
         self.show_all()
+
+    @Signal
+    def on_seek(self, ratio: float) -> None: ...
 
     def animate_amplitude_to(self):
         if abs(self.amplitude - self.amplitude_target) < 0.01:
@@ -56,6 +61,7 @@ class WigglyWidget(Gtk.DrawingArea):
     def update_value_from_x(self, x):
         width = self.get_allocated_width()
         self.value = max(0.0, min(1.0, x / width))
+        self.on_seek(self.value)
         self.queue_draw()
 
     def on_button_press(self, widget, event):
@@ -63,9 +69,30 @@ class WigglyWidget(Gtk.DrawingArea):
         self.update_amplitude(True)
         self.update_value_from_x(event.x)
         return True
+    
+    # def animate_progress_to(self):
+    #     print("frame")
+    #     if self.value < self.value_target:
+    #         self.value = self.value_target
+    #         print(self.value)
+    #         self.queue_draw()
+    #         return False
+    #     else:
+    #         self.value += self.value_step
+    #         self.queue_draw()
+    #         return True
+
+    # def update_value_from_signal(self, new_value):
+    #     self.value_target = min(1.0, new_value)
+    #     steps = 60  # 1s / 16ms ≈ 60 frames
+    #     self.value_step = (self.value_target - self.value) / steps
+    #     GLib.timeout_add(16, self.animate_progress_to)
+
+    def update_value_from_signal(self, new_value):
+        self.value = min(1.0, new_value)
 
     def on_motion(self, widget, event):
-        if self.dragging:
+        if self.dragging and not self.pause:
             self.update_value_from_x(event.x)
 
         cursor = Gdk.Cursor.new(Gdk.CursorType.HAND1)
@@ -74,15 +101,16 @@ class WigglyWidget(Gtk.DrawingArea):
         return True
 
     def on_button_release(self, widget, event):
-        self.dragging = False
-        self.update_amplitude(False)
+        if self.pause == False:
+            self.dragging = False
+            self.update_amplitude(False)
         return True
 
     def update(self):
         if self.dragging == False:
             self.phase += 0.1
-            if (self.value<1):
-                self.value += 0.001
+            # if (self.value<1):
+            #     self.value += 0.001
             self.queue_draw()
         return True
 
