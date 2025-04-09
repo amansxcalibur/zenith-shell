@@ -12,7 +12,12 @@ A SOSS shell for <b>X11</b> and <b>i3wm</b>, crafted using [fabric](https://gith
   <h2>Showcase</h2>
 <table align="center">
   <tr>
-    <td colspan="1"><img src="assets/showcase.png"></td>
+    <td colspan="3"><img src="assets/showcase-btop.png"></td>
+  </tr>
+  <tr>
+    <td colspan="1"><img src="assets/showcase-player.png"></td>
+    <td colspan="1"><img src="assets/showcase-launcher.png"></td>
+    <td colspan="1"><img src="assets/showcase-wallpaper-selector.png"></td>
   </tr>
 </table>
 </div>
@@ -21,6 +26,8 @@ A SOSS shell for <b>X11</b> and <b>i3wm</b>, crafted using [fabric](https://gith
 > This repo does not contain my scripts and i3 config which integrates some keybindings to control the shell.
 
 ## Some Dependencies
+- fabric
+- fabric-cli
 - brightnessctl
 - pactl
 - feh
@@ -38,3 +45,15 @@ Clone the repo:
  ```bash
  git clone https://github.com/Fabric-Development/gray.git
  ```
+
+---
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Activity/Sparkles.webp" alt="Sparkles" width="16" height="16" />
+      <b> SUPPORT THE PROJECT. DROP A STAR</b>
+      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Activity/Sparkles.webp" alt="Sparkles" width="16" height="16" />
+    </td>
+  </tr>
+</table>
