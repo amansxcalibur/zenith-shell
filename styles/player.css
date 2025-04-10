@@ -22,6 +22,10 @@
     /* animation: hidePlayer 0.5s ease; */
 }
 
+#player-container.vertical{
+    margin: -500px
+}
+
 @keyframes hidePlayer {
     0% {
       margin: 0px;

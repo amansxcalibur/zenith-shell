@@ -51,6 +51,7 @@ class DockBar(Window):
             i3.command("gaps top all set 3px")
         else:
             i3.command("gaps left all set 3px")
+            i3.command("gaps top all set 0px")
 
         # self.children = Box(
         #     name="vertical-bar",
@@ -137,8 +138,275 @@ class DockBar(Window):
             self.visibility_stack.set_visible_child(self.bar_inner)
             self.notch.visibility_stack.set_visible_child(self.notch.full_notch)
 
+class Notch(Window):
+    def __init__(self, **kwargs):
+        super().__init__(
+            name="notch",
+            layer="top",
+            geometry="top" if not info.VERTICAL else "left",
+            # margin="-8px -4px -8px -4px",
+            # keyboard_mode="auto",
+            type_hint="normal",
+            # focusable=False
+            margin="-8px -4px -8px -4px",
+            visible=True,
+            all_visible=True,
+        )
+        self.launcher = AppLauncher(notch = self)
+
+        volume_slider = VolumeSlider(notch = self)
+        volume_overflow_slider = VolumeSlider(notch = self)
+        volume_overflow_slider.add_style_class("vol-overflow-slider")
+
+        self.volume_revealer = Revealer(
+                    transition_duration=250,
+                    transition_type="slide-down",
+                    child=volume_slider,
+                    child_revealed=False,
+                )
+        
+        self.volume_overflow_revealer = Revealer(
+                    transition_duration=250,
+                    transition_type="slide-down",
+                    child=volume_overflow_slider,
+                    child_revealed=False,
+                )
+        
+        self.vol_small = VolumeSmall(notch = self, slider_instance=self.volume_revealer, overflow_instance = self.volume_overflow_revealer)
+
+        self.brightness_revealer = Revealer(
+            name="brightness",
+            transition_duration=250,
+            transition_type="slide-down",
+            child=BrightnessSlider(),
+            child_revealed=True
+        )
+        self.brightness = BrightnessSmall(device="intel_backlight", slider_instance=self.brightness_revealer)
+        
+        self.switch = True
+        self.wallpapers = WallpaperSelector(notch = self)
+
+        self.player = PlayerContainer()
+        self.player.add_style_class("hide-player")
+
+        self.active_window = ActiveWindow()
+        self.active_window.active_window.add_style_class("hide")
+        self.user = Label(label="aman@brewery" if not info.VERTICAL else "am\nan\n@\nbr\new\ner\ny", name="user-label")
+        self.dot_placeholder = Label(label=". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .", name="collapsed-bar") if not info.VERTICAL else Label(label="~", name="collapsed-bar", style_classes="vertical")
+
+        self.notch_compact = Stack(
+            name="collapsed",
+            transition_type="crossfade",
+            transition_duration=100,
+            style_classes="" if not info.VERTICAL else "vertical",
+            children=[
+                self.user,
+                self.active_window.active_window,
+                self.dot_placeholder,
+            ]
+        )
+        self.notch_compact.set_visible_child(self.dot_placeholder)
+
+        # EventBox with click event for toggling visibility
+        self.collapsed = Gtk.EventBox(name="notch-compact")
+        self.collapsed.set_visible(True)
+        self.collapsed.add(self.notch_compact)
+
+        self.collapsed.connect("button-press-event", self.toggle_collapse_child)
+
+        self.expanding = self.launcher
+
+        if info.VERTICAL:
+            self.expanding.add_style_class("vertical")
+            self.wallpapers.add_style_class("vertical")
+            self.player.add_style_class("vertical")
+        else:
+            self.launcher.add_style_class("launcher-contract-init")
+            self.wallpapers.add_style_class("wallpaper-contract")
+        
+        self.stack = Stack(
+            name="notch-content",
+            h_expand=True, 
+            v_expand=True,
+            transition_type="crossfade", 
+            transition_duration=250,
+            children=[
+                self.collapsed,
+                self.expanding,
+                self.wallpapers,
+                self.player
+            ])
+
+        self.stack.set_visible_child(self.collapsed)
+        self.add_keybinding("Escape", lambda *_: self.close())
+
+        self.full_notch = Box(
+            orientation="v" if not info.VERTICAL else "h",
+            children=[
+                CenterBox(
+                    orientation='h' if not info.VERTICAL else 'v',
+                    center_children=[
+                        CenterBox(
+                            label="L",
+                            name="left",
+                            v_align="start",
+                            style_classes="" if not info.VERTICAL else "verticals",
+                            center_children=[Box(label="L", name="left-dum", children=[self.brightness], v_expand=False)],
+                            v_expand=False
+                        ),
+                        self.stack,
+                        CenterBox(
+                            label="R",
+                            name="right",
+                            v_align="start",
+                            center_children=[Box(label="R", name="right-dum",children=[self.vol_small], v_expand=False)],
+                            v_expand=False
+                        ),
+                    ],
+                ),
+                self.volume_revealer,
+                self.volume_overflow_revealer,
+                self.brightness_revealer
+            ]
+        )
+        self.hidden_notch = Box()
+        self.visibility_stack = Stack(
+            transition_type="over-down", 
+            transition_duration=100,
+            children=[
+                self.full_notch,
+                self.hidden_notch
+            ]
+        )
+
+        self.children = self.visibility_stack
+        self.set_properties("_NET_WM_STATE", ["_NET_WM_STATE_ABOVE"])
+        self.set_properties("_NET_WM_WINDOW_TYPE", ["_NET_WM_WINDOW_TYPE_DOCK"])
+
+    # def toggle_name(self, *_):
+    #     if self.collapsed.get_label()=="aman@brewery":
+    #         return ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."
+    #     else:
+    #         return "aman@brewery"
+
+    def toggle_collapse_child(self, *_):
+        if self.notch_compact.get_visible_child() == self.user:
+            self.active_window.active_window.remove_style_class("hide")
+            self.notch_compact.set_visible_child(self.active_window.active_window)
+        elif self.notch_compact.get_visible_child() == self.active_window.active_window:
+            self.active_window.active_window.add_style_class("hide")
+            self.notch_compact.set_visible_child(self.dot_placeholder)
+        else:
+            self.notch_compact.set_visible_child(self.user)
+
+    def toggle_player(self, *_):
+        if self.stack.get_visible_child() != self.player:
+            exec_shell_command_async('i3-msg [class="Negative_margin.py"] focus')
+            if info.VERTICAL:
+                self.player.remove_style_class("vertical")
+            else:    
+                self.player.remove_style_class("hide-player")
+            self.player.add_style_class("reveal-player")
+            self.stack.set_visible_child(self.player)
+        else:
+            self.player.remove_style_class("reveal-player")
+            if info.VERTICAL:
+                self.player.add_style_class("vertical")
+            else:
+                self.player.add_style_class("hide-player")
+            self.stack.set_visible_child(self.collapsed)
+
+    def open(self, *_):
+        if self.visibility_stack.get_visible_child() == self.full_notch:
+            # self.steal_input()
+            exec_shell_command_async('i3-msg [class="Negative_margin.py"] focus')
+            if self.stack.get_visible_child() == self.collapsed:
+                # self.stack.remove_style_class("contract")
+                # self.stack.add_style_class("expand")
+                # # self.remove_style_class("wallpaper-init")
+                # self.remove_style_class("launcher-contract-init")
+                if info.VERTICAL:
+                    self.launcher.remove_style_class("vertical")
+                else:
+                    self.launcher.remove_style_class("launcher-contract")
+                self.launcher.add_style_class("launcher-expand")
+                self.stack.set_visible_child(self.expanding)
+                
+                self.launcher.open_launcher()
+                self.launcher.search_entry.set_text("")
+                self.launcher.search_entry.grab_focus()
+
+            elif self.stack.get_visible_child() == self.player:
+                if info.VERTICAL:
+                    self.player.remove_style_class("vertical")
+                else:
+                    self.player.remove_style_class("reveal-player")
+                # self.player.add_style_class("hide-player")
+                if info.VERTICAL:
+                    self.launcher.remove_style_class("vertical")
+                else:
+                    self.launcher.remove_style_class("launcher-contract")
+                self.launcher.add_style_class("launcher-expand")
+                self.stack.set_visible_child(self.expanding)
+                
+                self.launcher.open_launcher()
+                self.launcher.search_entry.set_text("")
+                self.launcher.search_entry.grab_focus()
+        else:
+            print("Notch is hidden")
+        self.show_all()
+    
+    def close(self, *_):
+        if self.stack.get_visible_child() == self.player:
+            self.player.remove_style_class("reveal-player")
+            if info.VERTICAL:
+                self.player.add_style_class("vertical")
+            else:
+                self.player.add_style_class("hide-player")
+            
+            self.stack.set_visible_child(self.collapsed)
+
+        elif self.stack.get_visible_child() != self.collapsed:
+            self.stack.remove_style_class("expand")
+            
+            # self.unsteal_input()
+            self.wallpapers.remove_style_class("wallpaper-expand")
+            if info.VERTICAL:
+                self.wallpapers.add_style_class("vertical")
+            else:
+                self.wallpapers.add_style_class("wallpaper-contract")
+
+            self.stack.add_style_class("contract")
+
+            self.launcher.remove_style_class("launcher-expand")
+            if info.VERTICAL:
+                self.launcher.add_style_class("vertical")
+            else:
+                self.launcher.add_style_class("launcher-contract")
+            self.stack.set_visible_child(self.collapsed)
+            exec_shell_command_async(f'i3-msg focus mode_toggle')
+            # self.launcher.close_launcher()
+         
+        # for cases where player->dmenu->close()
+        if info.VERTICAL:
+            self.player.add_style_class("vertical")
+        else:
+            self.player.add_style_class("hide-player")
+        self.show_all()
+
+    def open_notch(self, *_):
+        self.remove_style_class("launcher-contract")
+        if info.VERTICAL:
+            self.wallpapers.remove_style_class("vertical")
+        else:
+            self.wallpapers.remove_style_class("wallpaper-init")
+        self.wallpapers.add_style_class("wallpaper-expand")
+        self.stack.set_visible_child(self.wallpapers)
+
 if __name__ == "__main__":
     dockBar = DockBar()
+    bar = Notch()
+    dockBar.notch = bar
     if info.VERTICAL:
         # make the window consume all vertical space
         monitor = dockBar._display.get_primary_monitor()
@@ -147,7 +415,7 @@ if __name__ == "__main__":
         dockBar.set_size_request(0, rect.height * scale)
         dockBar.show_all()
 
-    app = Application("bar-example", dockBar, open_inspector=True)
+    app = Application("bar-example", bar, dockBar, open_inspector=True)
     # import builtins
     # builtins.bar = bar
     # FASS-based CSS file
