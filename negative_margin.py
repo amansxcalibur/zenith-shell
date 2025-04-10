@@ -17,6 +17,7 @@ from systray import SystemTray
 from workspaces import Workspaces, ActiveWindow
 from metrics import MetricsSmall, Battery
 from player import PlayerContainer
+import info
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -30,18 +31,20 @@ class DockBar(Window):
         super().__init__(
             name="status-bar",
             layer="top",
-            geometry="top",
+            geometry="top" if info.VERTICAL else "left",
             type_hint="dock",
-            margin="-4px -4px -8px -4px",
+            margin="-4px -4px -8px -4px" if info.VERTICAL else "-4px -8px -4px -4px",
             visible=True,
             all_visible=True,
             **kwargs
         )
 
+        print("-----------------------here is vertical status-----------------------\n", info.VERTICAL)
+
         self.notch = kwargs.get("notch", None)
         self.workspaces = Workspaces()
         self.systray = SystemTray()
-        self.date_time = Box(name="date-time-container", children=DateTime(name="date-time", formatters=["%H:%M"], h_align="center", v_align="center", h_expand=True, v_expand=True))
+        self.date_time = Box(name="date-time-container", children=DateTime(name="date-time", formatters=["%H\n%M"] if info.VERTICAL else ["%H:%M"], h_align="center", v_align="center", h_expand=True, v_expand=True))
 
         self.metrics = MetricsSmall()
         self.battery = Battery()

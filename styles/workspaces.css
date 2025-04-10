@@ -8,6 +8,11 @@
     padding: 0px;
 }
 
+.active-workspace.vertical{
+    min-height: 50px;
+    min-width: 8px;
+}
+
 .workspace-button{
     background-color: rgb(59, 54, 48);
     min-width: 8px;

@@ -8,6 +8,15 @@
     margin-bottom: 3px;
   }
 
+  #metrics-small.vertical{
+    min-width: 10px;
+    min-height: 110px;
+    margin-left: 3px;
+    margin-right: 3px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+  }
+
   #bat-small{
     background-color: var(--shadow);
     padding: 0px;
@@ -15,6 +24,11 @@
     border-radius: 16px;
     /*margin-top: 4px;*/
     margin: 3px;
+  }
+
+  #bat-small.vertical{
+    /* min-width: 10px; */
+    min-height: 34px;
   }
   
   #metrics-circle {

@@ -4,6 +4,11 @@
     margin: 3px;
     border-radius: 15px;
 }
+
+#systray.vertical{
+    padding: 1px;
+}
+
 #tray-button{
     /* background-color: #1c1c1c; */
     background-color: rgb(43, 35, 37);

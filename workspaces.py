@@ -3,6 +3,7 @@ from fabric.widgets.label import Label
 from fabric.widgets.box import Box
 from fabric.widgets.button import Button
 import threading
+import info
 
 class i3Connector:
     _instance = None
@@ -73,7 +74,7 @@ class Workspaces(Box):
             name="workspaces",
             visible=True,
             all_visible=True,
-            orientation="h",
+            orientation="v" if info.VERTICAL else "h",
             h_align="fill",
             v_align="center"
         )
@@ -83,7 +84,7 @@ class Workspaces(Box):
         self.i3_connector.register_callback(Event.WORKSPACE, self.set_active_window)
 
         
-        self.all_workspaces = Box(name="workspace-container", spacing=8, orientation="h", children = self.buttons())
+        self.all_workspaces = Box(name="workspace-container", orientation="v" if info.VERTICAL else "h", spacing=8, children = self.buttons())
         self.children = Box(children=[self.all_workspaces])
 
         # mock event for initializing workspace thing module
@@ -98,6 +99,8 @@ class Workspaces(Box):
             buttons.append(Button(name="%i" % (i+1), on_clicked=lambda b, num=i: self.switch_workspace(num)))
             if i==0:
                 buttons[i].add_style_class("active-workspace")
+                if info.VERTICAL:
+                    buttons[i].add_style_class("vertical")
             else:
                 buttons[i].add_style_class("workspace-button")
         return buttons
@@ -113,9 +116,13 @@ class Workspaces(Box):
             if i==curr_workspace:
                 btn.remove_style_class("workspace-button")
                 btn.add_style_class("active-workspace")
+                if info.VERTICAL:
+                    btn.add_style_class("vertical")
                 #print(btn)
             else:
                 btn.remove_style_class("active-workspace")
+                if info.VERTICAL:
+                    btn.remove_style_class("vertical")
                 btn.add_style_class("workspace-button")
                 if (i+1) in used_workspaces:
                     btn.add_style_class("used-workspace")

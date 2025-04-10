@@ -2,6 +2,7 @@ import re
 import subprocess
 
 import psutil
+import info
 from gi.repository import GLib
 
 from fabric.core.fabricator import Fabricator
@@ -173,14 +174,8 @@ class MetricsSmall(Button):
     def __init__(self, **kwargs):
         super().__init__(name="metrics-small", **kwargs)
         
-        # Create the main box for metrics widgets
-        # main_box = Box(
-        #     name="metrics-small",
-        #     spacing=0,
-        #     orientation="h",
-        #     visible=True,
-        #     all_visible=True,
-        # )
+        if info.VERTICAL:
+            self.add_style_class("vertical")
 
         # ------------------ CPU ------------------
         self.cpu_icon = Label(name="cpu-icon", markup=icons.cpu)
@@ -203,7 +198,7 @@ class MetricsSmall(Button):
         self.cpu_revealer = Revealer(
             name="metrics-cpu-revealer",
             transition_duration=250,
-            transition_type="slide-left",
+            transition_type="slide-left" if not info.VERTICAL else "slide-down",
             child=self.cpu_level,
             child_revealed=False,
         )
@@ -235,7 +230,7 @@ class MetricsSmall(Button):
         self.ram_revealer = Revealer(
             name="metrics-ram-revealer",
             transition_duration=250,
-            transition_type="slide-left",
+            transition_type="slide-left" if not info.VERTICAL else "slide-down",
             child=self.ram_level,
             child_revealed=False,
         )
@@ -267,7 +262,7 @@ class MetricsSmall(Button):
         self.disk_revealer = Revealer(
             name="metrics-disk-revealer",
             transition_duration=250,
-            transition_type="slide-left",
+            transition_type="slide-left" if not info.VERTICAL else "slide-down",
             child=self.disk_level,
             child_revealed=False,
         )
@@ -289,12 +284,19 @@ class MetricsSmall(Button):
 
         self.main_box = Box(
             spacing=0,
-            orientation="h",
+            orientation="v" if info.VERTICAL else "h",
             visible=True,
             all_visible=True,
             h_expand=True,
             v_expand=True, 
-            children=[self.disk_box, self.disk_revealer, self.ram_box, self.ram_revealer, self.cpu_box, self.cpu_revealer]
+            children=[
+                self.disk_box, 
+                self.disk_revealer, 
+                self.ram_box, 
+                self.ram_revealer, 
+                self.cpu_box, 
+                self.cpu_revealer
+            ]
         )
         self.children=self.main_box
         # self.add(main_box)
@@ -311,7 +313,10 @@ class MetricsSmall(Button):
         self.hover_counter = 0
 
     def _format_percentage(self, value: int) -> str:
-        return f"{value}%"
+        if info.VERTICAL:
+            return f"{value}"
+        else:
+            return f"{value}%"
 
     def on_mouse_enter(self, widget, event):
         self.hover_counter += 1
@@ -357,6 +362,9 @@ class MetricsSmall(Button):
 class Battery(Button):
     def __init__(self, **kwargs):
         super().__init__(name="bat-small", **kwargs)
+
+        if info.VERTICAL:
+            self.add_style_class("vertical")
         
         # ------------------ Battery ------------------
         self.bat_icon = Label(name="bat-icon", style_classes="metrics-icon", markup=icons.battery)
@@ -372,7 +380,7 @@ class Battery(Button):
         self.bat_revealer = Revealer(
             name="metrics-bat-revealer",
             transition_duration=250,
-            transition_type="slide-left",
+            transition_type="slide-left" if not info.VERTICAL else "slide-down",
             child=self.bat_level,
             child_revealed=False,
         )
@@ -391,12 +399,15 @@ class Battery(Button):
 
         self.main_box = Box(
             spacing=0,
-            orientation="h",
+            orientation="h" if not info.VERTICAL else "v",
             visible=True,
             all_visible=True,
             h_expand=True,
             v_expand=True, 
-            children=[self.bat_box, self.bat_revealer]
+            children=[
+                self.bat_box, 
+                self.bat_revealer
+            ]
         )
 
         self.children = self.main_box
@@ -421,7 +432,10 @@ class Battery(Button):
         self.hover_counter = 0
 
     def _format_percentage(self, value: int) -> str:
-        return f"{value}%"
+        if info.VERTICAL:
+            return f"{value}"
+        else:
+            return f"{value}%"
 
     def on_mouse_enter(self, widget, event):
         self.hover_counter += 1
