@@ -11,6 +11,7 @@ from gi.repository import GLib, Gdk
 import icons.icons as icons
 import subprocess
 import re
+import info
 
 def supports_backlight():
     try:
@@ -25,7 +26,7 @@ class BrightnessSlider(Scale):
     def __init__(self, **kwargs):
         super().__init__(
             name="control-slider",
-            orientation="h",
+            orientation="h" if not info.VERTICAL else "v",
             h_expand=True,
             has_origin=True,
             increments=(0.01, 0.1),

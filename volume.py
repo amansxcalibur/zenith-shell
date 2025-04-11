@@ -7,6 +7,7 @@ from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.circularprogressbar import CircularProgressBar
 import icons.icons as icons
+import info
 
 from gi.repository import GLib
 
@@ -36,7 +37,7 @@ class VolumeSlider(Scale):
     def __init__(self, **kwargs):
         super().__init__(
             name="control-slider",
-            orientation="h",
+            orientation="h" if not info.VERTICAL else 'v',
             h_expand=True,
             has_origin=True,
             increments=(0.01, 0.1),

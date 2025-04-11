@@ -74,7 +74,8 @@ class Workspaces(Box):
             name="workspaces",
             visible=True,
             all_visible=True,
-            orientation="v" if info.VERTICAL else "h",
+            style_classes="" if not info.VERTICAL else "vertical",
+            orientation="h" if not info.VERTICAL else "v",
             h_align="fill",
             v_align="center"
         )

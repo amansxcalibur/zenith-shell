@@ -47,7 +47,7 @@ class DockBar(Window):
 
         i3 = Connection()
         if info.VERTICAL:
-            i3.command("gaps left all set 42px")
+            i3.command("gaps left all set 44px")
             i3.command("gaps top all set 3px")
         else:
             i3.command("gaps left all set 3px")
@@ -160,14 +160,14 @@ class Notch(Window):
 
         self.volume_revealer = Revealer(
                     transition_duration=250,
-                    transition_type="slide-down",
+                    transition_type="slide-down" if not info.VERTICAL else "slide-right",
                     child=volume_slider,
                     child_revealed=False,
                 )
         
         self.volume_overflow_revealer = Revealer(
                     transition_duration=250,
-                    transition_type="slide-down",
+                    transition_type="slide-down" if not info.VERTICAL else "slide-right",
                     child=volume_overflow_slider,
                     child_revealed=False,
                 )
@@ -177,7 +177,7 @@ class Notch(Window):
         self.brightness_revealer = Revealer(
             name="brightness",
             transition_duration=250,
-            transition_type="slide-down",
+            transition_type="slide-down" if not info.VERTICAL else "slide-right",
             child=BrightnessSlider(),
             child_revealed=True
         )
@@ -230,6 +230,7 @@ class Notch(Window):
             v_expand=True,
             transition_type="crossfade", 
             transition_duration=250,
+            style_classes="" if not info.VERTICAL else "vertical",
             children=[
                 self.collapsed,
                 self.expanding,
@@ -249,6 +250,7 @@ class Notch(Window):
                         CenterBox(
                             label="L",
                             name="left",
+                            h_align="start",
                             v_align="start",
                             style_classes="" if not info.VERTICAL else "verticals",
                             center_children=[Box(label="L", name="left-dum", children=[self.brightness], v_expand=False)],
@@ -258,7 +260,9 @@ class Notch(Window):
                         CenterBox(
                             label="R",
                             name="right",
+                            h_align="start",
                             v_align="start",
+                            style_classes="" if not info.VERTICAL else "verticals",
                             center_children=[Box(label="R", name="right-dum",children=[self.vol_small], v_expand=False)],
                             v_expand=False
                         ),

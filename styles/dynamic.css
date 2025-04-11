@@ -28,7 +28,14 @@
   }
 
   #left.verticals{
-    box-shadow: 0px 25px 0 0 black;
+    box-shadow: -25px 25px 0 0 black;
+    border-bottom-left-radius: 18px;
+    border-top-right-radius: 0px;
+    padding-bottom: 3px;
+  }
+
+  #right.verticals{
+    box-shadow: -20px -25px 0 0 black;
     border-bottom-left-radius: 18px;
     border-top-right-radius: 0px;
     padding-bottom: 3px;
@@ -95,6 +102,9 @@
 
   #collapsed-bar.vertical{
     min-width: 0px;
+    border-top-right-radius: 20px;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 20px;
   }
 
   #right-dum, #left-dum{
@@ -126,6 +136,10 @@
     background-color: black;
     border-bottom-left-radius: 20px;
     border-bottom-right-radius: 20px;
+}
+
+#notch-content.vertical{
+  border-top-right-radius: 20px;
 }
 
 @keyframes loadSlot1 {

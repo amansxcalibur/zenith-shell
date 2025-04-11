@@ -28,7 +28,8 @@
 
   #bat-small.vertical{
     /* min-width: 10px; */
-    min-height: 34px;
+    min-height: 36px;
+    margin-bottom: 0px;
   }
   
   #metrics-circle {
