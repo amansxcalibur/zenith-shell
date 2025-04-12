@@ -16,14 +16,26 @@
     background-size: cover;
 }
 
+.player.vertical{
+    box-shadow: 
+        inset 100px 0px 150px black, 
+        inset 0px 10px 10px rgba(0, 0, 0, 0.5),
+        inset 0px -10px 10px rgba(0, 0, 0, 0.5);
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    min-width: 200px;
+    min-height: 200px;
+}
+
 .hide-player{
     margin: -100px;
     transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
     /* animation: hidePlayer 0.5s ease; */
 }
 
-#player-container.vertical{
-    margin: -500px
+#player-container.vertical.hide-player{
+    margin: -500px;
+    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 
 @keyframes hidePlayer {
@@ -94,6 +106,10 @@
     background-color: whitesmoke;
     border-radius: 16px;
     padding: 10px;
+}
+
+.vertical #pause-button{
+    margin-bottom: 5px;
 }
 
 #pause-button.pause-track {
@@ -171,4 +187,8 @@
 #progress-other-end{
     min-width: 50px; 
     background-color: white;
+}
+
+.vertical #progress-container{
+    margin-bottom: 15px;
 }

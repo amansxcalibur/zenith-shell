@@ -224,6 +224,7 @@ class Notch(Window):
             self.launcher.add_style_class("vertical")
         else:
             self.wallpapers.remove_style_class("vertical") # this also has class vertical bind to it by default
+            self.player.remove_style_class("vertical")
         self.launcher.add_style_class("launcher-contract-init")
         self.wallpapers.add_style_class("wallpaper-contract")
         
@@ -318,18 +319,12 @@ class Notch(Window):
         if self.stack.get_visible_child() != self.player:
             # exec_shell_command_async('i3-msg [class="Negative_margin.py"] focus')
             exec_shell_command_async('i3-msg [window_role="notch"] focus')
-            if info.VERTICAL:
-                self.player.remove_style_class("vertical")
-            else:    
-                self.player.remove_style_class("hide-player")
+            self.player.remove_style_class("hide-player")
             self.player.add_style_class("reveal-player")
             self.stack.set_visible_child(self.player)
         else:
             self.player.remove_style_class("reveal-player")
-            if info.VERTICAL:
-                self.player.add_style_class("vertical")
-            else:
-                self.player.add_style_class("hide-player")
+            self.player.add_style_class("hide-player")
             self.stack.set_visible_child(self.collapsed)
 
     def open(self, *_):
@@ -351,15 +346,9 @@ class Notch(Window):
                 self.launcher.search_entry.grab_focus()
 
             elif self.stack.get_visible_child() == self.player:
-                if info.VERTICAL:
-                    self.player.remove_style_class("vertical")
-                else:
-                    self.player.remove_style_class("reveal-player")
+                self.player.remove_style_class("reveal-player")
                 # self.player.add_style_class("hide-player")
-                if info.VERTICAL:
-                    self.launcher.remove_style_class("vertical")
-                else:
-                    self.launcher.remove_style_class("launcher-contract")
+                self.launcher.remove_style_class("launcher-contract")
                 self.launcher.add_style_class("launcher-expand")
                 self.stack.set_visible_child(self.expanding)
                 

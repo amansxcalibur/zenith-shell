@@ -9,6 +9,7 @@ from player_service import PlayerManager, PlayerService
 from wiggle_bar import WigglyWidget
 import icons.icons as icons
 import os
+import info
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -21,6 +22,9 @@ class Player(Box):
             orientation="v",
             **kwargs)
         
+        if not info.VERTICAL:
+            self.remove_style_class("vertical") # vertical class binding from unknown source
+
         self._player = PlayerService(player=player)
 
         self.duration = 0.0
@@ -69,7 +73,7 @@ class Player(Box):
                 # h_expand=True, 
                 # v_expand=True,
                 start_children=self.music,
-                end_children=self.play_pause_button
+                end_children=self.play_pause_button if not info.VERTICAL else []
             ),
             Box(name="controls", 
                 # h_expand=True, 
@@ -86,6 +90,31 @@ class Player(Box):
                     ),
                     Button(name="next-button", child=Label(name="play-next", markup=icons.next), on_clicked=lambda b, *_:self.handle_next(player)),
                     self.shuffle_button
+                ] if not info.VERTICAL else [
+                    CenterBox(
+                        orientation='v',
+                        h_expand=True,
+                        start_children=[
+                            CenterBox(
+                                h_expand = True,
+                                v_expand = True,
+                                v_align='end',
+                                start_children = [
+                                    Button(name="prev-button",child=Label(name="play-previous", markup=icons.previous), on_clicked=lambda b, *_: self.handle_prev(player)),
+                                    Button(name="next-button", child=Label(name="play-next", markup=icons.next), on_clicked=lambda b, *_:self.handle_next(player)),
+                                    self.shuffle_button
+                                ],
+                                end_children=self.play_pause_button,
+                            )
+                        ],
+                        end_children = CenterBox(
+                            name="progress-container",
+                            h_expand=True,
+                            v_expand=True,
+                            orientation='v',
+                            center_children=[self.gtk_wrapper]
+                        )
+                    )
                 ]
             )
         ]
@@ -106,7 +135,7 @@ class Player(Box):
     def on_metadata(self, sender, metadata, player):
         keys = metadata.keys()
         if 'xesam:artist' in keys and 'xesam:title' in keys:
-            _max_chars = 43
+            _max_chars = 43 if not info.VERTICAL else 30
             song_title = metadata['xesam:title']
             if len(song_title) > _max_chars:
                 song_title = song_title[:_max_chars - 1] + "…"
