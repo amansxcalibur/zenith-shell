@@ -27,7 +27,7 @@
     background-color: black;
     border-radius: 100px;
     /* min-height: 37px; */
-    margin: 3px;
+    margin: 0px;
     padding: 13px;
 }
 
@@ -60,10 +60,12 @@
   }
 
 #workspaces{
-    box-shadow: -30px -30px 0 10px black;
+    /* box-shadow: -30px -30px 0 10px black; */
     border-radius: 20px;
 }
 
 #workspaces.vertical{
-    padding: 1px;
+    padding: 0px;
+    box-shadow: none;
+    /* background-color: red; */
 }

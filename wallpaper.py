@@ -70,6 +70,7 @@ class WallpaperSelector(Box):
             spacing=10,
             h_expand=True,
             v_expand=True,
+            style_classes="launcher",
             min_content_size=(5, 5),
             max_content_size=(5, 5),
             child=self.viewport,

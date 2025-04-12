@@ -35,6 +35,10 @@
     background-color: var(--surface);
     margin-right: 10px;
   }
+
+  .vertical #search-entry-walls{
+    min-width: 490px;
+  }
   
   /* Customize the overall switch appearance */
   #matugen-switcher {
@@ -80,7 +84,7 @@
     /* animation: wallContract 0.5s ease; */
   }
 
-  #wallpapers.vertical{
+  #wallpapers.vertical.wallpaper-contract{
     margin: -360px;
     transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
   }
@@ -91,6 +95,13 @@
     margin: 0px;
     transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
     /* animation: wallExpand 0.5s ease; */
+  }
+
+  .vertical.wallpaper-expand{
+    min-width: 500px;
+    min-height: 787px;
+    margin: 0px;
+    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
   }
 
   @keyframes wallExpand {
@@ -123,11 +134,12 @@
   background-image: none;
   background-color: black;
 }
-#scrolled-window{
+/* #scrolled-window.launcher{
   border-bottom-left-radius: 20px;
   border-bottom-right-radius: 20px;
   padding: 8px;
-}
+  min-height: 600px;
+} */
 
 *{
   background-image: none;
@@ -136,4 +148,8 @@
 
 #wallpapers{
   padding: 10px;
+}
+
+#scheme-dropdown{
+  margin-right: 10px;
 }

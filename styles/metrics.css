@@ -4,8 +4,8 @@
     min-width: 100px;
     border-radius: 16px;
     /*margin-top: 4px;*/
-    margin-top: 3px;
-    margin-bottom: 3px;
+    /* margin-top: 3px;
+    margin-bottom: 3px; */
   }
 
   #metrics-small.vertical{
@@ -13,6 +13,7 @@
     min-height: 110px;
     margin-top: 0px;
     margin-bottom: 0px;
+    border-radius: 20px;
   }
 
   #bat-small{
@@ -20,13 +21,14 @@
     padding: 0px;
     min-width: 34px;
     border-radius: 16px;
-    margin: 3px;
+    margin: 0px;
   }
 
   #bat-small.vertical{
     min-height: 36px;
     min-width: 36px;
     margin: 0px;
+    border-radius: 20px;
   }
   
   #metrics-circle {

@@ -32,7 +32,7 @@ class DockBar(Window):
     def __init__(self, **kwargs):
         super().__init__(
             name="dock-bar",
-            layer="top",
+            layer="top" if not info.VERTICAL else "bottom",
             geometry="top" if not info.VERTICAL else "left",
             type_hint="normal" if info.VERTICAL else "dock",
             margin="0px 0px 0px 0px",
@@ -99,7 +99,7 @@ class DockBar(Window):
                         orientation='v',
                         children=[self.vol_small, self.brightness_small]
                     ),
-                    self.systray
+                    self.systray,
                 ]
             ),
             end_children=Box(
@@ -117,6 +117,9 @@ class DockBar(Window):
                 ],
             ),
         )
+
+        if not info.VERTICAL:
+            self.main_bar.remove_style_class("vertical") # main_bar gets class vertical for some reason
 
         self.ghost_bar = Box()
 
@@ -170,9 +173,9 @@ class Notch(Window):
         self.launcher = AppLauncher(notch = self)
 
         self.controls = ControlsManager(notch=self)
-        # if not info.VERTICAL:
-        self.vol_small = self.controls.get_volume_small()
-        self.brightness_small = self.controls.get_brightness_small()
+        if not info.VERTICAL:
+            self.vol_small = self.controls.get_volume_small()
+            self.brightness_small = self.controls.get_brightness_small()
         self.volume_revealer = self.controls.get_volume_revealer()
         self.volume_overflow_revealer = self.controls.get_volume_overflow_revealer()
         self.brightness_revealer = self.controls.get_brightness_revealer()
@@ -184,6 +187,8 @@ class Notch(Window):
         self.player.add_style_class("hide-player")
 
         self.active_window = ActiveWindow()
+        if info.VERTICAL:
+            self.workspaces = Workspaces()
         self.active_window.active_window.add_style_class("hide")
         self.user = Label(label="aman@brewery" if not info.VERTICAL else "am\nan\n@\nbr\new\ner\ny", name="user-label")
         self.dot_placeholder = Label(label=". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .", name="collapsed-bar") if not info.VERTICAL else Label(label="~", name="collapsed-bar", style_classes="vertical")
@@ -197,6 +202,8 @@ class Notch(Window):
                 self.user,
                 self.active_window.active_window,
                 self.dot_placeholder,
+            ] if not info.VERTICAL else [
+                self.workspaces
             ]
         )
         self.notch_compact.set_visible_child(self.dot_placeholder)
@@ -214,9 +221,11 @@ class Notch(Window):
             self.expanding.add_style_class("vertical")
             self.wallpapers.add_style_class("vertical")
             self.player.add_style_class("vertical")
+            self.launcher.add_style_class("vertical")
         else:
-            self.launcher.add_style_class("launcher-contract-init")
-            self.wallpapers.add_style_class("wallpaper-contract")
+            self.wallpapers.remove_style_class("vertical") # this also has class vertical bind to it by default
+        self.launcher.add_style_class("launcher-contract-init")
+        self.wallpapers.add_style_class("wallpaper-contract")
         
         self.stack = Stack(
             name="notch-content",
@@ -247,7 +256,14 @@ class Notch(Window):
                             h_align="start",
                             v_align="start",
                             style_classes="" if not info.VERTICAL else "verticals",
-                            center_children=[Box(label="L", name="left-dum", children=[self.brightness] if not info.VERTICAL else [], v_expand=False)],
+                            center_children=[
+                                Box(
+                                    name="left-dum", 
+                                    style_classes="" if not info.VERTICAL else "vertical",
+                                    children=[self.brightness_small] if not info.VERTICAL else [], 
+                                    v_expand=False
+                                )
+                            ],
                             v_expand=False
                         ),
                         self.stack,
@@ -257,7 +273,14 @@ class Notch(Window):
                             h_align="start",
                             v_align="start",
                             style_classes="" if not info.VERTICAL else "verticals",
-                            center_children=[Box(label="R", name="right-dum",children=[self.vol_small] if not info.VERTICAL else [], v_expand=False)],
+                            center_children=[
+                                Box(
+                                    name="right-dum", 
+                                    style_classes="" if not info.VERTICAL else "vertical",
+                                    children=[self.vol_small] if not info.VERTICAL else [], 
+                                    v_expand=False
+                                )
+                            ],
                             v_expand=False
                         ),
                     ],
@@ -278,14 +301,8 @@ class Notch(Window):
         )
 
         self.children = self.visibility_stack
-        self.set_properties("_NET_WM_STATE", ["_NET_WM_STATE_ABOVE"])
-        self.set_properties("_NET_WM_WINDOW_TYPE", ["_NET_WM_WINDOW_TYPE_DOCK"])
-
-    # def toggle_name(self, *_):
-    #     if self.collapsed.get_label()=="aman@brewery":
-    #         return ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."
-    #     else:
-    #         return "aman@brewery"
+        # self.set_properties("_NET_WM_STATE", ["_NET_WM_STATE_ABOVE"])
+        # self.set_properties("_NET_WM_WINDOW_TYPE", ["_NET_WM_WINDOW_TYPE_DOCK"])
 
     def toggle_collapse_child(self, *_):
         if self.notch_compact.get_visible_child() == self.user:
@@ -299,7 +316,8 @@ class Notch(Window):
 
     def toggle_player(self, *_):
         if self.stack.get_visible_child() != self.player:
-            exec_shell_command_async('i3-msg [class="Negative_margin.py"] focus')
+            # exec_shell_command_async('i3-msg [class="Negative_margin.py"] focus')
+            exec_shell_command_async('i3-msg [window_role="notch"] focus')
             if info.VERTICAL:
                 self.player.remove_style_class("vertical")
             else:    
@@ -323,11 +341,8 @@ class Notch(Window):
                 # self.stack.remove_style_class("contract")
                 # self.stack.add_style_class("expand")
                 # # self.remove_style_class("wallpaper-init")
-                # self.remove_style_class("launcher-contract-init")
-                if info.VERTICAL:
-                    self.launcher.remove_style_class("vertical")
-                else:
-                    self.launcher.remove_style_class("launcher-contract")
+                self.launcher.remove_style_class("launcher-contract-init")
+                self.launcher.remove_style_class("launcher-contract")
                 self.launcher.add_style_class("launcher-expand")
                 self.stack.set_visible_child(self.expanding)
                 
@@ -370,18 +385,12 @@ class Notch(Window):
             
             # self.unsteal_input()
             self.wallpapers.remove_style_class("wallpaper-expand")
-            if info.VERTICAL:
-                self.wallpapers.add_style_class("vertical")
-            else:
-                self.wallpapers.add_style_class("wallpaper-contract")
+            self.wallpapers.add_style_class("wallpaper-contract")
 
             self.stack.add_style_class("contract")
 
             self.launcher.remove_style_class("launcher-expand")
-            if info.VERTICAL:
-                self.launcher.add_style_class("vertical")
-            else:
-                self.launcher.add_style_class("launcher-contract")
+            self.launcher.add_style_class("launcher-contract")
             self.stack.set_visible_child(self.collapsed)
             exec_shell_command_async(f'i3-msg focus mode_toggle')
             # self.launcher.close_launcher()
@@ -396,7 +405,7 @@ class Notch(Window):
     def open_notch(self, *_):
         self.remove_style_class("launcher-contract")
         # if info.VERTICAL:
-        self.wallpapers.remove_style_class("vertical")
+        # self.wallpapers.remove_style_class("vertical")
         # else:
         self.wallpapers.remove_style_class("wallpaper-contract")
         self.wallpapers.remove_style_class("wallpaper-init")
@@ -415,6 +424,9 @@ if __name__ == "__main__":
         scale = monitor.get_scale_factor()
         dockBar.set_size_request(0, rect.height * scale)
         dockBar.show_all()
+        bar.show_all()
+        # bar.set_keep_above(True)
+
 
     app = Application("bar-example", bar, dockBar, open_inspector=False)
     # import builtins
