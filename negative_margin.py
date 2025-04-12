@@ -323,8 +323,9 @@ class Notch(Window):
     def open(self, *_):
         if self.visibility_stack.get_visible_child() == self.full_notch:
             # self.steal_input()
-            exec_shell_command_async('i3-msg [class="Negative_margin.py"] focus')
+            exec_shell_command_async('i3-msg [window_role="notch"] focus')
             if self.stack.get_visible_child() == self.collapsed:
+                print("opeing")
                 # self.stack.remove_style_class("contract")
                 # self.stack.add_style_class("expand")
                 # # self.remove_style_class("wallpaper-init")
@@ -411,6 +412,7 @@ class Notch(Window):
 if __name__ == "__main__":
     bar = Notch()
     dockBar = DockBar()
+    bar.set_role("notch")
     dockBar.notch = bar
     if info.VERTICAL:
         # make the window consume all vertical space
