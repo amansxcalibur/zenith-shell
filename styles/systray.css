@@ -2,11 +2,12 @@
     background-color: black;
     padding: 2px;
     margin: 3px;
-    border-radius: 15px;
+    border-radius: 17px;
 }
 
 #systray.vertical{
     padding: 2px;
+    margin: 0px;
 }
 
 #tray-button{

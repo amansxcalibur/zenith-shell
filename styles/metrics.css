@@ -9,10 +9,8 @@
   }
 
   #metrics-small.vertical{
-    min-width: 10px;
+    min-width: 36px;
     min-height: 110px;
-    margin-left: 3px;
-    margin-right: 3px;
     margin-top: 0px;
     margin-bottom: 0px;
   }
@@ -22,14 +20,13 @@
     padding: 0px;
     min-width: 34px;
     border-radius: 16px;
-    /*margin-top: 4px;*/
     margin: 3px;
   }
 
   #bat-small.vertical{
-    /* min-width: 10px; */
     min-height: 36px;
-    margin-bottom: 0px;
+    min-width: 36px;
+    margin: 0px;
   }
   
   #metrics-circle {

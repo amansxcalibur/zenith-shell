@@ -30,7 +30,7 @@ from brightness import BrightnessSlider, BrightnessSmall
 class DockBar(Window):
     def __init__(self, **kwargs):
         super().__init__(
-            name="status-bar",
+            name="dock-bar",
             layer="top",
             geometry="top" if not info.VERTICAL else "left",
             type_hint="normal" if info.VERTICAL else "dock",

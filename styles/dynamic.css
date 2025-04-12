@@ -168,7 +168,7 @@
 color: white;
 }
 
-.hide-bar{
+.hide-main-bar{
   margin: -20px;
   transition: margin 0.1s cubic-bezier(0.5, 0.25, 0, 1);
   /* animation: bar-hide 0.1s ease; */
@@ -219,3 +219,16 @@ button:focus{
   outline: none;
   box-shadow: none;
 } */
+
+#main-bar.vertical{
+  /* background-color: red; */
+  padding: 3px;
+  border-top-left-radius: 20px;
+  border-bottom-left-radius: 20px;
+  box-shadow: -25px 0px 0 0 black;
+}
+
+#vol-brightness-container{
+  background-color: black;
+  border-radius: 17px;
+}

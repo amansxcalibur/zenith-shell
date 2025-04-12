@@ -26,11 +26,12 @@ from gi.repository import GLib, Gdk, Gtk
 from wallpaper import WallpaperSelector
 from volume import VolumeSlider, VolumeSmall
 from brightness import BrightnessSlider, BrightnessSmall
+from controls import ControlsManager
 
 class DockBar(Window):
     def __init__(self, **kwargs):
         super().__init__(
-            name="status-bar",
+            name="dock-bar",
             layer="top",
             geometry="top" if not info.VERTICAL else "left",
             type_hint="normal" if info.VERTICAL else "dock",
@@ -42,26 +43,26 @@ class DockBar(Window):
             **kwargs
         )
 
-        print("-----------------------here is vertical status-----------------------\n", info.VERTICAL)
-
-
-        i3 = Connection()
+        self.i3 = Connection()
         if info.VERTICAL:
-            i3.command("gaps left all set 44px")
-            i3.command("gaps top all set 3px")
+            self.i3.command("gaps left all set 44px")
+            self.i3.command("gaps top all set 3px")
         else:
-            i3.command("gaps left all set 3px")
-            i3.command("gaps top all set 0px")
-
-        # self.children = Box(
-        #     name="vertical-bar",
-        #     orientation='v',
-        #     children=Label(label="hello vertical")
-        # )
+            self.i3.command("gaps left all set 3px")
+            self.i3.command("gaps top all set 0px")
 
         self.notch = kwargs.get("notch", None)
-        self.workspaces = Workspaces()
+        
+        if not info.VERTICAL:
+            self.workspaces = Workspaces()
+        else:
+            self.controls = ControlsManager(notch=self.notch)
+            self.vol_small = self.controls.get_volume_small()
+            self.brightness_small = self.controls.get_brightness_small()
+
         self.systray = SystemTray()
+        self.systray._update_visibility()
+
         self.date_time = Box(
             name="date-time-container", 
             style_classes="" if not info.VERTICAL else "vertical" ,
@@ -79,43 +80,54 @@ class DockBar(Window):
         self.metrics = MetricsSmall()
         self.battery = Battery()
 
-        self.bar_inner = CenterBox(
-            name="bar-inner",
+        self.main_bar = CenterBox(
+            name="main-bar",
             orientation="h" if not info.VERTICAL else "v",
             h_align="fill" if not info.VERTICAL else "center", 
             v_align="center" if not info.VERTICAL else "fill", 
+            style_classes="horizontal" if not info.VERTICAL else "vertical",
             start_children=Box(
                 name="start-container",
-                spacing=4,
+                spacing=3,
                 orientation="h" if not info.VERTICAL else "v",
-                # v_align="center",
                 children=[
-                    # Button(name="hide-bar-toggle", on_clicked=lambda b: self.hide_bar_toggle()),
                     self.workspaces
+                ] if not info.VERTICAL else [
+                    self.date_time,
+                    Box(
+                        name="vol-brightness-container",
+                        orientation='v',
+                        children=[self.vol_small, self.brightness_small]
+                    ),
+                    self.systray
                 ]
             ),
             end_children=Box(
                 name="end-container",
-                # spacing=4,
+                spacing=3,
                 orientation="h" if not info.VERTICAL else "v",
                 children=[
                     self.systray,
                     self.metrics,
                     self.battery,
                     self.date_time,
+                ] if not info.VERTICAL else [
+                    self.metrics,
+                    self.battery
                 ],
             ),
         )
-        self.systray._update_visibility()
 
-        self.hidden_bar = Box()
+        self.ghost_bar = Box()
+
         self.visibility_stack = Stack(
             h_expand=True,
             v_expand=True,
             transition_type="over-down", 
             transition_duration=100,
-            children=[self.bar_inner,self.hidden_bar]
+            children=[self.main_bar,self.ghost_bar]
         )
+
         self.children = self.visibility_stack
         self.hidden = False
         # self.set_properties("_NET_WM_STATE", ["_NET_WM_STATE_ABOVE"])
@@ -123,19 +135,22 @@ class DockBar(Window):
 
     def hide_bar_toggle(self):
         # this function runs through i3 keybindings
-        if self.visibility_stack.get_visible_child() == self.bar_inner:
-            # self.bar_inner.remove_style_class("reveal-bar")
-            self.bar_inner.add_style_class("hide-bar")            
+        if self.visibility_stack.get_visible_child() == self.main_bar:
+            if info.VERTICAL:
+                self.i3.command("gaps outer all set 3px")
+            self.main_bar.add_style_class("hide-main-bar")            
             self.notch.full_notch.add_style_class("hide-notch")
 
-            self.visibility_stack.set_visible_child(self.hidden_bar)
+            self.visibility_stack.set_visible_child(self.ghost_bar)
             self.notch.visibility_stack.set_visible_child(self.notch.hidden_notch)
         else:
-            # self.bar_inner.add_style_class("reveal-bar")
-            self.bar_inner.remove_style_class("hide-bar")
+            if info.VERTICAL:
+                self.i3.command("gaps left all set 44px")
+                self.i3.command("gaps top all set 3px")
+            self.main_bar.remove_style_class("hide-main-bar")
             self.notch.full_notch.remove_style_class("hide-notch")
             
-            self.visibility_stack.set_visible_child(self.bar_inner)
+            self.visibility_stack.set_visible_child(self.main_bar)
             self.notch.visibility_stack.set_visible_child(self.notch.full_notch)
 
 class Notch(Window):
@@ -154,34 +169,13 @@ class Notch(Window):
         )
         self.launcher = AppLauncher(notch = self)
 
-        volume_slider = VolumeSlider(notch = self)
-        volume_overflow_slider = VolumeSlider(notch = self)
-        volume_overflow_slider.add_style_class("vol-overflow-slider")
-
-        self.volume_revealer = Revealer(
-                    transition_duration=250,
-                    transition_type="slide-down" if not info.VERTICAL else "slide-right",
-                    child=volume_slider,
-                    child_revealed=False,
-                )
-        
-        self.volume_overflow_revealer = Revealer(
-                    transition_duration=250,
-                    transition_type="slide-down" if not info.VERTICAL else "slide-right",
-                    child=volume_overflow_slider,
-                    child_revealed=False,
-                )
-        
-        self.vol_small = VolumeSmall(notch = self, slider_instance=self.volume_revealer, overflow_instance = self.volume_overflow_revealer)
-
-        self.brightness_revealer = Revealer(
-            name="brightness",
-            transition_duration=250,
-            transition_type="slide-down" if not info.VERTICAL else "slide-right",
-            child=BrightnessSlider(),
-            child_revealed=True
-        )
-        self.brightness = BrightnessSmall(device="intel_backlight", slider_instance=self.brightness_revealer)
+        self.controls = ControlsManager(notch=self)
+        # if not info.VERTICAL:
+        self.vol_small = self.controls.get_volume_small()
+        self.brightness_small = self.controls.get_brightness_small()
+        self.volume_revealer = self.controls.get_volume_revealer()
+        self.volume_overflow_revealer = self.controls.get_volume_overflow_revealer()
+        self.brightness_revealer = self.controls.get_brightness_revealer()
         
         self.switch = True
         self.wallpapers = WallpaperSelector(notch = self)
@@ -253,7 +247,7 @@ class Notch(Window):
                             h_align="start",
                             v_align="start",
                             style_classes="" if not info.VERTICAL else "verticals",
-                            center_children=[Box(label="L", name="left-dum", children=[self.brightness], v_expand=False)],
+                            center_children=[Box(label="L", name="left-dum", children=[self.brightness] if not info.VERTICAL else [], v_expand=False)],
                             v_expand=False
                         ),
                         self.stack,
@@ -263,7 +257,7 @@ class Notch(Window):
                             h_align="start",
                             v_align="start",
                             style_classes="" if not info.VERTICAL else "verticals",
-                            center_children=[Box(label="R", name="right-dum",children=[self.vol_small], v_expand=False)],
+                            center_children=[Box(label="R", name="right-dum",children=[self.vol_small] if not info.VERTICAL else [], v_expand=False)],
                             v_expand=False
                         ),
                     ],
