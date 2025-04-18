@@ -242,3 +242,22 @@ button:focus{
   background-color: black;
   border-radius: 17px;
 }
+
+#orientation-btn{
+  background-color: black;
+  border-radius: 17px;
+  min-height: 36px;
+  min-width: 36px;
+  padding: 0px;
+}
+
+#orientation-btn:hover{
+  border-radius: 15px;
+  transition: border 0.1s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+#orientation-label{
+  color: whitesmoke;
+  font-size: 20px;
+  margin-left: -7px;
+}

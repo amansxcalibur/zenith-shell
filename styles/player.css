@@ -158,9 +158,19 @@
     /* border-radius: 5px; */
 }
 
+#player-switch-container.vertical-player{
+    margin-top: -23px;
+    padding-bottom: 13px;
+}
+
 #player-switch-container{
     margin-top: -17px;
     padding-bottom: 7px;
+}
+
+#controls.vertical{
+    padding-bottom: 10px;
+    margin-bottom: 0px;
 }
 
 .player-icon{
@@ -189,6 +199,6 @@
     background-color: white;
 }
 
-.vertical #progress-container{
+/* #progress-container.vertical {
     margin-bottom: 15px;
-}
+} */

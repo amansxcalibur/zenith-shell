@@ -19,6 +19,7 @@ from workspaces import Workspaces, ActiveWindow
 from metrics import MetricsSmall, Battery
 from player import PlayerContainer
 import info
+import icons.icons as icons
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -27,6 +28,9 @@ from wallpaper import WallpaperSelector
 from volume import VolumeSlider, VolumeSmall
 from brightness import BrightnessSlider, BrightnessSmall
 from controls import ControlsManager
+from utilities.cursor import add_hover_cursor
+
+import os, subprocess
 
 class DockBar(Window):
     def __init__(self, **kwargs):
@@ -62,6 +66,18 @@ class DockBar(Window):
 
         self.systray = SystemTray()
         self.systray._update_visibility()
+        if info.VERTICAL:  # for cases where the notch overlaps
+            self.systray_revealer = Revealer(
+                child = Box(
+                    orientation='v',
+                    spacing=3,
+                    children=[
+                        self.systray
+                    ]
+                ),
+                child_revealed=True,
+                transition_type="slide-down"
+            )
 
         self.date_time = Box(
             name="date-time-container", 
@@ -77,8 +93,29 @@ class DockBar(Window):
             )
         )
 
+        self.vertical_toggle_btn = Button(
+            name="orientation-btn",
+            child=Label(name="orientation-label", markup=icons.toggle_vertical if not info.VERTICAL else icons.toggle_horizontal),
+            on_clicked = lambda b, *_: self.toggle_vertical()
+        )
+
         self.metrics = MetricsSmall()
+        if info.VERTICAL:  # for cases where the notch overlaps
+            self.metrics_vertical_toggle_revealer = Revealer(
+                child = Box(
+                    orientation='v',
+                    spacing=3,
+                    children=[
+                        self.vertical_toggle_btn, 
+                        self.metrics
+                    ]
+                ),
+                child_revealed=True,
+                transition_type="slide-up"
+            )
         self.battery = Battery()
+
+        add_hover_cursor(self.vertical_toggle_btn)
 
         self.main_bar = CenterBox(
             name="main-bar",
@@ -91,6 +128,7 @@ class DockBar(Window):
                 spacing=3,
                 orientation="h" if not info.VERTICAL else "v",
                 children=[
+                    self.vertical_toggle_btn,
                     self.workspaces
                 ] if not info.VERTICAL else [
                     self.date_time,
@@ -99,7 +137,7 @@ class DockBar(Window):
                         orientation='v',
                         children=[self.vol_small, self.brightness_small]
                     ),
-                    self.systray,
+                    self.systray_revealer,
                 ]
             ),
             end_children=Box(
@@ -112,7 +150,7 @@ class DockBar(Window):
                     self.battery,
                     self.date_time,
                 ] if not info.VERTICAL else [
-                    self.metrics,
+                    self.metrics_vertical_toggle_revealer,
                     self.battery
                 ],
             ),
@@ -155,6 +193,35 @@ class DockBar(Window):
             
             self.visibility_stack.set_visible_child(self.main_bar)
             self.notch.visibility_stack.set_visible_child(self.notch.full_notch)
+
+    def hide_overlapping_modules(self):
+        self.metrics_vertical_toggle_revealer.set_reveal_child(False)
+        self.systray_revealer.set_reveal_child(False)
+
+    def reveal_overlapping_modules(self):
+        self.metrics_vertical_toggle_revealer.set_reveal_child(True)
+        self.systray_revealer.set_reveal_child(True)
+
+    def toggle_vertical(self):
+        CONFIG_PATH = os.path.expanduser("~/fabric/info.py")
+        with open(CONFIG_PATH, "r") as f:
+            lines = f.readlines()
+
+        new_lines = []
+        for line in lines:
+            if line.strip().startswith("VERTICAL"):
+                current_value = "True" in line
+                new_value = "False" if current_value else "True"
+                new_lines.append(f"VERTICAL = {new_value}\n")
+            else:
+                new_lines.append(line)
+
+        with open(CONFIG_PATH, "w") as f:
+            f.writelines(new_lines)
+
+        # restart bar
+        subprocess.run(["/home/aman/i3scripts/flaunch.sh"])
+
 
 class Notch(Window):
     def __init__(self, **kwargs):
@@ -371,6 +438,7 @@ class Notch(Window):
 
         elif self.stack.get_visible_child() != self.collapsed:
             self.stack.remove_style_class("expand")
+            exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.reveal_overlapping_modules()'")
             
             # self.unsteal_input()
             self.wallpapers.remove_style_class("wallpaper-expand")
@@ -392,6 +460,7 @@ class Notch(Window):
         self.show_all()
 
     def open_notch(self, *_):
+        exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.hide_overlapping_modules()'")
         self.remove_style_class("launcher-contract")
         # if info.VERTICAL:
         # self.wallpapers.remove_style_class("vertical")
@@ -407,6 +476,7 @@ if __name__ == "__main__":
     bar.set_role("notch")
     dockBar.notch = bar
     if info.VERTICAL:
+        dockBar.set_title("fabric-dock")
         # make the window consume all vertical space
         monitor = dockBar._display.get_primary_monitor()
         rect = monitor.get_geometry()
@@ -417,7 +487,7 @@ if __name__ == "__main__":
         # bar.set_keep_above(True)
 
 
-    app = Application("bar-example", bar, dockBar, open_inspector=False)
+    app = Application("bar-example", bar, dockBar, open_inspector=True)
     # import builtins
     # builtins.bar = bar
     # FASS-based CSS file

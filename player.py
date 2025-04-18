@@ -78,6 +78,7 @@ class Player(Box):
             Box(name="controls", 
                 # h_expand=True, 
                 # v_expand=True,
+                style_classes="horizontal" if not info.VERTICAL else "vertical",
                 spacing=5,
                 children=[
                     Button(name="prev-button",child=Label(name="play-previous", markup=icons.previous), on_clicked=lambda b, *_: self.handle_prev(player)),
@@ -257,6 +258,7 @@ class PlayerContainer(Box):
         self.player_switch_container = CenterBox(
             name="player-switch-container", 
             orientation='h',
+            style_classes="horizontal-player" if not info.VERTICAL else "vertical-player",
             center_children=[]
             )
         self.children = [self.stack, self.player_switch_container]

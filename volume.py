@@ -40,6 +40,8 @@ class VolumeSlider(Scale):
             orientation="h" if not info.VERTICAL else 'v',
             h_expand=True,
             has_origin=True,
+            inverted=True if info.VERTICAL else False,
+            style_classes="" if not info.VERTICAL else "vertical",
             increments=(0.01, 0.1),
             **kwargs,
         )

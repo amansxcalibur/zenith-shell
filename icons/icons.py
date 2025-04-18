@@ -164,6 +164,10 @@ disable_shuffle: str = chr(0xf049e)
 
 exceptions: list[str] = ['font_family', 'font_weight', 'span']
 
+# Vertical
+toggle_horizontal: str = chr(0xf0885)
+toggle_vertical: str = chr(0xf0886)
+
 def apply_span() -> None:
     global_dict = globals()
     for key in global_dict:

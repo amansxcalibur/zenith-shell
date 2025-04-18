@@ -2,8 +2,13 @@ from i3ipc import Connection, Event
 from fabric.widgets.label import Label
 from fabric.widgets.box import Box
 from fabric.widgets.button import Button
+from fabric.utils.helpers import exec_shell_command_async
 import threading
 import info
+
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import GLib
 
 class i3Connector:
     _instance = None
@@ -32,6 +37,7 @@ class i3Connector:
         self.i3.on(Event.WORKSPACE_FOCUS, self.on_workspace_focus)
         self.i3.on(Event.WINDOW_FOCUS, self.on_window_focus)
         self.i3.on(Event.WINDOW_TITLE, self.on_window_title_change)
+        self.i3.on(Event.SHUTDOWN_RESTART, self.on_session_restart)
         # self.i3.on(Event.SHUTDOWN_RESTART, self.on_i3_restart)
         # self.i3.main()
 
@@ -53,6 +59,11 @@ class i3Connector:
 
     def on_window_title_change(self, i3, e):
         self.active_window.setter_label(e.container.name)
+
+    def on_session_restart(self, i3, e):
+        if info.VERTICAL:
+            i3.command("gaps left all set 44px")
+            i3.command("gaps top all set 3px")
 
     def start(self):
         if self._thread is None or not self.thread.is_alive():

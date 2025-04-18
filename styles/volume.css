@@ -29,6 +29,11 @@
     background-size: contain;
   }
 
+  #control-slider.vertical slider {
+    margin: 0 -8px;
+    margin-top: 40px;
+  }
+
   #control-slider.vol-overflow-slider highlight{
     background-color: rgb(228, 83, 83);
   }
