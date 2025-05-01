@@ -243,6 +243,7 @@ class Notch(Window):
         if not info.VERTICAL:
             self.vol_small = self.controls.get_volume_small()
             self.brightness_small = self.controls.get_brightness_small()
+            self.launcher.launcher_box.remove_style_class("vertical")
         self.volume_revealer = self.controls.get_volume_revealer()
         self.volume_overflow_revealer = self.controls.get_volume_overflow_revealer()
         self.brightness_revealer = self.controls.get_brightness_revealer()
@@ -291,6 +292,8 @@ class Notch(Window):
             self.launcher.add_style_class("vertical")
         else:
             self.wallpapers.remove_style_class("vertical") # this also has class vertical bind to it by default
+            self.wallpapers.header_box.remove_style_class("vertical")
+            self.wallpapers.scrolled_window.add_style_class("horizontal")
             self.player.remove_style_class("vertical")
         self.launcher.add_style_class("launcher-contract-init")
         self.wallpapers.add_style_class("wallpaper-contract")
@@ -487,7 +490,7 @@ if __name__ == "__main__":
         # bar.set_keep_above(True)
 
 
-    app = Application("bar-example", bar, dockBar, open_inspector=True)
+    app = Application("bar-example", bar, dockBar, open_inspector=False)
     # import builtins
     # builtins.bar = bar
     # FASS-based CSS file

@@ -36,7 +36,7 @@
     margin-right: 10px;
   }
 
-  .vertical #search-entry-walls{
+  #search-entry-walls.vertical{
     min-width: 490px;
   }
   
@@ -134,12 +134,11 @@
   background-image: none;
   background-color: black;
 }
-/* #scrolled-window.launcher{
+#scrolled-window.launcher.horizontal{
   border-bottom-left-radius: 20px;
   border-bottom-right-radius: 20px;
   padding: 8px;
-  min-height: 600px;
-} */
+}
 
 *{
   background-image: none;

@@ -80,6 +80,7 @@ class WallpaperSelector(Box):
             name="search-entry-walls",
             placeholder="Search Wallpapers...",
             h_expand=True,
+            style_classes='' if not data.VERTICAL else "vertical",
             notify_text=lambda entry, *_: self.arrange_viewport(entry.get_text()),
             on_key_press_event=self.on_search_entry_key_press,
         )
