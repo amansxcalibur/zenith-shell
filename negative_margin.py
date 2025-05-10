@@ -220,7 +220,7 @@ class DockBar(Window):
             f.writelines(new_lines)
 
         # restart bar
-        subprocess.run(["/home/aman/i3scripts/flaunch.sh"])
+        subprocess.run([f"{info.HOME_DIR}/i3scripts/flaunch.sh"])
 
 
 class Notch(Window):
@@ -402,7 +402,6 @@ class Notch(Window):
             # self.steal_input()
             exec_shell_command_async('i3-msg [window_role="notch"] focus')
             if self.stack.get_visible_child() == self.collapsed:
-                print("opeing")
                 # self.stack.remove_style_class("contract")
                 # self.stack.add_style_class("expand")
                 # # self.remove_style_class("wallpaper-init")
@@ -491,12 +490,12 @@ if __name__ == "__main__":
 
 
     app = Application("bar-example", bar, dockBar, open_inspector=False)
-    # import builtins
-    # builtins.bar = bar
-    # FASS-based CSS file
     
+    def set_css():
+        app.set_stylesheet_from_file(get_relative_path("./styles/dynamic.css"))
+    app.set_css = set_css
+    app.set_css()
 
-    app.set_stylesheet_from_file(get_relative_path("./styles/dynamic.css"))     
     app.run()
 
     # corner = Corners()

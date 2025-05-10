@@ -63,7 +63,7 @@
   } */
 
 #artist{
-    color: var(--error-dim);
+    color: var(--primary);
 }
 
 #song{
@@ -76,21 +76,10 @@
     /* background-color: antiquewhite; */
     margin-top: -10px;
 }
-#details{
-    /* background-color: rebeccapurple; */
-}
+
 #controls{
     margin-bottom: -10px;
 }
-
-/* #player-image{
-    border-radius: 20px;
-    min-width: 400px;
-    padding: 0px;
-    margin: 0px;
-    background-color: chartreuse;
-    background-image: url('wallhaven-weprlq_1920x1080.png');
-} */
 
 #play-next, #play-previous{
     font-size: 30px;

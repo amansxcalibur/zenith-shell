@@ -10,12 +10,14 @@ from fabric.widgets.entry import Entry
 from fabric.widgets.button import Button
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.widgets.label import Label
-from fabric.utils.helpers import exec_shell_command_async
+from fabric.utils.helpers import exec_shell_command_async, exec_shell_command
 import info as data
 import icons.icons as icons
 from PIL import Image
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
+import asyncio
+import info
 
 class WallpaperSelector(Box):
     CACHE_DIR = os.path.expanduser("~/.cache/zenith-shell/thumbs")  # Changed from wallpapers to thumbs
@@ -221,16 +223,24 @@ class WallpaperSelector(Box):
         #         f'swww img {full_path} -t outer --transition-duration 1.5 --transition-step 255 --transition-fps 60 -f Nearest'
         #     )
         exec_shell_command_async(f'feh --bg-scale {full_path}')
-        # exec_shell_command_async(f'echo "{full_path}" > /home/aman/.cache/walls/current_wallpaper.txt')
-        f = open('/home/aman/.cache/walls/current_wallpaper.txt', "w")
+        f = open(f'{info.HOME_DIR}/.cache/walls/current_wallpaper.txt', "w")
         f.write(full_path)
         f.close()
+
+        async def generate_theme():
+            exec_shell_command(f'matugen image {full_path} -t {selected_scheme}')
+            print("this is the selected scheme ", selected_scheme)
+            exec_shell_command_async("fabric-cli exec bar-example 'app.set_css()'")
+
+        asyncio.run(generate_theme())
+
+        # exec_shell_command_async(f'echo "{full_path}" > {info.HOME_DIR}/.cache/walls/current_wallpaper.txt')
 
         # for player placeholder image
         try:
             img = Image.open(full_path)
             img.thumbnail((400, 200))
-            cache_path = f"/home/aman/.cache/walls/low_rez.png"
+            cache_path = f"{info.HOME_DIR}/.cache/walls/low_rez.png"
             os.makedirs(os.path.dirname(cache_path), exist_ok=True)
             img.save(cache_path, format="PNG", quality=100)
         except Exception as e:

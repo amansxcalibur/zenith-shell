@@ -7,6 +7,6 @@ USERNAME = os.getlogin()
 HOSTNAME = os.uname().nodename
 HOME_DIR = os.path.expanduser("~")
 WALLPAPERS_DIR = os.path.expanduser("~/Pictures/Wallpapers/")
-VERTICAL = False
+VERTICAL = True
 print(USERNAME, HOSTNAME, HOME_DIR)
 print(Gtk)

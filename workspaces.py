@@ -127,6 +127,7 @@ class Workspaces(Box):
         for i, btn in enumerate(self.all_workspaces.children):
             if i==curr_workspace:
                 btn.remove_style_class("workspace-button")
+                btn.remove_style_class("used-workspace")
                 btn.add_style_class("active-workspace")
                 if info.VERTICAL:
                     btn.add_style_class("vertical")

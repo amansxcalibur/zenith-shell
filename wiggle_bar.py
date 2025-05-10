@@ -9,6 +9,7 @@ from fabric.widgets.x11 import X11Window as Window
 from fabric import Application
 from fabric.core.service import Service, Signal
 from fabric.utils import get_relative_path
+import info
 
 class WigglyWidget(Gtk.DrawingArea, Service):
     def __init__(self):
@@ -138,7 +139,25 @@ class WigglyWidget(Gtk.DrawingArea, Service):
 
         cr.stroke()
 
-        cr.set_source_rgb(1, 0.4, 0.4) # color of the slider thing
+        def hex_to_rgb01(hex_color):
+            hex_color = hex_color.lstrip('#')
+            r = int(hex_color[0:2], 16) / 255.0
+            g = int(hex_color[2:4], 16) / 255.0
+            b = int(hex_color[4:6], 16) / 255.0
+            return r, g, b
+
+        def get_css_variable(file_path, var_name):
+            with open(file_path) as f:
+                for line in f:
+                    if var_name in line:
+                        color = line.split(':')[1].strip().rstrip(';')
+                        return color
+            return None
+
+        hex_color = get_css_variable(f'{info.HOME_DIR}/fabric/styles/colors.css', '--primary')
+        r, g, b = hex_to_rgb01(hex_color)
+        cr.set_source_rgb(r, g, b)
+
         rect_width = 6
         arc_radius = slider_diameter / 2
         rect_height = 6

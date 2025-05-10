@@ -37,7 +37,7 @@ class Player(Box):
 
         self.player_name = Label(name=player.props.player_name, style_classes="player-icon", markup=getattr(icons, player.props.player_name, icons.disc))
 
-        self.set_style(f"background-image:url('/home/aman/.cache/walls/low_rez.png')")
+        self.set_style(f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')")
 
         self.song = Label(name="song", label="song", justification="left", h_align="start", max_chars_width=10,)
         self.artist = Label(name="artist", label="artist", justification="left", h_align="start")

@@ -2,7 +2,7 @@
     background-color: var(--shadow);
     padding: 0px;
     min-width: 100px;
-    border-radius: 16px;
+    border-radius: 20px;
     /*margin-top: 4px;*/
     /* margin-top: 3px;
     margin-bottom: 3px; */
@@ -20,7 +20,7 @@
     background-color: var(--shadow);
     padding: 0px;
     min-width: 34px;
-    border-radius: 16px;
+    border-radius: 20px;
     margin: 0px;
   }
 
@@ -34,7 +34,7 @@
   #metrics-circle {
     color: var(--surface-bright);
     /* border: 3px solid var(--primary); */
-    border: 3px solid rgb(228, 83, 83);
+    border: 3px solid var(--primary);
   }
   
   #metrics-circle.bat {

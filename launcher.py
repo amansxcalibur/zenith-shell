@@ -31,7 +31,7 @@ class AppLauncher(Box):
         self._all_apps = get_desktop_applications()
 
         # Calculator history initialization
-        # self.calc_history_path = os.path.expanduser("~/.cache/ax-shell/calc.json")
+        # self.calc_history_path = os.path.expanduser("~/.cache/zenith-shell/calc.json")
         # if os.path.exists(self.calc_history_path):
         #     with open(self.calc_history_path, "r") as f:
         #         self.calc_history = json.load(f)

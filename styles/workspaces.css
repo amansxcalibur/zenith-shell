@@ -1,5 +1,5 @@
 .active-workspace{
-    background-color: antiquewhite;
+    background-color: var(--primary);
     min-width: 50px;
     /* min-height: 5px; */
     min-height: 1px;
@@ -41,7 +41,7 @@
 }
 
 .used-workspace{
-    background-color: antiquewhite;
+    background-color: var(--foreground);
 }
 
 .hide{

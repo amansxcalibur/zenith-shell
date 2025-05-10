@@ -70,7 +70,7 @@
   #button-volume, #button-mic, #button-brightness {
     color: var(--surface-bright);
     /* border: 3px solid var(--primary); */
-    border: 3px solid rgb(228, 83, 83);
+    border: 3px solid var(--primary);
     /* border: 3px solid rgb(235, 161, 161); */
   }
   
