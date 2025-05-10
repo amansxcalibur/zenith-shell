@@ -15,6 +15,9 @@ A SOSS shell for <b>X11</b> and <b>i3wm</b>, crafted using [fabric](https://gith
     <td colspan="3"><img src="assets/showcase-btop.png"></td>
   </tr>
   <tr>
+    <td colspan="3"><img src="assets/showcase-vertical.png"></td>
+  </tr>
+  <tr>
     <td colspan="1"><img src="assets/showcase-player.png"></td>
     <td colspan="1"><img src="assets/showcase-launcher.png"></td>
     <td colspan="1"><img src="assets/showcase-wallpaper-selector.png"></td>
@@ -32,11 +35,12 @@ A SOSS shell for <b>X11</b> and <b>i3wm</b>, crafted using [fabric](https://gith
 - pactl
 - feh
 - gray
+- matugen
 - playerctl
   - (apt) gir1.2-playerctl-2.0
 
 ## Gray installation
-Zenith uses [Gray](https://github.com/Fabric-Development/gray?tab=readme-ov-file) for menu handling. Follow the installation steps in the official documentation.
+Zenith uses [Gray](https://github.com/Fabric-Development/gray?tab=readme-ov-file) for system trays. Follow the installation steps in the official documentation.
 Ensure you have the following dependencies installed before building:
 - valac
 - libdbusmenu-gtk3-dev
