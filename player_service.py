@@ -10,7 +10,7 @@ class PlayerService(Service):
     def __init__(self, player: Playerctl.Player, **kwargs):
         self._player: Playerctl.Player = player
         super().__init__(**kwargs)
-        if player.props.player_name in ['vlc', 'cmus', 'firefox', 'spotify']:
+        if player.props.player_name in ['vlc', 'cmus', 'firefox', 'spotify', 'chromium']:
             print("initing ", player.props.player_name) 
             
             self._player.connect('playback-status::playing', self.on_play)
@@ -122,7 +122,7 @@ class PlayerManager(Service):
         for player_obj in self._manager.props.player_names:
             name_str = player_obj.name
             print(f"{name_str} appeared")
-            if name_str in ['vlc', 'cmus', 'firefox', 'spotify']:
+            if name_str in ['vlc', 'cmus', 'firefox', 'spotify', 'chromium']:
                 player = Playerctl.Player.new_from_name(player_obj)
                 self._manager.manage_player(player)
                 # player_instance = Player(player)
@@ -132,7 +132,7 @@ class PlayerManager(Service):
     def _on_name_appeared(self, sender, name, manager):
         name_str = name.name
         print(f"{name_str} appeared")
-        if name_str in ['vlc', 'cmus', 'firefox', 'spotify']:
+        if name_str in ['vlc', 'cmus', 'firefox', 'spotify', 'chromium']:
             player = Playerctl.Player.new_from_name(name)
             self._manager.manage_player(player)
             # player_instance = Player(player)
