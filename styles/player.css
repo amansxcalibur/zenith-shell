@@ -9,8 +9,9 @@
         inset 0 100px 100px black, 
         inset 10px 0px 10px rgba(0, 0, 0, 0.5),
         inset -10px 0px 10px rgba(0, 0, 0, 0.5);
-    border-bottom-right-radius: 20px;
-    border-bottom-left-radius: 20px;
+    /* border-bottom-right-radius: 20px;
+    border-bottom-left-radius: 20px; */
+    border-radius: 20px;
     padding: 20px;
     background-position: center;
     background-size: cover;
