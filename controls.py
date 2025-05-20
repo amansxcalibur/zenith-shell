@@ -1,6 +1,7 @@
 from volume import VolumeSlider, VolumeSmall
-from brightness import BrightnessSlider, BrightnessSmall
+from brightness import BrightnessSlider, BrightnessSmall, BrightnessMaterial3
 from fabric.widgets.revealer import Revealer
+from fabric.widgets.scale import Scale
 import info
 
 class ControlsManager:
@@ -13,8 +14,8 @@ class ControlsManager:
         return cls._instance
 
     def _init_controls(self, notch):
-        volume_slider = VolumeSlider(notch = self)
-        volume_overflow_slider = VolumeSlider(notch = self)
+        volume_slider = VolumeSlider(notch = notch)
+        volume_overflow_slider = VolumeSlider(notch = notch)
         volume_overflow_slider.add_style_class("vol-overflow-slider")
 
         self.volume_revealer = Revealer(
@@ -31,7 +32,7 @@ class ControlsManager:
                     child_revealed=False,
                 )
         
-        self.vol_small = VolumeSmall(notch = self, slider_instance=self.volume_revealer, overflow_instance = self.volume_overflow_revealer)
+        self.vol_small = VolumeSmall(notch = notch, slider_instance=self.volume_revealer, overflow_instance = self.volume_overflow_revealer)
 
         self.brightness_revealer = Revealer(
             name="brightness",
@@ -40,6 +41,7 @@ class ControlsManager:
             child=BrightnessSlider(),
             child_revealed=True
         )
+        self.brightness_slider_mui = BrightnessMaterial3(device="intel_backlight")
         self.brightness_small = BrightnessSmall(device="intel_backlight", slider_instance=self.brightness_revealer)
 
     def get_volume_revealer(self):
@@ -56,3 +58,17 @@ class ControlsManager:
     
     def get_brightness_small(self):
         return self.brightness_small
+    
+    def get_brightness_slider_mui(self):
+        return self.brightness_slider_mui
+    
+    def set_brightness(self):
+        # print("--------------instance of brightness dash-----------------")
+        # print("Slider 1:", self.brightness_revealer.get_child())
+        # print("Slider 2:", self.brightness_revealer_mui.get_child())
+        # print("Small 1:", self.brightness_small.get_child())
+        # print("Small 2:", self.brightness_small_mui.get_child())
+
+        self.brightness_small.update_brightness()
+        # self.brightness_revealer_mui.update_brightness_slider(0.5)
+        self.brightness_slider_mui.update_brightness()

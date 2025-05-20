@@ -9,6 +9,7 @@
 @import url("./player.css");
 @import url("./wiggle.css");
 @import url("./notification.css");
+@import url("./dashboard.css");
 
   /* .status-bar {
     background-color: var(--status-bar-background-color);
@@ -260,3 +261,7 @@ button:focus{
   font-size: 20px;
   margin-left: -7px;
 }
+
+/* *{
+  all: unset;
+} */

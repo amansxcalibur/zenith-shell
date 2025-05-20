@@ -16,3 +16,8 @@
     margin-left: 7px;
     color: var(--surface-bright);
 }
+
+#notification-container{
+    background-color: var(--surface);
+    border-radius: 20px;
+}

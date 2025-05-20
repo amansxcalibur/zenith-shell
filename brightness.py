@@ -51,7 +51,7 @@ class BrightnessSmall(Box):
         self.max = 0
         self.percentage = 0
         self.exist = supports_backlight
-        self.brightness_revealer = slider_instance
+        self.brightness_revealer_ref = slider_instance
         self.hide_timer = None
         self.hover_counter = 0
 
@@ -142,7 +142,7 @@ class BrightnessSmall(Box):
         if self.hide_timer is not None:
             GLib.source_remove(self.hide_timer)
             self.hide_timer = None
-        self.brightness_revealer.set_reveal_child(True)
+        self.brightness_revealer_ref.set_reveal_child(True)
         return False
 
     def await_hide(self):
@@ -155,7 +155,7 @@ class BrightnessSmall(Box):
         return False
 
     def hide_revealer(self):
-        self.brightness_revealer.set_reveal_child(False)
+        self.brightness_revealer_ref.set_reveal_child(False)
         self.hide_timer = None
         return False
 
@@ -168,7 +168,7 @@ class BrightnessSmall(Box):
         # self.progress_bar.value = self.percentage/100
         self.progress_bar.value = self.percentage/100
         self.reveal_revealer()
-        self.brightness_revealer.get_child().update_brightness_slider(self.percentage)
+        self.brightness_revealer_ref.get_child().update_brightness_slider(self.percentage)
         self.await_hide()
         # self._updating_from_brightness = False
 
@@ -188,3 +188,37 @@ class BrightnessSmall(Box):
     #     if self._update_source_id is not None:
     #         GLib.source_remove(self._update_source_id)
     #     super().destroy()
+
+class BrightnessMaterial3(Scale):
+    def __init__(self, device: str, **kwargs):
+        super().__init__(
+            name="control-slider-mui",
+            orientation="h" if not info.VERTICAL else "v",
+            h_expand=True,
+            has_origin=True,
+            inverted=True if info.VERTICAL else False,
+            style_classes="" if not info.VERTICAL else "vertical",
+            increments=(0.01, 0.1),
+            **kwargs,
+        )
+        self.device = device
+        self.current = 0
+        self.max = 0
+        self.percentage = 0
+        self.exist = supports_backlight
+        self.hide_timer = None
+        self.hover_counter = 0
+        self.add_style_class("brightness")
+        self.update_brightness()
+
+    def update_brightness(self):
+        if self.exist:
+            init = subprocess.check_output(["brightnessctl", "-d" , self.device]).decode("utf-8").lower()
+            self.current = int(re.search(r"current brightness:\s+(\d+)", init).group(1))
+            self.max = int(re.search(r"max brightness:\s+(\d+)", init).group(1))
+            self.percentage = int(re.search(r"\((\d+)%\)", init).group(1))
+            print("exists and updating")
+            self.update_brightness_slider(self.percentage)
+
+    def update_brightness_slider(self, brightness):
+        self.value = brightness / 100
