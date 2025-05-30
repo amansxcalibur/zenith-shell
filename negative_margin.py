@@ -56,27 +56,47 @@ class DockBar(Window):
             self.i3.command("gaps top all set 3px")
             self.i3.command("gaps bottom all set 0px")
 
-        self.pill = Box(
-            name="vert"
-        )
+        self.workspaces = Workspaces()
+
+        self.metrics = MetricsSmall()
+        self.battery = Battery()
+
+        self.systray = SystemTray()
+
+        self.pill = Box(name="vert")
+
         self.start = Box(
             name="start",
             h_expand=True,
-            children=Label(label="helloevreyo"),
+            children=[
+                self.workspaces,
+            ]
         )
+
         self.end = Box(
             name="end",
             h_expand=True,
-            # children=Label(label="helloevreyo"),
+            children=Box(
+                name="inner-end",
+                h_expand=True,
+                h_align="end",
+                children=[
+                    self.systray,
+                    self.metrics,
+                    self.battery
+                ]
+            )
         )
-        
+
         self.pill_container = Box(
             name="hori",
-            # v_align=True,
-            # h_expand=True,
             orientation='v',
-            children=[self.pill,Box(name="bottom", v_expand=True,)]
+            children=[
+                self.pill,
+                Box(name="bottom", v_expand=True)
+            ]
         )
+
         self.children = Box(
             name ="main", 
             children=[
@@ -85,6 +105,12 @@ class DockBar(Window):
                 self.end,
             ]
         )
+
+        # SizeGroup to equalize width of start and end children
+        size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
+        size_group.add_widget(self.start)
+        size_group.add_widget(self.end)
+
         self.add_keybinding("Escape", lambda *_: self.close())
 
     def open(self):
