@@ -8,6 +8,7 @@
 @import url("./metrics.css");
 @import url("./player.css");
 @import url("./wiggle.css");
+@import url("./notification.css");
 
   /* .status-bar {
     background-color: var(--status-bar-background-color);
@@ -73,7 +74,6 @@
 
   #expanding-bar, #collapsed-bar{
     color: white;
-    /* padding-bottom: 8px; */
     outline: none;
     border: none;;
     border-bottom-left-radius: 20px;

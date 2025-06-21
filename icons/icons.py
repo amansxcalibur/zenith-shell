@@ -162,6 +162,10 @@ play: str = chr(0xf04b)
 shuffle: str = chr(0xf074)
 disable_shuffle: str = chr(0xf049e)
 
+# Settings
+settings: str = chr(0xf1a2a)
+blur: str = chr(0xf00b5)
+
 exceptions: list[str] = ['font_family', 'font_weight', 'span']
 
 # Vertical

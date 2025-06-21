@@ -222,7 +222,7 @@ class WallpaperSelector(Box):
         #     exec_shell_command_async(
         #         f'swww img {full_path} -t outer --transition-duration 1.5 --transition-step 255 --transition-fps 60 -f Nearest'
         #     )
-        exec_shell_command_async(f'feh --bg-scale {full_path}')
+        exec_shell_command_async(f'feh --zoom fill --bg-fill {full_path}')
         f = open(f'{info.HOME_DIR}/.cache/walls/current_wallpaper.txt', "w")
         f.write(full_path)
         f.close()

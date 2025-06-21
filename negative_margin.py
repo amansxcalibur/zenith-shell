@@ -6,6 +6,7 @@ from fabric.widgets.button import Button
 from fabric.widgets.centerbox import CenterBox
 from fabric.widgets.stack import Stack
 from fabric.widgets.datetime import DateTime
+from fabric.widgets.revealer import Revealer
 from fabric.widgets.x11 import X11Window as Window
 from fabric.utils import get_relative_path
 from fabric.utils.helpers import exec_shell_command_async
@@ -13,16 +14,17 @@ from i3ipc import Connection
 
 from launcher import AppLauncher
 from corner import Corners, MyCorner
-from fabric.widgets.revealer import Revealer
 from systray import SystemTray
 from workspaces import Workspaces, ActiveWindow
 from metrics import MetricsSmall, Battery
 from player import PlayerContainer
+from notification import Notification
 import info
 import icons.icons as icons
 
 import gi
-gi.require_version('Gtk', '3.0')
+
+gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gdk, Gtk
 from wallpaper import WallpaperSelector
 from volume import VolumeSlider, VolumeSmall
@@ -31,6 +33,7 @@ from controls import ControlsManager
 from utilities.cursor import add_hover_cursor
 
 import os, subprocess
+
 
 class DockBar(Window):
     def __init__(self, **kwargs):
@@ -44,7 +47,7 @@ class DockBar(Window):
             all_visible=True,
             h_expand=True,
             v_expand=True,
-            **kwargs
+            **kwargs,
         )
 
         self.i3 = Connection()
@@ -56,7 +59,7 @@ class DockBar(Window):
             self.i3.command("gaps top all set 0px")
 
         self.notch = kwargs.get("notch", None)
-        
+
         if not info.VERTICAL:
             self.workspaces = Workspaces()
         else:
@@ -68,50 +71,48 @@ class DockBar(Window):
         self.systray._update_visibility()
         if info.VERTICAL:  # for cases where the notch overlaps
             self.systray_revealer = Revealer(
-                child = Box(
-                    orientation='v',
-                    spacing=3,
-                    children=[
-                        self.systray
-                    ]
-                ),
+                child=Box(orientation="v", spacing=3, children=[self.systray]),
                 child_revealed=True,
-                transition_type="slide-down"
+                transition_type="slide-down",
             )
 
         self.date_time = Box(
-            name="date-time-container", 
-            style_classes="" if not info.VERTICAL else "vertical" ,
+            name="date-time-container",
+            style_classes="" if not info.VERTICAL else "vertical",
             children=DateTime(
-                name="date-time", 
-                formatters=["%H\n%M"] if info.VERTICAL else ["%H:%M"], 
-                h_align="center", 
-                v_align="center", 
-                h_expand=True, 
-                v_expand=True ,
-                style_classes="" if not info.VERTICAL else "vertical"
-            )
+                name="date-time",
+                formatters=["%H\n%M"] if info.VERTICAL else ["%H:%M"],
+                h_align="center",
+                v_align="center",
+                h_expand=True,
+                v_expand=True,
+                style_classes="" if not info.VERTICAL else "vertical",
+            ),
         )
 
         self.vertical_toggle_btn = Button(
             name="orientation-btn",
-            child=Label(name="orientation-label", markup=icons.toggle_vertical if not info.VERTICAL else icons.toggle_horizontal),
-            on_clicked = lambda b, *_: self.toggle_vertical()
+            child=Label(
+                name="orientation-label",
+                markup=(
+                    icons.toggle_vertical
+                    if not info.VERTICAL
+                    else icons.toggle_horizontal
+                ),
+            ),
+            on_clicked=lambda b, *_: self.toggle_vertical(),
         )
 
         self.metrics = MetricsSmall()
         if info.VERTICAL:  # for cases where the notch overlaps
             self.metrics_vertical_toggle_revealer = Revealer(
-                child = Box(
-                    orientation='v',
+                child=Box(
+                    orientation="v",
                     spacing=3,
-                    children=[
-                        self.vertical_toggle_btn, 
-                        self.metrics
-                    ]
+                    children=[self.vertical_toggle_btn, self.metrics],
                 ),
                 child_revealed=True,
-                transition_type="slide-up"
+                transition_type="slide-up",
             )
         self.battery = Battery()
 
@@ -120,53 +121,56 @@ class DockBar(Window):
         self.main_bar = CenterBox(
             name="main-bar",
             orientation="h" if not info.VERTICAL else "v",
-            h_align="fill" if not info.VERTICAL else "center", 
-            v_align="center" if not info.VERTICAL else "fill", 
+            h_align="fill" if not info.VERTICAL else "center",
+            v_align="center" if not info.VERTICAL else "fill",
             style_classes="horizontal" if not info.VERTICAL else "vertical",
             start_children=Box(
                 name="start-container",
                 spacing=3,
                 orientation="h" if not info.VERTICAL else "v",
-                children=[
-                    self.vertical_toggle_btn,
-                    self.workspaces
-                ] if not info.VERTICAL else [
-                    self.date_time,
-                    Box(
-                        name="vol-brightness-container",
-                        orientation='v',
-                        children=[self.vol_small, self.brightness_small]
-                    ),
-                    self.systray_revealer,
-                ]
+                children=(
+                    [self.vertical_toggle_btn, self.workspaces]
+                    if not info.VERTICAL
+                    else [
+                        self.date_time,
+                        Box(
+                            name="vol-brightness-container",
+                            orientation="v",
+                            children=[self.vol_small, self.brightness_small],
+                        ),
+                        self.systray_revealer,
+                    ]
+                ),
             ),
             end_children=Box(
                 name="end-container",
                 spacing=3,
                 orientation="h" if not info.VERTICAL else "v",
-                children=[
-                    self.systray,
-                    self.metrics,
-                    self.battery,
-                    self.date_time,
-                ] if not info.VERTICAL else [
-                    self.metrics_vertical_toggle_revealer,
-                    self.battery
-                ],
+                children=(
+                    [
+                        self.systray,
+                        self.metrics,
+                        self.battery,
+                        self.date_time,
+                    ]
+                    if not info.VERTICAL
+                    else [self.metrics_vertical_toggle_revealer, self.battery]
+                ),
             ),
         )
 
         if not info.VERTICAL:
-            self.main_bar.remove_style_class("vertical") # main_bar gets class vertical for some reason
+            # main_bar gets class vertical for some reason
+            self.main_bar.remove_style_class("vertical")
 
         self.ghost_bar = Box()
 
         self.visibility_stack = Stack(
             h_expand=True,
             v_expand=True,
-            transition_type="over-down", 
+            transition_type="over-down",
             transition_duration=100,
-            children=[self.main_bar,self.ghost_bar]
+            children=[self.main_bar, self.ghost_bar],
         )
 
         self.children = self.visibility_stack
@@ -179,7 +183,7 @@ class DockBar(Window):
         if self.visibility_stack.get_visible_child() == self.main_bar:
             if info.VERTICAL:
                 self.i3.command("gaps outer all set 3px")
-            self.main_bar.add_style_class("hide-main-bar")            
+            self.main_bar.add_style_class("hide-main-bar")
             self.notch.full_notch.add_style_class("hide-notch")
 
             self.visibility_stack.set_visible_child(self.ghost_bar)
@@ -190,7 +194,7 @@ class DockBar(Window):
                 self.i3.command("gaps top all set 3px")
             self.main_bar.remove_style_class("hide-main-bar")
             self.notch.full_notch.remove_style_class("hide-notch")
-            
+
             self.visibility_stack.set_visible_child(self.main_bar)
             self.notch.visibility_stack.set_visible_child(self.notch.full_notch)
 
@@ -229,7 +233,6 @@ class Notch(Window):
             name="notch",
             layer="top",
             geometry="top" if not info.VERTICAL else "left",
-            # margin="-8px -4px -8px -4px",
             # keyboard_mode="auto",
             type_hint="normal",
             # focusable=False
@@ -237,19 +240,21 @@ class Notch(Window):
             visible=True,
             all_visible=True,
         )
-        self.launcher = AppLauncher(notch = self)
+        self.launcher = AppLauncher(notch=self)
 
         self.controls = ControlsManager(notch=self)
+        self.notification_revealer = None
         if not info.VERTICAL:
             self.vol_small = self.controls.get_volume_small()
             self.brightness_small = self.controls.get_brightness_small()
             self.launcher.launcher_box.remove_style_class("vertical")
+            self.notification_revealer = Notification()
         self.volume_revealer = self.controls.get_volume_revealer()
         self.volume_overflow_revealer = self.controls.get_volume_overflow_revealer()
         self.brightness_revealer = self.controls.get_brightness_revealer()
-        
+
         self.switch = True
-        self.wallpapers = WallpaperSelector(notch = self)
+        self.wallpapers = WallpaperSelector(notch=self)
 
         self.player = PlayerContainer()
         self.player.add_style_class("hide-player")
@@ -258,21 +263,33 @@ class Notch(Window):
         if info.VERTICAL:
             self.workspaces = Workspaces()
         self.active_window.active_window.add_style_class("hide")
-        self.user = Label(label="aman@brewery" if not info.VERTICAL else "am\nan\n@\nbr\new\ner\ny", name="user-label")
-        self.dot_placeholder = Label(label=". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .", name="collapsed-bar") if not info.VERTICAL else Label(label="~", name="collapsed-bar", style_classes="vertical")
+        self.user = Label(
+            label="aman@brewery" if not info.VERTICAL else "am\nan\n@\nbr\new\ner\ny",
+            name="user-label",
+        )
+        self.dot_placeholder = (
+            Label(
+                label=". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+                name="collapsed-bar",
+            )
+            if not info.VERTICAL
+            else Label(label="~", name="collapsed-bar", style_classes="vertical")
+        )
 
         self.notch_compact = Stack(
             name="collapsed",
             transition_type="crossfade",
             transition_duration=100,
             style_classes="" if not info.VERTICAL else "vertical",
-            children=[
-                self.user,
-                self.active_window.active_window,
-                self.dot_placeholder,
-            ] if not info.VERTICAL else [
-                self.workspaces
-            ]
+            children=(
+                [
+                    self.user,
+                    self.active_window.active_window,
+                    self.dot_placeholder,
+                ]
+                if not info.VERTICAL
+                else [self.workspaces]
+            ),
         )
         self.notch_compact.set_visible_child(self.dot_placeholder)
 
@@ -291,26 +308,23 @@ class Notch(Window):
             self.player.add_style_class("vertical")
             self.launcher.add_style_class("vertical")
         else:
-            self.wallpapers.remove_style_class("vertical") # this also has class vertical bind to it by default
+            # all these modules have class vertical bind to it by default
+            self.wallpapers.remove_style_class("vertical")
             self.wallpapers.header_box.remove_style_class("vertical")
             self.wallpapers.scrolled_window.add_style_class("horizontal")
             self.player.remove_style_class("vertical")
         self.launcher.add_style_class("launcher-contract-init")
         self.wallpapers.add_style_class("wallpaper-contract")
-        
+
         self.stack = Stack(
             name="notch-content",
-            h_expand=True, 
+            h_expand=True,
             v_expand=True,
-            transition_type="crossfade", 
+            transition_type="crossfade",
             transition_duration=250,
             style_classes="" if not info.VERTICAL else "vertical",
-            children=[
-                self.collapsed,
-                self.expanding,
-                self.wallpapers,
-                self.player
-            ])
+            children=[self.collapsed, self.expanding, self.wallpapers, self.player],
+        )
 
         self.stack.set_visible_child(self.collapsed)
         self.add_keybinding("Escape", lambda *_: self.close())
@@ -319,7 +333,7 @@ class Notch(Window):
             orientation="v" if not info.VERTICAL else "h",
             children=[
                 CenterBox(
-                    orientation='h' if not info.VERTICAL else 'v',
+                    orientation="h" if not info.VERTICAL else "v",
                     center_children=[
                         CenterBox(
                             label="L",
@@ -329,13 +343,19 @@ class Notch(Window):
                             style_classes="" if not info.VERTICAL else "verticals",
                             center_children=[
                                 Box(
-                                    name="left-dum", 
-                                    style_classes="" if not info.VERTICAL else "vertical",
-                                    children=[self.brightness_small] if not info.VERTICAL else [], 
-                                    v_expand=False
+                                    name="left-dum",
+                                    style_classes=(
+                                        "" if not info.VERTICAL else "vertical"
+                                    ),
+                                    children=(
+                                        [self.brightness_small]
+                                        if not info.VERTICAL
+                                        else []
+                                    ),
+                                    v_expand=False,
                                 )
                             ],
-                            v_expand=False
+                            v_expand=False,
                         ),
                         self.stack,
                         CenterBox(
@@ -346,32 +366,44 @@ class Notch(Window):
                             style_classes="" if not info.VERTICAL else "verticals",
                             center_children=[
                                 Box(
-                                    name="right-dum", 
-                                    style_classes="" if not info.VERTICAL else "vertical",
-                                    children=[self.vol_small] if not info.VERTICAL else [], 
-                                    v_expand=False
+                                    name="right-dum",
+                                    style_classes=(
+                                        "" if not info.VERTICAL else "vertical"
+                                    ),
+                                    children=(
+                                        [self.vol_small] if not info.VERTICAL else []
+                                    ),
+                                    v_expand=False,
                                 )
                             ],
-                            v_expand=False
+                            v_expand=False,
                         ),
                     ],
                 ),
-                self.volume_revealer,
-                self.volume_overflow_revealer,
-                self.brightness_revealer
-            ]
+            ],
         )
-        self.hidden_notch = Box()
+        self.hidden_notch = Box(style="min-height:1px;")
         self.visibility_stack = Stack(
-            transition_type="over-down", 
+            transition_type="over-down",
             transition_duration=100,
-            children=[
-                self.full_notch,
-                self.hidden_notch
-            ]
+            children=[self.full_notch, self.hidden_notch],
         )
 
-        self.children = self.visibility_stack
+        self.children = Box(
+            orientation="v" if not info.VERTICAL else "h",
+            children=[
+                self.visibility_stack,
+                self.notification_revealer,
+                self.volume_revealer,
+                self.volume_overflow_revealer,
+                self.brightness_revealer,
+            ] if not info.VERTICAL else [
+                self.visibility_stack,
+                self.volume_revealer,
+                self.volume_overflow_revealer,
+                self.brightness_revealer,
+            ],
+        )
         # self.set_properties("_NET_WM_STATE", ["_NET_WM_STATE_ABOVE"])
         # self.set_properties("_NET_WM_WINDOW_TYPE", ["_NET_WM_WINDOW_TYPE_DOCK"])
 
@@ -409,7 +441,7 @@ class Notch(Window):
                 self.launcher.remove_style_class("launcher-contract")
                 self.launcher.add_style_class("launcher-expand")
                 self.stack.set_visible_child(self.expanding)
-                
+
                 self.launcher.open_launcher()
                 self.launcher.search_entry.set_text("")
                 self.launcher.search_entry.grab_focus()
@@ -420,14 +452,14 @@ class Notch(Window):
                 self.launcher.remove_style_class("launcher-contract")
                 self.launcher.add_style_class("launcher-expand")
                 self.stack.set_visible_child(self.expanding)
-                
+
                 self.launcher.open_launcher()
                 self.launcher.search_entry.set_text("")
                 self.launcher.search_entry.grab_focus()
         else:
             print("Notch is hidden")
         self.show_all()
-    
+
     def close(self, *_):
         if self.stack.get_visible_child() == self.player:
             self.player.remove_style_class("reveal-player")
@@ -435,13 +467,15 @@ class Notch(Window):
                 self.player.add_style_class("vertical")
             else:
                 self.player.add_style_class("hide-player")
-            
+
             self.stack.set_visible_child(self.collapsed)
 
         elif self.stack.get_visible_child() != self.collapsed:
             self.stack.remove_style_class("expand")
-            exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.reveal_overlapping_modules()'")
-            
+            exec_shell_command_async(
+                " fabric-cli exec bar-example 'dockBar.reveal_overlapping_modules()'"
+            )
+
             # self.unsteal_input()
             self.wallpapers.remove_style_class("wallpaper-expand")
             self.wallpapers.add_style_class("wallpaper-contract")
@@ -451,9 +485,9 @@ class Notch(Window):
             self.launcher.remove_style_class("launcher-expand")
             self.launcher.add_style_class("launcher-contract")
             self.stack.set_visible_child(self.collapsed)
-            exec_shell_command_async(f'i3-msg focus mode_toggle')
+            exec_shell_command_async(f"i3-msg focus mode_toggle")
             # self.launcher.close_launcher()
-         
+
         # for cases where player->dmenu->close()
         if info.VERTICAL:
             self.player.add_style_class("vertical")
@@ -462,7 +496,9 @@ class Notch(Window):
         self.show_all()
 
     def open_notch(self, *_):
-        exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.hide_overlapping_modules()'")
+        exec_shell_command_async(
+            " fabric-cli exec bar-example 'dockBar.hide_overlapping_modules()'"
+        )
         self.remove_style_class("launcher-contract")
         # if info.VERTICAL:
         # self.wallpapers.remove_style_class("vertical")
@@ -472,12 +508,16 @@ class Notch(Window):
         self.wallpapers.add_style_class("wallpaper-expand")
         self.stack.set_visible_child(self.wallpapers)
 
+
 if __name__ == "__main__":
-    bar = Notch()
+    notch = Notch()
     dockBar = DockBar()
-    bar.set_role("notch")
-    dockBar.notch = bar
+    notch.set_role("notch")
+    dockBar.notch = notch
+    notification = None
     if info.VERTICAL:
+        from notification import NotificationPopup
+        notification = NotificationPopup()
         dockBar.set_title("fabric-dock")
         # make the window consume all vertical space
         monitor = dockBar._display.get_primary_monitor()
@@ -485,14 +525,14 @@ if __name__ == "__main__":
         scale = monitor.get_scale_factor()
         dockBar.set_size_request(0, rect.height * scale)
         dockBar.show_all()
-        bar.show_all()
+        notch.show_all()
         # bar.set_keep_above(True)
 
+    app = Application("bar-example", notch, dockBar, notification, open_inspector=False)
 
-    app = Application("bar-example", bar, dockBar, open_inspector=False)
-    
     def set_css():
         app.set_stylesheet_from_file(get_relative_path("./styles/dynamic.css"))
+
     app.set_css = set_css
     app.set_css()
 

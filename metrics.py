@@ -15,15 +15,32 @@ from fabric.widgets.overlay import Overlay
 from fabric.widgets.revealer import Revealer
 from fabric.core.fabricator import Fabricator
 from fabric.widgets.scale import Scale
+from fabric.core.service import Service, Signal
+from fabric.utils.helpers import exec_shell_command_async
 
 import icons.icons as icons
 
-class MetricsProvider:
+
+class MetricsProvider(Service):
     """
     Class responsible for obtaining centralized CPU, memory, disk usage, and battery metrics.
     It updates periodically so that all widgets querying it display the same values.
     """
+
+    _instance = None
+    _initialized = False
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
+        if self._initialized:
+            return
+        super().__init__()
+        self._initialized = True
+
         self.cpu = 0.0
         self.mem = 0.0
         self.disk = 0.0
@@ -33,6 +50,9 @@ class MetricsProvider:
 
         # Updates every 1 second
         GLib.timeout_add_seconds(1, self._update)
+
+    @Signal
+    def battery_changed(self, percent: float, charging: bool) -> None: ...
 
     def _update(self):
         # Get non-blocking usage percentages (interval=0)
@@ -48,6 +68,8 @@ class MetricsProvider:
         else:
             self.bat_percent = battery.percent
             self.bat_charging = battery.power_plugged
+        if self.bat_charging is not None:
+            self.battery_changed(self.bat_percent, self.bat_charging)
 
         return True
 
@@ -57,8 +79,10 @@ class MetricsProvider:
     def get_battery(self):
         return (self.bat_percent, self.bat_charging)
 
+
 # Global instance to share data between both widgets.
 shared_provider = MetricsProvider()
+
 
 class Metrics(Box):
     def __init__(self, **kwargs):
@@ -74,9 +98,9 @@ class Metrics(Box):
         self.cpu_usage = Scale(
             name="cpu-usage",
             value=0.25,
-            orientation='v',
+            orientation="v",
             inverted=True,
-            v_align='fill',
+            v_align="fill",
             v_expand=True,
         )
 
@@ -87,20 +111,20 @@ class Metrics(Box):
 
         self.cpu = Box(
             name="cpu-box",
-            orientation='v',
+            orientation="v",
             spacing=8,
             children=[
                 self.cpu_usage,
                 self.cpu_label,
-            ]
+            ],
         )
 
         self.ram_usage = Scale(
             name="ram-usage",
             value=0.5,
-            orientation='v',
+            orientation="v",
             inverted=True,
-            v_align='fill',
+            v_align="fill",
             v_expand=True,
         )
 
@@ -111,20 +135,20 @@ class Metrics(Box):
 
         self.ram = Box(
             name="ram-box",
-            orientation='v',
+            orientation="v",
             spacing=8,
             children=[
                 self.ram_usage,
                 self.ram_label,
-            ]
+            ],
         )
 
         self.disk_usage = Scale(
             name="disk-usage",
             value=0.75,
-            orientation='v',
+            orientation="v",
             inverted=True,
-            v_align='fill',
+            v_align="fill",
             v_expand=True,
         )
 
@@ -135,12 +159,12 @@ class Metrics(Box):
 
         self.disk = Box(
             name="disk-box",
-            orientation='v',
+            orientation="v",
             spacing=8,
             children=[
                 self.disk_usage,
                 self.disk_label,
-            ]
+            ],
         )
 
         self.scales = [
@@ -170,10 +194,11 @@ class Metrics(Box):
 
         return True  # Continue calling this function.
 
+
 class MetricsSmall(Button):
     def __init__(self, **kwargs):
         super().__init__(name="metrics-small", **kwargs)
-        
+
         if info.VERTICAL:
             self.add_style_class("vertical")
 
@@ -190,10 +215,7 @@ class MetricsSmall(Button):
             end_angle=270,
             style_classes="cpu",
         )
-        self.cpu_overlay = Overlay(
-                child=self.cpu_circle,
-                overlays=self.cpu_icon
-            )
+        self.cpu_overlay = Overlay(child=self.cpu_circle, overlays=self.cpu_icon)
         self.cpu_level = Label(name="metrics-level", style_classes="cpu", label="0%")
         self.cpu_revealer = Revealer(
             name="metrics-cpu-revealer",
@@ -222,10 +244,7 @@ class MetricsSmall(Button):
             end_angle=270,
             style_classes="ram",
         )
-        self.ram_overlay = Overlay(
-                child=self.ram_circle,
-                overlays=self.ram_icon
-            )
+        self.ram_overlay = Overlay(child=self.ram_circle, overlays=self.ram_icon)
         self.ram_level = Label(name="metrics-level", style_classes="ram", label="0%")
         self.ram_revealer = Revealer(
             name="metrics-ram-revealer",
@@ -254,10 +273,7 @@ class MetricsSmall(Button):
             end_angle=270,
             # style_classes="disk",
         )
-        self.disk_overlay = Overlay(
-                child=self.disk_circle,
-                overlays=self.disk_icon
-            )
+        self.disk_overlay = Overlay(child=self.disk_circle, overlays=self.disk_icon)
         self.disk_level = Label(name="metrics-level", style_classes="disk", label="0%")
         self.disk_revealer = Revealer(
             name="metrics-disk-revealer",
@@ -273,7 +289,7 @@ class MetricsSmall(Button):
             v_expand=True,
             # spacing=0,
             # children=[self.disk_overlay, self.disk_revealer],
-            child=self.disk_overlay
+            child=self.disk_overlay,
         )
 
         # main_box.add(self.disk_box)
@@ -288,19 +304,19 @@ class MetricsSmall(Button):
             visible=True,
             all_visible=True,
             h_expand=True,
-            v_expand=True, 
+            v_expand=True,
             children=[
-                self.disk_box, 
-                self.disk_revealer, 
-                self.ram_box, 
-                self.ram_revealer, 
-                self.cpu_box, 
-                self.cpu_revealer
-            ]
+                self.disk_box,
+                self.disk_revealer,
+                self.ram_box,
+                self.ram_revealer,
+                self.cpu_box,
+                self.cpu_revealer,
+            ],
         )
-        self.children=self.main_box
+        self.children = self.main_box
         # self.add(main_box)
-        
+
         # Connect events directly to the button
         self.connect("enter-notify-event", self.on_mouse_enter)
         self.connect("leave-notify-event", self.on_mouse_leave)
@@ -335,7 +351,7 @@ class MetricsSmall(Button):
         if self.hover_counter == 0:
             if self.hide_timer is not None:
                 GLib.source_remove(self.hide_timer)
-            self.hide_timer = GLib.timeout_add(500, self.hide_revealer)
+            self.hide_timer = GLib.timeout_add(100, self.hide_revealer)
         return False
 
     def hide_revealer(self):
@@ -355,7 +371,9 @@ class MetricsSmall(Button):
         self.cpu_level.set_label(self._format_percentage(int(cpu)))
         self.ram_level.set_label(self._format_percentage(int(mem)))
         self.disk_level.set_label(self._format_percentage(int(disk)))
-        self.set_tooltip_markup(f"{icons.disk} DISK - {icons.memory} RAM - {icons.cpu} CPU")
+        self.set_tooltip_markup(
+            f"{icons.disk} DISK - {icons.memory} RAM - {icons.cpu} CPU"
+        )
         return True
 
 
@@ -365,9 +383,11 @@ class Battery(Button):
 
         if info.VERTICAL:
             self.add_style_class("vertical")
-        
+
         # ------------------ Battery ------------------
-        self.bat_icon = Label(name="bat-icon", style_classes="metrics-icon", markup=icons.battery)
+        self.bat_icon = Label(
+            name="bat-icon", style_classes="metrics-icon", markup=icons.battery
+        )
         self.bat_circle = CircularProgressBar(
             name="metrics-circle",
             value=0,
@@ -384,10 +404,7 @@ class Battery(Button):
             child=self.bat_level,
             child_revealed=False,
         )
-        self.bat_overlay = Overlay(
-            child=self.bat_circle,
-            overlays=self.bat_icon
-        )
+        self.bat_overlay = Overlay(child=self.bat_circle, overlays=self.bat_icon)
         self.bat_box = EventBox(
             name="metrics-bat-box",
             orientation="h",
@@ -403,11 +420,8 @@ class Battery(Button):
             visible=True,
             all_visible=True,
             h_expand=True,
-            v_expand=True, 
-            children=[
-                self.bat_box, 
-                self.bat_revealer
-            ]
+            v_expand=True,
+            children=[self.bat_box, self.bat_revealer],
         )
 
         self.children = self.main_box
@@ -422,7 +436,7 @@ class Battery(Button):
             on_changed=lambda f, v: self.update_battery,
             interval=1000,
             stream=False,
-            default_value=0
+            default_value=0,
         )
         self.batt_fabricator.changed.connect(self.update_battery)
         GLib.idle_add(self.update_battery, None, shared_provider.get_battery())
@@ -452,7 +466,7 @@ class Battery(Button):
         if self.hover_counter == 0:
             if self.hide_timer is not None:
                 GLib.source_remove(self.hide_timer)
-            self.hide_timer = GLib.timeout_add(500, self.hide_revealer)
+            self.hide_timer = GLib.timeout_add(100, self.hide_revealer)
         return False
 
     def hide_revealer(self):
@@ -480,7 +494,7 @@ class Battery(Button):
             self.remove_style_class("low-bat")
             self.bat_icon.remove_style_class("alert")
             self.bat_circle.remove_style_class("alert")
-        
+
         # Choose the icon based on charging state first, then battery level
         if percentage == 100:
             self.bat_icon.set_markup(icons.battery)
@@ -498,6 +512,6 @@ class Battery(Button):
         else:
             self.bat_icon.set_markup(icons.battery)
             charging_status = "Battery"
-            
+
         # tooltip with battery percentage
         self.set_tooltip_markup(f"{charging_status}")
