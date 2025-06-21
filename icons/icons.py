@@ -30,6 +30,7 @@ temp: str = "&#xeb38;"
 disk: str = chr(0xf1632)
 # battery: str = chr(0xea38)
 battery: str = chr(0xf140c)
+battery_charging: str = chr(0xf140b)
 # memory: str = "&#xfa97;"
 memory: str = chr(0xf01a7)
 # cpu: str = chr(0xef8e)

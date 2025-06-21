@@ -528,7 +528,16 @@ if __name__ == "__main__":
         notch.show_all()
         # bar.set_keep_above(True)
 
-    app = Application("bar-example", notch, dockBar, notification, open_inspector=False)
+    app_kwargs = {
+        "notch": notch,
+        "dockBar": dockBar,
+        "open_inspector": False,
+    }
+
+    if notification:
+        app_kwargs["notification"] = notification
+
+    app = Application("bar-example", **app_kwargs)
 
     def set_css():
         app.set_stylesheet_from_file(get_relative_path("./styles/dynamic.css"))
