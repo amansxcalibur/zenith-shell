@@ -11,7 +11,6 @@ from fabric.widgets.button import Button
 from fabric.widgets.circularprogressbar import CircularProgressBar
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.label import Label
-from fabric.widgets.overlay import Overlay
 from fabric.widgets.revealer import Revealer
 from fabric.core.fabricator import Fabricator
 from fabric.widgets.scale import Scale
@@ -214,8 +213,8 @@ class MetricsSmall(Button):
             start_angle=-90,
             end_angle=270,
             style_classes="cpu",
+            child=self.cpu_icon
         )
-        self.cpu_overlay = Overlay(child=self.cpu_circle, overlays=self.cpu_icon)
         self.cpu_level = Label(name="metrics-level", style_classes="cpu", label="0%")
         self.cpu_revealer = Revealer(
             name="metrics-cpu-revealer",
@@ -230,7 +229,7 @@ class MetricsSmall(Button):
             spacing=0,
             h_expand=True,
             v_expand=True,
-            child=self.cpu_overlay,
+            child=self.cpu_circle,
         )
 
         # ------------------ RAM ------------------
@@ -243,8 +242,8 @@ class MetricsSmall(Button):
             start_angle=-90,
             end_angle=270,
             style_classes="ram",
+            child=self.ram_icon,
         )
-        self.ram_overlay = Overlay(child=self.ram_circle, overlays=self.ram_icon)
         self.ram_level = Label(name="metrics-level", style_classes="ram", label="0%")
         self.ram_revealer = Revealer(
             name="metrics-ram-revealer",
@@ -259,7 +258,7 @@ class MetricsSmall(Button):
             spacing=0,
             h_expand=True,
             v_expand=True,
-            child=self.ram_overlay,
+            child=self.ram_circle,
         )
 
         # ------------------ Disk ------------------
@@ -271,9 +270,9 @@ class MetricsSmall(Button):
             line_width=2,
             start_angle=-90,
             end_angle=270,
-            # style_classes="disk",
+            style_classes="disk",
+            child=self.disk_icon,
         )
-        self.disk_overlay = Overlay(child=self.disk_circle, overlays=self.disk_icon)
         self.disk_level = Label(name="metrics-level", style_classes="disk", label="0%")
         self.disk_revealer = Revealer(
             name="metrics-disk-revealer",
@@ -284,19 +283,12 @@ class MetricsSmall(Button):
         )
         self.disk_box = EventBox(
             name="metrics-disk-box",
-            # orientation="h",
+            orientation="h",
             h_expand=True,
             v_expand=True,
-            # spacing=0,
-            # children=[self.disk_overlay, self.disk_revealer],
-            child=self.disk_overlay,
+            spacing=0,
+            child=self.disk_circle,
         )
-
-        # main_box.add(self.disk_box)
-        # main_box.add(Box(name="metrics-sep"))
-        # main_box.add(self.ram_box)
-        # main_box.add(Box(name="metrics-sep"))
-        # main_box.add(self.cpu_box)
 
         self.main_box = Box(
             spacing=0,
@@ -315,7 +307,6 @@ class MetricsSmall(Button):
             ],
         )
         self.children = self.main_box
-        # self.add(main_box)
 
         # Connect events directly to the button
         self.connect("enter-notify-event", self.on_mouse_enter)
@@ -395,6 +386,7 @@ class Battery(Button):
             line_width=2,
             start_angle=-90,
             end_angle=270,
+            child=self.bat_icon
         )
         self.bat_level = Label(name="metrics-level", style_classes="bat", label="100%")
         self.bat_revealer = Revealer(
@@ -404,14 +396,13 @@ class Battery(Button):
             child=self.bat_level,
             child_revealed=False,
         )
-        self.bat_overlay = Overlay(child=self.bat_circle, overlays=self.bat_icon)
         self.bat_box = EventBox(
             name="metrics-bat-box",
             orientation="h",
             spacing=0,
             h_expand=True,
             v_expand=True,
-            child=self.bat_overlay,
+            child=self.bat_circle,
         )
 
         self.main_box = Box(
@@ -501,7 +492,7 @@ class Battery(Button):
             self.bat_circle.add_style_class("full-bat")
             charging_status = f"{icons.bat_full} Fully Charged"
         elif charging == True:
-            # self.bat_icon.set_markup(icons.charging)
+            self.bat_icon.set_markup(icons.battery_charging)
             charging_status = f"{icons.bat_charging} Charging"
         elif percentage <= 15 and charging == False:
             # self.bat_icon.set_markup(icons.alert)
