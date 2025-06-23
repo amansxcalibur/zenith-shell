@@ -5,22 +5,29 @@ from fabric.widgets.eventbox import EventBox
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.button import Button
 from fabric.widgets.scale import Scale
+from fabric.utils.helpers import exec_shell_command_async
 import gi
-gi.require_version('Gtk', '3.0')
+
+gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gdk
 import icons.icons as icons
 import subprocess
 import re
 import info
 
+
 def supports_backlight():
     try:
-        output = subprocess.check_output(["brightnessctl", "-l"]).decode("utf-8").lower()
+        output = (
+            subprocess.check_output(["brightnessctl", "-l"]).decode("utf-8").lower()
+        )
         return "backlight" in output
     except Exception:
         return False
 
+
 BACKLIGHT_SUPPORTED = supports_backlight()
+
 
 class BrightnessSlider(Scale):
     def __init__(self, **kwargs):
@@ -35,9 +42,21 @@ class BrightnessSlider(Scale):
             **kwargs,
         )
         self.add_style_class("brightness")
+        self.connect("value-changed", self.set_brightness)
 
     def update_brightness_slider(self, brightness):
         self.value = brightness / 100
+
+    def set_brightness(self, source):
+        new_value = int(source.get_value() * 100)
+        print("new val", new_value)
+        exec_shell_command_async(f"brightnessctl set {new_value}%")
+        # too lazy to change this
+        exec_shell_command_async(
+            f"fabric-cli exec bar-example 'notch.controls.brightness_small.update_brightness()'"
+        )
+        self.update_brightness_slider(new_value)
+
 
 class BrightnessSmall(Box):
     def __init__(self, device: str, slider_instance, **kwargs):
@@ -56,23 +75,22 @@ class BrightnessSmall(Box):
         self.hover_counter = 0
 
         self.progress_bar = CircularProgressBar(
-            name="button-brightness", 
-            size=28, 
+            name="button-brightness",
+            size=28,
             line_width=2,
             start_angle=-90,
             end_angle=270,
         )
         self.brightness_label = Label(name="brightness-label", markup=icons.brightness)
-        self.brightness_button = Button(name="brightness-button", child=self.brightness_label)
+        self.brightness_button = Button(
+            name="brightness-button", child=self.brightness_label
+        )
         self.event_box = EventBox(
             # events=["scroll", "smooth-scroll"],
             events="scroll",
             v_expand=True,
             h_expand=True,
-            child=Overlay(
-                child=self.progress_bar,
-                overlays=self.brightness_button
-            ),
+            child=Overlay(child=self.progress_bar, overlays=self.brightness_button),
         )
         self.event_box.connect("scroll-event", self.on_scroll)
         self.add(self.event_box)
@@ -89,11 +107,14 @@ class BrightnessSmall(Box):
 
     def update_brightness(self):
         if self.exist:
-            init = subprocess.check_output(["brightnessctl", "-d" , self.device]).decode("utf-8").lower()
+            init = (
+                subprocess.check_output(["brightnessctl", "-d", self.device])
+                .decode("utf-8")
+                .lower()
+            )
             self.current = int(re.search(r"current brightness:\s+(\d+)", init).group(1))
             self.max = int(re.search(r"max brightness:\s+(\d+)", init).group(1))
             self.percentage = int(re.search(r"\((\d+)%\)", init).group(1))
-            print("exists and updating")
             self.on_brightness_changed()
 
     def on_scroll(self, widget, event):
@@ -166,9 +187,11 @@ class BrightnessSmall(Box):
         # self._updating_from_brightness = True
         # self.progress_bar.value = normalized
         # self.progress_bar.value = self.percentage/100
-        self.progress_bar.value = self.percentage/100
+        self.progress_bar.value = self.percentage / 100
         self.reveal_revealer()
-        self.brightness_revealer_ref.get_child().update_brightness_slider(self.percentage)
+        self.brightness_revealer_ref.get_child().update_brightness_slider(
+            self.percentage
+        )
         self.await_hide()
         # self._updating_from_brightness = False
 
@@ -188,6 +211,7 @@ class BrightnessSmall(Box):
     #     if self._update_source_id is not None:
     #         GLib.source_remove(self._update_source_id)
     #     super().destroy()
+
 
 class BrightnessMaterial3(Scale):
     def __init__(self, device: str, **kwargs):
@@ -210,15 +234,30 @@ class BrightnessMaterial3(Scale):
         self.hover_counter = 0
         self.add_style_class("brightness")
         self.update_brightness()
+        self.connect("value-changed", self.set_brightness)
 
     def update_brightness(self):
         if self.exist:
-            init = subprocess.check_output(["brightnessctl", "-d" , self.device]).decode("utf-8").lower()
+            init = (
+                subprocess.check_output(["brightnessctl", "-d", self.device])
+                .decode("utf-8")
+                .lower()
+            )
             self.current = int(re.search(r"current brightness:\s+(\d+)", init).group(1))
             self.max = int(re.search(r"max brightness:\s+(\d+)", init).group(1))
             self.percentage = int(re.search(r"\((\d+)%\)", init).group(1))
-            print("exists and updating")
             self.update_brightness_slider(self.percentage)
 
     def update_brightness_slider(self, brightness):
         self.value = brightness / 100
+
+    def set_brightness(self, source):
+        new_value = int(source.get_value() * 100)
+        print("new val", new_value)
+        exec_shell_command_async(f"brightnessctl set {new_value}%")
+        # too lazy to change this
+        # todo: add signals to brightness small and pass it to the sliders instead of the other way around
+        exec_shell_command_async(
+            f"fabric-cli exec bar-example 'notch.controls.brightness_small.update_brightness()'"
+        )
+        self.update_brightness_slider(new_value)
