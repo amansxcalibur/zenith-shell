@@ -1,0 +1,40 @@
+#dashboard.hide {
+  /* background-color: aqua; */
+  margin: -999px;
+}
+#dashboard {
+  padding: 10px;
+}
+#inner {
+  /* background-color: brown; */
+  margin: 3px;
+}
+
+.tile {
+  margin: 2px;
+  min-height: 60px;
+  min-width: 140px;
+  border-radius: 20px;
+}
+.tile.on {
+  background-color: var(--primary);
+}
+.tile.off {
+  background-color: var(--surface-bright);
+}
+.tile.on .desc-label,
+.tile.on .tile-label,
+.tile.on .tile-icon {
+    color: black;
+    transition: all;
+  }
+.tile.off .desc-label,
+.tile.off .tile-label,
+.tile.off .tile-icon {
+  color: var(--foreground);
+  transition: all;
+}
+
+.tile-icon {
+  margin: 10px;
+}

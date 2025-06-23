@@ -72,13 +72,14 @@ discharging: str = chr(0xefe9)
 alert: str = "&#xefb4;"
 
 # Applets
+wifi: str = chr(0xf1eb)
 wifi_0: str = "&#xeba3;"
 wifi_1: str = "&#xeba4;"
 wifi_2: str = "&#xeba5;"
 wifi_3: str = "&#xeb52;"
 world: str = "&#xeb54;"
 world_off: str = "&#xf1ca;"
-bluetooth: str = "&#xea37;"
+bluetooth: str = chr(0xf294)
 night: str = "&#xeaf8;"
 coffee: str = "&#xef0e;"
 notifications: str = "&#xea35;"
@@ -88,7 +89,8 @@ bluetooth_off: str = "&#xeceb;"
 night_off: str = "&#xf162;"
 notifications_off: str = "&#xece9;"
 
-notifications_clear: str = "&#xf814;";
+notifications_clear: str = "&#xf814;"
+arrow_head: str = chr(0xe285)
 
 # Bluetooth
 bluetooth_connected: str = "&#xecea;"

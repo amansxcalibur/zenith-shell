@@ -21,6 +21,7 @@ from player import PlayerContainer
 from notification import Notification
 import info
 import icons.icons as icons
+from dashboard import Dashboard
 
 import gi
 
@@ -300,6 +301,8 @@ class Notch(Window):
 
         self.collapsed.connect("button-press-event", self.toggle_collapse_child)
 
+        self.dashboard = Dashboard(controls=self.controls)
+
         self.expanding = self.launcher
 
         if info.VERTICAL:
@@ -313,6 +316,7 @@ class Notch(Window):
             self.wallpapers.header_box.remove_style_class("vertical")
             self.wallpapers.scrolled_window.add_style_class("horizontal")
             self.player.remove_style_class("vertical")
+        self.dashboard.add_style_class("hide")
         self.launcher.add_style_class("launcher-contract-init")
         self.wallpapers.add_style_class("wallpaper-contract")
 
@@ -323,8 +327,13 @@ class Notch(Window):
             transition_type="crossfade",
             transition_duration=250,
             style_classes="" if not info.VERTICAL else "vertical",
-            children=[self.collapsed, self.expanding, self.wallpapers, self.player],
-        )
+            children=[
+                self.collapsed,
+                self.expanding,
+                self.wallpapers,
+                self.player,
+                self.dashboard
+            ])
 
         self.stack.set_visible_child(self.collapsed)
         self.add_keybinding("Escape", lambda *_: self.close())
@@ -429,6 +438,9 @@ class Notch(Window):
             self.player.add_style_class("hide-player")
             self.stack.set_visible_child(self.collapsed)
 
+    def toggle_utility(self, *_):
+        print("utiluty")
+
     def open(self, *_):
         if self.visibility_stack.get_visible_child() == self.full_notch:
             # self.steal_input()
@@ -437,6 +449,7 @@ class Notch(Window):
                 # self.stack.remove_style_class("contract")
                 # self.stack.add_style_class("expand")
                 # # self.remove_style_class("wallpaper-init")
+                # self.dashboard.remove_style_class("hide")
                 self.launcher.remove_style_class("launcher-contract-init")
                 self.launcher.remove_style_class("launcher-contract")
                 self.launcher.add_style_class("launcher-expand")
@@ -447,6 +460,7 @@ class Notch(Window):
                 self.launcher.search_entry.grab_focus()
 
             elif self.stack.get_visible_child() == self.player:
+                self.dashboard.add_style_class("hide")
                 self.player.remove_style_class("reveal-player")
                 # self.player.add_style_class("hide-player")
                 self.launcher.remove_style_class("launcher-contract")
@@ -479,6 +493,7 @@ class Notch(Window):
             # self.unsteal_input()
             self.wallpapers.remove_style_class("wallpaper-expand")
             self.wallpapers.add_style_class("wallpaper-contract")
+            self.dashboard.add_style_class("hide")
 
             self.stack.add_style_class("contract")
 
@@ -495,18 +510,23 @@ class Notch(Window):
             self.player.add_style_class("hide-player")
         self.show_all()
 
-    def open_notch(self, *_):
-        exec_shell_command_async(
-            " fabric-cli exec bar-example 'dockBar.hide_overlapping_modules()'"
-        )
-        self.remove_style_class("launcher-contract")
-        # if info.VERTICAL:
-        # self.wallpapers.remove_style_class("vertical")
-        # else:
-        self.wallpapers.remove_style_class("wallpaper-contract")
-        self.wallpapers.remove_style_class("wallpaper-init")
-        self.wallpapers.add_style_class("wallpaper-expand")
-        self.stack.set_visible_child(self.wallpapers)
+    def open_notch(self, mode):
+        match mode:
+            case "wallpapers":
+                exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.hide_overlapping_modules()'")
+                self.remove_style_class("launcher-contract")
+                self.dashboard.add_style_class("hide")
+                # if info.VERTICAL:
+                # self.wallpapers.remove_style_class("vertical")
+                # else:
+                self.wallpapers.remove_style_class("wallpaper-contract")
+                self.wallpapers.remove_style_class("wallpaper-init")
+                self.wallpapers.add_style_class("wallpaper-expand")
+                self.stack.set_visible_child(self.wallpapers)
+            case "dashboard":
+                self.dashboard.remove_style_class("hide")
+                self.remove_style_class("launcher-contract")
+                self.stack.set_visible_child(self.dashboard)
 
 
 if __name__ == "__main__":
@@ -515,6 +535,7 @@ if __name__ == "__main__":
     notch.set_role("notch")
     dockBar.notch = notch
     notification = None
+
     if info.VERTICAL:
         from notification import NotificationPopup
         notification = NotificationPopup()
