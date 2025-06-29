@@ -332,8 +332,9 @@ class Notch(Window):
                 self.expanding,
                 self.wallpapers,
                 self.player,
-                self.dashboard
-            ])
+                self.dashboard,
+            ],
+        )
 
         self.stack.set_visible_child(self.collapsed)
         self.add_keybinding("Escape", lambda *_: self.close())
@@ -400,18 +401,34 @@ class Notch(Window):
 
         self.children = Box(
             orientation="v" if not info.VERTICAL else "h",
-            children=[
-                self.visibility_stack,
-                self.notification_revealer,
-                self.volume_revealer,
-                self.volume_overflow_revealer,
-                self.brightness_revealer,
-            ] if not info.VERTICAL else [
-                self.visibility_stack,
-                self.volume_revealer,
-                self.volume_overflow_revealer,
-                self.brightness_revealer,
-            ],
+            children=(
+                [
+                    self.visibility_stack,
+                    CenterBox(
+                        orientation="v",
+                        h_align="center",
+                        center_children=[
+                            self.notification_revealer,
+                            self.volume_revealer,
+                            self.volume_overflow_revealer,
+                            self.brightness_revealer,
+                        ],
+                    ),
+                ]
+                if not info.VERTICAL
+                else [
+                    self.visibility_stack,
+                    CenterBox(
+                        orientation="h",
+                        v_align="center",
+                        center_children=[
+                            self.volume_revealer,
+                            self.volume_overflow_revealer,
+                            self.brightness_revealer,
+                        ],
+                    ),
+                ]
+            ),
         )
         # self.set_properties("_NET_WM_STATE", ["_NET_WM_STATE_ABOVE"])
         # self.set_properties("_NET_WM_WINDOW_TYPE", ["_NET_WM_WINDOW_TYPE_DOCK"])
@@ -432,6 +449,20 @@ class Notch(Window):
             exec_shell_command_async('i3-msg [window_role="notch"] focus')
             self.player.remove_style_class("hide-player")
             self.player.add_style_class("reveal-player")
+            # launcher->player
+            self.launcher.remove_style_class("launcher-expand")
+            self.launcher.add_style_class("launcher-contract")
+            # wallpaper->player
+            if self.stack.get_visible_child() == self.expanding:
+                exec_shell_command_async(
+                    " fabric-cli exec bar-example 'dockBar.reveal_overlapping_modules()'"
+                )
+                self.wallpapers.remove_style_class("wallpaper-expand")
+                self.wallpapers.add_style_class("wallpaper-contract")
+            # dashboard->player
+            self.dashboard.add_style_class("hide")
+
+            self.stack.add_style_class("contract")
             self.stack.set_visible_child(self.player)
         else:
             self.player.remove_style_class("reveal-player")
@@ -462,7 +493,7 @@ class Notch(Window):
             elif self.stack.get_visible_child() == self.player:
                 self.dashboard.add_style_class("hide")
                 self.player.remove_style_class("reveal-player")
-                # self.player.add_style_class("hide-player")
+                self.player.add_style_class("hide-player")
                 self.launcher.remove_style_class("launcher-contract")
                 self.launcher.add_style_class("launcher-expand")
                 self.stack.set_visible_child(self.expanding)
@@ -479,8 +510,7 @@ class Notch(Window):
             self.player.remove_style_class("reveal-player")
             if info.VERTICAL:
                 self.player.add_style_class("vertical")
-            else:
-                self.player.add_style_class("hide-player")
+            self.player.add_style_class("hide-player")
 
             self.stack.set_visible_child(self.collapsed)
 
@@ -513,7 +543,9 @@ class Notch(Window):
     def open_notch(self, mode):
         match mode:
             case "wallpapers":
-                exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.hide_overlapping_modules()'")
+                exec_shell_command_async(
+                    " fabric-cli exec bar-example 'dockBar.hide_overlapping_modules()'"
+                )
                 self.remove_style_class("launcher-contract")
                 self.dashboard.add_style_class("hide")
                 # if info.VERTICAL:
@@ -538,6 +570,7 @@ if __name__ == "__main__":
 
     if info.VERTICAL:
         from notification import NotificationPopup
+
         notification = NotificationPopup()
         dockBar.set_title("fabric-dock")
         # make the window consume all vertical space

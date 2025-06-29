@@ -8,6 +8,7 @@ import info
 from network import Network
 from bluetooth import Bluetooth
 from tile import Tile
+from wavy_clock import WavyCircle
 
 
 class Dashboard(Box):
@@ -25,6 +26,15 @@ class Dashboard(Box):
 
         self.controls = controls
         self.brightness_revealer_mui = self.controls.get_brightness_slider_mui()
+
+        self.wavy = self.gtk_wrapper = CenterBox(
+            orientation="v",
+            h_expand=True,
+            v_expand=True,
+            h_align="fill",
+            v_align="fill",
+            center_children=WavyCircle(),
+        )
 
         self.low_bat_msg = Label(label="Low Battery fam (<15%)")
 
@@ -60,31 +70,12 @@ class Dashboard(Box):
                 Tile(
                     label="Whaterver that goes here",
                     markup=icons.notifications,
-                    props=Label(style="min-width:200px;",),
+                    props=Label(
+                        style="min-width:200px;",
+                    ),
                     menu=False,
                     style_classes=["tile", "on"],
                 ),
-                # Box(
-                #     
-                #     h_expand=True,
-                #     children=[
-                #         Label(style_classes="tile-icon", markup=icons.notifications),
-                #         Box(
-                #             style_classes="tile-type",
-                #             orientation="v",
-                #             v_expand=True,
-                #             v_align="center",
-                #             children=[
-                #                 Label(
-                #                     style_classes="tile-label",
-                #                     label="Whaterver that goes here",
-                #                     h_align="start",
-                #                 ),
-                #             ],
-                #         ),
-                #     ],
-                #     
-                # ),
             ],
         )
         self.low_bat_msg_2 = Label(label="Notification ctl test")
@@ -117,12 +108,25 @@ class Dashboard(Box):
         self.notification_container = Revealer(
             transition_duration=250,
             transition_type="slide-down",
+            style="background-color:blue;",
+            h_expand=True,
             child=Box(
-                name="notification-container",
-                orientation="v",
+                h_expand=True,
                 v_expand=True,
-                style="padding:3px; padding-top:0px",
-                children=[self.notification_box, self.notification_box_2],
+                children=[
+                    Box(
+                        name="notification-container",
+                        orientation="v",
+                        v_expand=True,
+                        style="padding:3px; padding-top:0px",
+                        children=[self.notification_box, self.notification_box_2],
+                    ),
+                    Box(
+                        v_expand=True,
+                        h_expand=True,
+                        children=self.wavy,
+                    ),
+                ]
             ),
             child_revealed=True,
         )
@@ -144,10 +148,6 @@ class Dashboard(Box):
             Box(
                 children=[
                     self.notification_container,
-                    Box(
-                        orientation="v",
-                        v_expand=True,
-                    ),
                 ]
             ),
         ]

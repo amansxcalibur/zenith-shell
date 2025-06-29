@@ -6,7 +6,6 @@
   padding: 10px;
 }
 #inner {
-  /* background-color: brown; */
   margin: 3px;
 }
 
@@ -17,8 +16,8 @@
   border-radius: 20px;
 }
 .tile.mini{
-  min-height: 45px;
-  min-width: 45px;
+  min-height: 46px;
+  min-width: 46px;
   border-radius: 100%;
 }
 .tile.on {
@@ -65,10 +64,10 @@
 }
 .tile-menu.expand {
   margin: 0px;
-  transition: margin 0.1s cubic-bezier(0.5, 0.25, 0, 1);
+  transition: margin 0.15s cubic-bezier(0.5, 0.25, 0, 1);
 }
 .tile-menu.contract{
-  margin: -999px;
+  margin: -200px;
   transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 

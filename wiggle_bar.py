@@ -12,6 +12,10 @@ from fabric.utils import get_relative_path
 import info
 
 class WigglyWidget(Gtk.DrawingArea, Service):
+
+    @Signal
+    def on_seek(self, ratio: float) -> None: ...
+
     def __init__(self):
         super().__init__()
         self.phase = 0
@@ -34,9 +38,6 @@ class WigglyWidget(Gtk.DrawingArea, Service):
         self.pause = False
 
         self.show_all()
-
-    @Signal
-    def on_seek(self, ratio: float) -> None: ...
 
     def animate_amplitude_to(self):
         if abs(self.amplitude - self.amplitude_target) < 0.01:
@@ -164,9 +165,6 @@ class WigglyWidget(Gtk.DrawingArea, Service):
         self.draw_rounded_rect(cr, last_x, height, rect_width, rect_width, arc_radius)
         cr.fill()
 
-        # print(last_x, last_y)
-        # print(width)
-
         cr.stroke()
 
         cr.set_source_rgb(1, 1, 1)
@@ -185,59 +183,4 @@ class WigglyWidget(Gtk.DrawingArea, Service):
         cr.new_sub_path()
         cr.arc(x + width - radius, radius, radius, -math.pi, 0)
         cr.arc(x + width - radius, y-radius, radius, 0, -math.pi)
-        # cr.arc(x + width - radius, y + height - radius, radius, 0, math.pi / 2)
-        # cr.arc(x + radius, y + height - radius, radius, math.pi / 2, math.pi)
-        # cr.arc(x + radius, y + radius, radius, math.pi, 3 * math.pi / 2)
         cr.close_path()
-
-
-
-# class WigglyFabricWindow(Window):
-#     def __init__(self):
-#         super().__init__(
-#             name="wiggle-fabric-window",
-#             geometry=(600, 100),
-#             visible=True,
-#             layer="top"
-#         )
-
-#         wiggly = WigglyWidget()
-
-#         # Wrap Gtk.DrawingArea in a Gtk.Box that expands
-#         gtk_wrapper = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-#         gtk_wrapper.set_hexpand(True)
-#         gtk_wrapper.set_vexpand(True)
-#         gtk_wrapper.set_halign(Gtk.Align.FILL)
-#         gtk_wrapper.set_valign(Gtk.Align.FILL)
-#         gtk_wrapper.add(wiggly)
-
-#         self.children = Box(
-#             name="container",
-#             # h_align="fill",
-#             # v_align="fill",
-#             children=[
-#                 gtk_wrapper
-#             ]
-#         )
-# class WigglyWindow(Gtk.Window):
-#     def __init__(self):
-#         super().__init__(title="Squiggly Line")
-#         self.set_default_size(600, 100)
-#         self.set_resizable(False)
-#         self.set_position(Gtk.WindowPosition.CENTER)
-
-#         self.add(WigglyWidget())
-
-#         self.connect("destroy", Gtk.main_quit)
-
-# if __name__ == "__main__":
-#     win = WigglyWindow()
-#     win.show_all()
-#     Gtk.main()
-
-# if __name__ == "__main__":
-#     win = WigglyFabricWindow()
-#     win.show_all()
-#     app = Application("wiggly", win)
-#     app.set_stylesheet_from_file(get_relative_path("./styles/wiggle.css"))   
-#     app.run()
