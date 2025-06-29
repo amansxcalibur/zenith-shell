@@ -23,6 +23,14 @@ test = "aaaa"
 input_path = "~/fabric/config/colors.css"
 output_path = "~/fabric/styles/colors.css"
 
+[templates.gtk3]
+input_path = '~/fabric/config/gtk3.css'
+output_path = '~/.config/gtk-3.0/colors.css'
+
+[templates.gtk4]
+input_path = '~/fabric/config/gtk3.css'
+output_path = '~/.config/gtk-4.0/colors.css'
+
 # This will use a different input path depending on what mode you use.
 # input_path_modes = { dark = "./colors.whatever-extension", light = "./colors.whatever-extension" }
 

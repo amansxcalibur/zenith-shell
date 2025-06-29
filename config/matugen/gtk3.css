@@ -1,0 +1,117 @@
+/* GTK3 CSS generated using Matugen color scheme */
+
+* {
+  background-color: {{colors.background.default.hex}};
+  color: {{colors.on_background.default.hex}};
+  border-color: {{colors.outline.default.hex}};
+  transition: all 100ms ease;
+}
+
+window, dialog {
+  background-color: {{colors.surface.default.hex}};
+}
+
+button {
+  background-color: {{colors.primary.default.hex}};
+  color: {{colors.on_primary.default.hex}};
+  border-radius: 4px;
+  padding: 4px 8px;
+  border: 1px solid {{colors.outline.default.hex}};
+}
+
+button:hover {
+  background-color: {{colors.primary.default.hex | set_lightness: 10.0}};
+}
+
+button:active {
+  background-color: {{colors.primary.default.hex | set_lightness: -10.0}};
+}
+
+entry, textview, spinbutton {
+  background-color: {{colors.surface_bright.default.hex}};
+  color: {{colors.on_surface.default.hex}};
+  border: 1px solid {{colors.outline.default.hex}};
+}
+
+entry:focus {
+  border-color: {{colors.primary.default.hex}};
+}
+
+label {
+  color: {{colors.on_background.default.hex}};
+}
+
+progressbar {
+  background-color: {{colors.surface.default.hex}};
+}
+
+progressbar trough {
+  background-color: {{colors.surface_bright.default.hex}};
+}
+
+progressbar progress {
+  background-color: {{colors.secondary.default.hex}};
+}
+
+scrollbar {
+  background-color: transparent;
+}
+
+scrollbar trough {
+  background-color: {{colors.surface_bright.default.hex}};
+}
+
+scrollbar slider {
+  background-color: {{colors.outline.default.hex}};
+  border-radius: 10px;
+}
+
+scrollbar slider:hover {
+  background-color: {{colors.primary.default.hex}};
+}
+
+tooltip {
+  background-color: {{colors.on_secondary.default.hex}};
+  color: {{colors.secondary.default.hex}};
+  border: 1px solid {{colors.outline.default.hex}};
+  padding: 4px;
+  border-radius: 4px;
+}
+
+separator {
+  background-color: {{colors.outline.default.hex}};
+}
+
+headerbar {
+  background-color: {{colors.surface.default.hex}};
+  color: {{colors.on_surface.default.hex}};
+  border-bottom: 1px solid {{colors.outline.default.hex}};
+}
+
+combobox, combobox box {
+  background-color: {{colors.surface_bright.default.hex}};
+  color: {{colors.on_surface.default.hex}};
+}
+
+checkbutton:checked,
+radiobutton:checked {
+  background-color: {{colors.primary.default.hex}};
+  border-color: {{colors.on_primary.default.hex}};
+}
+
+checkbutton,
+radiobutton {
+  background-color: {{colors.surface_bright.default.hex}};
+  border: 1px solid {{colors.outline.default.hex}};
+}
+
+notebook tab {
+  background-color: {{colors.surface.default.hex}};
+  color: {{colors.on_surface.default.hex}};
+  border: 1px solid {{colors.outline.default.hex}};
+}
+
+notebook tab:active {
+  background-color: {{colors.primary.default.hex}};
+  color: {{colors.on_primary.default.hex}};
+}

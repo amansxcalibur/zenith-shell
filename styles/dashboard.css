@@ -16,6 +16,11 @@
   min-width: 140px;
   border-radius: 20px;
 }
+.tile.mini{
+  min-height: 45px;
+  min-width: 45px;
+  border-radius: 100%;
+}
 .tile.on {
   background-color: var(--primary);
 }
@@ -36,5 +41,34 @@
 }
 
 .tile-icon {
+  font-size: 16px;
   margin: 10px;
 }
+.tile-icon.mini{
+  font-size: 20px;
+  transition: font-size 0.25s cubic-bezier(0.5, 0.25, 0, 1);;
+}
+.tile-icon.maxi{
+  font-size: 16px;
+  transition: font-size 0.25s cubic-bezier(0.5, 0.25, 0, 1);;
+}
+
+.tile-button{
+  all: unset;
+}
+
+.tile-menu{
+  all: unset;
+  min-width: 300px;
+  min-height: 300px;
+  margin: -999px;
+}
+.tile-menu.expand {
+  margin: 0px;
+  transition: margin 0.1s cubic-bezier(0.5, 0.25, 0, 1);
+}
+.tile-menu.contract{
+  margin: -999px;
+  transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+

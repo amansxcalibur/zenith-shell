@@ -217,10 +217,10 @@ class BrightnessMaterial3(Scale):
     def __init__(self, device: str, **kwargs):
         super().__init__(
             name="control-slider-mui",
-            orientation="h" if not info.VERTICAL else "v",
+            orientation="h",
             h_expand=True,
             has_origin=True,
-            inverted=True if info.VERTICAL else False,
+            inverted=False,
             style_classes="" if not info.VERTICAL else "vertical",
             increments=(0.01, 0.1),
             **kwargs,
