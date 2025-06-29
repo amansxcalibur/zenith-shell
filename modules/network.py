@@ -1,9 +1,9 @@
 from fabric.widgets.label import Label
 
+from modules.tile import Tile
 from services.network import NetworkService
-import icons.icons as icons
-from tile import Tile
 
+import icons.icons as icons
 
 class Network(Tile):
     def __init__(self, **kwargs):

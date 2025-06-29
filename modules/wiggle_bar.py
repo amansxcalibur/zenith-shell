@@ -1,15 +1,13 @@
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib
-import cairo
-import math
-import sys
-from fabric.widgets.box import Box
-from fabric.widgets.x11 import X11Window as Window
-from fabric import Application
+
 from fabric.core.service import Service, Signal
-from fabric.utils import get_relative_path
-import info
+
+import config.info as info
+from utils.colors import get_css_variable, hex_to_rgb01
+
+import math
 
 class WigglyWidget(Gtk.DrawingArea, Service):
 
@@ -139,21 +137,6 @@ class WigglyWidget(Gtk.DrawingArea, Service):
             last_x, last_y = x, y
 
         cr.stroke()
-
-        def hex_to_rgb01(hex_color):
-            hex_color = hex_color.lstrip('#')
-            r = int(hex_color[0:2], 16) / 255.0
-            g = int(hex_color[2:4], 16) / 255.0
-            b = int(hex_color[4:6], 16) / 255.0
-            return r, g, b
-
-        def get_css_variable(file_path, var_name):
-            with open(file_path) as f:
-                for line in f:
-                    if var_name in line:
-                        color = line.split(':')[1].strip().rstrip(';')
-                        return color
-            return None
 
         hex_color = get_css_variable(f'{info.HOME_DIR}/fabric/styles/colors.css', '--primary')
         r, g, b = hex_to_rgb01(hex_color)

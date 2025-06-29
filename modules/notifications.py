@@ -4,8 +4,9 @@ from fabric.widgets.revealer import Revealer
 from fabric.widgets.label import Label
 from fabric.widgets.x11 import X11Window as Window
 
-from metrics import MetricsProvider
-import info
+from modules.metrics import MetricsProvider
+
+import config.info as info
 import icons.icons as icons
 
 import gi

@@ -1,8 +1,8 @@
-from volume import VolumeSlider, VolumeSmall
-from brightness import BrightnessSlider, BrightnessSmall, BrightnessMaterial3
 from fabric.widgets.revealer import Revealer
-from fabric.widgets.scale import Scale
-import info
+
+from modules.volume import VolumeSlider, VolumeSmall
+from modules.brightness import BrightnessSlider, BrightnessSmall, BrightnessMaterial3
+import config.info as info
 
 class ControlsManager:
     _instance = None
@@ -18,6 +18,7 @@ class ControlsManager:
         volume_overflow_slider = VolumeSlider(notch = notch)
         volume_overflow_slider.add_style_class("vol-overflow-slider")
 
+        # 0-100
         self.volume_revealer = Revealer(
                     transition_duration=250,
                     transition_type="slide-down" if not info.VERTICAL else "slide-right",
@@ -25,6 +26,7 @@ class ControlsManager:
                     child_revealed=False,
                 )
         
+        # 100-200+
         self.volume_overflow_revealer = Revealer(
                     transition_duration=250,
                     transition_type="slide-down" if not info.VERTICAL else "slide-right",
@@ -63,12 +65,5 @@ class ControlsManager:
         return self.brightness_slider_mui
     
     def set_brightness(self):
-        # print("--------------instance of brightness dash-----------------")
-        # print("Slider 1:", self.brightness_revealer.get_child())
-        # print("Slider 2:", self.brightness_revealer_mui.get_child())
-        # print("Small 1:", self.brightness_small.get_child())
-        # print("Small 2:", self.brightness_small_mui.get_child())
-
         self.brightness_small.update_brightness()
-        # self.brightness_revealer_mui.update_brightness_slider(0.5)
         self.brightness_slider_mui.update_brightness()

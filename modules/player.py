@@ -2,18 +2,15 @@ from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.centerbox import CenterBox
 from fabric.widgets.button import Button
-from fabric.widgets.image import Image
 from fabric.widgets.stack import Stack
 
-from player_service import PlayerManager, PlayerService
-from wiggle_bar import WigglyWidget
-import icons.icons as icons
-import os
-import info
+from services.player_service import PlayerManager, PlayerService
+from modules.wiggle_bar import WigglyWidget
 
-import gi
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk, GLib
+import icons.icons as icons
+import config.info as info
+
+from loguru import logger
 
 class Player(Box):
     def __init__(self, player, **kwargs):
@@ -123,8 +120,6 @@ class Player(Box):
         self.on_metadata(self._player, metadata=player.props.metadata, player=player)
 
     def on_update_track_position(self, sender, pos, dur):
-        # self.wiggly.update()
-        # print(pos,dur,pos/dur,"in UI")
         self.duration = dur
         self.wiggly.update_value_from_signal(pos/dur)
 
@@ -196,29 +191,30 @@ class Player(Box):
     def handle_play_pause(self, player):
         is_playing = self.play_pause_button.get_child().get_name() == "play-label"
 
-        if is_playing:
-            self.play_pause_button.get_child().set_markup(icons.play)
-            self.play_pause_button.add_style_class("pause-track")
-            self.play_pause_button.get_child().set_name("play-label")
-            
-        else:
+        def _set_play_ui():
             self.play_pause_button.get_child().set_markup(icons.pause)
             self.play_pause_button.remove_style_class("pause-track")
             self.play_pause_button.get_child().set_name("pause-label")
+        
+        def _set_pause_ui():
+            self.play_pause_button.get_child().set_markup(icons.play)
+            self.play_pause_button.add_style_class("pause-track")
+            self.play_pause_button.get_child().set_name("play-label")
+
+        if is_playing:
+            _set_pause_ui()            
+        else:
+            _set_play_ui()
 
         try:
             player.play_pause()
         except Exception as e:
             # revert if signal failed
             if is_playing:
-                self.play_pause_button.get_child().set_markup(icons.play)
-                self.play_pause_button.add_style_class("pause-track")
-                self.play_pause_button.get_child().set_name("play-label")
+                _set_pause_ui()
             else:
-                self.play_pause_button.get_child().set_markup(icons.pause)
-                self.play_pause_button.remove_style_class("pause-track")
-                self.play_pause_button.get_child().set_name("pause-label")
-            print("Failed to toggle playback:", e)
+                _set_play_ui()
+            logger.warning("Failed to toggle playback:", e)
 
     def handle_shuffle(self, shuffle_button, player):
         print("shuffle", player.props.shuffle)
@@ -239,7 +235,6 @@ class PlayerContainer(Box):
         
         self.manager = PlayerManager()
         self.manager.connect("new-player", self.new_player)
-        # self.manager.connect("meta-change", self.on_metadata)
         self.manager.connect("player-vanish", self.on_player_vanish)
         self.stack = Stack(
             name="player-container",
@@ -266,7 +261,7 @@ class PlayerContainer(Box):
         self.manager.init_all_players()
         
     def new_player(self, manager, player):
-        print(player.props.player_name,"here is the appended hcild name")
+        print(player.props.player_name,"new player")
         print(player)
         new_player = Player(player = player)
         new_player.gtk_wrapper.queue_draw()
@@ -274,6 +269,7 @@ class PlayerContainer(Box):
         self.player.append(new_player)
         print("stacking dis bitvch")
         self.stack.add_named(new_player, player.props.player_name)
+
         self.player_switch_container.add_center(
             Button(
                 name=player.props.player_name, 

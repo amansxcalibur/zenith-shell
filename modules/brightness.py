@@ -13,7 +13,7 @@ from gi.repository import GLib, Gdk
 import icons.icons as icons
 import subprocess
 import re
-import info
+import config.info as info
 
 
 def supports_backlight():
@@ -69,7 +69,7 @@ class BrightnessSmall(Box):
         self.current = 0
         self.max = 0
         self.percentage = 0
-        self.exist = supports_backlight
+        self.exist = BACKLIGHT_SUPPORTED
         self.brightness_revealer_ref = slider_instance
         self.hide_timer = None
         self.hover_counter = 0
@@ -253,7 +253,6 @@ class BrightnessMaterial3(Scale):
 
     def set_brightness(self, source):
         new_value = int(source.get_value() * 100)
-        print("new val", new_value)
         exec_shell_command_async(f"brightnessctl set {new_value}%")
         # too lazy to change this
         # todo: add signals to brightness small and pass it to the sliders instead of the other way around

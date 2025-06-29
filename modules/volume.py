@@ -1,4 +1,3 @@
-import subprocess
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.scale import Scale
@@ -6,8 +5,11 @@ from fabric.widgets.button import Button
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.circularprogressbar import CircularProgressBar
+
 import icons.icons as icons
-import info
+import config.info as info
+
+import subprocess
 
 from gi.repository import GLib
 

@@ -2,7 +2,6 @@ import re
 import subprocess
 
 import psutil
-import info
 from gi.repository import GLib
 
 from fabric.core.fabricator import Fabricator
@@ -15,9 +14,10 @@ from fabric.widgets.revealer import Revealer
 from fabric.core.fabricator import Fabricator
 from fabric.widgets.scale import Scale
 from fabric.core.service import Service, Signal
-from fabric.utils.helpers import exec_shell_command_async
 
 import icons.icons as icons
+
+import config.info as info
 
 
 class MetricsProvider(Service):

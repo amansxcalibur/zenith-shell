@@ -3,13 +3,14 @@ from fabric.widgets.label import Label
 from fabric.widgets.centerbox import CenterBox
 from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
-import icons.icons as icons
-import info
-from network import Network
-from bluetooth import Bluetooth
-from tile import Tile
-from wavy_clock import WavyCircle
 
+from modules.bluetooth import Bluetooth
+from modules.network import Network
+from modules.tile import Tile
+from modules.wavy_clock import WavyCircle
+
+import icons.icons as icons
+import config.info as info
 
 class Dashboard(Box):
     def __init__(self, controls, **kwargs):

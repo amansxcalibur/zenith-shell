@@ -1,8 +1,11 @@
-import math
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib, cairo
-import info
+from gi.repository import Gtk, GLib
+
+from utils.colors import get_css_variable, hex_to_rgb01
+import config.info as info
+
+import math
 
 class WavyCircle(Gtk.DrawingArea):
     def __init__(self):
@@ -45,21 +48,6 @@ class WavyCircle(Gtk.DrawingArea):
             y = cy + r * math.sin(angle)
             ctx.line_to(x, y)
             angle += angle_step
-
-        def hex_to_rgb01(hex_color):
-            hex_color = hex_color.lstrip('#')
-            r = int(hex_color[0:2], 16) / 255.0
-            g = int(hex_color[2:4], 16) / 255.0
-            b = int(hex_color[4:6], 16) / 255.0
-            return r, g, b
-
-        def get_css_variable(file_path, var_name):
-            with open(file_path) as f:
-                for line in f:
-                    if var_name in line:
-                        color = line.split(':')[1].strip().rstrip(';')
-                        return color
-            return None
 
         hex_color = get_css_variable(f'{info.HOME_DIR}/fabric/styles/colors.css', '--primary')
         r, g, b = hex_to_rgb01(hex_color)
