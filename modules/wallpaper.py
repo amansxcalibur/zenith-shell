@@ -227,9 +227,9 @@ class WallpaperSelector(Box):
         f.close()
 
         async def generate_theme():
+            # the themes are updated when the "changed" signal is emitted by the monitor watching the styles directory.
             exec_shell_command(f'matugen image {full_path} -t {selected_scheme}')
             print("this is the selected scheme ", selected_scheme)
-            exec_shell_command_async("fabric-cli exec bar-example 'app.set_css()'")
 
         asyncio.run(generate_theme())
 

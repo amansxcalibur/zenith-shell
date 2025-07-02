@@ -1,6 +1,6 @@
 import fabric
 from fabric import Application
-from fabric.utils import get_relative_path
+from fabric.utils import get_relative_path, monitor_file
 
 import config.info as info
 from modules.dock_bar import DockBar
@@ -39,11 +39,12 @@ if __name__ == "__main__":
 
     app = Application("bar-example", **app_kwargs)
 
-    def set_css():
+    def set_css(*_):
         app.set_stylesheet_from_file(get_relative_path("./main.css"))
 
-    app.set_css = set_css
-    app.set_css()
+    app.style_monitor = monitor_file(get_relative_path("./styles"))
+    app.style_monitor.connect("changed", set_css)
+    set_css()
 
     app.run()
 
