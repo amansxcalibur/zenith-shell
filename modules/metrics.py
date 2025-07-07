@@ -8,6 +8,7 @@ from fabric.core.fabricator import Fabricator
 from fabric.widgets.box import Box
 from fabric.widgets.button import Button
 from fabric.widgets.circularprogressbar import CircularProgressBar
+from widgets.animatedcircularprogressbar import AnimatedCircularProgressBar
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.label import Label
 from fabric.widgets.revealer import Revealer
@@ -15,6 +16,7 @@ from fabric.core.fabricator import Fabricator
 from fabric.widgets.scale import Scale
 from fabric.core.service import Service, Signal
 
+from utils.animator import Animator
 import icons.icons as icons
 
 import config.info as info
@@ -203,7 +205,7 @@ class MetricsSmall(Button):
 
         # ------------------ CPU ------------------
         self.cpu_icon = Label(name="cpu-icon", markup=icons.cpu)
-        self.cpu_circle = CircularProgressBar(
+        self.cpu_circle = AnimatedCircularProgressBar(
             name="metrics-circle",
             value=0,
             size=28,
@@ -213,7 +215,7 @@ class MetricsSmall(Button):
             start_angle=-90,
             end_angle=270,
             style_classes="cpu",
-            child=self.cpu_icon
+            child=self.cpu_icon,
         )
         self.cpu_level = Label(name="metrics-level", style_classes="cpu", label="0%")
         self.cpu_revealer = Revealer(
@@ -355,7 +357,7 @@ class MetricsSmall(Button):
     def update_metrics(self):
         # Recover centralized data
         cpu, mem, disk = shared_provider.get_metrics()
-        self.cpu_circle.set_value(cpu / 100.0)
+        self.cpu_circle.animate_value(cpu / 100.0)
         self.ram_circle.set_value(mem / 100.0)
         self.disk_circle.set_value(disk / 100.0)
         # Update labels with formatted percentage
@@ -386,7 +388,7 @@ class Battery(Button):
             line_width=2,
             start_angle=-90,
             end_angle=270,
-            child=self.bat_icon
+            child=self.bat_icon,
         )
         self.bat_level = Label(name="metrics-level", style_classes="bat", label="100%")
         self.bat_revealer = Revealer(

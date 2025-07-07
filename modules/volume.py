@@ -1,11 +1,11 @@
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
-from fabric.widgets.scale import Scale
 from fabric.widgets.button import Button
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
-from fabric.widgets.circularprogressbar import CircularProgressBar
 
+from widgets.animatedcircularprogressbar import AnimatedCircularProgressBar
+from widgets.animatedscale import AnimatedScale
 import icons.icons as icons
 import config.info as info
 
@@ -35,7 +35,7 @@ volume, muted = get_current_volume()
 print(f"Volume: {volume}% | Muted: {muted}")
 
 
-class VolumeSlider(Scale):
+class VolumeSlider(AnimatedScale):
     def __init__(self, **kwargs):
         super().__init__(
             name="control-slider",
@@ -63,14 +63,14 @@ class VolumeSlider(Scale):
         print(volume)
         if volume is not None:
             if overflow:
-                self.value = max(0, (volume - 100) / 100)
+                self.animate_value(max(0, (volume - 100) / 100))
             else:
-                self.value = min(1, volume / 100) 
+                self.animate_value(min(1, volume / 100))
 
 class VolumeSmall(Box):
     def __init__(self, slider_instance, overflow_instance, **kwargs):
         super().__init__(name="button-bar-vol", **kwargs)
-        self.progress_bar = CircularProgressBar(
+        self.progress_bar = AnimatedCircularProgressBar(
             name="button-volume", 
             size=28, 
             line_width=2,
@@ -99,19 +99,6 @@ class VolumeSmall(Box):
         self.hover_counter = 0
         self.vol_revealer = slider_instance
         self.vol_overflow_revealer = overflow_instance
-        # self.vol_event = EventBox(
-        #     name="eventer",
-        #     v_expand=True,
-        #     h_expand=True,
-        #     events="scroll",
-        #     child=Overlay(
-        #         child=self.vol_revealer,
-        #         # overlays=self.vol_button
-        #     ),
-        # )
-        # self.vol_event.get_child().connect("scroll-event", self.on_scroll)
-        # self.vol_overflow_revealer.get_child().connect("scroll-event", self.on_scroll)
-        # self.f = EventBox(events="")
         self.event_box.connect("scroll-event", self.on_scroll)
         self.add(self.event_box)
         self.update_volume_widget()
@@ -119,14 +106,6 @@ class VolumeSmall(Box):
     def toggle_mute(self, event):
         subprocess.run(["pactl", "set-sink-mute", "@DEFAULT_SINK@", "toggle"])
         self.update_volume_widget()
-
-    # def on_slider_scroll(self, _, event):
-    #     val_y = event.delta_y
-
-    #     if val_y > 0:
-    #         subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "+5%"])
-    #     else:
-    #         subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "-5%"])
     
     def on_scroll(self, _, event):
         """Increase or decrease volume using scroll wheel."""
@@ -183,7 +162,7 @@ class VolumeSmall(Box):
         if volume is None:
             return
         
-        self.progress_bar.value = volume / 100
+        self.progress_bar.animate_value(volume / 100)
 
         if muted:
             self.vol_overflow_revealer.get_child().remove_style_class("vol")
@@ -211,10 +190,7 @@ class VolumeSmall(Box):
 
             if volume > 74:
                 self.vol_button.get_child().set_markup(icons.vol_high)
-                # print("High", volume)
             elif volume > 0:
                 self.vol_button.get_child().set_markup(icons.vol_medium)
-                # print("Medium")
             else:
                 self.vol_button.get_child().set_markup(icons.vol_mute)
-                # print("Mute")

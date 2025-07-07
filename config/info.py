@@ -9,5 +9,6 @@ HOSTNAME = os.uname().nodename
 HOME_DIR = os.path.expanduser("~")
 WALLPAPERS_DIR = os.path.expanduser("~/Pictures/Wallpapers/")
 VERTICAL = False
+BRIGHTNESS_DEV = "intel_backlight"
 print(USERNAME, HOSTNAME, HOME_DIR)
 print(Gtk)

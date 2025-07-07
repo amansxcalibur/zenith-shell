@@ -8,10 +8,13 @@ try:
 except ValueError:
     logger.error("Failed to start network manager")
 
+
 class NetworkService(Service):
 
     @Signal
-    def connection_change(self, ssid: str, connected: bool, status: str = "") -> None: ...
+    def connection_change(
+        self, ssid: str, connected: bool, status: str = ""
+    ) -> None: ...
 
     def __init__(self):
         super().__init__()
@@ -28,16 +31,18 @@ class NetworkService(Service):
 
         devices = self.client.get_devices()
         for dev in devices:
-             if dev.get_device_type() == NM.DeviceType.WIFI:
+            if dev.get_device_type() == NM.DeviceType.WIFI:
                 self.wifi_dev = dev
                 active_ap = self.wifi_dev.get_active_access_point()
                 if active_ap:
                     ssid = active_ap.get_ssid()
-                    print("Connected SSID:", ssid.get_data().decode('utf-8'))
+                    print("Connected SSID:", ssid.get_data().decode("utf-8"))
 
         if self.wifi_dev:
             self.wifi_dev.connect("state-changed", self.handle_device_state_change)
-            self.wifi_dev.connect("notify::active-access-point", self.handle_prop_change)
+            self.wifi_dev.connect(
+                "notify::active-access-point", self.handle_prop_change
+            )
 
     def init_props(self):
         self.handle_prop_change(self.wifi_dev, None)
@@ -67,7 +72,14 @@ class NetworkService(Service):
                 self.connection_change("", False, "Wi-Fi Off")
             case NM.DeviceState.DISCONNECTED:
                 self.connection_change("", False, "Wi-Fi On (No Connection)")
-            case NM.DeviceState.PREPARE | NM.DeviceState.CONFIG | NM.DeviceState.NEED_AUTH | NM.DeviceState.IP_CONFIG | NM.DeviceState.IP_CHECK | NM.DeviceState.SECONDARIES:
+            case (
+                NM.DeviceState.PREPARE
+                | NM.DeviceState.CONFIG
+                | NM.DeviceState.NEED_AUTH
+                | NM.DeviceState.IP_CONFIG
+                | NM.DeviceState.IP_CHECK
+                | NM.DeviceState.SECONDARIES
+            ):
                 self.connection_change("", False, "Connecting…")
             case NM.DeviceState.ACTIVATED:
                 active_ap = device.get_active_access_point()
@@ -84,8 +96,9 @@ class NetworkService(Service):
         if device.get_device_type() == NM.DeviceType.WIFI:
             self.wifi_dev = device
             self.wifi_dev.connect("state-changed", self.handle_device_state_change)
-            self.wifi_dev.connect("notify::active-access-point", self.handle_prop_change)
-
+            self.wifi_dev.connect(
+                "notify::active-access-point", self.handle_prop_change
+            )
 
     def on_device_removed(self, client, device):
         print("Removed device")
@@ -94,4 +107,6 @@ class NetworkService(Service):
             self.handle_prop_change(self.wifi_dev, None)
 
     def print_state(self):
-        print("wifi: ", self.wifi_dev.get_state(), "    client: ", self.client.get_state())
+        print(
+            "wifi: ", self.wifi_dev.get_state(), "    client: ", self.client.get_state()
+        )
