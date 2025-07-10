@@ -11,24 +11,24 @@ from fabric.utils import get_relative_path
 from fabric.utils.helpers import exec_shell_command_async
 from i3ipc import Connection
 
-from launcher import AppLauncher
-from corner import Corners, MyCorner
+from modules.launcher import AppLauncher
+# from corner import Corners, MyCorner
 from fabric.widgets.revealer import Revealer
-from systray import SystemTray
-from workspaces import Workspaces, ActiveWindow
-from metrics import MetricsSmall, Battery
-from player import PlayerContainer
-import info
+from modules.systray import SystemTray
+from modules.workspaces import Workspaces, ActiveWindow
+from modules.metrics import MetricsSmall, Battery
+from modules.player import PlayerContainer
+import config.info as info
 import icons.icons as icons
 from utils.helpers import toggle_class
 
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gdk, Gtk
-from wallpaper import WallpaperSelector
-from volume import VolumeSlider, VolumeSmall
-from brightness import BrightnessSlider, BrightnessSmall
-from controls import ControlsManager
+from modules.wallpaper import WallpaperSelector
+from modules.volume import VolumeSlider, VolumeSmall
+from modules.brightness import BrightnessSlider, BrightnessSmall
+from modules.controls import ControlsManager
 from utils.cursor import add_hover_cursor
 
 import os, subprocess

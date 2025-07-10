@@ -13,7 +13,7 @@ import re
 import math
 import subprocess
 import icons.icons as icons
-import info
+import config.info as info
 
 class AppLauncher(Box):
     def __init__(self, **kwargs):

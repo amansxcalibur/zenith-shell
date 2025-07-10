@@ -3,7 +3,7 @@ import gi
 gi.require_version("Gray", "0.1")
 from gi.repository import Gray, Gtk, Gdk, GdkPixbuf, GLib
 
-import info
+import config.info as info
 
 
 class SystemTray(Gtk.Box):

@@ -30,6 +30,7 @@ temp: str = "&#xeb38;"
 disk: str = chr(0xf1632)
 # battery: str = chr(0xea38)
 battery: str = chr(0xf140c)
+battery_charging: str = chr(0xf140b)
 # memory: str = "&#xfa97;"
 memory: str = chr(0xf01a7)
 # cpu: str = chr(0xef8e)
@@ -71,13 +72,14 @@ discharging: str = chr(0xefe9)
 alert: str = "&#xefb4;"
 
 # Applets
+wifi: str = chr(0xf1eb)
 wifi_0: str = "&#xeba3;"
 wifi_1: str = "&#xeba4;"
 wifi_2: str = "&#xeba5;"
 wifi_3: str = "&#xeb52;"
 world: str = "&#xeb54;"
 world_off: str = "&#xf1ca;"
-bluetooth: str = "&#xea37;"
+bluetooth: str = chr(0xf294)
 night: str = "&#xeaf8;"
 coffee: str = "&#xef0e;"
 notifications: str = "&#xea35;"
@@ -87,7 +89,8 @@ bluetooth_off: str = "&#xeceb;"
 night_off: str = "&#xf162;"
 notifications_off: str = "&#xece9;"
 
-notifications_clear: str = "&#xf814;";
+notifications_clear: str = "&#xf814;"
+arrow_head: str = chr(0xe285)
 
 # Bluetooth
 bluetooth_connected: str = "&#xecea;"
@@ -161,6 +164,10 @@ pause: str = chr(0xf04c)
 play: str = chr(0xf04b)
 shuffle: str = chr(0xf074)
 disable_shuffle: str = chr(0xf049e)
+
+# Settings
+settings: str = chr(0xf1a2a)
+blur: str = chr(0xf00b5)
 
 exceptions: list[str] = ['font_family', 'font_weight', 'span']
 

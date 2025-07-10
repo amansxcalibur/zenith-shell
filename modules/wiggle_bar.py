@@ -1,17 +1,19 @@
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib
-import cairo
-import math
-import sys
-from fabric.widgets.box import Box
-from fabric.widgets.x11 import X11Window as Window
-from fabric import Application
+
 from fabric.core.service import Service, Signal
-from fabric.utils import get_relative_path
-import info
+
+import config.info as info
+from utils.colors import get_css_variable, hex_to_rgb01
+
+import math
 
 class WigglyWidget(Gtk.DrawingArea, Service):
+
+    @Signal
+    def on_seek(self, ratio: float) -> None: ...
+
     def __init__(self):
         super().__init__()
         self.phase = 0
@@ -34,9 +36,6 @@ class WigglyWidget(Gtk.DrawingArea, Service):
         self.pause = False
 
         self.show_all()
-
-    @Signal
-    def on_seek(self, ratio: float) -> None: ...
 
     def animate_amplitude_to(self):
         if abs(self.amplitude - self.amplitude_target) < 0.01:
@@ -139,21 +138,6 @@ class WigglyWidget(Gtk.DrawingArea, Service):
 
         cr.stroke()
 
-        def hex_to_rgb01(hex_color):
-            hex_color = hex_color.lstrip('#')
-            r = int(hex_color[0:2], 16) / 255.0
-            g = int(hex_color[2:4], 16) / 255.0
-            b = int(hex_color[4:6], 16) / 255.0
-            return r, g, b
-
-        def get_css_variable(file_path, var_name):
-            with open(file_path) as f:
-                for line in f:
-                    if var_name in line:
-                        color = line.split(':')[1].strip().rstrip(';')
-                        return color
-            return None
-
         hex_color = get_css_variable(f'{info.HOME_DIR}/fabric/styles/colors.css', '--primary')
         r, g, b = hex_to_rgb01(hex_color)
         cr.set_source_rgb(r, g, b)
@@ -163,9 +147,6 @@ class WigglyWidget(Gtk.DrawingArea, Service):
         rect_height = 6
         self.draw_rounded_rect(cr, last_x, height, rect_width, rect_width, arc_radius)
         cr.fill()
-
-        # print(last_x, last_y)
-        # print(width)
 
         cr.stroke()
 
@@ -185,59 +166,4 @@ class WigglyWidget(Gtk.DrawingArea, Service):
         cr.new_sub_path()
         cr.arc(x + width - radius, radius, radius, -math.pi, 0)
         cr.arc(x + width - radius, y-radius, radius, 0, -math.pi)
-        # cr.arc(x + width - radius, y + height - radius, radius, 0, math.pi / 2)
-        # cr.arc(x + radius, y + height - radius, radius, math.pi / 2, math.pi)
-        # cr.arc(x + radius, y + radius, radius, math.pi, 3 * math.pi / 2)
         cr.close_path()
-
-
-
-# class WigglyFabricWindow(Window):
-#     def __init__(self):
-#         super().__init__(
-#             name="wiggle-fabric-window",
-#             geometry=(600, 100),
-#             visible=True,
-#             layer="top"
-#         )
-
-#         wiggly = WigglyWidget()
-
-#         # Wrap Gtk.DrawingArea in a Gtk.Box that expands
-#         gtk_wrapper = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-#         gtk_wrapper.set_hexpand(True)
-#         gtk_wrapper.set_vexpand(True)
-#         gtk_wrapper.set_halign(Gtk.Align.FILL)
-#         gtk_wrapper.set_valign(Gtk.Align.FILL)
-#         gtk_wrapper.add(wiggly)
-
-#         self.children = Box(
-#             name="container",
-#             # h_align="fill",
-#             # v_align="fill",
-#             children=[
-#                 gtk_wrapper
-#             ]
-#         )
-# class WigglyWindow(Gtk.Window):
-#     def __init__(self):
-#         super().__init__(title="Squiggly Line")
-#         self.set_default_size(600, 100)
-#         self.set_resizable(False)
-#         self.set_position(Gtk.WindowPosition.CENTER)
-
-#         self.add(WigglyWidget())
-
-#         self.connect("destroy", Gtk.main_quit)
-
-# if __name__ == "__main__":
-#     win = WigglyWindow()
-#     win.show_all()
-#     Gtk.main()
-
-# if __name__ == "__main__":
-#     win = WigglyFabricWindow()
-#     win.show_all()
-#     app = Application("wiggly", win)
-#     app.set_stylesheet_from_file(get_relative_path("./styles/wiggle.css"))   
-#     app.run()

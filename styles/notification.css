@@ -1,0 +1,23 @@
+#notification-box{
+    background-color: black;
+    border-radius: 25px;
+    padding: 10px; 
+    min-width: 364px; /* 290+74 */
+    margin-top: 3px;
+}
+
+#notification-source{
+    color: var(--outline);
+}
+
+#notification-icon{
+    font-size: 36px;
+    margin-right: 27px;
+    margin-left: 7px;
+    color: var(--surface-bright);
+}
+
+#notification-container{
+    background-color: var(--surface);
+    border-radius: 20px;
+}

@@ -2,9 +2,8 @@ from i3ipc import Connection, Event
 from fabric.widgets.label import Label
 from fabric.widgets.box import Box
 from fabric.widgets.button import Button
-from fabric.utils.helpers import exec_shell_command_async
 import threading
-import info
+import config.info as info
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -38,8 +37,6 @@ class i3Connector:
         self.i3.on(Event.WINDOW_FOCUS, self.on_window_focus)
         self.i3.on(Event.WINDOW_TITLE, self.on_window_title_change)
         self.i3.on(Event.SHUTDOWN_RESTART, self.on_session_restart)
-        # self.i3.on(Event.SHUTDOWN_RESTART, self.on_i3_restart)
-        # self.i3.main()
 
     def on_workspace_focus(self, i3, e):
         if e.current:
@@ -53,7 +50,7 @@ class i3Connector:
     def on_window_focus(self, i3, e):
         # focused = i3.get_tree().find_focused()
         # ws_name = "%s %s" % (focused.workspace().num, focused.window_class)
-        #print(e.container.name)
+        # print(e.container.name)
         # self.active_window.setter_label(focused.name)
         self.active_window.setter_label(e.container.name)
 
@@ -74,7 +71,6 @@ class i3Connector:
         #print(event_type)
         if event_type in self.callbacks:
             self.callbacks[event_type].append(callback)
-            #print("its in there")
 
     def command(self, cmd):
         return self.i3.command(cmd)
