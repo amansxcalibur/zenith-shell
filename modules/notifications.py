@@ -5,6 +5,7 @@ from fabric.widgets.label import Label
 from fabric.widgets.x11 import X11Window as Window
 
 from modules.metrics import MetricsProvider
+from modules.controls import ControlsManager
 
 import config.info as info
 import icons.icons as icons
@@ -95,4 +96,18 @@ class NotificationPopup(Window):
             all_visible=True,
             **kwargs
         )
-        self.children = Box(style="min-height: 1px;", children=Notification())
+        self.controls = ControlsManager()
+        self.volume_revealer = self.controls.get_volume_revealer()
+        self.volume_overflow_revealer = self.controls.get_volume_overflow_revealer()
+        self.brightness_revealer = self.controls.get_brightness_revealer()
+
+        self.children = Box(
+            style="min-height: 1px;",
+            orientation='v',
+            children=[
+                Notification(),
+                self.volume_revealer,
+                self.volume_overflow_revealer,
+                self.brightness_revealer,
+            ],
+        )
