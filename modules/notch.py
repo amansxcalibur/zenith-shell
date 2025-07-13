@@ -34,9 +34,7 @@ class Notch(Window):
             name="user-label",
         )
         # self.dot_placeholder = Label(label=". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .", name="collapsed-bar")
-        self.dot_placeholder = Box(
-            style=" background-color:blue;  min-width:1px; min-height:1px;"
-        )
+        self.dot_placeholder = Box(style="min-width:1px; min-height:1px;")
         self.launcher = AppLauncher(notch=self)
         self.launcher.add_style_class("launcher-contract-init")
         self.wallpaper = WallpaperSelector(notch=self)
@@ -52,14 +50,22 @@ class Notch(Window):
             transition_duration=100,
             children=[
                 self.dot_placeholder,
-                self.user,
+                # self.user,
                 self.launcher,
-                self.player,
                 self.wallpaper,
+                self.player,
                 self.dashboard,
             ],
         )
-        self.children = self.stack
+
+        self.lift_box = Box(style="min-height:36px;") # 40-3-1
+        self.children = Box(
+            orientation='v',
+            children=[
+                self.stack,
+                self.lift_box
+            ]
+        )
 
         self.add_keybinding("Escape", lambda *_: self.close())
 
@@ -69,6 +75,7 @@ class Notch(Window):
     def open(self):
         self.focus_notch()
         exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.open()'")
+        self.lift_box.set_style("min-height:0px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
         if self.stack.get_visible_child() == self.dot_placeholder:
             # open launcher
             self.launcher.remove_style_class("launcher-contract-init")
@@ -129,6 +136,8 @@ class Notch(Window):
             self.player.add_style_class("hide-player")
 
         # self.stack.add_style_class("hide")
+
+        self.lift_box.set_style("min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
         self.show_all()
 
     def toggle_player(self, *_):

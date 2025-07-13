@@ -79,15 +79,15 @@
   }
 
   .wallpaper-contract{
-    margin: -300px;
+    margin: -380px;
     transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
     /* animation: wallContract 0.5s ease; */
   }
 
-  #wallpapers.vertical.wallpaper-contract{
+  /* #wallpapers.vertical.wallpaper-contract{
     margin: -360px;
     transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
-  }
+  } */
 
   .wallpaper-expand{
     min-width: 740px;
