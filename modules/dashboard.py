@@ -16,10 +16,10 @@ class Dashboard(Box):
     def __init__(self, controls, **kwargs):
         super().__init__(
             name="dashboard",
-            visible=False,
+            visible=True,
             orientation="v",
             spacing=8,
-            all_visible=False,
+            all_visible=True,
             **kwargs,
         )
         self.wifi = Network()

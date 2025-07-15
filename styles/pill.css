@@ -6,6 +6,8 @@
 #hori{
     background-color: transparent;
     box-shadow: 0px 17px 0 0 black;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
 }
 
 #vert{
@@ -39,6 +41,7 @@
 
 #start, #end{
     background-color: black;
+    min-width: 20px;
 }
 #start.expander{
     border-top-right-radius: 20px;

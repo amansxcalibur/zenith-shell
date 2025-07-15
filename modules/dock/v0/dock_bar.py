@@ -11,7 +11,7 @@ from modules.metrics import MetricsSmall, Battery
 import config.info as info
 import icons.icons as icons
 from utils.helpers import toggle_class
-from modules.dock_modules import DockModuleOverlay
+from modules.dock.v0.dock_modules import DockModuleOverlay
 
 import gi
 

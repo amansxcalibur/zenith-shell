@@ -4,7 +4,7 @@ from fabric.utils import get_relative_path
 from modules.notifications import NotificationPopup
 
 from modules.notch import Notch
-from modules.dock_bar import DockBar
+from modules.dock.bar import DockBar
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -28,7 +28,7 @@ if __name__ == "__main__":
         "open_inspector": False,
     }
 
-    app = Application("bar-example",notch, dockBar, notification)
+    app = Application("bar-example",**app_kwargs)
 
     def set_css():
         app.set_stylesheet_from_file(get_relative_path("./main.css"))

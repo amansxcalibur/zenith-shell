@@ -5,3 +5,10 @@
 /* #workspaces{
     padding: 0px;
 } */
+#hole-placeholder-box{
+    background-color: black;
+}
+
+#spacer {
+    min-width: 10px;
+}
