@@ -5,6 +5,22 @@ from fabric.widgets.label import Label
 from modules.dock.module_overlay import HoverOverlay, HolePlaceholder
 from fabric.widgets.eventbox import EventBox
 from utils.helpers import toggle_class
+from modules.workspaces import Workspaces
+from fabric.widgets.label import Label
+from fabric.widgets.box import Box
+from modules.controls import ControlsManager
+from fabric.widgets.button import Button
+from fabric.widgets.datetime import DateTime
+from fabric.widgets.x11 import X11Window as Window
+from i3ipc import Connection
+import subprocess
+from modules.systray import SystemTray
+from modules.workspaces import Workspaces
+from modules.metrics import MetricsSmall, Battery
+import config.info as info
+import icons.icons as icons
+from utils.helpers import toggle_class
+from modules.dock.v0.dock_modules import DockModuleOverlay
 import time
 import gi
 
@@ -31,63 +47,196 @@ class DockBar(Window):
             **kwargs,
         )
 
-        self.init_modules()
-        self.layout_manager = LayoutManager(self)
-        self.layout_manager.init_layout()
+        self.hole_state_left = False
+        self.hole_state_right = False
 
-        self.hole_state = False
+        self.init_modules()
+        self.layout_manager_left = LayoutManager(self, side="left")
+        self.layout_manager_right = LayoutManager(self, side="right")
+        self.layout_manager_left.init_layout()
+        self.layout_manager_right.init_layout()
+        self.ready_everything()
+
         self.add_keybinding("Escape", lambda *_: self.close())
 
     def init_modules(self):
-        module_widths = [250, 120, 55, 180]
-        self.visual_modules = [
-            Box(style=f"border:white solid 1px; border-radius:20px; min-width:{w}px;")
-            for w in module_widths
+        self.workspaces = Workspaces()
+        self.controls = ControlsManager()
+        self.systray = SystemTray()
+        self.metrics = MetricsSmall()
+        self.battery = Battery()
+        self.vol_small = self.controls.get_volume_small()
+        self.brightness_small = self.controls.get_brightness_small()
+        self.vol_brightness_box = Box(
+            name="vol-brightness-container",
+            orientation="h",
+            children=[self.vol_small, self.brightness_small],
+        )
+        self.date_time = Box(
+            name="date-time-container",
+            style_classes="" if not info.VERTICAL else "vertical",
+            children=DateTime(
+                name="date-time",
+                formatters=["%H\n%M"] if info.VERTICAL else ["%H:%M"],
+                h_align="center",
+                v_align="center",
+                h_expand=True,
+                v_expand=True,
+                style_classes="" if not info.VERTICAL else "vertical",
+            ),
+        )
+        self.vertical_toggle_btn = Button(
+            name="orientation-btn",
+            child=Label(
+                name="orientation-label",
+                markup=(
+                    icons.toggle_vertical
+                    if not info.VERTICAL
+                    else icons.toggle_horizontal
+                ),
+            ),
+            on_clicked=lambda b, *_: self.toggle_vertical(),
+        )
+        self.user_modules_left = [
+            self.vertical_toggle_btn, 
+            self.workspaces, 
+            self.vol_brightness_box
         ]
-        self.placeholders = [
-            HolePlaceholder(target=mod, edge_flag=(i == len(self.visual_modules) - 2))
-            for i, mod in enumerate(self.visual_modules)
+        self.user_modules_right = [
+            self.systray,
+            self.metrics,
+            self.battery,
+            self.date_time,
+        ]
+        self.visual_modules_left = [
+            Box(
+                style="padding-bottom:3px; padding-left:3px; padding-right:3px;",
+                children=w,
+            )
+            for w in self.user_modules_left
+        ]
+        self.visual_modules_right = [
+            Box(
+                style="padding-bottom:3px; padding-left:3px; padding-right:3px;",
+                children=w,
+            )
+            for w in self.user_modules_right
         ]
 
-        self.hover_overlay_row = Box(
+        self.placeholders_left = [
+            HolePlaceholder(
+                target=mod, edge_flag=(i == len(self.visual_modules_left) - 2)
+            )
+            for i, mod in enumerate(self.visual_modules_left)
+        ]
+        self.placeholders_right = [
+            HolePlaceholder(
+                target=mod, edge_flag=(i == len(self.visual_modules_right) - 2)
+            )
+            for i, mod in enumerate(self.visual_modules_right)
+        ]
+
+        self.hover_overlay_row_left = Box(
             style="min-height:40px;",
             spacing=SPACING,
             h_expand=True,
             children=[
                 HoverOverlay(target_box=mod, hole_box=hole, id=i)
                 for i, (mod, hole) in enumerate(
-                    zip(self.visual_modules, self.placeholders)
+                    zip(self.visual_modules_left, self.placeholders_left)
                 )
             ],
         )
+        self.edge_fallback_right = EventBox(
+            h_expand=True,
+            child=Box(h_expand=True),
+            events=["enter-notify"],
+        )
 
-        for i, module in enumerate(self.hover_overlay_row.children):
-            module.connect("hole-index", self.handle_hover)
+        # Create hover row and add fallback first
+        self.hover_overlay_row_right = Box(
+            style="min-height:40px;",
+            spacing=SPACING,
+            h_expand=True,
+            children=[self.edge_fallback_right],  # fallback first
+        )
+
+        # Then add overlays (so they come visually after fallback)
+        for i, (mod, hole) in enumerate(
+            zip(self.visual_modules_right, self.placeholders_right)
+        ):
+            self.hover_overlay_row_right.add(
+                HoverOverlay(target_box=mod, hole_box=hole, id=i)
+            )
+
+        for i, module in enumerate(self.hover_overlay_row_left.children):
+            module.connect(
+                "hole-index", lambda w, v: self.handle_hover(w, v, side="left")
+            )
+        for i, module in enumerate(self.hover_overlay_row_right.children):
+            if i > 0:
+                module.connect(
+                    "hole-index", lambda w, v: self.handle_hover(w, v, side="right")
+                )
 
         self.pill = Box(name="vert")
 
-        self.edge_fallback = EventBox(
+        self.edge_fallback_left = EventBox(
             h_expand=True,
-            child=Box(h_expand=True, style="background-color:orange"),
+            child=Box(h_expand=True),
             events=["enter-notify"],
         )
-        self.edge_fallback.connect(
-            "enter-notify-event", lambda w, e: self.set_hole_state(w, e, False)
+        self.edge_fallback_left.connect(
+            "enter-notify-event", lambda w, e: self.set_hole_state(w, e, False, "left")
         )
-        self.hover_overlay_row.add(self.edge_fallback)
+        self.edge_fallback_right.connect(
+            "enter-notify-event", lambda w, e: self.set_hole_state(w, e, False, "right")
+        )
+        self.hover_overlay_row_left.add(self.edge_fallback_left)
+
+    def ready_everything(self):
+        self.start = Box(h_expand=True, children=self.layout_manager_left.event_wrapper)
+        self.end = Box(
+            h_expand=True,
+            children=self.layout_manager_right.event_wrapper,
+        )
+        self.pill_container = Box(
+            name="hori",
+            orientation="v",
+            children=[self.pill, Box(name="bottom", v_expand=True)],
+        )
+
+        self.children = Box(
+            name="main", children=[self.start, self.pill_container, self.end]
+        )
+
+        size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
+        size_group.add_widget(self.start)
+        size_group.add_widget(self.end)
 
     def open(self):
         toggle_class(self.pill, "contractor", "expand")
-        toggle_class(self.layout_manager.pill_container, "contractor", "expander")
+        toggle_class(self.pill_container, "contractor", "expander")
         self.bool = True
 
     def close(self):
         toggle_class(self.pill, "expand", "contractor")
-        toggle_class(self.layout_manager.pill_container, "expander", "contractor")
+        toggle_class(self.pill_container, "expander", "contractor")
         self.bool = False
 
-    def set_hole_state(self, source, event, state: bool):
-        self.layout_manager.set_hole_state(source, event, state)
+    def set_hole_state(self, source, event, state: bool, side: str):
+        if side == "left":
+            self.layout_manager_left.set_hole_state(source, event, state)
+        else:
+            self.layout_manager_right.set_hole_state(source, event, state)
 
-    def handle_hover(self, source, id: int):
-        self.layout_manager.handle_hover(source, id)
+    def handle_hover(self, source, id: int, side: str):
+        if side == "left":
+            self.layout_manager_left.handle_hover(source, id)
+        else:
+            self.layout_manager_right.handle_hover(source, id)
+
+    def toggle_vertical(self):
+        # toggle_config_vertical_flag()
+        # restart bar
+        subprocess.run([f"{info.HOME_DIR}/i3scripts/flaunch.sh"])

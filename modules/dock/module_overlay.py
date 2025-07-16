@@ -58,11 +58,14 @@ class HolePlaceholder(Box):
         self._edge_flag = edge_flag
         self._target = target
         self._target.connect("size-allocate", self.on_size_allocate)
+        self.width = self.get_allocation().width
 
     def on_size_allocate(self, widget, allocation):
         width = allocation.width
         if self._edge_flag:
             print(f"change {width}")
             width-=20
-        self.set_style(f"min-width:{width}px;")
-        print(f"Hole updated width: {width}")
+        if self.width != width:
+            self.width = width
+            self.set_style(f"min-width:{width}px;")
+            print(f"Hole updated width: {width}")
