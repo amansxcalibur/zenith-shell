@@ -55,7 +55,7 @@ class DockBar(Window):
         self.init_modules()
         self.layout_manager_left.init_layout()
         self.layout_manager_right.init_layout()
-        self.ready_everything()
+        self.build_bar()
 
         self.add_keybinding("Escape", lambda *_: self.close())
 
@@ -98,9 +98,9 @@ class DockBar(Window):
             on_clicked=lambda b, *_: self.toggle_vertical(),
         )
         self.user_modules_left = [
-            self.vertical_toggle_btn, 
-            self.workspaces, 
-            self.vol_brightness_box
+            self.vertical_toggle_btn,
+            self.workspaces,
+            self.vol_brightness_box,
         ]
         self.user_modules_right = [
             self.systray,
@@ -142,7 +142,12 @@ class DockBar(Window):
             spacing=SPACING,
             h_expand=True,
             children=[
-                HoverOverlay(target_box=mod, hole_box=hole, layout_manager = self.layout_manager_left, id=i)
+                HoverOverlay(
+                    target_box=mod,
+                    hole_box=hole,
+                    layout_manager=self.layout_manager_left,
+                    id=i,
+                )
                 for i, (mod, hole) in enumerate(
                     zip(self.visual_modules_left, self.placeholders_left)
                 )
@@ -154,7 +159,6 @@ class DockBar(Window):
             events=["enter-notify"],
         )
 
-        # Create hover row and add fallback first
         self.hover_overlay_row_right = Box(
             style="min-height:40px;",
             spacing=SPACING,
@@ -162,20 +166,30 @@ class DockBar(Window):
             children=[self.edge_fallback_right],  # fallback first
         )
 
-        # Then add overlays (so they come visually after fallback)
         for i, (mod, hole) in enumerate(
             zip(self.visual_modules_right, self.placeholders_right)
         ):
             self.hover_overlay_row_right.add(
-                HoverOverlay(target_box=mod, hole_box=hole, layout_manager = self.layout_manager_right, id=i)
+                HoverOverlay(
+                    target_box=mod,
+                    hole_box=hole,
+                    layout_manager=self.layout_manager_right,
+                    id=i,
+                )
             )
 
         for i, module in enumerate(self.hover_overlay_row_left.children):
-            module.connect("hole-index", lambda w, v, side="left": self.handle_hover(w, v, side=side))
+            module.connect(
+                "hole-index",
+                lambda w, v, side="left": self.handle_hover(w, v, side=side),
+            )
 
         for i, module in enumerate(self.hover_overlay_row_right.children):
             if i > 0:
-                module.connect("hole-index", lambda w, v, side="right": self.handle_hover(w, v, side=side))
+                module.connect(
+                    "hole-index",
+                    lambda w, v, side="right": self.handle_hover(w, v, side=side),
+                )
 
         self.pill = Box(name="vert")
 
@@ -192,34 +206,49 @@ class DockBar(Window):
         )
         self.hover_overlay_row_left.add(self.edge_fallback_left)
 
-    def ready_everything(self):
-        self.start = Box(h_expand=True, children=self.layout_manager_left.event_wrapper)
-        self.end = Box(
+    def build_bar(self):
+        self.start_children = Box(
+            h_expand=True, children=self.layout_manager_left.event_wrapper
+        )
+        self.end_children = Box(
             h_expand=True,
             children=self.layout_manager_right.event_wrapper,
         )
+        self.left_pill_curve = Box(name="start", h_expand=True)
+        self.right_pill_curve = Box(name="end", h_expand=True)
         self.pill_container = Box(
-            name="hori",
-            orientation="v",
-            children=[self.pill, Box(name="bottom", v_expand=True)],
+            children=[
+                self.left_pill_curve,
+                Box(
+                    name="hori",
+                    orientation="v",
+                    children=[self.pill, Box(name="bottom", v_expand=True)],
+                ),
+                self.right_pill_curve,
+            ]
         )
 
         self.children = Box(
-            name="main", children=[self.start, self.pill_container, self.end]
+            name="main",
+            children=[self.start_children, self.pill_container, self.end_children],
         )
 
         size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
-        size_group.add_widget(self.start)
-        size_group.add_widget(self.end)
+        size_group.add_widget(self.start_children)
+        size_group.add_widget(self.end_children)
 
     def open(self):
         toggle_class(self.pill, "contractor", "expand")
         toggle_class(self.pill_container, "contractor", "expander")
+        toggle_class(self.left_pill_curve, "contractor", "expander")
+        toggle_class(self.right_pill_curve, "contractor", "expander")
         self.bool = True
 
     def close(self):
         toggle_class(self.pill, "expand", "contractor")
         toggle_class(self.pill_container, "expander", "contractor")
+        toggle_class(self.left_pill_curve, "expander", "contractor")
+        toggle_class(self.right_pill_curve, "expander", "contractor")
         self.bool = False
 
     def set_hole_state(self, source, event, state: bool, side: str):

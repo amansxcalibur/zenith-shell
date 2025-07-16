@@ -41,14 +41,20 @@ class HoverOverlay(EventBox, Service):
     def on_hover(self, widget, event):
         print("setting hover True")
         self.is_currently_hovered = True
-        self._target.set_style("padding-bottom:3px; padding-left:3px; padding-right:3px; transition: padding-bottom 0.1s cubic-bezier(0.5, 0.25, 0, 1)")
+        self._target.set_style("" \
+        "padding-bottom:3px; padding-left:3px; padding-right:3px; " \
+        "transition: padding-bottom 0.1s cubic-bezier(0.5, 0.25, 0, 1)"
+        )
         self.hole_index(self._id)
 
     def on_unhover(self, widget, event):
         if event.detail == Gdk.NotifyType.INFERIOR: # hovering to a child widget, don't unhover
             return
         self.is_currently_hovered = False
-        self._target.set_style("padding-left:3px; padding-right:3px; transition: padding-bottom 0.1s cubic-bezier(0.5, 0.25, 0, 1)")
+        self._target.set_style("" \
+        "padding-left:3px; padding-right:3px; " \
+        "transition: padding-bottom 0.1s cubic-bezier(0.5, 0.25, 0, 1)" \
+        )
         self._hole.set_style("min-width:0px;")
         self.hole_index(-1)
 

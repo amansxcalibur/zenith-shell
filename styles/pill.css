@@ -5,9 +5,9 @@
 
 #hori{
     background-color: transparent;
-    box-shadow: 0px 17px 0 0 black;
-    border-bottom-left-radius: 20px;
-    border-bottom-right-radius: 20px;
+    box-shadow: 0px 26px 0 10px black;
+    border-bottom-left-radius: 25px;
+    border-bottom-right-radius: 25px;
 }
 
 #vert{
@@ -84,6 +84,18 @@
 
 #pill-container{
     padding: 3px;
+}
+
+#pill-container.contracter {
+  transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+  /* animation: loadSlot2 0.5s ease; */
+}
+
+#pill-container.expander {
+  min-height: 194px;
+  min-width: 200px;
+  transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+  /* animation: loadSlot1 0.5s ease; */
 }
 
 /* #inner-end{

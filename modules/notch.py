@@ -100,6 +100,7 @@ class Notch(Window):
             self.launcher.search_entry.grab_focus()
 
     def close(self, *_):
+        exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.close()'")
         if self.stack.get_visible_child() == self.player:
             self.player.remove_style_class("reveal-player")
             if info.VERTICAL:
@@ -110,18 +111,17 @@ class Notch(Window):
             self.stack.set_visible_child(self.dot_placeholder)
 
         elif self.stack.get_visible_child() != self.dot_placeholder:
-            self.stack.remove_style_class("expand")
+            self.stack.remove_style_class("expander")
             exec_shell_command_async(
                 " fabric-cli exec bar-example 'dockBar.reveal_overlapping_modules()'"
             )
-            exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.close()'")
 
             # self.unsteal_input()
             self.dashboard.add_style_class("hide")
             self.wallpaper.remove_style_class("wallpaper-expand")
             self.wallpaper.add_style_class("wallpaper-contract")
 
-            self.stack.add_style_class("contract")
+            self.stack.add_style_class("contracter")
 
             self.launcher.remove_style_class("launcher-expand")
             self.launcher.add_style_class("launcher-contract")
@@ -141,18 +141,26 @@ class Notch(Window):
         self.show_all()
 
     def toggle_player(self, *_):
-        if self.bool == False:
+        if self.stack.get_visible_child() != self.player:
             self.focus_notch()
+            self.lift_box.set_style("min-height:0px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
+            exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.open()'")
+            toggle_class(self.player, "hide-player", "reveal-player")
+            # launcher->player
+            toggle_class(self.launcher, "launcher-expand", "launcher-contract")
+            # wallpaper->player
+            if self.stack.get_visible_child() == self.launcher:
+                toggle_class(self.wallpaper, "wallpaper-expand", "wallpaper-contract")
+            # dashboard->player
             self.dashboard.add_style_class("hide")
-            self.player.remove_style_class("hide-player")
-            self.player.add_style_class("reveal-player")
-            self.bool = True
-            # self.stack.set_visible_child(self.player)
+
+            self.stack.add_style_class("contracter")
+            self.stack.set_visible_child(self.player)
         else:
-            self.player.remove_style_class("reveal-player")
-            self.player.add_style_class("hide-player")
-            # self.stack.set_visible_child(self.collapsed)
-            self.bool = False
+            exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.close()'")
+            self.lift_box.set_style("min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
+            toggle_class(self.player, "reveal-player", "hide-player")
+            self.stack.set_visible_child(self.dot_placeholder)
 
     def open_notch(self, mode):
         match mode:
