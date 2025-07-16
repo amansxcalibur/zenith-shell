@@ -50,9 +50,9 @@ class DockBar(Window):
         self.hole_state_left = False
         self.hole_state_right = False
 
-        self.init_modules()
         self.layout_manager_left = LayoutManager(self, side="left")
         self.layout_manager_right = LayoutManager(self, side="right")
+        self.init_modules()
         self.layout_manager_left.init_layout()
         self.layout_manager_right.init_layout()
         self.ready_everything()
@@ -110,14 +110,15 @@ class DockBar(Window):
         ]
         self.visual_modules_left = [
             Box(
-                style="padding-bottom:3px; padding-left:3px; padding-right:3px;",
+                name="hight",
+                style="padding-left:3px; padding-right:3px;",
                 children=w,
             )
             for w in self.user_modules_left
         ]
         self.visual_modules_right = [
             Box(
-                style="padding-bottom:3px; padding-left:3px; padding-right:3px;",
+                style="padding-left:3px; padding-right:3px;",
                 children=w,
             )
             for w in self.user_modules_right
@@ -141,7 +142,7 @@ class DockBar(Window):
             spacing=SPACING,
             h_expand=True,
             children=[
-                HoverOverlay(target_box=mod, hole_box=hole, id=i)
+                HoverOverlay(target_box=mod, hole_box=hole, layout_manager = self.layout_manager_left, id=i)
                 for i, (mod, hole) in enumerate(
                     zip(self.visual_modules_left, self.placeholders_left)
                 )
@@ -166,18 +167,15 @@ class DockBar(Window):
             zip(self.visual_modules_right, self.placeholders_right)
         ):
             self.hover_overlay_row_right.add(
-                HoverOverlay(target_box=mod, hole_box=hole, id=i)
+                HoverOverlay(target_box=mod, hole_box=hole, layout_manager = self.layout_manager_right, id=i)
             )
 
         for i, module in enumerate(self.hover_overlay_row_left.children):
-            module.connect(
-                "hole-index", lambda w, v: self.handle_hover(w, v, side="left")
-            )
+            module.connect("hole-index", lambda w, v, side="left": self.handle_hover(w, v, side=side))
+
         for i, module in enumerate(self.hover_overlay_row_right.children):
             if i > 0:
-                module.connect(
-                    "hole-index", lambda w, v: self.handle_hover(w, v, side="right")
-                )
+                module.connect("hole-index", lambda w, v, side="right": self.handle_hover(w, v, side=side))
 
         self.pill = Box(name="vert")
 
