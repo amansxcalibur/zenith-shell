@@ -5,6 +5,13 @@
 
 #hori{
     background-color: transparent;
+    box-shadow: 0px 17px 0 0 black;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+}
+
+#hori.pill{
+    background-color: transparent;
     box-shadow: 0px 26px 0 10px black;
     border-bottom-left-radius: 25px;
     border-bottom-right-radius: 25px;

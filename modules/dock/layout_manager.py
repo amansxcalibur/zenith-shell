@@ -89,6 +89,8 @@ class LayoutManager:
         self.event_wrapper.connect(
             "leave-notify-event", lambda w, e: self.set_hole_state(w, e, False)
         )
+        GLib.idle_add(lambda: self._trigger_default_hover())
+
 
     def set_hole_state(self, source, event, state: bool):
         if not state:
@@ -254,3 +256,22 @@ class LayoutManager:
                     module.set_style(f"background-color:black; min-width:{SPACING}px")
                 elif i / 2 > source_id and i < len(self.placeholder_row.children) - 1:
                     module.set_style("background-color:transparent; min-width:0px;")
+
+    def _trigger_default_hover(self):
+        # simulate hover on the first HoverOverlay
+        if self.hover_overlay_row and self.hover_overlay_row.children:
+            overlay = self.hover_overlay_row.children[0 if self.side == "left" else -1]
+            
+            if self.side == "left":
+                overlay.children[0].set_style("" \
+                "padding-bottom:4px; padding-left:3px; padding-right:2px;" \
+                "transition: padding-bottom 0.1s cubic-bezier(0.5, 0.25, 0, 1)"
+                )
+                self.handle_hover(overlay, 0)
+            else:
+                overlay.children[0].set_style("" \
+                "padding-bottom:4px; padding-left:2px; padding-right:3px;" \
+                "transition: padding-bottom 0.1s cubic-bezier(0.5, 0.25, 0, 1)"
+                )
+                self.handle_hover(overlay, len(self.hover_overlay_row)-2)
+        return False 

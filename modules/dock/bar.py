@@ -221,6 +221,7 @@ class DockBar(Window):
                 self.left_pill_curve,
                 Box(
                     name="hori",
+                    style_classes="pill",
                     orientation="v",
                     children=[self.pill, Box(name="bottom", v_expand=True)],
                 ),
