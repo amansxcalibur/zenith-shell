@@ -20,6 +20,7 @@ class LayoutManager:
         self.ender_box = Box(name="end", h_expand=True)
         self.starter_box.last_hover_time = time.monotonic()
         self.ender_box.last_hover_time = time.monotonic()
+        self._last_event_update_time = time.monotonic()
         self.main_hole = Box(
             name="dock-place",
             children=[
@@ -89,7 +90,8 @@ class LayoutManager:
         self.event_wrapper.connect(
             "leave-notify-event", lambda w, e: self.set_hole_state(w, e, False)
         )
-        GLib.idle_add(lambda: self._trigger_default_hover())
+        self._last_event_update_time = time.monotonic()
+        GLib.timeout_add(500, lambda hover_time = self._last_event_update_time: self._trigger_default_hover(hover_time))
 
 
     def set_hole_state(self, source, event, state: bool):
@@ -108,9 +110,12 @@ class LayoutManager:
                 "min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1), margin-top 0.25s cubic-bezier(0.5, 0.25, 0, 1)"
             )
             self.hole_state = False
+            self._last_event_update_time = time.monotonic()
+            GLib.timeout_add(500, lambda hover_time = self._last_event_update_time: self._trigger_default_hover(hover_time))
 
     def handle_hover(self, source, id: int):
         print("got signal")
+        self._last_event_update_time = time.monotonic()
         self.starter_box.last_hover_time = time.monotonic()
         self.ender_box.last_hover_time = time.monotonic()
         if self.side == "left":
@@ -257,8 +262,10 @@ class LayoutManager:
                 elif i / 2 > source_id and i < len(self.placeholder_row.children) - 1:
                     module.set_style("background-color:transparent; min-width:0px;")
 
-    def _trigger_default_hover(self):
+    def _trigger_default_hover(self, hover_time):
         # simulate hover on the first HoverOverlay
+        if hover_time != self._last_event_update_time:
+            return False
         if self.hover_overlay_row and self.hover_overlay_row.children:
             overlay = self.hover_overlay_row.children[0 if self.side == "left" else -1]
             
