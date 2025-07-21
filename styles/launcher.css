@@ -120,8 +120,7 @@
     background-color: black;
     min-width: 500px;
     padding: 10px;
-    border-bottom-right-radius: 25px;
-    border-bottom-left-radius: 25px;
+    border-radius: 25px;
     /* margin: -100px
      */
     /* transition: padding 0.25s cubic-bezier(0.5, 0.25, 0, 1);

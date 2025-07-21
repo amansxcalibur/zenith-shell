@@ -38,7 +38,7 @@ class AppLauncher(Box):
         # else:
         #     self.calc_history = []
         
-        self.viewport = Box(name="viewport", spacing=4, orientation="v")
+        self.viewport = Box(name="viewport", spacing=4, v_align="end", orientation="v")
         self.search_entry = Entry(
             name="search-entry",
             placeholder="Search Applications...",
@@ -81,8 +81,8 @@ class AppLauncher(Box):
             h_expand=True,
             orientation="v",
             children=[
-                self.header_box,
                 self.scrolled_window,
+                self.header_box,
             ],
         )
 
@@ -111,7 +111,7 @@ class AppLauncher(Box):
         self.selected_index = -1  # Clear selection when viewport changes
 
         filtered_apps_iter = iter(
-            sorted(
+            reversed(sorted(
                 [
                     app
                     for app in self._all_apps
@@ -123,7 +123,7 @@ class AppLauncher(Box):
                     ).casefold()
                 ],
                 key=lambda app: (app.display_name or "").casefold(),
-            )
+            ))
         )
         should_resize = operator.length_hint(filtered_apps_iter) == len(self._all_apps)
 
@@ -132,13 +132,25 @@ class AppLauncher(Box):
             filtered_apps_iter,
             pin=True,
         )
+        
 
     def handle_arrange_complete(self, should_resize, query):
         if should_resize:
             self.resize_viewport()
-        # Only auto-select first item if query exists
+        # Only auto-select last item(most relevant) if query exists
         if query.strip() != "" and self.viewport.get_children():
-            self.update_selection(0)
+            last_index = len(self.viewport.get_children()) - 1
+            GLib.idle_add(lambda: self.update_selection(last_index))
+
+        if query.strip() == "":
+            # runs on launcher startup
+            def on_layout_complete(widget, allocation):
+                adj = self.scrolled_window.get_vadjustment()
+                adj.set_value(adj.get_upper())
+                widget.disconnect(on_layout_complete_id)  # disconnect after one use
+
+            on_layout_complete_id = self.viewport.connect("size-allocate", on_layout_complete)
+
         return False
 
     def add_next_application(self, apps_iter: Iterator[DesktopApp]):
@@ -195,31 +207,31 @@ class AppLauncher(Box):
             self.selected_index = -1
 
     def scroll_to_selected(self, button):
-        def scroll():
+        def scroll_to_allocation(allocation):
             adj = self.scrolled_window.get_vadjustment()
-            alloc = button.get_allocation()
-            if alloc.height == 0:
-                return False  # Retry if allocation isn't ready
-            
-            y = alloc.y
-            height = alloc.height
+            y = allocation.y
+            height = allocation.height
             page_size = adj.get_page_size()
             current_value = adj.get_value()
-            
-            # Calculate visible boundaries
+
             visible_top = current_value
             visible_bottom = current_value + page_size
 
             if y < visible_top:
-                # Item above viewport - align to top
                 adj.set_value(y)
             elif y + height > visible_bottom:
-                # Item below viewport - align to bottom
-                new_value = y + height - page_size
-                adj.set_value(new_value)
-            # No action if already fully visible
-            return False
-        GLib.idle_add(scroll)
+                adj.set_value(y + height - page_size)
+
+        allocation = button.get_allocation()
+        # wait for button allocation
+        if allocation.height > 0 and allocation.y >= 0:
+            scroll_to_allocation(allocation)
+        else:
+            def on_size_allocate(widget, alloc):
+                scroll_to_allocation(alloc)
+                widget.disconnect(handler_id)
+
+            handler_id = button.connect("size-allocate", on_size_allocate)
 
     def on_search_entry_activate(self, text):
         if text.startswith("="):
@@ -240,7 +252,7 @@ class AppLauncher(Box):
                     # Only activate if we have selection or non-empty query
                     if text.strip() == "" and self.selected_index == -1:
                         return  # Prevent accidental activation when empty
-                    selected_index = self.selected_index if self.selected_index != -1 else 0
+                    selected_index = self.selected_index if self.selected_index != -1 else len(children)-1
                     if 0 <= selected_index < len(children):
                         children[selected_index].clicked()
 
@@ -285,13 +297,16 @@ class AppLauncher(Box):
 
     def move_selection(self, delta: int):
         children = self.viewport.get_children()
+        
         if not children:
             return
         # Allow starting selection from nothing when empty
         if self.selected_index == -1 and delta == 1:
-            new_index = 0
+            new_index = len(children)-1
         else:
-            new_index = self.selected_index + delta
+            if self.selected_index == -1:
+                new_index = len(children) + delta
+            else: new_index = self.selected_index + delta
         new_index = max(0, min(new_index, len(children) - 1))
         self.update_selection(new_index)
 

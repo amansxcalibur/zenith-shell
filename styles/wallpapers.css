@@ -30,7 +30,7 @@
   }
   
   #search-entry-walls {
-    min-width: 500px;
+    min-width: 485px;
     border-radius: 16px;
     background-color: var(--surface);
     margin-right: 10px;
@@ -147,6 +147,8 @@
 
 #wallpapers{
   padding: 10px;
+  background-color: black;
+  border-radius: 25px;
 }
 
 #scheme-dropdown{

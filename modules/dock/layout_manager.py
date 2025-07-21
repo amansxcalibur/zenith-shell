@@ -114,7 +114,6 @@ class LayoutManager:
             GLib.timeout_add(500, lambda hover_time = self._last_event_update_time: self._trigger_default_hover(hover_time))
 
     def handle_hover(self, source, id: int):
-        print("got signal")
         self._last_event_update_time = time.monotonic()
         self.starter_box.last_hover_time = time.monotonic()
         self.ender_box.last_hover_time = time.monotonic()

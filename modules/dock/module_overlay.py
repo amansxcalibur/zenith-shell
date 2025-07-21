@@ -39,7 +39,6 @@ class HoverOverlay(EventBox, Service):
         self._resize_timeout = None
 
     def on_hover(self, widget, event):
-        print("setting hover True")
         self.is_currently_hovered = True
         self._target.set_style("" \
         "padding-bottom:3px; padding-left:3px; padding-right:3px; " \
@@ -64,7 +63,7 @@ class HoverOverlay(EventBox, Service):
             new_width -= 20
 
         if self.width != new_width:
-            print(widget.children[0].get_name(), " changing:", new_width)
+            # print(widget.children[0].get_name(), " changing:", new_width)
             self.width = new_width
 
             if self._resize_timeout:
@@ -73,7 +72,6 @@ class HoverOverlay(EventBox, Service):
             self._resize_timeout = GLib.timeout_add(50, self._emit_hover_signal)
 
     def _emit_hover_signal(self):
-        print("emitting signal, is hovered?", self.is_currently_hovered)
         if self.is_currently_hovered:
             self.hole_index(self._id)
         self._resize_timeout = None

@@ -28,7 +28,7 @@ class WallpaperSelector(Box):
         if os.path.exists(old_cache_dir):
             shutil.rmtree(old_cache_dir)
         
-        super().__init__(name="wallpapers", spacing=4, orientation="v", h_expand=False, v_expand=False, **kwargs)
+        super().__init__(name="wallpapers", spacing=10, orientation="v", h_expand=False, v_expand=False, **kwargs)
         os.makedirs(self.CACHE_DIR, exist_ok=True)
 
         # Process old wallpapers: use os.scandir for efficiency and only loop
@@ -137,8 +137,8 @@ class WallpaperSelector(Box):
             ],
         )
 
-        self.add(self.header_box)
         self.add(self.scrolled_window)
+        self.add(self.header_box)
         self._start_thumbnail_thread()
         self.setup_file_monitor()  # Initialize file monitoring
         self.show_all()
