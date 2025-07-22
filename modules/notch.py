@@ -51,7 +51,7 @@ class Notch(Window):
         self.switch = True
         self.wallpapers = WallpaperSelector(notch=self)
 
-        self.player = PlayerContainer()
+        self.player = PlayerContainer(window = self)
         self.player.add_style_class("hide-player")
 
         self.active_window = ActiveWindow()
@@ -259,7 +259,9 @@ class Notch(Window):
 
             self.stack.add_style_class("contract")
             self.stack.set_visible_child(self.player)
+            self.player.register_keybindings()
         else:
+            self.player.unregister_keybindings()
             toggle_class(self.player, "reveal-player", "hide-player")
             self.stack.set_visible_child(self.collapsed)
 
@@ -284,6 +286,7 @@ class Notch(Window):
                 self.launcher.search_entry.grab_focus()
 
             elif self.stack.get_visible_child() == self.player:
+                self.player.unregister_keybindings()
                 self.dashboard.add_style_class("hide")
                 toggle_class(self.player, "reveal-player", "hide-player")
                 toggle_class(self.launcher, "launcher-contract", "launcher-expand")
@@ -298,6 +301,7 @@ class Notch(Window):
 
     def close(self, *_):
         if self.stack.get_visible_child() == self.player:
+            self.player.unregister_keybindings()
             if info.VERTICAL:
                 self.player.add_style_class("vertical")
             toggle_class(self.player, "reveal-player", "hide-player")

@@ -61,7 +61,7 @@ class Player(Box):
 
         self.wiggly = WigglyWidget()
         self.wiggly.connect("on-seek", self.on_seek)
-        self.gtk_wrapper = Box(orientation='v', h_expand=True, v_expand=True, h_align="fill", v_align="fill", children=self.wiggly)
+        self.wiggly_bar = Box(orientation='v', h_expand=True, v_expand=True, h_align="fill", v_align="fill", children=self.wiggly)
 
         self.children = [
             Box(name="source", h_expand=True, v_expand=True, children=self.player_name),
@@ -84,7 +84,7 @@ class Player(Box):
                         h_expand=True,
                         v_expand=True,
                         orientation='v',
-                        center_children=[self.gtk_wrapper]
+                        center_children=[self.wiggly_bar]
                     ),
                     Button(name="next-button", child=Label(name="play-next", markup=icons.next), on_clicked=lambda b, *_:self.handle_next(player)),
                     self.shuffle_button
@@ -110,7 +110,7 @@ class Player(Box):
                             h_expand=True,
                             v_expand=True,
                             orientation='v',
-                            center_children=[self.gtk_wrapper]
+                            center_children=[self.wiggly_bar]
                         )
                     )
                 ]
@@ -120,18 +120,26 @@ class Player(Box):
         self.on_metadata(self._player, metadata=player.props.metadata, player=player)
 
     def on_update_track_position(self, sender, pos, dur):
+        if dur == 0:
+            return
         self.duration = dur
         self.wiggly.update_value_from_signal(pos/dur)
 
     def on_seek(self, sender, ratio):
         pos = ratio * self.duration  # duration in seconds
         print(f"Seeking to {pos:.2f}s")
-        self._player.set_position(int(pos)) 
+        self._player.set_position(int(pos))
+
+    def skip_forward(self, seconds=10):
+        self._player._player.seek(seconds*1000000)
+
+    def skip_backward(self, seconds=10):
+        self._player._player.seek(-1*seconds*1000000)
 
     def on_metadata(self, sender, metadata, player):
         keys = metadata.keys()
         if 'xesam:artist' in keys and 'xesam:title' in keys:
-            _max_chars = 43 if not info.VERTICAL else 30
+            _max_chars = 33 if not info.VERTICAL else 30
             song_title = metadata['xesam:title']
             if len(song_title) > _max_chars:
                 song_title = song_title[:_max_chars - 1] + "…"
@@ -183,13 +191,13 @@ class Player(Box):
         self.shuffle_button.get_child().set_style("color: white")
 
     def handle_next(self, player):
-        player.next()
+        self._player._player.next()
 
     def handle_prev(self, player):
-        player.previous()
+        self._player._player.previous()
 
     def handle_play_pause(self, player):
-        is_playing = self.play_pause_button.get_child().get_name() == "play-label"
+        is_playing = self._player._player.props.playback_status.value_name == "PLAYERCTL_PLAYBACK_STATUS_PLAYING"
 
         def _set_play_ui():
             self.play_pause_button.get_child().set_markup(icons.pause)
@@ -207,7 +215,7 @@ class Player(Box):
             _set_play_ui()
 
         try:
-            player.play_pause()
+            self._player._player.play_pause()
         except Exception as e:
             # revert if signal failed
             if is_playing:
@@ -226,13 +234,14 @@ class Player(Box):
         shuffle_button.get_child().set_style("color: var(--outline)")
 
 class PlayerContainer(Box):
-    def __init__(self, **kwargs):
+    def __init__(self, window, **kwargs):
         super().__init__(
             name="player-container",
             orientation="v",
             **kwargs
         )
         
+        self.window = window
         self.manager = PlayerManager()
         self.manager.connect("new-player", self.new_player)
         self.manager.connect("player-vanish", self.on_player_vanish)
@@ -257,16 +266,16 @@ class PlayerContainer(Box):
             center_children=[]
             )
         self.children = [self.stack, self.player_switch_container]
-        self.player = []
+        self.players = []
         self.manager.init_all_players()
         
     def new_player(self, manager, player):
         print(player.props.player_name,"new player")
         print(player)
         new_player = Player(player = player)
-        new_player.gtk_wrapper.queue_draw()
+        new_player.wiggly_bar.queue_draw()
         new_player.set_name(player.props.player_name)
-        self.player.append(new_player)
+        self.players.append(new_player)
         print("stacking dis bitvch")
         self.stack.add_named(new_player, player.props.player_name)
 
@@ -287,10 +296,10 @@ class PlayerContainer(Box):
         button.add_style_class("active")
 
     def on_player_vanish(self, manager, player):
-        for player_instance in self.player:
+        for player_instance in self.players:
             if player_instance.get_name() == player.props.player_name:
                 self.stack.remove(player_instance)
-                self.player.remove(player_instance)
+                self.players.remove(player_instance)
                 for btn in self.player_switch_container.center_children:
                     if btn.get_name() == player_instance.get_name():
                         self.player_switch_container.remove_center(btn)
@@ -305,3 +314,56 @@ class PlayerContainer(Box):
                 btn.add_style_class("active")
             else:
                 btn.remove_style_class("active")
+
+    def register_keybindings(self):
+        self.window.add_keybinding("p", lambda *_: self.handle_play_pause())
+        self.window.add_keybinding("j", lambda *_: self.handle_prev())
+        self.window.add_keybinding("k", lambda *_: self.handle_skip_backward())
+        self.window.add_keybinding("l", lambda *_: self.handle_skip_forward())
+        self.window.add_keybinding("semicolon", lambda *_: self.handle_next())
+        self.window.add_keybinding("Tab", lambda *_: self.switch_relative_player(True))
+        self.window.add_keybinding("Shift ISO_Left_Tab", lambda *_: self.switch_relative_player(False))
+
+    def unregister_keybindings(self):
+        self.window.remove_keybinding("p")
+        self.window.remove_keybinding("j")
+        self.window.remove_keybinding("k")
+        self.window.remove_keybinding("l")
+        self.window.remove_keybinding("semicolon")
+        self.window.remove_keybinding("Tab")
+        self.window.remove_keybinding("Shift ISO_Left_Tab")
+    
+    def handle_play_pause(self):
+        if current := self.stack.get_visible_child():
+            current.handle_play_pause(current._player)
+
+    def handle_prev(self):
+        if current := self.stack.get_visible_child():
+            current.handle_prev(current._player)
+
+    def handle_next(self):
+        if current := self.stack.get_visible_child():
+            current.handle_next(current._player)
+
+    def handle_skip_forward(self):
+        if current := self.stack.get_visible_child():
+            current.skip_forward(seconds=10)
+        
+    def handle_skip_backward(self):
+        if current := self.stack.get_visible_child():
+            current.skip_backward(seconds=10)
+
+    def switch_relative_player(self, forward=True):
+        if not self.players:
+            return
+
+        current_player = self.stack.get_visible_child()
+        current_index = self.players.index(current_player)
+
+        next_index = (current_index + (1 if forward else -1)) % len(self.players)
+        next_player = self.players[next_index]
+
+        for btn in self.player_switch_container.center_children:
+            if btn.get_name() == next_player.get_name():
+                self.switch_player(next_player.get_name(), btn)
+                break
