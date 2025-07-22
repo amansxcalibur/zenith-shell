@@ -88,7 +88,7 @@ class Notch(Window):
             self.launcher.search_entry.grab_focus()
 
         elif self.stack.get_visible_child() == self.player:
-            self.dashboard.add_style_class("hide")
+            toggle_class(self.dashboard, "reveal", "hide")
             self.player.remove_style_class("reveal-player")
             # self.player.add_style_class("hide-player")
             self.launcher.remove_style_class("launcher-contract")
@@ -116,8 +116,7 @@ class Notch(Window):
                 " fabric-cli exec bar-example 'dockBar.reveal_overlapping_modules()'"
             )
 
-            # self.unsteal_input()
-            self.dashboard.add_style_class("hide")
+            toggle_class(self.dashboard, "reveal", "hide")
             self.wallpaper.remove_style_class("wallpaper-expand")
             self.wallpaper.add_style_class("wallpaper-contract")
 
@@ -176,7 +175,7 @@ class Notch(Window):
 
                 self.stack.set_visible_child(self.wallpaper)
             case "dashboard":
-                self.dashboard.remove_style_class("hide")
+                toggle_class(self.dashboard, "hide", "reveal")
                 self.remove_style_class("launcher-contract")
 
                 self.stack.set_visible_child(self.dashboard)

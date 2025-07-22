@@ -18,6 +18,8 @@ class WavyCircle(Gtk.DrawingArea):
 
         GLib.timeout_add_seconds(1, self.on_tick)
 
+        self.show()
+
     def on_tick(self):
         self.dot_angle += math.tau / 60
         self.dot_angle %= math.tau

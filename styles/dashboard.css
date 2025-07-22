@@ -1,8 +1,14 @@
 #dashboard.hide {
-  /* background-color: aqua; */
   margin: -999px;
+  transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+#dashboard.reveal {
+  margin: 0px;
+  transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 #dashboard {
+  background-color: black;
+  border-radius: 25px;
   padding: 10px;
 }
 #inner {
@@ -45,11 +51,11 @@
 }
 .tile-icon.mini{
   font-size: 20px;
-  transition: font-size 0.25s cubic-bezier(0.5, 0.25, 0, 1);;
+  transition: font-size 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 .tile-icon.maxi{
   font-size: 16px;
-  transition: font-size 0.25s cubic-bezier(0.5, 0.25, 0, 1);;
+  transition: font-size 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 
 .tile-button{
