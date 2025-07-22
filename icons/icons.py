@@ -138,7 +138,7 @@ config: str = "&#xeb20;"
 
 # Icons
 firefox: str = chr(0xf0239)
-chromium: str = "&#xec18;"
+chromium: str = chr(0xf268)
 spotify: str = chr(0xf1bc)
 disc: str = chr(0xede9)
 disc_off: str = "&#xf118;"

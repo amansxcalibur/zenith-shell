@@ -27,7 +27,7 @@ class Notch(Window):
         )
         self.bool = False
         self.active_window = ActiveWindow()
-        self.player = PlayerContainer()
+        self.player = PlayerContainer(window = self)
         self.player.add_style_class("hide-player")
         self.user = Label(
             label="aman@brewery" if not info.VERTICAL else "am\nan\n@\nbr\new\ner\ny",
@@ -88,6 +88,7 @@ class Notch(Window):
             self.launcher.search_entry.grab_focus()
 
         elif self.stack.get_visible_child() == self.player:
+            self.player.unregister_keybindings()
             toggle_class(self.player, "reveal-player", "hide-player")
             toggle_class(self.dashboard, "reveal", "hide")
             self.launcher.remove_style_class("launcher-contract-init")
@@ -102,6 +103,7 @@ class Notch(Window):
     def close(self, *_):
         exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.close()'")
         if self.stack.get_visible_child() == self.player:
+            self.player.unregister_keybindings()
             self.player.remove_style_class("reveal-player")
             if info.VERTICAL:
                 self.player.add_style_class("vertical")
@@ -155,7 +157,9 @@ class Notch(Window):
 
             self.stack.add_style_class("contracter")
             self.stack.set_visible_child(self.player)
+            self.player.register_keybindings()
         else:
+            self.player.unregister_keybindings()
             exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.close()'")
             self.lift_box.set_style("min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
             toggle_class(self.player, "reveal-player", "hide-player")
