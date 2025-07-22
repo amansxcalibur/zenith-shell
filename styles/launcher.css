@@ -50,9 +50,9 @@
     border-bottom-right-radius: 25px;
     border-bottom-left-radius: 25px;
   }
-  #scrolled-window.vertical{
+  /* #scrolled-window.vertical{
     min-height: 400px;
-  }
+  } */
   
   #scrolled-window scrollbar {
     border-radius: 10px;
@@ -118,7 +118,7 @@
 
   #launcher-box{
     background-color: black;
-    min-width: 500px;
+    min-width: 400px;
     padding: 10px;
     border-radius: 25px;
     /* margin: -100px
@@ -126,16 +126,12 @@
     /* transition: padding 0.25s cubic-bezier(0.5, 0.25, 0, 1);
     animation: loadSlot3 0.5s ease; */
   }
-  #launcher-box.vertical{
+  /* #launcher-box.vertical{
     min-width: 400px;
     padding: 10px;
     border-top-right-radius: 25px;
     border-bottom-right-radius: 25px;
-    /* margin: -100px
-     */
-    /* transition: padding 0.25s cubic-bezier(0.5, 0.25, 0, 1);
-    animation: loadSlot3 0.5s ease; */
-  }
+  } */
 /* @keyframes loadSlot3 {
   0% {
     min-width: 0px;
@@ -151,9 +147,9 @@
   margin: -210px;
 }
 
-.vertical.launcher-contract-init{
+/* .vertical.launcher-contract-init{
   margin:-240px;
-}
+} */
 
 .launcher-contract{
   margin:-210px;
@@ -161,10 +157,10 @@
   /* animation: loadSlot4 0.5s ease; */
 }
 
-#app-launcher.vertical.launcher-contract{
+/* #app-launcher.vertical.launcher-contract{
   margin: -240px;
   transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
-}
+} */
 
 .launcher-expand{
   margin: 0px;

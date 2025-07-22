@@ -88,9 +88,9 @@ class Notch(Window):
             self.launcher.search_entry.grab_focus()
 
         elif self.stack.get_visible_child() == self.player:
+            toggle_class(self.player, "reveal-player", "hide-player")
             toggle_class(self.dashboard, "reveal", "hide")
-            self.player.remove_style_class("reveal-player")
-            # self.player.add_style_class("hide-player")
+            self.launcher.remove_style_class("launcher-contract-init")
             self.launcher.remove_style_class("launcher-contract")
             self.launcher.add_style_class("launcher-expand")
             self.stack.set_visible_child(self.launcher)
@@ -151,7 +151,7 @@ class Notch(Window):
             if self.stack.get_visible_child() == self.launcher:
                 toggle_class(self.wallpaper, "wallpaper-expand", "wallpaper-contract")
             # dashboard->player
-            self.dashboard.add_style_class("hide")
+            toggle_class(self.dashboard, "reveal", "hide")
 
             self.stack.add_style_class("contracter")
             self.stack.set_visible_child(self.player)

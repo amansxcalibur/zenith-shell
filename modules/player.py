@@ -61,7 +61,7 @@ class Player(Box):
 
         self.wiggly = WigglyWidget()
         self.wiggly.connect("on-seek", self.on_seek)
-        self.gtk_wrapper = Box(orientation='v', h_expand=True, v_expand=True, h_align="fill", v_align="fill", children=self.wiggly)
+        self.wiggly_bar = Box(orientation='v', h_expand=True, v_expand=True, h_align="fill", v_align="fill", children=self.wiggly)
 
         self.children = [
             Box(name="source", h_expand=True, v_expand=True, children=self.player_name),
@@ -84,7 +84,7 @@ class Player(Box):
                         h_expand=True,
                         v_expand=True,
                         orientation='v',
-                        center_children=[self.gtk_wrapper]
+                        center_children=[self.wiggly_bar]
                     ),
                     Button(name="next-button", child=Label(name="play-next", markup=icons.next), on_clicked=lambda b, *_:self.handle_next(player)),
                     self.shuffle_button
@@ -110,7 +110,7 @@ class Player(Box):
                             h_expand=True,
                             v_expand=True,
                             orientation='v',
-                            center_children=[self.gtk_wrapper]
+                            center_children=[self.wiggly_bar]
                         )
                     )
                 ]
@@ -131,7 +131,7 @@ class Player(Box):
     def on_metadata(self, sender, metadata, player):
         keys = metadata.keys()
         if 'xesam:artist' in keys and 'xesam:title' in keys:
-            _max_chars = 43 if not info.VERTICAL else 30
+            _max_chars = 33 if not info.VERTICAL else 30
             song_title = metadata['xesam:title']
             if len(song_title) > _max_chars:
                 song_title = song_title[:_max_chars - 1] + "…"
@@ -257,16 +257,16 @@ class PlayerContainer(Box):
             center_children=[]
             )
         self.children = [self.stack, self.player_switch_container]
-        self.player = []
+        self.players = []
         self.manager.init_all_players()
         
     def new_player(self, manager, player):
         print(player.props.player_name,"new player")
         print(player)
         new_player = Player(player = player)
-        new_player.gtk_wrapper.queue_draw()
+        new_player.wiggly_bar.queue_draw()
         new_player.set_name(player.props.player_name)
-        self.player.append(new_player)
+        self.players.append(new_player)
         print("stacking dis bitvch")
         self.stack.add_named(new_player, player.props.player_name)
 
@@ -287,10 +287,10 @@ class PlayerContainer(Box):
         button.add_style_class("active")
 
     def on_player_vanish(self, manager, player):
-        for player_instance in self.player:
+        for player_instance in self.players:
             if player_instance.get_name() == player.props.player_name:
                 self.stack.remove(player_instance)
-                self.player.remove(player_instance)
+                self.players.remove(player_instance)
                 for btn in self.player_switch_container.center_children:
                     if btn.get_name() == player_instance.get_name():
                         self.player_switch_container.remove_center(btn)

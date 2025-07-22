@@ -6,14 +6,13 @@ from utils.colors import get_css_variable, hex_to_rgb01
 import config.info as info
 
 import math
+import datetime
+import cairo
 
 class WavyCircle(Gtk.DrawingArea):
     def __init__(self):
         super().__init__()
         self.connect("draw", self.on_draw)
-
-        # internal ticking dot angle
-        self.dot_angle = 0
         self.set_size_request(-1, 153)
 
         GLib.timeout_add_seconds(1, self.on_tick)
@@ -21,8 +20,6 @@ class WavyCircle(Gtk.DrawingArea):
         self.show()
 
     def on_tick(self):
-        self.dot_angle += math.tau / 60
-        self.dot_angle %= math.tau
         self.queue_draw()
         return True
 
@@ -32,7 +29,7 @@ class WavyCircle(Gtk.DrawingArea):
         cx, cy = width / 2, height / 2
 
         base_radius = min(width, height) * 0.4
-        amplitude = base_radius * 0.06
+        amplitude = base_radius * 0.05
         frequency = 10
 
         # wavy outer circle
@@ -57,20 +54,55 @@ class WavyCircle(Gtk.DrawingArea):
 
         ctx.close_path()
         ctx.fill_preserve()
-        hex_color = get_css_variable(f'{info.HOME_DIR}/fabric/styles/colors.css', '--primary')
-        r, g, b = hex_to_rgb01(hex_color)
         ctx.set_source_rgb(r, g, b)
         ctx.stroke()
 
-        # inner orbiting dot
-        dot_radius = 9
-        orbit_radius = base_radius * 0.7
+        ANGLE_OFFSET = 0.25
+        now = datetime.datetime.now()
+        seconds = now.second + now.microsecond / 1e6
+        hour = now.hour % 12 + now.minute / 60.0
+        minute = now.minute + now.second / 60.0
 
-        x = cx + orbit_radius * math.cos(self.dot_angle)
-        y = cy + orbit_radius * math.sin(self.dot_angle)
+        second_angle = (seconds / 60.0 - ANGLE_OFFSET) * math.tau
+        hour_angle = (hour / 12.0 - ANGLE_OFFSET) * math.tau
+        minute_angle = (minute / 60.0 - ANGLE_OFFSET) * math.tau
+
+        hour_orbit = base_radius * 0.8 - 28
+        minute_orbit = base_radius * 0.8 - 14
+        second_orbit = base_radius * 0.8
+        dot_radius = 7
+
+        ctx.set_line_cap(cairo.LINE_CAP_ROUND) # rounded line ends
+
+        # hour hand
+        hr_r, hr_g, hr_b = hex_to_rgb01(get_css_variable(f'{info.HOME_DIR}/fabric/styles/colors.css', '--on-primary'))
+        ctx.set_line_width(14)
+        ctx.set_source_rgba(hr_r, hr_g, hr_b, 0.6)
+        ctx.move_to(cx, cy)
+        ctx.line_to(
+            cx + hour_orbit * math.cos(hour_angle),
+            cy + hour_orbit * math.sin(hour_angle)
+        )
+        ctx.stroke()
+
+        # minute hand
+        ctx.set_line_width(14)
+        ctx.set_source_rgba(hr_r, hr_g, hr_b, 1)
+        ctx.move_to(cx, cy)
+        ctx.line_to(
+            cx + minute_orbit * math.cos(minute_angle),
+            cy + minute_orbit * math.sin(minute_angle)
+        )
+        ctx.stroke()
+
+        # inner orbiting second dot
+        dot_radius = 9
+        x = cx + second_orbit * math.cos(second_angle)
+        y = cy + second_orbit * math.sin(second_angle)
 
         ctx.arc(x, y, dot_radius, 0, math.tau)
-        hex_color = get_css_variable(f'{info.HOME_DIR}/fabric/styles/colors.css', '--on-primary')
+        hex_color = get_css_variable(f'{info.HOME_DIR}/fabric/styles/colors.css', '--tertiary')
         r, g, b = hex_to_rgb01(hex_color)
         ctx.set_source_rgba(r, g, b)
         ctx.fill()
+

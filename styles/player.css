@@ -17,7 +17,7 @@
     background-size: cover;
 }
 
-.player.vertical{
+/* .player.vertical{
     box-shadow: 
         inset 100px 0px 150px black, 
         inset 0px 10px 10px rgba(0, 0, 0, 0.5),
@@ -26,18 +26,18 @@
     border-bottom-right-radius: 20px;
     min-width: 200px;
     min-height: 200px;
-}
+} */
 
 .hide-player{
-    margin: -100px;
+    margin: -350px;
     transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
     /* animation: hidePlayer 0.5s ease; */
 }
 
-#player-container.vertical.hide-player{
+/* #player-container.vertical.hide-player{
     margin: -500px;
     transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
-}
+} */
 
 @keyframes hidePlayer {
     0% {
