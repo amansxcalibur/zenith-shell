@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     app = Application("bar-example",**app_kwargs)
 
-    def set_css():
+    def set_css(*args):
         app.set_stylesheet_from_file(get_relative_path("./main.css"))
 
     app.style_monitor = monitor_file(get_relative_path("./styles"))

@@ -53,7 +53,7 @@ class Player(Box):
                     name="pause-button",
                     child=Label(name="pause-label", markup=icons.play),
                     style_classes="pause-track",
-                    tooltip_text="Exit",
+                    tooltip_text="Play/Pause",
                     on_clicked=lambda b, *_: self.handle_play_pause(player)
         )
 

@@ -6,8 +6,9 @@ from fabric.widgets.revealer import Revealer
 
 from modules.bluetooth import Bluetooth
 from modules.network import Network
-from modules.tile import Tile
+from modules.tile import Tile, TileSpecial
 from modules.wavy_clock import WavyCircle
+from modules.player_mini import PlayerContainerMini
 
 import icons.icons as icons
 import config.info as info
@@ -24,6 +25,8 @@ class Dashboard(Box):
         )
         self.wifi = Network()
         self.bluetooth = Bluetooth()
+        self.mini_player = PlayerContainerMini()
+        self.mini_player_tile = TileSpecial(props=self.mini_player, mini_props=self.mini_player.get_mini_view())
 
         self.controls = controls
         self.brightness_revealer_mui = self.controls.get_brightness_slider_mui()
@@ -65,18 +68,11 @@ class Dashboard(Box):
         )
 
         self.tiles = Box(
+            spacing=3,
             children=[
                 self.wifi,
                 self.bluetooth,
-                Tile(
-                    label="Whaterver that goes here",
-                    markup=icons.notifications,
-                    props=Label(
-                        style="min-width:200px;",
-                    ),
-                    menu=False,
-                    style_classes=["tile", "on"],
-                ),
+                self.mini_player_tile,
             ],
         )
         self.low_bat_msg_2 = Label(label="Notification ctl test")

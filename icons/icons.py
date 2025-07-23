@@ -159,7 +159,9 @@ emoji: str = "&#xeaf7;"
 
 # Music
 next: str = chr(0xf0f27)
+next_fill: str = chr(0xf04ad)
 previous: str = chr(0xf0f28)
+previous_fill: str = chr(0xf04ae)
 pause: str = chr(0xf04c)
 play: str = chr(0xf04b)
 shuffle: str = chr(0xf074)

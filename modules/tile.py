@@ -102,3 +102,40 @@ class Tile(Box):
         self.icon.set_h_expand(False)
         self.content_button.set_h_expand(True)
         self.remove_style_class("mini")
+
+
+class TileSpecial(Box):
+    def __init__(self, *, mini_props, props, **kwargs):
+        super().__init__(**kwargs)
+        self.props = props
+        self.mini_props = mini_props
+        self.toggle = False
+
+        self.content_button = None
+
+        self.normal_view = Box(
+            children=self.props,
+        )
+        self.collapsed_view = Box(
+            children=self.mini_props
+        )
+
+        self.stack = Stack(
+            transition_type="crossfade",
+            transition_duration=150,
+            h_expand=True,
+            v_align="start",
+            children=[self.normal_view, self.collapsed_view],
+        )
+
+        self.children = self.stack
+
+    def mini_view(self):
+        self.normal_view.set_style("margin:-999px")
+        self.collapsed_view.set_style("margin:0px;")
+        self.stack.set_visible_child(self.collapsed_view)
+
+    def maxi_view(self):
+        self.collapsed_view.set_style("margin:-999px")
+        self.normal_view.set_style("margin:0px;")
+        self.stack.set_visible_child(self.normal_view)
