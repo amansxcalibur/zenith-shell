@@ -12,15 +12,15 @@ import config.info as info
 
 from loguru import logger
 
+
 class Player(Box):
     def __init__(self, player, **kwargs):
-        super().__init__(
-            style_classes="player",
-            orientation="v",
-            **kwargs)
-        
+        super().__init__(style_classes="player", orientation="v", **kwargs)
+
         if not info.VERTICAL:
-            self.remove_style_class("vertical") # vertical class binding from unknown source
+            self.remove_style_class(
+                "vertical"
+            )  # vertical class binding from unknown source
 
         self._player = PlayerService(player=player)
 
@@ -32,89 +32,137 @@ class Player(Box):
         self._player.connect("shuffle-toggle", self.on_shuffle)
         self._player.connect("track-position", self.on_update_track_position)
 
-        self.player_name = Label(name=player.props.player_name, style_classes="player-icon", markup=getattr(icons, player.props.player_name, icons.disc))
+        self.player_name = Label(
+            name=player.props.player_name,
+            style_classes="player-icon",
+            markup=getattr(icons, player.props.player_name, icons.disc),
+        )
 
-        self.set_style(f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')")
+        self.set_style(
+            f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+        )
 
-        self.song = Label(name="song", label="song", justification="left", h_align="start", max_chars_width=10,)
-        self.artist = Label(name="artist", label="artist", justification="left", h_align="start")
+        self.song = Label(
+            name="song",
+            label="song",
+            justification="left",
+            h_align="start",
+            max_chars_width=10,
+        )
+        self.artist = Label(
+            name="artist", label="artist", justification="left", h_align="start"
+        )
         self.music = Box(
             name="music",
             orientation="v",
             h_expand=True,
             v_expand=True,
-            children=[
-                self.song,
-                self.artist
-            ]
+            children=[self.song, self.artist],
         )
 
         self.play_pause_button = Button(
-                    name="pause-button",
-                    child=Label(name="pause-label", markup=icons.play),
-                    style_classes="pause-track",
-                    tooltip_text="Play/Pause",
-                    on_clicked=lambda b, *_: self.handle_play_pause(player)
+            name="pause-button",
+            child=Label(name="pause-label", markup=icons.play),
+            style_classes="pause-track",
+            tooltip_text="Play/Pause",
+            on_clicked=lambda b, *_: self.handle_play_pause(player),
         )
 
-        self.shuffle_button = Button(name="shuffle-button", child=Label(name="shuffle", markup=icons.shuffle), on_clicked=lambda b, *_: self.handle_shuffle(b, player))
+        self.shuffle_button = Button(
+            name="shuffle-button",
+            child=Label(name="shuffle", markup=icons.shuffle),
+            on_clicked=lambda b, *_: self.handle_shuffle(b, player),
+        )
 
         self.wiggly = WigglyWidget()
         self.wiggly.connect("on-seek", self.on_seek)
-        self.wiggly_bar = Box(orientation='v', h_expand=True, v_expand=True, h_align="fill", v_align="fill", children=self.wiggly)
+        self.wiggly_bar = Box(
+            orientation="v",
+            h_expand=True,
+            v_expand=True,
+            h_align="fill",
+            v_align="fill",
+            children=self.wiggly,
+        )
 
         self.children = [
             Box(name="source", h_expand=True, v_expand=True, children=self.player_name),
             CenterBox(
-                name="details", 
-                # h_expand=True, 
-                # v_expand=True,
+                name="details",
                 start_children=self.music,
-                end_children=self.play_pause_button if not info.VERTICAL else []
+                end_children=self.play_pause_button if not info.VERTICAL else [],
             ),
-            Box(name="controls", 
-                # h_expand=True, 
-                # v_expand=True,
+            Box(
+                name="controls",
                 style_classes="horizontal" if not info.VERTICAL else "vertical",
                 spacing=5,
-                children=[
-                    Button(name="prev-button",child=Label(name="play-previous", markup=icons.previous), on_clicked=lambda b, *_: self.handle_prev(player)),
-                    CenterBox(
-                        name="progress-container",
-                        h_expand=True,
-                        v_expand=True,
-                        orientation='v',
-                        center_children=[self.wiggly_bar]
-                    ),
-                    Button(name="next-button", child=Label(name="play-next", markup=icons.next), on_clicked=lambda b, *_:self.handle_next(player)),
-                    self.shuffle_button
-                ] if not info.VERTICAL else [
-                    CenterBox(
-                        orientation='v',
-                        h_expand=True,
-                        start_children=[
-                            CenterBox(
-                                h_expand = True,
-                                v_expand = True,
-                                v_align='end',
-                                start_children = [
-                                    Button(name="prev-button",child=Label(name="play-previous", markup=icons.previous), on_clicked=lambda b, *_: self.handle_prev(player)),
-                                    Button(name="next-button", child=Label(name="play-next", markup=icons.next), on_clicked=lambda b, *_:self.handle_next(player)),
-                                    self.shuffle_button
-                                ],
-                                end_children=self.play_pause_button,
-                            )
-                        ],
-                        end_children = CenterBox(
+                children=(
+                    [
+                        Button(
+                            name="prev-button",
+                            child=Label(name="play-previous", markup=icons.previous),
+                            on_clicked=lambda b, *_: self.handle_prev(player),
+                        ),
+                        CenterBox(
                             name="progress-container",
                             h_expand=True,
                             v_expand=True,
-                            orientation='v',
-                            center_children=[self.wiggly_bar]
+                            orientation="v",
+                            center_children=[self.wiggly_bar],
+                        ),
+                        Button(
+                            name="next-button",
+                            child=Label(name="play-next", markup=icons.next),
+                            on_clicked=lambda b, *_: self.handle_next(player),
+                        ),
+                        self.shuffle_button,
+                    ]
+                    if not info.VERTICAL
+                    else [
+                        CenterBox(
+                            orientation="v",
+                            h_expand=True,
+                            start_children=[
+                                CenterBox(
+                                    h_expand=True,
+                                    v_expand=True,
+                                    v_align="end",
+                                    start_children=[
+                                        Button(
+                                            name="prev-button",
+                                            child=Label(
+                                                name="play-previous",
+                                                markup=icons.previous,
+                                            ),
+                                            on_clicked=lambda b, *_: self.handle_prev(
+                                                player
+                                            ),
+                                        ),
+                                        Button(
+                                            name="next-button",
+                                            child=Label(
+                                                name="play-next", markup=icons.next
+                                            ),
+                                            on_clicked=lambda b, *_: self.handle_next(
+                                                player
+                                            ),
+                                        ),
+                                        self.shuffle_button,
+                                    ],
+                                    end_children=self.play_pause_button,
+                                )
+                            ],
+                            end_children=CenterBox(
+                                name="progress-container",
+                                h_expand=True,
+                                v_expand=True,
+                                orientation="v",
+                                center_children=[self.wiggly_bar],
+                            ),
                         )
-                    )
-                ]
-            )
+                    ]
+                ),
+            ),
         ]
 
         self.on_metadata(self._player, metadata=player.props.metadata, player=player)
@@ -123,7 +171,7 @@ class Player(Box):
         if dur == 0:
             return
         self.duration = dur
-        self.wiggly.update_value_from_signal(pos/dur)
+        self.wiggly.update_value_from_signal(pos / dur)
 
     def on_seek(self, sender, ratio):
         pos = ratio * self.duration  # duration in seconds
@@ -131,29 +179,32 @@ class Player(Box):
         self._player.set_position(int(pos))
 
     def skip_forward(self, seconds=10):
-        self._player._player.seek(seconds*1000000)
+        self._player._player.seek(seconds * 1000000)
 
     def skip_backward(self, seconds=10):
-        self._player._player.seek(-1*seconds*1000000)
+        self._player._player.seek(-1 * seconds * 1000000)
 
     def on_metadata(self, sender, metadata, player):
         keys = metadata.keys()
-        if 'xesam:artist' in keys and 'xesam:title' in keys:
+        if "xesam:artist" in keys and "xesam:title" in keys:
             _max_chars = 33 if not info.VERTICAL else 30
-            song_title = metadata['xesam:title']
+            song_title = metadata["xesam:title"]
             if len(song_title) > _max_chars:
-                song_title = song_title[:_max_chars - 1] + "…"
+                song_title = song_title[: _max_chars - 1] + "…"
             self.song.set_label(song_title)
 
-            artist_list = metadata['xesam:artist']
+            artist_list = metadata["xesam:artist"]
             artist_name = artist_list[0] if artist_list else "Unknown Artist"
             if len(artist_name) > _max_chars:
-                artist_name = artist_name[:_max_chars - 1] + "…"
+                artist_name = artist_name[: _max_chars - 1] + "…"
             self.artist.set_label(artist_name)
-            if 'mpris:artUrl' in keys:
+            if "mpris:artUrl" in keys:
                 self.set_style(f"background-image:url('{metadata['mpris:artUrl']}')")
 
-        if player.props.playback_status.value_name == "PLAYERCTL_PLAYBACK_STATUS_PLAYING":
+        if (
+            player.props.playback_status.value_name
+            == "PLAYERCTL_PLAYBACK_STATUS_PLAYING"
+        ):
             self.on_play(self._player)
 
         if player.props.shuffle == True:
@@ -180,14 +231,14 @@ class Player(Box):
         self.play_pause_button.remove_style_class("pause-track")
 
     def on_shuffle(self, sender, player, status):
-        print("callback status",status)
+        print("callback status", status)
         if status == False:
             self.shuffle_button.get_child().set_markup(icons.shuffle)
             self.shuffle_button.get_child().set_name("shuffle")
         else:
             self.shuffle_button.get_child().set_markup(icons.disable_shuffle)
             self.shuffle_button.get_child().set_name("disable-shuffle")
-            
+
         self.shuffle_button.get_child().set_style("color: white")
 
     def handle_next(self, player):
@@ -197,20 +248,23 @@ class Player(Box):
         self._player._player.previous()
 
     def handle_play_pause(self, player):
-        is_playing = self._player._player.props.playback_status.value_name == "PLAYERCTL_PLAYBACK_STATUS_PLAYING"
+        is_playing = (
+            self._player._player.props.playback_status.value_name
+            == "PLAYERCTL_PLAYBACK_STATUS_PLAYING"
+        )
 
         def _set_play_ui():
             self.play_pause_button.get_child().set_markup(icons.pause)
             self.play_pause_button.remove_style_class("pause-track")
             self.play_pause_button.get_child().set_name("pause-label")
-        
+
         def _set_pause_ui():
             self.play_pause_button.get_child().set_markup(icons.play)
             self.play_pause_button.add_style_class("pause-track")
             self.play_pause_button.get_child().set_name("play-label")
 
         if is_playing:
-            _set_pause_ui()            
+            _set_pause_ui()
         else:
             _set_play_ui()
 
@@ -233,59 +287,76 @@ class Player(Box):
             player.set_shuffle(False)
         shuffle_button.get_child().set_style("color: var(--outline)")
 
+
+class Placheholder(Box):
+    def __init__(self, **kwargs):
+        super().__init__(style_classes="player", **kwargs)
+
+        self.set_style(
+            f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+        )
+
+        self.children = [
+            Label(label="Nothing Playing",h_expand=True),
+            Label(markup=icons.disc, v_align="end", style="font-size:40px; margin-left:-30px; margin-bottom:-18px"),
+        ]
+
+
 class PlayerContainer(Box):
     def __init__(self, window, **kwargs):
-        super().__init__(
-            name="player-container",
-            orientation="v",
-            **kwargs
-        )
-        
+        super().__init__(name="player-container", orientation="v", **kwargs)
+
         self.window = window
         self.manager = PlayerManager()
         self.manager.connect("new-player", self.new_player)
         self.manager.connect("player-vanish", self.on_player_vanish)
+
+        self.placeholder_player = Placheholder()
         self.stack = Stack(
             name="player-container",
             transition_type="crossfade",
             transition_duration=100,
-            children=[]
+            children=[self.placeholder_player],
         )
 
         self.player_stack = Stack(
             name="player-stack",
             transition_type="crossfade",
             transition_duration=100,
-            children=[]
+            children=[],
         )
 
         self.player_switch_container = CenterBox(
-            name="player-switch-container", 
-            orientation='h',
-            style_classes="horizontal-player" if not info.VERTICAL else "vertical-player",
-            center_children=[]
-            )
+            name="player-switch-container",
+            orientation="h",
+            style_classes=(
+                "horizontal-player" if not info.VERTICAL else "vertical-player"
+            ),
+            center_children=[],
+        )
         self.children = [self.stack, self.player_switch_container]
         self.players = []
         self.manager.init_all_players()
-        
+
     def new_player(self, manager, player):
-        print(player.props.player_name,"new player")
+        print(player.props.player_name, "new player")
         print(player)
-        new_player = Player(player = player)
+        new_player = Player(player=player)
         new_player.wiggly_bar.queue_draw()
         new_player.set_name(player.props.player_name)
         self.players.append(new_player)
-        print("stacking dis bitvch")
+        print("stacking", player.props.player_name)
         self.stack.add_named(new_player, player.props.player_name)
+        if len(self.players)==1:
+            self.stack.remove(self.placeholder_player)
 
         self.player_switch_container.add_center(
             Button(
-                name=player.props.player_name, 
-                style_classes="player-button", 
-                on_clicked=lambda b: self.switch_player(player.props.player_name, b)
-                )
+                name=player.props.player_name,
+                style_classes="player-button",
+                on_clicked=lambda b: self.switch_player(player.props.player_name, b),
             )
+        )
         self.update_player_list()
 
     def switch_player(self, player_name, button):
@@ -305,6 +376,8 @@ class PlayerContainer(Box):
                         self.player_switch_container.remove_center(btn)
                 self.update_player_list()
                 break
+        if len(self.players)==0:
+            self.stack.add_named(self.placeholder_player, "placeholder")
 
     def update_player_list(self):
         curr = self.stack.get_visible_child()
@@ -322,7 +395,9 @@ class PlayerContainer(Box):
         self.window.add_keybinding("l", lambda *_: self.handle_skip_forward())
         self.window.add_keybinding("semicolon", lambda *_: self.handle_next())
         self.window.add_keybinding("Tab", lambda *_: self.switch_relative_player(True))
-        self.window.add_keybinding("Shift ISO_Left_Tab", lambda *_: self.switch_relative_player(False))
+        self.window.add_keybinding(
+            "Shift ISO_Left_Tab", lambda *_: self.switch_relative_player(False)
+        )
 
     def unregister_keybindings(self):
         self.window.remove_keybinding("p")
@@ -332,7 +407,7 @@ class PlayerContainer(Box):
         self.window.remove_keybinding("semicolon")
         self.window.remove_keybinding("Tab")
         self.window.remove_keybinding("Shift ISO_Left_Tab")
-    
+
     def handle_play_pause(self):
         if current := self.stack.get_visible_child():
             current.handle_play_pause(current._player)
@@ -348,7 +423,7 @@ class PlayerContainer(Box):
     def handle_skip_forward(self):
         if current := self.stack.get_visible_child():
             current.skip_forward(seconds=10)
-        
+
     def handle_skip_backward(self):
         if current := self.stack.get_visible_child():
             current.skip_backward(seconds=10)

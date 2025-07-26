@@ -292,6 +292,45 @@ class PlayerMini(Box):
         shuffle_button.get_child().set_style("color: var(--outline)")
 
 
+class PlacheholderMini(Box):
+    def __init__(self, **kwargs):
+        super().__init__(style_classes="player-mini", **kwargs)
+
+        self.set_style(
+            f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+        )
+        self.album_cover = Box(style_classes="album-image")
+        self.album_cover.set_style(
+            f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+        )
+        self.player_name = Label(
+            style_classes=["player-icon", "mini"], markup=icons.disc
+        )
+
+        self.children = [
+            self.album_cover,
+            Box(
+                name="source",
+                style_classes="mini",
+                v_align="end",
+                children=self.player_name,
+            ),
+            Box(
+                orientation="v",
+                v_expand=True,
+                h_expand=True,
+                style="padding-left:10px;",
+                v_align="center",
+                children=[
+                    CenterBox(
+                        name="details",
+                        center_children=Label(label="Nothing Playing", style="color:black;"),
+                    )
+                ],
+            ),
+        ]
+
+
 class PlayerContainerMini(Box):
     def __init__(self, **kwargs):
         super().__init__(name="player-container", style_classes="mini", **kwargs)
@@ -299,11 +338,12 @@ class PlayerContainerMini(Box):
         self.manager = PlayerManager()
         self.manager.connect("new-player", self.new_player)
         self.manager.connect("player-vanish", self.on_player_vanish)
+        self.placeholder = PlacheholderMini()
         self.stack = Stack(
             # name="player-container",
             transition_type="crossfade",
             transition_duration=100,
-            children=[],
+            children=[self.placeholder],
         )
 
         self.player_stack = Stack(
@@ -328,7 +368,7 @@ class PlayerContainerMini(Box):
             style_classes=["tile-icon"],
             style="font-size:30px; margin:0px; padding:0px;",
             markup=icons.disc,
-            justification="center"
+            justification="center",
         )
 
         self.mini_tile_view = CenterBox(
@@ -353,8 +393,10 @@ class PlayerContainerMini(Box):
         new_player.wiggly_bar.queue_draw()
         new_player.set_name(player.props.player_name)
         self.players.append(new_player)
-        print("stacking dis bitvch")
+        print("stacking mini", player.props.player_name)
         self.stack.add_named(new_player, player.props.player_name)
+        if len(self.players) == 1:
+            self.stack.remove(self.placeholder)
 
         self.player_switch_container.add_center(
             Button(
@@ -382,6 +424,9 @@ class PlayerContainerMini(Box):
                         self.player_switch_container.remove_center(btn)
                 self.update_player_list()
                 break
+
+        if len(self.players) == 0:
+            self.stack.add_named(self.placeholder, "placeholder")
 
     def update_player_list(self):
         curr = self.stack.get_visible_child()
@@ -418,7 +463,6 @@ class PlayerContainerMini(Box):
         curr_player = self.stack.get_visible_child().get_name()
         self.mini_tile_icon.set_name(curr_player)
         self.mini_tile_icon.set_markup(getattr(icons, curr_player, icons.disc))
-
 
     def get_mini_view(self):
         return self.mini_tile_view
