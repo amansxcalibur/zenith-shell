@@ -7,7 +7,7 @@ from fabric.core.service import Service, Signal
 import config.info as info
 from utils.colors import get_css_variable, hex_to_rgb01
 
-import math
+import math, cairo
 
 class WigglyWidget(Gtk.DrawingArea, Service):
 
@@ -121,17 +121,21 @@ class WigglyWidget(Gtk.DrawingArea, Service):
         # self.amplitude = 2
         frequency = 0.3
         slider_diameter = 6
+        stroke_width = 2
 
         width = int(alloc_width*self.value) - slider_diameter + 1
 
+        cr.set_line_cap(cairo.LINE_CAP_ROUND) # rounded line ends
         cr.set_source_rgb(1, 1, 1) # color here btw
-        cr.set_line_width(2)
+        cr.set_line_width(stroke_width)
 
         last_x = 0 # fallback values in case the slider gets dragged out of range
         last_y = 0
 
-        cr.move_to(0, center_y)
-        for x in range(width):
+        init_x = stroke_width
+        init_y = center_y + self.amplitude * math.sin((stroke_width * frequency) + self.phase)
+        cr.move_to(stroke_width, init_y)
+        for x in range(stroke_width, width):
             y = center_y + self.amplitude * math.sin((x * frequency) + self.phase)
             cr.line_to(x, y)
             last_x, last_y = x, y
@@ -150,12 +154,12 @@ class WigglyWidget(Gtk.DrawingArea, Service):
 
         cr.stroke()
 
-        cr.set_source_rgb(1, 1, 1)
-        cr.set_line_width(1)
+        cr.set_source_rgba(1, 1, 1, 0.5)
+        cr.set_line_width(stroke_width)
         
         # This is for anti aliasing. When line width becomes 1px and the position is not an integer, two lines of opacity 50% is drawn on two pixel rows. 
         # This moves the line to make it pixel perfect hence not needing anti aliasing
-        cr.translate(0, 0.5)
+        # cr.translate(0, 0.5)
 
         cr.move_to(last_x + 2*arc_radius, height/2)
         cr.line_to(alloc_width, height/2)

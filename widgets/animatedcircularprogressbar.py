@@ -1,5 +1,5 @@
 from fabric.widgets.circularprogressbar import CircularProgressBar
-from utils.animator import Animator
+from services.animator import Animator
 
 class AnimatedCircularProgressBar(CircularProgressBar):
     def __init__(self, **kwargs):

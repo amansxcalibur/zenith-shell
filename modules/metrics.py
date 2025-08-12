@@ -16,7 +16,7 @@ from fabric.core.fabricator import Fabricator
 from fabric.widgets.scale import Scale
 from fabric.core.service import Service, Signal
 
-from utils.animator import Animator
+from services.animator import Animator
 import icons.icons as icons
 
 import config.info as info

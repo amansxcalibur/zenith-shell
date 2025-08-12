@@ -279,7 +279,7 @@ class AppLauncher(Box):
                     self.evaluate_calculator_expression(text)
                 return True
             elif event.keyval == Gdk.KEY_Escape:
-                self.close_launcher()
+                # self.close_launcher() handled in notch. Subject to change
                 return True
             return False
         else:
@@ -291,7 +291,7 @@ class AppLauncher(Box):
                 self.move_selection(-1)
                 return True
             elif event.keyval == Gdk.KEY_Escape:
-                self.close_launcher()
+                # self.close_launcher() handled in notch. Subject to change
                 return True
             return False
 

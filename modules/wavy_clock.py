@@ -19,6 +19,12 @@ class WavyCircle(Gtk.DrawingArea):
 
         self.show()
 
+    # def update(self):
+    #     now = datetime.datetime.now()
+    #     delay = 1000 - int((now.microsecond/1000)%1000)
+    #     GLib.timeout_add(delay, self.on_tick)
+    #     return False
+
     def on_tick(self):
         self.queue_draw()
         return True

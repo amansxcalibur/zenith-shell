@@ -35,6 +35,7 @@ class Notch(Window):
         )
         # self.dot_placeholder = Label(label=". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .", name="collapsed-bar")
         self.dot_placeholder = Box(style="min-width:1px; min-height:1px;")
+        # self.dot_placeholder = Stack()
         self.launcher = AppLauncher(notch=self)
         self.launcher.add_style_class("launcher-contract-init")
         self.wallpaper = WallpaperSelector(notch=self)
@@ -71,6 +72,9 @@ class Notch(Window):
 
     def focus_notch(self):
         exec_shell_command_async('i3-msg [window_role="notch"] focus')
+    
+    def unfocus_notch(self):
+        exec_shell_command_async(f"i3-msg focus mode_toggle")
 
     def open(self):
         self.focus_notch()
@@ -101,6 +105,7 @@ class Notch(Window):
             self.launcher.search_entry.grab_focus()
 
     def close(self, *_):
+        self.unfocus_notch()
         exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.close()'")
         if self.stack.get_visible_child() == self.player:
             self.player.unregister_keybindings()
@@ -127,7 +132,6 @@ class Notch(Window):
             self.launcher.remove_style_class("launcher-expand")
             self.launcher.add_style_class("launcher-contract")
             self.stack.set_visible_child(self.dot_placeholder)
-            exec_shell_command_async(f"i3-msg focus mode_toggle")
             # self.launcher.close_launcher()
 
         # for cases where player->dmenu->close()
@@ -164,6 +168,7 @@ class Notch(Window):
             self.lift_box.set_style("min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
             toggle_class(self.player, "reveal-player", "hide-player")
             self.stack.set_visible_child(self.dot_placeholder)
+            self.unfocus_notch()
 
     def open_notch(self, mode):
         match mode:

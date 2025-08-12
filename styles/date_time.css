@@ -1,22 +1,12 @@
 #date-time{
-    background-color: black;
+    all:unset;
     padding: 0px;
     margin: 0px;
-    min-height: 34px;
+    /* min-height: 34px; */
     padding-left: 5px;
     padding-right: 5px;
     border-radius: 15px;
     /* margin-right: 3px; */
-}
-
-#date-time.vertical{
-    /* padding-left: 5px;
-    padding-right: 5px; */
-    min-width: 36px;
-    padding: 0px;
-    padding-top: 3px;
-    padding-bottom: 5px;
-    border-radius: 17px;
 }
 
 #date-time, label{
@@ -28,13 +18,7 @@
     padding: 0px;
     padding-left: 0px;
     border-radius: 17px;
+    background-color: black;
     margin: 0px;
     /* box-shadow: 25px -30px 0 10px black; */
-}
-
-#date-time-container.vertical{
-    padding: 0px;
-    border-radius: 17px;
-    margin: 0px;
-    box-shadow: none;
 }

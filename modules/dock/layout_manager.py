@@ -2,9 +2,11 @@ import time
 from fabric.widgets.box import Box
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.overlay import Overlay
-from fabric.widgets.label import Label
-from gi.repository import GLib, Gtk
 from utils.helpers import toggle_class
+
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import GLib
 
 SPACING = 0
 
@@ -188,7 +190,7 @@ class LayoutManager:
                 self.main_hole.set_style(
                     f"min-height:0px; min-width:{overlay.width}px; margin-top:0px;"
                 )
-                self.starter_box.set_style("min-width:0px; background-color:transparent;")
+                self.starter_box.set_style("min-width:0px; background-color:black;")
                 GLib.timeout_add(250, self._delayed_clear_style_edges(self.starter_box))
             else:
                 self.starter_box.set_style("min-width:20px;")
@@ -276,7 +278,7 @@ class LayoutManager:
                 self.handle_hover(overlay, 0)
             else:
                 overlay.children[0].set_style("" \
-                "padding-bottom:4px; padding-left:2px; padding-right:3px;" \
+                "padding-bottom:3px; padding-left:2px; padding-right:3px;" \
                 "transition: padding-bottom 0.1s cubic-bezier(0.5, 0.25, 0, 1)"
                 )
                 self.handle_hover(overlay, len(self.hover_overlay_row)-2)

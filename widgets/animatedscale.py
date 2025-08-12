@@ -1,5 +1,5 @@
 from fabric.widgets.scale import Scale
-from utils.animator import Animator
+from services.animator import Animator
 
 class AnimatedScale(Scale):
     def __init__(self, **kwargs):

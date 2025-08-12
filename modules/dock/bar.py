@@ -1,33 +1,28 @@
 from fabric.widgets.box import Box
-from fabric.widgets.overlay import Overlay
 from fabric.widgets.x11 import X11Window as Window
 from fabric.widgets.label import Label
-from modules.dock.module_overlay import HoverOverlay, HolePlaceholder
 from fabric.widgets.eventbox import EventBox
-from utils.helpers import toggle_class
-from modules.workspaces import Workspaces
 from fabric.widgets.label import Label
 from fabric.widgets.box import Box
-from modules.controls import ControlsManager
 from fabric.widgets.button import Button
 from fabric.widgets.datetime import DateTime
 from fabric.widgets.x11 import X11Window as Window
-from i3ipc import Connection
+
 import subprocess
+from modules.controls import ControlsManager
 from modules.systray import SystemTray
 from modules.workspaces import Workspaces
 from modules.metrics import MetricsSmall, Battery
+from modules.workspaces import Workspaces
+from modules.dock.module_overlay import HoverOverlay, HolePlaceholder
 import config.info as info
 import icons.icons as icons
 from utils.helpers import toggle_class
-from modules.dock.v0.dock_modules import DockModuleOverlay
-import time
-import gi
-
 from modules.dock.layout_manager import LayoutManager
 
+import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib, Gdk, Gtk
+from gi.repository import Gtk
 
 SPACING = 0
 
@@ -75,6 +70,7 @@ class DockBar(Window):
         self.date_time = Box(
             name="date-time-container",
             style_classes="" if not info.VERTICAL else "vertical",
+            v_expand=True,
             children=DateTime(
                 name="date-time",
                 formatters=["%H\n%M"] if info.VERTICAL else ["%H:%M"],
@@ -110,7 +106,7 @@ class DockBar(Window):
         ]
         self.visual_modules_left = [
             Box(
-                name="hight",
+                name="dock-module",
                 style="padding-left:3px; padding-right:3px;",
                 children=w,
             )
@@ -118,6 +114,7 @@ class DockBar(Window):
         ]
         self.visual_modules_right = [
             Box(
+                name="dock-module",
                 style="padding-left:3px; padding-right:3px;",
                 children=w,
             )
