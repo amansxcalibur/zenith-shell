@@ -87,17 +87,7 @@
 .reveal-player{
     margin: 0px;
     transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
-    /* animation: revealPlayer 0.5s ease; */
 }
-
-/* @keyframes revealPlayer {
-    0% {
-      margin: -100px;
-    }
-    100% {
-      margin: 0px;
-    }
-  } */
 
 #artist{
     /* color: var(--primary-player); */
@@ -117,14 +107,21 @@
 
 #source{
     /* background-color: antiquewhite; */
-    margin-top: -10px;
+    margin-top: 0px;
+    margin-bottom: 10px;
+}
+
+#source-name{
+    background-color: whitesmoke;
+    border-radius: 20px;
+    padding: 0 9px 0 9px;
 }
 #source.mini{
     margin-left: -20px;
 }
 
 #controls{
-    margin-bottom: -10px;
+    margin-bottom: -5px;
 }
 #play-next, #play-previous{
     text-shadow: none;
@@ -251,7 +248,9 @@
 
 .player-icon{
     color: var(--primary-player);
-    font-size: 20px;
+    font-size: 25px;
+    margin-top: -5px;
+    margin-bottom: -5px;
 }
 
 .player-icon.mini{

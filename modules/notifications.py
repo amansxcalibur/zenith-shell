@@ -66,7 +66,8 @@ class Notification(Revealer):
             self.notification_box.remove_style_class("horizontal")
 
     def check_low_bat(self, _source, battery_percent: float, is_charging: bool):
-        if not is_charging and battery_percent < self.LOW_BATTERY_THRESHOLD:
+        if not is_charging and battery_percent <= self.LOW_BATTERY_THRESHOLD:
+            self.low_bat_msg.set_label(f"Low Battery fam (<{int(battery_percent)}%)")
             self.reveal_notification()
         else:
             self.hide_notification()

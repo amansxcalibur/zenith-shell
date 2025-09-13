@@ -166,6 +166,7 @@ pause: str = chr(0xf04c)
 play: str = chr(0xf04b)
 shuffle: str = chr(0xf074)
 disable_shuffle: str = chr(0xf049e)
+headphones: str = chr(0xee58)
 
 # Settings
 settings: str = chr(0xf1a2a)

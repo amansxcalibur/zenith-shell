@@ -2,6 +2,8 @@ import fabric
 from fabric import Application
 from fabric.utils import get_relative_path, monitor_file
 from modules.notifications import NotificationPopup
+from fabric.widgets.x11 import X11Window as Window
+Window.toggle_visibility = lambda self: self.set_visible(not self.is_visible())
 
 from modules.notch import Notch
 from modules.dock.bar import DockBar

@@ -23,20 +23,12 @@ class PlayerMini(Box):
     def __init__(self, player, **kwargs):
         super().__init__(style_classes="player-mini", **kwargs)
 
+        self._player_service = PlayerService(player=player)
+
         if not info.VERTICAL:
             self.remove_style_class(
                 "vertical"
             )  # vertical class binding from unknown source
-
-        self._player = PlayerService(player=player)
-
-        self.duration = 0.0
-
-        self._player.connect("pause", self.on_pause)
-        self._player.connect("play", self.on_play)
-        self._player.connect("meta-change", self.on_metadata)
-        self._player.connect("shuffle-toggle", self.on_shuffle)
-        self._player.connect("track-position", self.on_update_track_position)
 
         self.player_name = Label(
             name=player.props.player_name,
@@ -99,9 +91,9 @@ class PlayerMini(Box):
         )
 
         self.album_cover = Box(style_classes="album-image")
-        # self.album_cover.set_style(
-        #     f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
-        # )
+        self.album_cover.set_style(
+            f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+        )
 
         self.children = [
             self.album_cover,
@@ -170,7 +162,19 @@ class PlayerMini(Box):
             ),
         ]
 
-        self.on_metadata(self._player, metadata=player.props.metadata, player=player)
+        self.duration = 0.0
+
+        self._player_service.connect("pause", self.on_pause)
+        self._player_service.connect("play", self.on_play)
+        self._player_service.connect("meta-change", self.on_metadata)
+        self._player_service.connect("shuffle-toggle", self.on_shuffle)
+        self._player_service.connect("track-position", self.on_update_track_position)
+        self._player_service.connect("artwork-change", self._apply_artwork)
+
+        self.on_metadata(
+            self._player_service, metadata=player.props.metadata, player=player
+        )
+        self._apply_artwork(self._player_service, self._player_service.get_artwork())
 
     def on_update_track_position(self, sender, pos, dur):
         if dur == 0:
@@ -181,39 +185,33 @@ class PlayerMini(Box):
     def on_seek(self, sender, ratio):
         pos = ratio * self.duration  # duration in seconds
         print(f"Seeking to {pos:.2f}s")
-        self._player.set_position(int(pos))
+        self._player_service.set_position(int(pos))
 
     def skip_forward(self, seconds=10):
-        self._player._player.seek(seconds * 1000000)
+        self._player_service._player.seek(seconds * 1000000)
 
     def skip_backward(self, seconds=10):
-        self._player._player.seek(-1 * seconds * 1000000)
+        self._player_service._player.seek(-1 * seconds * 1000000)
+
+    def _apply_artwork(self, source, art_path):
+        self.album_cover.set_style(f"background-image:url('{art_path}')")
+        self.set_style(f"background-image:url('{art_path}')")
 
     def on_metadata(self, sender, metadata, player):
         keys = metadata.keys()
         if "xesam:artist" in keys and "xesam:title" in keys:
-            # _max_chars = 20 if not info.VERTICAL else 30
             song_title = metadata["xesam:title"]
-            # if len(song_title) > _max_chars:
-            #     song_title = song_title[: _max_chars - 1] + "…"
             self.song.set_label(song_title)
 
             artist_list = metadata["xesam:artist"]
             artist_name = artist_list[0] if artist_list else "Unknown Artist"
-            # if len(artist_name) > _max_chars:
-            #     artist_name = artist_name[: _max_chars - 1] + "…"
             self.artist.set_label(artist_name)
-            # if "mpris:artUrl" in keys:
-                # GLib.idle_add(lambda: (self.set_style(f"background-image:url('{metadata['mpris:artUrl']}')"),
-                # self.album_cover.set_style(
-                #     f"background-image:url('{metadata['mpris:artUrl']}')"
-                # )))
 
         if (
             player.props.playback_status.value_name
             == "PLAYERCTL_PLAYBACK_STATUS_PLAYING"
         ):
-            self.on_play(self._player)
+            self.on_play(self._player_service)
 
         if player.props.shuffle == True:
             self.shuffle_button.get_child().set_markup(icons.disable_shuffle)
@@ -248,14 +246,14 @@ class PlayerMini(Box):
         self.shuffle_button.get_child().set_style("color: white")
 
     def handle_next(self, player):
-        self._player._player.next()
+        self._player_service._player.next()
 
     def handle_prev(self, player):
-        self._player._player.previous()
+        self._player_service._player.previous()
 
     def handle_play_pause(self, player):
         is_playing = (
-            self._player._player.props.playback_status.value_name
+            self._player_service._player.props.playback_status.value_name
             == "PLAYERCTL_PLAYBACK_STATUS_PLAYING"
         )
 
@@ -275,7 +273,7 @@ class PlayerMini(Box):
             _set_play_ui()
 
         try:
-            self._player._player.play_pause()
+            self._player_service._player.play_pause()
         except Exception as e:
             # revert if signal failed
             if is_playing:

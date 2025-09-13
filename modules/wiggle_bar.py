@@ -17,6 +17,12 @@ class WigglyWidget(Gtk.DrawingArea, Service):
     def __init__(self):
         super().__init__()
         self.phase = 0
+        self.value = 0.0
+        self.amplitude = 2
+        self.dragging = False
+        self.pause = False
+        self.speed = 0.05
+
         self.set_size_request(-1, 20)
         self.connect("draw", self.on_draw)
         
@@ -30,10 +36,6 @@ class WigglyWidget(Gtk.DrawingArea, Service):
         self.connect("button-release-event", self.on_button_release)
 
         GLib.timeout_add(16, self.update)  # 60 FPS
-        self.value = 0.0
-        self.amplitude = 2
-        self.dragging = False
-        self.pause = False
 
         self.show_all()
 
@@ -108,9 +110,7 @@ class WigglyWidget(Gtk.DrawingArea, Service):
 
     def update(self):
         if self.dragging == False:
-            self.phase += 0.1
-            # if (self.value<1):
-            #     self.value += 0.001
+            self.phase += self.speed
             self.queue_draw()
         return True
 
@@ -118,7 +118,6 @@ class WigglyWidget(Gtk.DrawingArea, Service):
         alloc_width = self.get_allocated_width()
         height = self.get_allocated_height()
         center_y = height / 2
-        # self.amplitude = 2
         frequency = 0.3
         slider_diameter = 6
         stroke_width = 2
@@ -142,13 +141,12 @@ class WigglyWidget(Gtk.DrawingArea, Service):
 
         cr.stroke()
 
-        hex_color = get_css_variable(f'{info.HOME_DIR}/fabric/styles/colors_player.css', '--foreground-player')
-        r, g, b = hex_to_rgb01(hex_color)
-        cr.set_source_rgb(r, g, b)
+        # hex_color = get_css_variable(f'{info.HOME_DIR}/fabric/styles/colors_player.css', '--foreground-player')
+        # r, g, b = hex_to_rgb01(hex_color)
+        # cr.set_source_rgb(r, g, b)
 
         rect_width = 6
         arc_radius = slider_diameter / 2
-        rect_height = 6
         self.draw_rounded_rect(cr, last_x, height, rect_width, rect_width, arc_radius)
         cr.fill()
 
@@ -159,7 +157,7 @@ class WigglyWidget(Gtk.DrawingArea, Service):
         
         # This is for anti aliasing. When line width becomes 1px and the position is not an integer, two lines of opacity 50% is drawn on two pixel rows. 
         # This moves the line to make it pixel perfect hence not needing anti aliasing
-        # cr.translate(0, 0.5)
+        cr.translate(0, 0.5)
 
         cr.move_to(last_x + 2*arc_radius, height/2)
         cr.line_to(alloc_width, height/2)
