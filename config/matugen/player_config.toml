@@ -18,10 +18,10 @@ arguments = ["--bg-scale", "./"]
 [config.custom_keywords]
 test = "aaaa"
 
-[templates.fabric]
+[templates.fabric_player]
 # Relative paths will be resolved from the path `config.toml` is in.
-input_path = "~/fabric/config/matugen/colors.css"
-output_path = "~/fabric/styles/colors.css"
+input_path = "~/fabric/config/matugen/colors_player.css"
+output_path = "~/fabric/styles/colors_player.css"
 
 [templates.gtk3]
 input_path = '~/fabric/config/matugen/gtk3.css'

@@ -16,7 +16,7 @@ from loguru import logger
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk
+from gi.repository import Gdk, GLib
 
 
 class PlayerMini(Box):
@@ -73,7 +73,9 @@ class PlayerMini(Box):
 
         self.play_pause_button = Button(
             name="play-pause-button",
-            child=Label(name="play-pause-label", markup=icons.play),
+            child=Label(
+                name="play-pause-label", style_classes="mini", markup=icons.play
+            ),
             style_classes="mini",
             tooltip_text="Play/Pause",
             on_clicked=lambda b, *_: self.handle_play_pause(player),
@@ -97,9 +99,9 @@ class PlayerMini(Box):
         )
 
         self.album_cover = Box(style_classes="album-image")
-        self.album_cover.set_style(
-            f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
-        )
+        # self.album_cover.set_style(
+        #     f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+        # )
 
         self.children = [
             self.album_cover,
@@ -201,11 +203,11 @@ class PlayerMini(Box):
             # if len(artist_name) > _max_chars:
             #     artist_name = artist_name[: _max_chars - 1] + "…"
             self.artist.set_label(artist_name)
-            if "mpris:artUrl" in keys:
-                self.set_style(f"background-image:url('{metadata['mpris:artUrl']}')")
-                self.album_cover.set_style(
-                    f"background-image:url('{metadata['mpris:artUrl']}')"
-                )
+            # if "mpris:artUrl" in keys:
+                # GLib.idle_add(lambda: (self.set_style(f"background-image:url('{metadata['mpris:artUrl']}')"),
+                # self.album_cover.set_style(
+                #     f"background-image:url('{metadata['mpris:artUrl']}')"
+                # )))
 
         if (
             player.props.playback_status.value_name
@@ -324,7 +326,9 @@ class PlacheholderMini(Box):
                 children=[
                     CenterBox(
                         name="details",
-                        center_children=Label(label="Nothing Playing", style="color:black;"),
+                        center_children=Label(
+                            label="Nothing Playing", style="color:black;"
+                        ),
                     )
                 ],
             ),

@@ -3,6 +3,7 @@ from fabric.widgets.label import Label
 from fabric.widgets.centerbox import CenterBox
 from fabric.widgets.button import Button
 from fabric.widgets.stack import Stack
+from fabric.utils.helpers import exec_shell_command_async
 
 from services.player_service import PlayerManager, PlayerService
 from modules.wiggle_bar import WigglyWidget
@@ -11,6 +12,14 @@ import icons.icons as icons
 import config.info as info
 
 from loguru import logger
+import urllib.parse, urllib.request
+import os, tempfile
+import hashlib, pathlib
+from pathlib import Path
+import gi
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import GLib, Gtk
 
 
 class Player(Box):
@@ -38,9 +47,16 @@ class Player(Box):
             markup=getattr(icons, player.props.player_name, icons.disc),
         )
 
-        self.set_style(
-            f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+        GLib.idle_add(
+            lambda: (
+                self.set_style(
+                    f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+                )
+            )
         )
+        # self.set_style(
+        #     f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+        # )
 
         self.song = Label(
             name="song",
@@ -199,7 +215,61 @@ class Player(Box):
                 artist_name = artist_name[: _max_chars - 1] + "…"
             self.artist.set_label(artist_name)
             if "mpris:artUrl" in keys:
-                self.set_style(f"background-image:url('{metadata['mpris:artUrl']}')")
+                art_url = metadata["mpris:artUrl"]
+                import threading
+
+                def _set_album_art(art_url):
+                    GLib.idle_add(
+                        lambda: (self.set_style(f"background-image:url('{art_url}')"))
+                    )
+
+                threading.Thread(
+                    target=_set_album_art, args=(art_url,), daemon=True
+                ).start()
+
+                self.set_style(f"background-image:url('{art_url}')")
+                parsed = urllib.parse.urlparse(art_url)
+                if parsed.scheme == "file":
+                    local_art_url = urllib.parse.unquote(parsed.path)
+                    import subprocess
+
+                    result = subprocess.run(
+                        [
+                            "matugen",
+                            "image",
+                            parsed.path,
+                            "-c",
+                            "/home/aman/fabric/config/matugen/player_runtime.toml",
+                            "-j",
+                            "hex",
+                        ],
+                        capture_output=True,
+                        text=True,
+                    )
+                    if result.returncode != 0:
+                        print("Matugen error:", result.stderr)
+                    else:
+                        import json
+
+                        # try:
+                        theme_json = json.loads(result.stdout)
+                        self.play_pause_button.set_style(
+                            f"background-color: {(theme_json['colors']['dark']['primary'])}"
+                        )
+                        self.player_name.set_style(
+                            f"color: {(theme_json['colors']['dark']['primary'])}"
+                        )
+                        # except json.JSONDecodeError as e:
+                        #     print("Failed to parse JSON:", e)
+                        #     print("Raw output:", result.stdout)
+                    # exec_shell_command(
+                    #     f"matugen image {local_art_url} -c {info.HOME_DIR}/fabric/config/matugen/player_config.toml"
+                    # )
+                elif parsed.scheme in ("http", "https"):
+                    GLib.Thread.new(
+                        "download-artwork", self._download_and_set_artwork, art_url
+                    )
+                print(metadata["mpris:artUrl"], "======")
 
         if (
             player.props.playback_status.value_name
@@ -213,6 +283,30 @@ class Player(Box):
         else:
             self.shuffle_button.get_child().set_markup(icons.shuffle)
             self.shuffle_button.get_child().set_name("shuffle")
+
+    def _download_and_set_artwork(self, art_url):
+        cache_dir = Path("/tmp/zenith_player")
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
+        parsed = urllib.parse.urlparse(art_url)
+        suffix = os.path.splitext(parsed.path)[1] or ".png"
+        filename_hash = hashlib.md5(art_url.encode()).hexdigest()
+        local_arturl = cache_dir / f"{filename_hash}{suffix}"
+
+        if not local_arturl.exists():
+            with urllib.request.urlopen(art_url) as response:
+                data = response.read()
+
+            with open(local_arturl, "wb") as f:
+                f.write(data)
+
+            print(local_arturl, "downloaded artwork for matugen")
+        else:
+            print(local_arturl, "already cached, skipping download")
+
+        exec_shell_command_async(
+            f"matugen image {local_arturl} -c {info.HOME_DIR}/fabric/config/matugen/player_config.toml"
+        )
 
     def on_pause(self, sender):
         self.play_pause_button.get_child().set_markup(icons.play)
@@ -297,8 +391,12 @@ class Placheholder(Box):
         )
 
         self.children = [
-            Label(label="Nothing Playing",h_expand=True),
-            Label(markup=icons.disc, v_align="end", style="font-size:40px; margin-left:-30px; margin-bottom:-18px"),
+            Label(label="Nothing Playing", h_expand=True),
+            Label(
+                markup=icons.disc,
+                v_align="end",
+                style="font-size:40px; margin-left:-30px; margin-bottom:-18px",
+            ),
         ]
 
 
@@ -347,7 +445,7 @@ class PlayerContainer(Box):
         self.players.append(new_player)
         print("stacking", player.props.player_name)
         self.stack.add_named(new_player, player.props.player_name)
-        if len(self.players)==1:
+        if len(self.players) == 1:
             self.stack.remove(self.placeholder_player)
 
         self.player_switch_container.add_center(
@@ -376,7 +474,7 @@ class PlayerContainer(Box):
                         self.player_switch_container.remove_center(btn)
                 self.update_player_list()
                 break
-        if len(self.players)==0:
+        if len(self.players) == 0:
             self.stack.add_named(self.placeholder_player, "placeholder")
 
     def update_player_list(self):

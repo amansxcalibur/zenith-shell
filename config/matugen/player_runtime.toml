@@ -18,10 +18,10 @@ arguments = ["--bg-scale", "./"]
 [config.custom_keywords]
 test = "aaaa"
 
-[templates.fabric]
+[templates.fabric_player_runtime]
 # Relative paths will be resolved from the path `config.toml` is in.
-input_path = "~/fabric/config/matugen/colors.css"
-output_path = "~/fabric/styles/colors.css"
+input_path = "~/fabric/config/matugen/colors_runtime_player.json"
+output_path = '~/fabric/styles/stash/color.json'
 
 [templates.gtk3]
 input_path = '~/fabric/config/matugen/gtk3.css'
@@ -54,9 +54,9 @@ colors_to_compare = [
 compare_to = "{{colors.primary.default.hex}}"
 
 # Runs before the template is exported. You can use keywords here,
-pre_hook = 'echo "source color {{colors.source_color.default.hex}}, source image {{image}}, closest color {{closest_color}}"'
+pre_hook = ''
 # Runs after the template is exported. You can use keywords here.
-post_hook = 'echo "after gen"'
+post_hook = ''
 
 # Only hex values
 # https://m3.material.io/styles/color/advanced/adjust-existing-colors#1cc12e43-237b-45b9-8fe0-9a3549c1f61e

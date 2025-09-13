@@ -142,7 +142,7 @@ class WigglyWidget(Gtk.DrawingArea, Service):
 
         cr.stroke()
 
-        hex_color = get_css_variable(f'{info.HOME_DIR}/fabric/styles/colors.css', '--primary')
+        hex_color = get_css_variable(f'{info.HOME_DIR}/fabric/styles/colors_player.css', '--foreground-player')
         r, g, b = hex_to_rgb01(hex_color)
         cr.set_source_rgb(r, g, b)
 
