@@ -13,6 +13,7 @@ from utils.helpers import toggle_class
 from modules.wallpaper import WallpaperSelector
 from modules.controls import ControlsManager
 from modules.dashboard import Dashboard
+from modules.power_menu import PowerMenu
 
 class Notch(Window):
     def __init__(self, **kwargs):
@@ -35,8 +36,8 @@ class Notch(Window):
         )
         # self.dot_placeholder = Label(label=". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .", name="collapsed-bar")
         self.dot_placeholder = Box(style="min-width:1px; min-height:1px;")
-        # self.dot_placeholder = Stack()
         self.launcher = AppLauncher(notch=self)
+        # self.launcher = Box()
         self.launcher.add_style_class("launcher-contract-init")
         self.wallpaper = WallpaperSelector(notch=self)
         self.wallpaper.add_style_class("wallpaper-contract")
@@ -44,6 +45,8 @@ class Notch(Window):
         self.controls = ControlsManager()
         self.dashboard = Dashboard(controls=self.controls)
         self.dashboard.add_style_class("hide")
+        self.power_menu = PowerMenu()
+        self.power_menu.add_style_class("hide-menu")
 
         self.stack = Stack(
             name="pill-container",
@@ -56,6 +59,7 @@ class Notch(Window):
                 self.wallpaper,
                 self.player,
                 self.dashboard,
+                self.power_menu
             ],
         )
 
@@ -104,6 +108,17 @@ class Notch(Window):
             self.launcher.search_entry.set_text("")
             self.launcher.search_entry.grab_focus()
 
+        elif self.stack.get_visible_child() == self.power_menu:
+            toggle_class(self.power_menu, 'reveal-menu', 'hide-menu')
+            self.launcher.remove_style_class("launcher-contract-init")
+            self.launcher.remove_style_class("launcher-contract")
+            self.launcher.add_style_class("launcher-expand")
+            self.stack.set_visible_child(self.launcher)
+
+            self.launcher.open_launcher()
+            self.launcher.search_entry.set_text("")
+            self.launcher.search_entry.grab_focus()
+
     def close(self, *_):
         self.unfocus_notch()
         exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.close()'")
@@ -115,6 +130,10 @@ class Notch(Window):
             else:
                 self.player.add_style_class("hide-player")
 
+            self.stack.set_visible_child(self.dot_placeholder)
+
+        if self.stack.get_visible_child() == self.power_menu:
+            toggle_class(self.power_menu, 'reveal-menu', 'hide-menu')
             self.stack.set_visible_child(self.dot_placeholder)
 
         elif self.stack.get_visible_child() != self.dot_placeholder:
@@ -158,6 +177,8 @@ class Notch(Window):
                 toggle_class(self.wallpaper, "wallpaper-expand", "wallpaper-contract")
             # dashboard->player
             toggle_class(self.dashboard, "reveal", "hide")
+            # power menu->player
+            toggle_class(self.power_menu, 'reveal-menu', 'hide-menu')
 
             self.stack.add_style_class("contracter")
             self.stack.set_visible_child(self.player)
@@ -169,6 +190,29 @@ class Notch(Window):
             toggle_class(self.player, "reveal-player", "hide-player")
             self.stack.set_visible_child(self.dot_placeholder)
             self.unfocus_notch()
+
+    def toggle_power_menu(self, *_):
+        if self.stack.get_visible_child() != self.power_menu:
+            self.focus_notch()
+            self.lift_box.set_style("min-height:0px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
+            exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.open()'")
+            # launcher->menu
+            toggle_class(self.launcher, "launcher-expand", "launcher-contract")
+            # player->menu
+            toggle_class(self.player, "reveal-player", "hide-player")
+            # wallpaper->menu
+            if self.stack.get_visible_child() == self.launcher:
+                toggle_class(self.wallpaper, "wallpaper-expand", "wallpaper-contract")
+            # dashboard->menu
+            toggle_class(self.dashboard, "reveal", "hide")
+            toggle_class(self.power_menu, 'hide-menu', 'reveal-menu')
+            self.stack.set_visible_child(self.power_menu)
+        else:
+            self.unfocus_notch()
+            self.lift_box.set_style("min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
+            exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.close()'")
+            toggle_class(self.power_menu, 'reveal-menu', 'hide-menu')
+            self.stack.set_visible_child(self.dot_placeholder)
 
     def open_notch(self, mode):
         match mode:

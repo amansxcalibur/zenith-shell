@@ -57,11 +57,11 @@ chevron_left: str = "&#xea60;"
 chevron_right: str = "&#xea61;"
 
 # Power
-lock: str = "&#xeae2;"
-suspend: str = "&#xece7;"
-logout: str = "&#xeba8;"
-reboot: str = "&#xeb13;"
-shutdown: str = "&#xeb0d;"
+lock: str = chr(0xf023)
+suspend: str = chr(0xf0904)
+logout: str = chr(0xf0343)
+reboot: str = chr(0xead2)
+shutdown: str = chr(0xf011)
 
 # Power Manager
 power_saving: str = "&#xed4f;"

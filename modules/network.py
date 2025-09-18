@@ -14,7 +14,7 @@ class Network(Tile):
             ellipsization="end",
             max_chars_width=9
         )
-        self.state = False
+        self.state = None
 
         super().__init__(
             label="Wi-Fi",

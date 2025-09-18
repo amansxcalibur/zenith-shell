@@ -1,0 +1,35 @@
+.hide-menu{
+    margin: -350px;
+    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+.reveal-menu{
+    margin: 0px;
+    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+#power-menu{
+    background-color: black;
+    padding:10px;
+    border-radius:25px;
+    min-height: 30px;
+}
+
+.menu-item{
+    padding: 10px;
+    min-width: 30px;
+    border-radius: 17px;
+    border: none;
+}
+
+.menu-item:hover, .menu-item:focus{
+    background-color: var(--surface-bright);
+}
+
+.menu-label{
+    font-size: 23px;
+}
+
+.adjust{
+    margin-right: 4px;
+}
