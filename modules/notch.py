@@ -27,15 +27,38 @@ class Notch(Window):
             all_visible=True,
         )
         self.bool = False
-        self.active_window = ActiveWindow()
+        
         self.player = PlayerContainer(window = self)
         self.player.add_style_class("hide-player")
+
+        self.active_window = ActiveWindow()
         self.user = Label(
             label="aman@brewery" if not info.VERTICAL else "am\nan\n@\nbr\new\ner\ny",
             name="user-label",
         )
         # self.dot_placeholder = Label(label=". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .", name="collapsed-bar")
         self.dot_placeholder = Box(style="min-width:1px; min-height:1px;")
+        self.user.add_style_class('hide')
+        self.active_window.active_window.add_style_class('hide')
+        self.pill_compact = Stack(
+            name="collapsed",
+            transition_type="crossfade",
+            transition_duration=100,
+            style_classes="" if not info.VERTICAL else "vertical",
+            children=(
+                [
+                    self.user,
+                    self.active_window.active_window,
+                    self.dot_placeholder,
+                ]
+                if not info.VERTICAL
+                else [self.workspaces]
+            ),
+        )
+        self.pill_compact.set_visible_child(self.dot_placeholder)
+
+
+
         self.launcher = AppLauncher(notch=self)
         # self.launcher = Box()
         self.launcher.add_style_class("launcher-contract-init")
@@ -53,7 +76,7 @@ class Notch(Window):
             transition_type="crossfade",
             transition_duration=100,
             children=[
-                self.dot_placeholder,
+                self.pill_compact,
                 # self.user,
                 self.launcher,
                 self.wallpaper,
@@ -84,7 +107,7 @@ class Notch(Window):
         self.focus_notch()
         exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.open()'")
         self.lift_box.set_style("min-height:0px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
-        if self.stack.get_visible_child() == self.dot_placeholder:
+        if self.stack.get_visible_child() == self.pill_compact:
             # open launcher
             self.launcher.remove_style_class("launcher-contract-init")
             self.launcher.remove_style_class("launcher-contract")
@@ -121,7 +144,9 @@ class Notch(Window):
 
     def close(self, *_):
         self.unfocus_notch()
-        exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.close()'")
+        if self.stack.get_visible_child() != self.pill_compact:
+            exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.close()'")
+        
         if self.stack.get_visible_child() == self.player:
             self.player.unregister_keybindings()
             self.player.remove_style_class("reveal-player")
@@ -130,13 +155,13 @@ class Notch(Window):
             else:
                 self.player.add_style_class("hide-player")
 
-            self.stack.set_visible_child(self.dot_placeholder)
+            self.stack.set_visible_child(self.pill_compact)
 
         if self.stack.get_visible_child() == self.power_menu:
             toggle_class(self.power_menu, 'reveal-menu', 'hide-menu')
-            self.stack.set_visible_child(self.dot_placeholder)
+            self.stack.set_visible_child(self.pill_compact)
 
-        elif self.stack.get_visible_child() != self.dot_placeholder:
+        elif self.stack.get_visible_child() != self.pill_compact:
             self.stack.remove_style_class("expander")
             exec_shell_command_async(
                 " fabric-cli exec bar-example 'dockBar.reveal_overlapping_modules()'"
@@ -150,7 +175,7 @@ class Notch(Window):
 
             self.launcher.remove_style_class("launcher-expand")
             self.launcher.add_style_class("launcher-contract")
-            self.stack.set_visible_child(self.dot_placeholder)
+            self.stack.set_visible_child(self.pill_compact)
             # self.launcher.close_launcher()
 
         # for cases where player->dmenu->close()
@@ -161,7 +186,8 @@ class Notch(Window):
 
         # self.stack.add_style_class("hide")
 
-        self.lift_box.set_style("min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
+        if self.stack.get_visible_child() != self.pill_compact:
+            self.lift_box.set_style("min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
         self.show_all()
 
     def toggle_player(self, *_):
@@ -188,7 +214,7 @@ class Notch(Window):
             exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.close()'")
             self.lift_box.set_style("min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
             toggle_class(self.player, "reveal-player", "hide-player")
-            self.stack.set_visible_child(self.dot_placeholder)
+            self.stack.set_visible_child(self.pill_compact)
             self.unfocus_notch()
 
     def toggle_power_menu(self, *_):
@@ -212,7 +238,7 @@ class Notch(Window):
             self.lift_box.set_style("min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
             exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.close()'")
             toggle_class(self.power_menu, 'reveal-menu', 'hide-menu')
-            self.stack.set_visible_child(self.dot_placeholder)
+            self.stack.set_visible_child(self.pill_compact)
 
     def open_notch(self, mode):
         match mode:
@@ -232,3 +258,26 @@ class Notch(Window):
                 self.remove_style_class("launcher-contract")
 
                 self.stack.set_visible_child(self.dashboard)
+
+    def cycle_modes(self, *_):
+        if self.stack.get_visible_child() == self.pill_compact:
+            if self.pill_compact.get_visible_child() == self.user:
+                toggle_class(self.user, "hide", "reveal")
+                toggle_class(self.active_window.active_window, "hide", "reveal")
+                self.lift_box.set_style("min-height:0px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
+                exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.open()'")
+                self.pill_compact.set_visible_child(self.active_window.active_window)
+            elif self.pill_compact.get_visible_child() == self.active_window.active_window:
+                toggle_class(self.active_window.active_window, "reveal", "hide")
+                toggle_class(self.user, "reveal", "hide")
+                exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.close()'")
+                self.lift_box.set_style("min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
+                self.pill_compact.set_visible_child(self.dot_placeholder)
+            else:
+                toggle_class(self.active_window.active_window, "reveal", "hide")
+                toggle_class(self.user, "hide", "reveal")
+                self.lift_box.set_style("min-height:0px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
+                exec_shell_command_async(" fabric-cli exec bar-example 'dockBar.open()'")
+                self.pill_compact.set_visible_child(self.user)
+        else:
+            return

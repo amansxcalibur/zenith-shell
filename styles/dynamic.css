@@ -149,6 +149,9 @@
 
 #user-label {
   color: white;
+  background-color: black;
+  border-radius: 25px;
+  padding: 15px;
 }
 
 .hide-main-bar {
