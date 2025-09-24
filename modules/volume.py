@@ -4,32 +4,43 @@ from fabric.widgets.button import Button
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 
-from widgets.animatedcircularprogressbar import AnimatedCircularProgressBar
-from widgets.animatedscale import AnimatedScale
+from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
+from widgets.animated_scale import AnimatedScale
 import icons.icons as icons
 import config.info as info
+from widgets.popup_window import PopupWindow
 
 import subprocess
 
 from gi.repository import GLib
 
+# todo: volume service
 def get_current_volume():
     try:
         output = subprocess.run(
-            "pactl get-sink-volume @DEFAULT_SINK@ | awk '{print $5}' | tr -d '%'", 
-            shell=True, text=True, capture_output=True, check=True
+            "pactl get-sink-volume @DEFAULT_SINK@ | awk '{print $5}' | tr -d '%'",
+            shell=True,
+            text=True,
+            capture_output=True,
+            check=True,
         )
-        volume_percent = int(output.stdout.strip()) if output.stdout.strip().isdigit() else None
+        volume_percent = (
+            int(output.stdout.strip()) if output.stdout.strip().isdigit() else None
+        )
 
         output_mute = subprocess.run(
-            "pactl get-sink-mute @DEFAULT_SINK@", 
-            shell=True, text=True, capture_output=True, check=True
+            "pactl get-sink-mute @DEFAULT_SINK@",
+            shell=True,
+            text=True,
+            capture_output=True,
+            check=True,
         )
         is_muted = "yes" in output_mute.stdout.lower()
 
         return volume_percent, is_muted
     except subprocess.CalledProcessError:
         return None, None
+
 
 volume, muted = get_current_volume()
 print(f"Volume: {volume}% | Muted: {muted}")
@@ -39,7 +50,7 @@ class VolumeSlider(AnimatedScale):
     def __init__(self, **kwargs):
         super().__init__(
             name="control-slider",
-            orientation="h" if not info.VERTICAL else 'v',
+            orientation="h" if not info.VERTICAL else "v",
             h_expand=True,
             has_origin=True,
             inverted=True if info.VERTICAL else False,
@@ -54,8 +65,8 @@ class VolumeSlider(AnimatedScale):
 
     # def on_value_changed(self, _):
     #     new_volume = int(self.value * 100)
-        # subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{new_volume}%"])
-        # self.update_volume()
+    # subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{new_volume}%"])
+    # self.update_volume()
 
     def update_volume_slider(self, volume, overflow):
         """Update slider based on current volume."""
@@ -67,12 +78,45 @@ class VolumeSlider(AnimatedScale):
             else:
                 self.animate_value(min(1, volume / 100))
 
+
+class VolumeMaterial3(AnimatedScale):
+    def __init__(self, orientation="h", **kwargs):
+        super().__init__(
+            name="control-slider-mui",
+            orientation=orientation,
+            h_expand=True,
+            has_origin=True,
+            inverted=False if orientation == "h" else True,
+            style_classes="" if orientation == "h" else "vertical",
+            increments=(0.01, 0.1),
+            **kwargs,
+        )
+        self.add_style_class("vol")
+        volume, _ = get_current_volume()
+        # self.update_volume_slider(volume, False)
+        self.connect("value-changed", self.on_value_changed)
+
+    def on_value_changed(self, _):
+        new_volume = int(self.value * 100)
+        print(new_volume)
+        subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{new_volume}%"])
+    # self.update_volume()
+
+    def update_volume_slider(self, volume, overflow):
+        """Update slider based on current volume."""
+        if volume is not None:
+            if overflow:
+                self.animate_value(max(0, (volume - 100) / 100))
+            else:
+                self.animate_value(min(1, volume / 100))
+
+
 class VolumeSmall(Box):
     def __init__(self, slider_instance, overflow_instance, **kwargs):
         super().__init__(name="button-bar-vol", **kwargs)
         self.progress_bar = AnimatedCircularProgressBar(
-            name="button-volume", 
-            size=28, 
+            name="button-volume",
+            size=28,
             line_width=2,
             start_angle=-90,
             end_angle=270,
@@ -81,32 +125,41 @@ class VolumeSmall(Box):
         self.vol_label = Label(name="vol-label", markup=icons.vol_high)
 
         self.vol_button = Button(
-            name="vol-button",
-            on_clicked=self.toggle_mute,
-            child=self.vol_label
+            name="vol-button", on_clicked=self.toggle_mute, child=self.vol_label
         )
         self.event_box = EventBox(
             name="eventer",
             v_expand=True,
             h_expand=True,
             events="scroll",
-            child=Overlay(
-                child=self.progress_bar,
-                overlays=self.vol_button
-            ),
+            child=Overlay(child=self.progress_bar, overlays=self.vol_button),
         )
         self.hide_timer = None
         self.hover_counter = 0
         self.vol_revealer = slider_instance
         self.vol_overflow_revealer = overflow_instance
+        self.vol_popup_label = Label(name="control-slider-label", label="--")
         self.event_box.connect("scroll-event", self.on_scroll)
         self.add(self.event_box)
+
+        self.popup_slider = VolumeMaterial3(
+            orientation="v",
+        )
+        self.popup_win = PopupWindow(
+            widget=self,
+            child=Box(
+                name="control-slider-mui-container",
+                orientation="v",
+                children=[self.popup_slider, self.vol_popup_label],
+            ),
+        )
+
         self.update_volume_widget()
 
     def toggle_mute(self, event):
         subprocess.run(["pactl", "set-sink-mute", "@DEFAULT_SINK@", "toggle"])
         self.update_volume_widget()
-    
+
     def on_scroll(self, _, event):
         """Increase or decrease volume using scroll wheel."""
         match event.direction:
@@ -115,7 +168,7 @@ class VolumeSmall(Box):
             case 1:
                 subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "-5%"])
         self.update_volume_widget()
-    
+
     def reveal_revealer(self):
         self.hover_counter += 1
         if self.hide_timer is not None:
@@ -125,7 +178,7 @@ class VolumeSmall(Box):
         self.vol_revealer.set_reveal_child(True)
         self.vol_overflow_revealer.set_reveal_child(True)
         return False
-    
+
     def await_hide(self):
         if self.hover_counter > 0:
             self.hover_counter -= 1
@@ -147,9 +200,13 @@ class VolumeSmall(Box):
         # self.vol_revealer.set_reveal_child(True)
 
         self.reveal_revealer()
+        self.popup_slider.update_volume_slider(volume, overflow=False)
+        self.vol_popup_label.set_label(f'{volume}%')
         if volume > 100:
             # if self.vol_overflow_revealer.get_child().value != (volume - 100) / 100:
-            self.vol_overflow_revealer.get_child().update_volume_slider(volume, overflow=True)
+            self.vol_overflow_revealer.get_child().update_volume_slider(
+                volume, overflow=True
+            )
             self.vol_overflow_revealer.set_reveal_child(True)
             self.vol_revealer.set_reveal_child(False)
         else:
@@ -158,15 +215,17 @@ class VolumeSmall(Box):
             self.vol_revealer.set_reveal_child(True)
             self.vol_overflow_revealer.set_reveal_child(False)
         self.await_hide()
-        
+
         if volume is None:
             return
-        
+
         self.progress_bar.animate_value(volume / 100)
 
         if muted:
             self.vol_overflow_revealer.get_child().remove_style_class("vol")
-            self.vol_overflow_revealer.get_child().remove_style_class("vol-overflow-slider")
+            self.vol_overflow_revealer.get_child().remove_style_class(
+                "vol-overflow-slider"
+            )
             self.vol_revealer.get_child().remove_style_class("vol")
 
             self.vol_revealer.get_child().add_style_class("muted-slider")
@@ -175,18 +234,20 @@ class VolumeSmall(Box):
             self.vol_label.add_style_class("muted")
 
             self.vol_button.get_child().set_markup(icons.vol_off)
-            self.set_tooltip_text("Muted")
+            # self.set_tooltip_text("Muted")
         else:
             self.vol_revealer.get_child().remove_style_class("muted-slider")
             self.vol_overflow_revealer.get_child().remove_style_class("muted-slider")
             self.progress_bar.remove_style_class("muted")
             self.vol_label.remove_style_class("muted")
 
-            self.vol_overflow_revealer.get_child().add_style_class("vol-overflow-slider")
+            self.vol_overflow_revealer.get_child().add_style_class(
+                "vol-overflow-slider"
+            )
             self.vol_revealer.get_child().add_style_class("vol")
             self.vol_overflow_revealer.get_child().add_style_class("vol")
 
-            self.set_tooltip_text(f"{volume}%")
+            # self.set_tooltip_text(f"{volume}%")
 
             if volume > 74:
                 self.vol_button.get_child().set_markup(icons.vol_high)

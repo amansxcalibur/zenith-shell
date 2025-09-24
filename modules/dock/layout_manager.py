@@ -141,6 +141,8 @@ class LayoutManager:
                 if overlay.width == 0:
                     overlay.width = overlay.get_allocation().width
                 width = overlay.width if i != id - 1 else overlay.width - 20
+                if width < 0:
+                    width = 0
                 style = f"min-width:{width}px;"
                 if self.hole_state:
                     style += " transition: min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1);"
@@ -166,6 +168,8 @@ class LayoutManager:
                 if overlay.width == 0:
                     overlay.width = overlay.get_allocation().width
                 width = overlay.width if i != id + 1 else overlay.width - 20
+                if width < 0:
+                    width = 0
                 style = f"min-width:{width}px;"
                 if self.hole_state:
                     style += " transition: min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1);"

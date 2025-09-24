@@ -14,16 +14,16 @@ class ControlsManager:
     def __new__(cls, notch=None):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._init_controls(notch)
+            cls._instance._init_controls()
         return cls._instance
 
-    def _init_controls(self, notch):
-        self._init_volume_controls(notch)
+    def _init_controls(self):
+        self._init_volume_controls()
         self._init_brightness_controls()
 
-    def _init_volume_controls(self, notch):
-        volume_slider = VolumeSlider(notch=notch)
-        volume_overflow_slider = VolumeSlider(notch=notch)
+    def _init_volume_controls(self):
+        volume_slider = VolumeSlider()
+        volume_overflow_slider = VolumeSlider()
         volume_overflow_slider.add_style_class("vol-overflow-slider")
 
         transition = "slide-down" if not info.VERTICAL else "slide-right"
@@ -42,7 +42,6 @@ class ControlsManager:
         )
 
         self.vol_small = VolumeSmall(
-            notch=notch,
             slider_instance=self.volume_revealer,
             overflow_instance=self.volume_overflow_revealer
         )
