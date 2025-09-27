@@ -1,4 +1,5 @@
 from fabric.widgets.eventbox import EventBox
+from fabric.widgets.revealer import Revealer
 from fabric.widgets.x11 import X11Window as Window
 
 from loguru import logger
@@ -20,7 +21,10 @@ class PopupWindow(Window):
             spacing=0,
             h_expand=True,
             v_expand=True,
-            child=child
+            child=Revealer(
+                transition_duration=250,
+                transition_type='crossfade',
+                child=child)
         )
         # self.set_position(Gtk.WindowPosition.NONE)
         # self.set_type_hint(Gdk.WindowTypeHint.POPUP_MENU)
@@ -99,10 +103,12 @@ class PopupWindow(Window):
             self.delay_ref = GLib.timeout_add(250, self._check_and_hide)
         else:
             self.set_visible(True)
+            self.event_box.get_children()[0].reveal()
 
     def _check_and_hide(self):
         if not self.is_hover_widget and not self.is_hover_popup:
-            self.set_visible(False)
+            self.event_box.get_children()[0].unreveal()
+            GLib.timeout_add(300, lambda:self.set_visible(False))
         return False
     
 
