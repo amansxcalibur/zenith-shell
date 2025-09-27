@@ -60,13 +60,7 @@ class DockBar(Window):
         self.systray = SystemTray()
         self.metrics = MetricsSmall()
         self.battery = Battery()
-        self.vol_small = self.controls.get_volume_small()
-        self.brightness_small = self.controls.get_brightness_small()
-        self.vol_brightness_box = Box(
-            name="vol-brightness-container",
-            orientation="h",
-            children=[self.vol_small, self.brightness_small],
-        )
+        self.vol_brightness_box = self.controls.get_controls_box()
         self.date_time = Box(
             name="date-time-container",
             style_classes="" if not info.VERTICAL else "vertical",

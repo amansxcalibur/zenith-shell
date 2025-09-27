@@ -202,15 +202,25 @@ highlight {
   border-radius: 12px 12px 12px 12px;
 }
 
+#control-slider-mui.vertical.mute highlight,
+#control-slider-mui.vertical.mute slider {
+  background-color: var(--outline);
+}
+
+#control-slider-mui.vertical.vol-overflow-slider highlight,
+#control-slider-mui.vertical.vol-overflow-slider slider {
+  background-color: rgb(228, 83, 83);
+}
+
 #control-slider-mui-container {
   padding: 7px;
   background-color: black;
   border-radius: 17px;
-  margin-left:13px; /* These margins are to prevent window resize due to low width when re allocating */
-  margin-right:13px;
+  margin-left: 13px; /* These margins are to prevent window resize due to low width when re allocating */
+  margin-right: 13px;
 }
 
-#control-slider-label{
+#control-slider-label {
   margin-top: 4px;
 }
 

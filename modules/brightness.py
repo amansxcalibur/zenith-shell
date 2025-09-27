@@ -7,11 +7,10 @@ from fabric.utils.helpers import exec_shell_command_async
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib, Gdk
+from gi.repository import Gdk
 
 from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
 from widgets.animated_scale import AnimatedScale
-from widgets.popup_window import PopupWindow
 import icons.icons as icons
 import subprocess
 import re
@@ -129,23 +128,6 @@ class BrightnessSmall(Box):
         self.add(self.event_box)
         self.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.SMOOTH_SCROLL_MASK)
 
-        self.brightness_popup_label = Label(name="control-slider-label", label='--')
-        self.popup_win = PopupWindow(
-            widget=self,
-            child=Box(
-                name="control-slider-mui-container",
-                orientation='v',
-                children=[
-                    BrightnessMaterial3(
-                        device="intel_backlight",
-                        service_instance=self.service_instance,
-                        orientation="v",
-                    ),
-                    self.brightness_popup_label
-                ],
-            ),
-        )
-
         self.service_instance.connect("value-changed", self.on_brightness_changed)
         self.init_brightness()
 
@@ -164,16 +146,14 @@ class BrightnessSmall(Box):
     def on_scroll(self, widget, event):
         match event.direction:
             case 0:
-                subprocess.run(["brightnessctl", "set", "+5%"])
-            case 1:
                 subprocess.run(["brightnessctl", "set", "5%-"])
+            case 1:
+                subprocess.run(["brightnessctl", "set", "+5%"])
         self.init_brightness()
 
     def on_brightness_changed(self, source, new_value, max_value):
         self.percentage = 100 * new_value / max_value
         self.progress_bar.animate_value(self.percentage / 100)
-        self.brightness_popup_label.set_label(f'{int(self.percentage)}%')
-        # self.set_tooltip_text(f"{brightness_percentage}%")
 
     # def destroy(self):
     #     if self._update_source_id is not None:
