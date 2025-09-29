@@ -66,7 +66,7 @@ class NetworkService(Service):
             self.connection_change("", False, "Wi-Fi On (No Connection)")
 
     def handle_device_state_change(self, device, new_state, old_state, reason):
-        print("Device state changed:", old_state, "→", new_state)
+        print("Device state changed:", old_state, "->", new_state)
         match new_state:
             case NM.DeviceState.UNAVAILABLE:
                 self.connection_change("", False, "Wi-Fi Off")
@@ -105,6 +105,12 @@ class NetworkService(Service):
         if self.wifi_dev and device.get_path() == self.wifi_dev.get_path():
             self.wifi_dev = None
             self.handle_prop_change(self.wifi_dev, None)
+
+    def do_toggle_wifi_connection(self):
+        if self.wifi_dev.get_active_connection():
+            self.wifi_dev.disconnect()
+        else:
+            self.wifi_dev.reapply_connection()
 
     def print_state(self):
         print(

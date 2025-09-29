@@ -55,7 +55,6 @@
 }
 
 #control-slider.mic slider {
-  /* background-image: url("./.config/Ax-Shell/assets/icons/microphone.png"); */
   background-size: contain;
 }
 
@@ -142,7 +141,10 @@
   margin-bottom: 10px;
 } */
 
-#control-slider-mui, #control-slider-mui slider, trough, highlight { 
+#control-slider-mui,
+#control-slider-mui slider,
+trough,
+highlight {
   all: unset;
 }
 
@@ -163,23 +165,75 @@
   box-shadow: 0 0 0 4px black;
 }
 
-#control-slider-mui highlight{
+#control-slider-mui highlight {
   background-color: var(--primary);
   border-radius: 0 4px 4px 0;
   box-shadow: 4px 0 0 4px black;
 }
 
-#control-slider-mui trough{
+#control-slider-mui trough {
   border-radius: 0 12px 12px 0;
+  padding-right: 6px; /* counter slider negative margins */
 }
 
-.scale-icon-container{
+#control-slider-mui.vertical trough {
+  background-color: var(--surface-bright);
+  min-width: 10px;
+  min-height: 300px;
+}
+
+#control-slider-mui.vertical slider {
+  margin-left: -3px;
+  margin-right: -3px;
+  margin-bottom: 12px;
+  background-color: var(--primary);
+  min-width: 40px;
+  border-radius: 10px;
+  min-height: 4px;
+  box-shadow: 0 0 0 4px black;
+}
+
+#control-slider-mui.vertical highlight {
+  background-color: var(--primary);
+  border-radius: 4px 4px 12px 12px;
+  box-shadow: 0 4px 0 4px black;
+}
+
+#control-slider-mui.vertical trough {
+  border-radius: 12px 12px 12px 12px;
+  padding-right: 0px;
+  padding-top: 10px; /* counter slider negative margins */
+}
+
+#control-slider-mui.vertical.mute highlight,
+#control-slider-mui.vertical.mute slider {
+  background-color: var(--outline);
+}
+
+#control-slider-mui.vertical.vol-overflow-slider highlight,
+#control-slider-mui.vertical.vol-overflow-slider slider {
+  background-color: rgb(228, 83, 83);
+}
+
+#control-slider-mui-container {
+  padding: 7px;
+  background-color: black;
+  border-radius: 17px;
+  margin-left: 13px; /* These margins are to prevent window resize due to low width when re allocating */
+  margin-right: 13px;
+}
+
+#control-slider-label {
+  margin-top: 4px;
+}
+
+.scale-icon-container {
   background-color: var(--primary);
   border-radius: 12px 0 0 12px;
   min-width: 30px;
 }
 
-.scale-icon{
+.scale-icon {
   color: black;
   font-size: 18px;
 }

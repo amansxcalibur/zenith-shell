@@ -8,7 +8,7 @@ from fabric.core.fabricator import Fabricator
 from fabric.widgets.box import Box
 from fabric.widgets.button import Button
 from fabric.widgets.circularprogressbar import CircularProgressBar
-from widgets.animatedcircularprogressbar import AnimatedCircularProgressBar
+from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.label import Label
 from fabric.widgets.revealer import Revealer
@@ -16,7 +16,9 @@ from fabric.core.fabricator import Fabricator
 from fabric.widgets.scale import Scale
 from fabric.core.service import Service, Signal
 
-from utils.animator import Animator
+from services.animator import Animator
+from widgets.popup_window import PopupWindow
+from widgets.animated_scale import AnimatedScale
 import icons.icons as icons
 
 import config.info as info
@@ -120,6 +122,8 @@ class Metrics(Box):
             ],
         )
 
+        # self.cpu_slider = MetricsSliderMaterial3()
+
         self.ram_usage = Scale(
             name="ram-usage",
             value=0.5,
@@ -143,6 +147,7 @@ class Metrics(Box):
                 self.ram_label,
             ],
         )
+        # self.ram_slider = MetricsSliderMaterial3()
 
         self.disk_usage = Scale(
             name="disk-usage",
@@ -167,12 +172,21 @@ class Metrics(Box):
                 self.disk_label,
             ],
         )
+        # self.disk_slider = MetricsSliderMaterial3()
 
         self.scales = [
             self.disk,
             self.ram,
             self.cpu,
         ]
+
+        # self.popup_win = PopupWindow(
+        #     widget=self,
+        #     child=Box(
+        #         name="control-slider-mui-container",
+        #         children=[self.cpu_slider, self.cpu_slider, self.disk_slider],
+        #     ),
+        # )
 
         self.cpu_usage.set_sensitive(False)
         self.ram_usage.set_sensitive(False)
@@ -190,8 +204,11 @@ class Metrics(Box):
 
         # Normalize to 0.0 - 1.0
         self.cpu_usage.value = cpu / 100.0
+        # self.cpu_slider.value = cpu / 100.0
         self.ram_usage.value = mem / 100.0
+        # self.ram_slider.value = mem / 100.0
         self.disk_usage.value = disk / 100.0
+        # self.disk_slider.value = disk / 100.0
 
         return True  # Continue calling this function.
 
@@ -236,7 +253,7 @@ class MetricsSmall(Button):
 
         # ------------------ RAM ------------------
         self.ram_icon = Label(name="ram-icon", markup=icons.memory)
-        self.ram_circle = CircularProgressBar(
+        self.ram_circle = AnimatedCircularProgressBar(
             name="metrics-circle",
             value=0,
             size=28,
@@ -265,7 +282,7 @@ class MetricsSmall(Button):
 
         # ------------------ Disk ------------------
         self.disk_icon = Label(name="disk-icon", markup=icons.disk)
-        self.disk_circle = CircularProgressBar(
+        self.disk_circle = AnimatedCircularProgressBar(
             name="metrics-circle",
             value=0,
             size=28,
@@ -314,6 +331,20 @@ class MetricsSmall(Button):
         self.connect("enter-notify-event", self.on_mouse_enter)
         self.connect("leave-notify-event", self.on_mouse_leave)
 
+        # sliders for popup window
+        self.cpu_slider = MetricsSliderMaterial3(orientation='v')
+        self.ram_slider = MetricsSliderMaterial3(orientation='v')
+        self.disk_slider = MetricsSliderMaterial3(orientation='v')
+
+        self.popup_win = PopupWindow(
+            widget=self,
+            child=Box(
+                name="control-slider-mui-container",
+                spacing=7,
+                children=[self.disk_slider, self.ram_slider, self.cpu_slider],
+            ),
+        )
+
         # Metrics update every second
         GLib.timeout_add_seconds(1, self.update_metrics)
 
@@ -358,16 +389,34 @@ class MetricsSmall(Button):
         # Recover centralized data
         cpu, mem, disk = shared_provider.get_metrics()
         self.cpu_circle.animate_value(cpu / 100.0)
-        self.ram_circle.set_value(mem / 100.0)
-        self.disk_circle.set_value(disk / 100.0)
+        self.ram_circle.animate_value(mem / 100.0)
+        self.disk_circle.animate_value(disk / 100.0)
+
+        self.cpu_slider.animate_value(cpu / 100.0)
+        self.ram_slider.animate_value(mem / 100.0)
+        self.disk_slider.animate_value(disk / 100.0)
         # Update labels with formatted percentage
         self.cpu_level.set_label(self._format_percentage(int(cpu)))
         self.ram_level.set_label(self._format_percentage(int(mem)))
         self.disk_level.set_label(self._format_percentage(int(disk)))
-        self.set_tooltip_markup(
-            f"{icons.disk} DISK - {icons.memory} RAM - {icons.cpu} CPU"
-        )
+        # self.set_tooltip_markup(
+        #     f"{icons.disk} DISK - {icons.memory} RAM - {icons.cpu} CPU"
+        # )
         return True
+
+
+class MetricsSliderMaterial3(AnimatedScale):
+    def __init__(self, orientation="h", **kwargs):
+        super().__init__(
+            name="control-slider-mui",
+            orientation=orientation,
+            h_expand=True,
+            has_origin=True,
+            inverted=False if orientation == "h" else True,
+            style_classes="" if orientation == "h" else "vertical",
+            increments=(0.01, 0.1),
+            **kwargs,
+        )
 
 
 class Battery(Button):

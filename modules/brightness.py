@@ -7,10 +7,10 @@ from fabric.utils.helpers import exec_shell_command_async
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib, Gdk
+from gi.repository import Gdk
 
-from widgets.animatedcircularprogressbar import AnimatedCircularProgressBar
-from widgets.animatedscale import AnimatedScale
+from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
+from widgets.animated_scale import AnimatedScale
 import icons.icons as icons
 import subprocess
 import re
@@ -57,7 +57,6 @@ class BrightnessSlider(AnimatedScale):
         self.service_instance.connect("value-changed", self.update_brightness_slider)
         self.connect("change-value", self.set_brightness)
 
-
     def init_brightness(self):
         if self.exist:
             init = (
@@ -103,18 +102,20 @@ class BrightnessSmall(Box):
         self.percentage = 0
         self.exist = BACKLIGHT_SUPPORTED
 
-        self.brightness_label = Label(name="brightness-label", markup=icons.brightness, style_classes="brightness-adjust")
+        self.brightness_label = Label(
+            name="brightness-label",
+            markup=icons.brightness,
+            style_classes="brightness-adjust",
+        )
         self.progress_bar = AnimatedCircularProgressBar(
             name="button-brightness",
             size=28,
             line_width=2,
             start_angle=-90,
             end_angle=270,
-            child=self.brightness_label
+            child=self.brightness_label,
         )
-        self.brightness_button = Button(
-            name="brightness-button"
-        )
+        self.brightness_button = Button(name="brightness-button")
         self.event_box = EventBox(
             # events=["scroll", "smooth-scroll"],
             events="scroll",
@@ -123,8 +124,11 @@ class BrightnessSmall(Box):
             child=Overlay(child=self.progress_bar, overlays=self.brightness_button),
         )
         self.event_box.connect("scroll-event", self.on_scroll)
+
         self.add(self.event_box)
         self.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.SMOOTH_SCROLL_MASK)
+
+        self.service_instance.connect("value-changed", self.on_brightness_changed)
         self.init_brightness()
 
     def init_brightness(self):
@@ -137,20 +141,19 @@ class BrightnessSmall(Box):
             self.current = int(re.search(r"current brightness:\s+(\d+)", init).group(1))
             self.max = int(re.search(r"max brightness:\s+(\d+)", init).group(1))
             self.percentage = int(re.search(r"\((\d+)%\)", init).group(1))
-            self.on_brightness_changed()
+            self.on_brightness_changed(self, self.current, self.max)
 
     def on_scroll(self, widget, event):
         match event.direction:
             case 0:
-                subprocess.run(["brightnessctl", "set", "+5%"])
-            case 1:
                 subprocess.run(["brightnessctl", "set", "5%-"])
+            case 1:
+                subprocess.run(["brightnessctl", "set", "+5%"])
         self.init_brightness()
 
-    def on_brightness_changed(self, *args):
+    def on_brightness_changed(self, source, new_value, max_value):
+        self.percentage = 100 * new_value / max_value
         self.progress_bar.animate_value(self.percentage / 100)
-        brightness_percentage = self.percentage
-        self.set_tooltip_text(f"{brightness_percentage}%")
 
     # def destroy(self):
     #     if self._update_source_id is not None:
@@ -159,14 +162,14 @@ class BrightnessSmall(Box):
 
 
 class BrightnessMaterial3(AnimatedScale):
-    def __init__(self, device: str, service_instance, **kwargs):
+    def __init__(self, device: str, service_instance, orientation="h", **kwargs):
         super().__init__(
             name="control-slider-mui",
-            orientation="h",
+            orientation=orientation,
             h_expand=True,
             has_origin=True,
-            inverted=False,
-            style_classes="" if not info.VERTICAL else "vertical",
+            inverted=False if orientation == "h" else True,
+            style_classes="" if orientation == "h" else "vertical",
             increments=(0.01, 0.1),
             **kwargs,
         )

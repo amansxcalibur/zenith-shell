@@ -104,17 +104,15 @@
   background-color: transparent;
 }
 
-.contract {
+/* .contract {
   transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
-  /* animation: loadSlot2 0.5s ease; */
 }
 
 .expand {
   min-height: 194px;
   min-width: 500px;
   transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
-  /* animation: loadSlot1 0.5s ease; */
-}
+} */
 
 #notch-content {
   background-color: black;
@@ -151,6 +149,9 @@
 
 #user-label {
   color: white;
+  background-color: black;
+  border-radius: 25px;
+  padding: 15px;
 }
 
 .hide-main-bar {
@@ -204,6 +205,7 @@ button:focus {
   padding: 3px;
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
+  /* background-color: red; */
   box-shadow: 0px -25px 0 0 black;
 }
 
@@ -239,6 +241,23 @@ button:focus {
   margin-left: -7px;
 }
 
-/* *{
-  all: unset;
+#pill{
+  background-color: black;
+  /* min-height: 0px;
+  min-width: 0px; */
+}
+
+#pill.expand{
+  min-width: 100px;
+  min-height: 0px;
+}
+
+#start-container{
+  background-color: red;
+  min-width: 1000px;
+}
+/* 
+#end-container{
+  background-color: red;
+  min-width: 1000px;
 } */

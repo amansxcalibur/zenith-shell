@@ -57,11 +57,11 @@ chevron_left: str = "&#xea60;"
 chevron_right: str = "&#xea61;"
 
 # Power
-lock: str = "&#xeae2;"
-suspend: str = "&#xece7;"
-logout: str = "&#xeba8;"
-reboot: str = "&#xeb13;"
-shutdown: str = "&#xeb0d;"
+lock: str = chr(0xf023)
+suspend: str = chr(0xf0904)
+logout: str = chr(0xf0343)
+reboot: str = chr(0xead2)
+shutdown: str = chr(0xf011)
 
 # Power Manager
 power_saving: str = "&#xed4f;"
@@ -82,7 +82,7 @@ world_off: str = "&#xf1ca;"
 bluetooth: str = chr(0xf294)
 night: str = "&#xeaf8;"
 coffee: str = "&#xef0e;"
-notifications: str = "&#xea35;"
+notifications: str = chr(0xf0f3)
 
 wifi_off: str = "&#xecfa;"
 bluetooth_off: str = "&#xeceb;"
@@ -138,10 +138,11 @@ config: str = "&#xeb20;"
 
 # Icons
 firefox: str = chr(0xf0239)
-chromium: str = "&#xec18;"
+chromium: str = chr(0xf268)
 spotify: str = chr(0xf1bc)
 disc: str = chr(0xede9)
 disc_off: str = "&#xf118;"
+silent: str = chr(0xf0376)
 
 # Brightness
 brightness_low: str = "&#xeb7d;"
@@ -159,11 +160,14 @@ emoji: str = "&#xeaf7;"
 
 # Music
 next: str = chr(0xf0f27)
+next_fill: str = chr(0xf04ad)
 previous: str = chr(0xf0f28)
+previous_fill: str = chr(0xf04ae)
 pause: str = chr(0xf04c)
 play: str = chr(0xf04b)
 shuffle: str = chr(0xf074)
 disable_shuffle: str = chr(0xf049e)
+headphones: str = chr(0xee58)
 
 # Settings
 settings: str = chr(0xf1a2a)

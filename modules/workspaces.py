@@ -23,6 +23,9 @@ class i3Connector:
         self.workspace = kwargs.get("workspace", None)
         self.active_window = kwargs.get("active", None)
         self.i3 = Connection(auto_reconnect=True)
+        self.i3.command("gaps left all set 3px")
+        self.i3.command("gaps top all set 3px")
+        self.i3.command("gaps bottom all set 3px")
 
         self.callbacks = {
             Event.WORKSPACE: []
@@ -61,6 +64,10 @@ class i3Connector:
         if info.VERTICAL:
             i3.command("gaps left all set 44px")
             i3.command("gaps top all set 3px")
+        else:
+            self.i3.command("gaps left all set 3px")
+            self.i3.command("gaps top all set 3px")
+            self.i3.command("gaps bottom all set 3px")
 
     def start(self):
         if self._thread is None or not self.thread.is_alive():

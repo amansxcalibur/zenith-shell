@@ -28,7 +28,7 @@ class WallpaperSelector(Box):
         if os.path.exists(old_cache_dir):
             shutil.rmtree(old_cache_dir)
         
-        super().__init__(name="wallpapers", spacing=4, orientation="v", h_expand=False, v_expand=False, **kwargs)
+        super().__init__(name="wallpapers", spacing=10, orientation="v", h_expand=False, v_expand=False, **kwargs)
         os.makedirs(self.CACHE_DIR, exist_ok=True)
 
         # Process old wallpapers: use os.scandir for efficiency and only loop
@@ -137,8 +137,8 @@ class WallpaperSelector(Box):
             ],
         )
 
-        self.add(self.header_box)
         self.add(self.scrolled_window)
+        self.add(self.header_box)
         self._start_thumbnail_thread()
         self.setup_file_monitor()  # Initialize file monitoring
         self.show_all()
@@ -222,13 +222,13 @@ class WallpaperSelector(Box):
         #         f'swww img {full_path} -t outer --transition-duration 1.5 --transition-step 255 --transition-fps 60 -f Nearest'
         #     )
         exec_shell_command_async(f'feh --zoom fill --bg-fill {full_path}')
-        f = open(f'{info.HOME_DIR}/.cache/walls/current_wallpaper.txt', "w")
+        f = open(f'{info.HOME_DIR}/.cache/zenith-shell/current_wallpaper.txt', "w")
         f.write(full_path)
         f.close()
 
         async def generate_theme():
             # the themes are updated when the "changed" signal is emitted by the monitor watching the styles directory.
-            exec_shell_command(f'matugen image {full_path} -t {selected_scheme}')
+            exec_shell_command(f'matugen image {full_path} -t {selected_scheme} -c {info.HOME_DIR}/fabric/config/matugen/config.toml')
             print("this is the selected scheme ", selected_scheme)
 
         asyncio.run(generate_theme())

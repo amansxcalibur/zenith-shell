@@ -5,6 +5,7 @@ from fabric.widgets.label import Label
 from fabric.widgets.x11 import X11Window as Window
 
 from modules.metrics import MetricsProvider
+from modules.controls import ControlsManager
 
 import config.info as info
 import icons.icons as icons
@@ -65,7 +66,8 @@ class Notification(Revealer):
             self.notification_box.remove_style_class("horizontal")
 
     def check_low_bat(self, _source, battery_percent: float, is_charging: bool):
-        if not is_charging and battery_percent < self.LOW_BATTERY_THRESHOLD:
+        if not is_charging and battery_percent < self.LOW_BATTERY_THRESHOLD + 1:
+            self.low_bat_msg.set_label(f"Low Battery fam (<{int(battery_percent)}%)")
             self.reveal_notification()
         else:
             self.hide_notification()
@@ -95,4 +97,18 @@ class NotificationPopup(Window):
             all_visible=True,
             **kwargs
         )
-        self.children = Box(style="min-height: 1px;", children=Notification())
+        self.controls = ControlsManager()
+        self.volume_revealer = self.controls.get_volume_revealer()
+        self.volume_overflow_revealer = self.controls.get_volume_overflow_revealer()
+        self.brightness_revealer = self.controls.get_brightness_revealer()
+
+        self.children = Box(
+            style="min-height: 1px;",
+            orientation='v',
+            children=[
+                Notification(),
+                self.volume_revealer,
+                self.volume_overflow_revealer,
+                self.brightness_revealer,
+            ],
+        )

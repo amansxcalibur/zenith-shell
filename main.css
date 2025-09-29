@@ -1,6 +1,7 @@
 @import url("styles/dynamic.css");
 @import url("styles/launcher.css");
 @import url("styles/colors.css");
+@import url("styles/colors_player.css");
 @import url("styles/wallpapers.css");
 @import url("styles/volume.css");
 @import url("styles/workspaces.css");
@@ -11,3 +12,6 @@
 @import url("styles/wiggle.css");
 @import url("styles/notification.css");
 @import url("styles/dashboard.css");
+@import url("styles/pill.css");
+@import url("styles/dock_widget.css");
+@import url("styles/power_menu.css");

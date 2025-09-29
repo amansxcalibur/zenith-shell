@@ -4,26 +4,36 @@ from fabric.widgets.centerbox import CenterBox
 from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
 
-from modules.bluetooth import Bluetooth
 from modules.network import Network
-from modules.tile import Tile
+from modules.tile import TileSpecial, Tile
+from modules.bluetooth import Bluetooth
 from modules.wavy_clock import WavyCircle
+from modules.notification import NotificationTile
+from modules.player_mini import PlayerContainerMini
 
 import icons.icons as icons
 import config.info as info
+
+from loguru import logger
+
 
 class Dashboard(Box):
     def __init__(self, controls, **kwargs):
         super().__init__(
             name="dashboard",
-            visible=False,
+            visible=True,
             orientation="v",
             spacing=8,
-            all_visible=False,
+            all_visible=True,
             **kwargs,
         )
         self.wifi = Network()
         self.bluetooth = Bluetooth()
+        self.mini_player = PlayerContainerMini()
+        self.silent = NotificationTile()
+        self.mini_player_tile = TileSpecial(
+            props=self.mini_player, mini_props=self.mini_player.get_mini_view()
+        )
 
         self.controls = controls
         self.brightness_revealer_mui = self.controls.get_brightness_slider_mui()
@@ -65,17 +75,26 @@ class Dashboard(Box):
         )
 
         self.tiles = Box(
+            spacing=3,
+            orientation='v',
             children=[
-                self.wifi,
-                self.bluetooth,
-                Tile(
-                    label="Whaterver that goes here",
-                    markup=icons.notifications,
-                    props=Label(
-                        style="min-width:200px;",
-                    ),
-                    menu=False,
-                    style_classes=["tile", "on"],
+                Box(
+                    spacing=3,
+                    children=[
+                        self.wifi,
+                        self.bluetooth,
+                        self.mini_player_tile,
+                    ],
+                ),
+                Box(
+                    spacing=3,
+                    children=[
+                        self.silent,
+                        Box(style='background-color:var(--surface-bright); border-radius:20px;', h_expand=True),
+                        Tile(style_classes=['off']),
+                        # Box(style='background-color:white; min-height:60px; min-width:140px; border-radius:20px;'),
+                        # Box(style='background-color:white; min-height:60px; min-width:70px; border-radius:20px;'),
+                    ],
                 ),
             ],
         )
@@ -109,7 +128,6 @@ class Dashboard(Box):
         self.notification_container = Revealer(
             transition_duration=250,
             transition_type="slide-down",
-            style="background-color:blue;",
             h_expand=True,
             child=Box(
                 h_expand=True,
@@ -119,7 +137,7 @@ class Dashboard(Box):
                         name="notification-container",
                         orientation="v",
                         v_expand=True,
-                        style="padding:3px; padding-top:0px",
+                        spacing=3,
                         children=[self.notification_box, self.notification_box_2],
                     ),
                     Box(
@@ -127,13 +145,12 @@ class Dashboard(Box):
                         h_expand=True,
                         children=self.wavy,
                     ),
-                ]
+                ],
             ),
             child_revealed=True,
         )
         self.children = [
             Box(
-                name="inner",
                 orientation="h",
                 children=[
                     CenterBox(
@@ -145,7 +162,7 @@ class Dashboard(Box):
                     self.brightness_revealer_mui,
                 ],
             ),
-            Box(name="inner", children=self.tiles),
+            Box(children=self.tiles),
             Box(
                 children=[
                     self.notification_container,
@@ -158,16 +175,24 @@ class Dashboard(Box):
             self.notification_container.set_reveal_child(False)
         else:
             self.notification_container.set_reveal_child(True)
-        for i in self.tiles:
-            if i.get_name() == tile:
-                print("found")
-            else:
-                if toggle:
-                    i.mini_view()
-                    i.icon.add_style_class("mini")
-                    i.icon.remove_style_class("maxi")
+        
+        
+        rows = self.tiles.get_children()
+        for row in rows:
+            elems = row.get_children()
+            for elem in elems:
+                if elem.get_name() == tile:
+                    print("found")
                 else:
-                    i.maxi_view()
-                    i.icon.add_style_class("maxi")
-                    i.icon.remove_style_class("mini")
+                    if toggle:
+                        try:
+                            elem.mini_view()
+                        except:
+                            logger.error(f'Failed to switch {elem.get_name()} to mini view')
+                    else:
+                        try:
+                            elem.maxi_view()
+                        except:
+                            logger.error(f'Failed to switch {elem.get_name()} to mini view')
+
         print("search complete")

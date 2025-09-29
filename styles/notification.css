@@ -1,9 +1,8 @@
 #notification-box{
-    background-color: black;
+    background-color: var(--shadow);
     border-radius: 25px;
     padding: 10px; 
     min-width: 364px; /* 290+74 */
-    margin-top: 3px;
 }
 
 #notification-source{
@@ -19,5 +18,35 @@
 
 #notification-container{
     background-color: var(--surface);
-    border-radius: 20px;
+    border-radius: 30px;
+    padding: 6px;
+}
+
+#notification-window-container{
+    background-color: rgba(49, 49, 49, 0.801);
+    border-radius: 30px;
+    padding: 10px;
+    margin-bottom: 3px;
+}
+
+#notification-reveal-btn{
+    all: unset;
+    border-radius: 100%;
+    padding: 10px;
+    background-color: var(--shadow);
+}
+
+#notification-reveal-label{
+    font-size: 20px;
+    min-width: 27px;
+    color: var(--outline);
+}
+
+#notification-scrolled-window{
+    min-width: 364px;
+    border-radius: 25px;
+}
+
+#notification-scrolled-window viewport{
+    border-radius: 25px;
 }

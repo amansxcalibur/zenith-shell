@@ -1,45 +1,44 @@
 import fabric
 from fabric import Application
+from fabric.widgets.x11 import X11Window as Window
+Window.toggle_visibility = lambda self: self.set_visible(not self.is_visible())
+
 from fabric.utils import get_relative_path, monitor_file
 
-import config.info as info
-from modules.dock_bar import DockBar
-from modules.corners import Corners
 from modules.notch import Notch
+from modules.dock.bar import DockBar
+from modules.notifications import NotificationPopup
+from modules.notification import NotificationManager
+
+from config.info import SHELL_NAME
+
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
 
 if __name__ == "__main__":
     notch = Notch()
     dockBar = DockBar()
     notch.set_role("notch")
+    dockBar.set_title("fabric-dock")
     dockBar.notch = notch
-    notification = None
-
-    if info.VERTICAL:
-        from modules.notifications import NotificationPopup
-
-        notification = NotificationPopup()
-        dockBar.set_title("fabric-dock")
-        # make the window consume all vertical space
-        monitor = dockBar._display.get_primary_monitor()
-        rect = monitor.get_geometry()
-        scale = monitor.get_scale_factor()
-        dockBar.set_size_request(0, rect.height * scale)
-        dockBar.show_all()
-        notch.show_all()
-        # bar.set_keep_above(True)
+    pill_size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
+    pill_size_group.add_widget(dockBar.pill)
+    pill_size_group.add_widget(notch.stack)
+    controls_notification = NotificationPopup()
+    notification = NotificationManager()
 
     app_kwargs = {
         "notch": notch,
         "dockBar": dockBar,
+        "controls_notification" : controls_notification,
+        "notification": notification,
         "open_inspector": False,
     }
 
-    if notification:
-        app_kwargs["notification"] = notification
+    app = Application(SHELL_NAME,**app_kwargs)
 
-    app = Application("bar-example", **app_kwargs)
-
-    def set_css(*_):
+    def set_css(*args):
         app.set_stylesheet_from_file(get_relative_path("./main.css"))
 
     app.style_monitor = monitor_file(get_relative_path("./styles"))
