@@ -14,7 +14,7 @@
 
 .tile {
   min-height: 60px;
-  min-width: 140px;
+  min-width: 145px;
   border-radius: 20px;
 }
 .tile.mini{

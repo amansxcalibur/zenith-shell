@@ -4,14 +4,17 @@ from fabric.widgets.centerbox import CenterBox
 from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
 
-from modules.bluetooth import Bluetooth
 from modules.network import Network
-from modules.tile import Tile, TileSpecial
+from modules.tile import TileSpecial, Tile
+from modules.bluetooth import Bluetooth
 from modules.wavy_clock import WavyCircle
+from modules.notification import NotificationTile
 from modules.player_mini import PlayerContainerMini
 
 import icons.icons as icons
 import config.info as info
+
+from loguru import logger
 
 
 class Dashboard(Box):
@@ -27,6 +30,7 @@ class Dashboard(Box):
         self.wifi = Network()
         self.bluetooth = Bluetooth()
         self.mini_player = PlayerContainerMini()
+        self.silent = NotificationTile()
         self.mini_player_tile = TileSpecial(
             props=self.mini_player, mini_props=self.mini_player.get_mini_view()
         )
@@ -82,15 +86,16 @@ class Dashboard(Box):
                         self.mini_player_tile,
                     ],
                 ),
-                # Box(
-                #     spacing=3,
-                #     children=[
-                        # Box(style='background-color:white; min-height:60px; min-width:70px; border-radius:20px;'),
+                Box(
+                    spacing=3,
+                    children=[
+                        self.silent,
+                        Box(style='background-color:var(--surface-bright); border-radius:20px;', h_expand=True),
+                        Tile(style_classes=['off']),
                         # Box(style='background-color:white; min-height:60px; min-width:140px; border-radius:20px;'),
-                        # Box(style='background-color:white; min-height:60px; min-width:140px; border-radius:20px;'),
                         # Box(style='background-color:white; min-height:60px; min-width:70px; border-radius:20px;'),
-                #     ],
-                # )
+                    ],
+                ),
             ],
         )
         self.low_bat_msg_2 = Label(label="Notification ctl test")
@@ -171,17 +176,23 @@ class Dashboard(Box):
         else:
             self.notification_container.set_reveal_child(True)
         
-        for rows in self.tiles:
-            for elem in rows:
+        
+        rows = self.tiles.get_children()
+        for row in rows:
+            elems = row.get_children()
+            for elem in elems:
                 if elem.get_name() == tile:
                     print("found")
                 else:
                     if toggle:
-                        elem.mini_view()
-                        elem.icon.add_style_class("mini")
-                        elem.icon.remove_style_class("maxi")
+                        try:
+                            elem.mini_view()
+                        except:
+                            logger.error(f'Failed to switch {elem.get_name()} to mini view')
                     else:
-                        elem.maxi_view()
-                        elem.icon.add_style_class("maxi")
-                        elem.icon.remove_style_class("mini")
+                        try:
+                            elem.maxi_view()
+                        except:
+                            logger.error(f'Failed to switch {elem.get_name()} to mini view')
+
         print("search complete")

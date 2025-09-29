@@ -40,7 +40,8 @@ class PopupWindow(Window):
         if not isinstance(self.pointing_widget, EventBox):
             logger.error('Popup target widget should be an EventBox instance')
 
-        self.delay_ref = None # this is a temp patch cuz popup window allocation issues
+        self.unhover_delay_ref = None # this is a temp patch cuz popup window allocation issues
+        self.hide_delay_ref = None
 
         self.pointing_widget.connect("enter-notify-event", lambda x, y: self.set_is_hover_widget(event=y, state=True))
         self.pointing_widget.connect("leave-notify-event", lambda x, y: self.set_is_hover_widget(event=y, state=False))
@@ -92,23 +93,24 @@ class PopupWindow(Window):
         self.handle_window_visibility()
 
     def set_is_hover_widget(self, event, state):
-        logger.debug('here')
         self.is_hover_widget = state
         self.handle_window_visibility()
 
     def handle_window_visibility(self):
         if not self.is_hover_widget and not self.is_hover_popup:
-            if self.delay_ref != None:
-                GLib.source_remove(self.delay_ref)
-            self.delay_ref = GLib.timeout_add(250, self._check_and_hide)
+            if self.unhover_delay_ref is not None:
+                GLib.source_remove(self.unhover_delay_ref)
+            self.unhover_delay_ref = GLib.timeout_add(250, self._check_and_hide)
         else:
+            if self.hide_delay_ref is not None:
+                GLib.source_remove(self.hide_delay_ref)
             self.set_visible(True)
             self.event_box.get_children()[0].reveal()
 
     def _check_and_hide(self):
         if not self.is_hover_widget and not self.is_hover_popup:
             self.event_box.get_children()[0].unreveal()
-            GLib.timeout_add(300, lambda:self.set_visible(False))
+            self.hide_delay_ref = GLib.timeout_add(300, lambda:self.set_visible(False))
         return False
     
 

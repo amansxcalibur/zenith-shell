@@ -1,41 +1,63 @@
+from typing import Callable
+
 from fabric.widgets.box import Box
 from fabric.widgets.button import Button
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.widgets.revealer import Revealer
-from fabric.widgets.centerbox import CenterBox
 import icons.icons as icons
 import config.info as info
 from fabric.utils.helpers import exec_shell_command_async
 
 
 class Tile(Box):
-    def __init__(self, *, menu: bool, markup: str, label: str, props: Label, **kwargs):
+    def __init__(
+        self,
+        *,
+        menu: bool = False,
+        markup: str = icons.blur,
+        label: str = "__",
+        props: Label = Label(style_classes="tile-label", label="N/A", h_align="start"),
+        **kwargs,
+    ):
         default_classes = ["tile"]
         extra_classes = kwargs.pop("style_classes", [])
         merged_classes = default_classes + extra_classes
+        markup_styles = kwargs.pop("markup_style", "")
         super().__init__(style_classes=merged_classes, v_align="start", **kwargs)
+
+        self.state = False
         self.props = props
-        self.icon = Label(style_classes="tile-icon", markup=markup)
+        
+        self.icon = Label(style_classes="tile-icon", markup=markup, style=markup_styles)
+        self.icon_wrapper = Button(
+            style="all:unset;",
+            on_clicked=self.handle_state_toggle,
+            child=self.icon,
+        )
         self.tile_label = Label(
             style_classes="tile-label", label=label, h_align="start"
         )
         self.toggle = False
 
-        self.type_box = Box(
-            style_classes="tile-type",
-            orientation="v",
-            v_expand=True,
-            h_expand=True,
-            v_align="center",
-            children=[self.tile_label, self.props],
+        self.type_box = Button(
+            style="all:unset;",
+            on_clicked=self.handle_state_toggle,
+            child=Box(
+                style_classes="tile-type",
+                orientation="v",
+                v_expand=True,
+                h_expand=True,
+                v_align="center",
+                children=[self.tile_label, self.props],
+            ),
         )
 
         self.menu_button = Button(
             style_classes="tile-button",
             h_expand=True,
             child=Label(style_classes="tile-icon", markup=icons.arrow_head),
-            on_clicked=self.handle_click,
+            on_clicked=self.handle_menu_click,
         )
 
         self.content_button = None
@@ -57,13 +79,16 @@ class Tile(Box):
             )
 
         self.normal_view = Box(
-            children=[self.icon, self.content_button],
+            children=[
+                self.icon_wrapper,
+                self.content_button,
+            ],
         )
 
         self.menu = Button(
             style_classes="tile-menu",
             child=Label(label="hi!"),
-            on_clicked=self.handle_click,
+            on_clicked=self.handle_menu_click,
         )
 
         self.stack = Stack(
@@ -75,7 +100,10 @@ class Tile(Box):
 
         self.children = self.stack
 
-    def handle_click(self, source):
+    def handle_state_toggle(self, *_):
+        self.state = not self.state
+
+    def handle_menu_click(self, source):
         if self.toggle:
             self.toggle = False
             self.menu.add_style_class("contract")
@@ -94,15 +122,19 @@ class Tile(Box):
 
     def mini_view(self):
         self.content_button.set_reveal_child(False)
-        self.icon.set_h_expand(True)
+        self.icon_wrapper.set_h_expand(True)
         self.content_button.set_h_expand(False)
         self.add_style_class("mini")
+        self.icon.add_style_class("mini")
+        self.icon.remove_style_class("maxi")
 
     def maxi_view(self):
         self.content_button.set_reveal_child(True)
-        self.icon.set_h_expand(False)
+        self.icon_wrapper.set_h_expand(False)
         self.content_button.set_h_expand(True)
         self.remove_style_class("mini")
+        self.icon.add_style_class("maxi")
+        self.icon.remove_style_class("mini")
 
 
 class TileSpecial(Box):
@@ -117,9 +149,7 @@ class TileSpecial(Box):
         self.normal_view = Box(
             children=self.props,
         )
-        self.collapsed_view = Box(
-            children=self.mini_props
-        )
+        self.collapsed_view = Box(children=self.mini_props)
 
         self.stack = Stack(
             transition_type="crossfade",

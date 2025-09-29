@@ -12,12 +12,14 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.notifications import Notifications, Notification
 from fabric.utils import invoke_repeater
 
+from modules.tile import Tile
 import icons.icons as icons
+import config.info as info
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GdkPixbuf, Gdk, Gtk
+from gi.repository import GdkPixbuf, Gdk
 
 
 class NotificationConfig:
@@ -32,6 +34,37 @@ class NotificationConfig:
     MARGIN = 3
     IMAGE_BORDER_RADIUS = 18
     SNAP_THRESHOLD = 50
+    SILENT = info.SILENT
+
+
+class NotificationTile(Tile):
+    def __init__(self, **kwargs):
+        self.label = Label(
+            style_classes=["desc-label", "off"],
+            label="Off",
+            h_align="start",
+            ellipsization="end",
+            max_chars_width=9,
+        )
+        self.state = None
+        super().__init__(
+            markup=icons.silent,
+            label="Silent",
+            props=self.label,
+            style_classes=["off"],
+            markup_style="margin-right:18px; margin-right:18px;",
+            **kwargs,
+        )
+
+    def handle_state_toggle(self, *_):
+        info.SILENT = not info.SILENT
+        if info.SILENT:
+            self.remove_style_class("off")
+            self.add_style_class("on")
+        else:
+            self.remove_style_class("on")
+            self.add_style_class("off")
+        return super().handle_state_toggle(*_)
 
 
 class NotificationWidget(EventBox):
@@ -50,10 +83,11 @@ class NotificationWidget(EventBox):
         self._on_press_connection = None
         self._timeout_id = None
 
-        body_container = Box(name="notification-box", spacing=10, orientation="h")
+        body_container = Box(name="notification-box", orientation='v')
+        content_box = Box(spacing=10)
 
         if image_pixbuf := self._notification.image_pixbuf:
-            body_container.add(
+            content_box.add(
                 RoundedImage(
                     pixbuf=image_pixbuf.scale_simple(
                         NotificationConfig.IMAGE_SIZE,
@@ -64,11 +98,11 @@ class NotificationWidget(EventBox):
                 )
             )
         else:
-            body_container.add(
+            content_box.add(
                 Label(name="notification-icon", h_align=True, markup=icons.blur)
             )
 
-        body_container.add(
+        content_box.add(
             Box(
                 spacing=4,
                 orientation="h",
@@ -122,9 +156,10 @@ class NotificationWidget(EventBox):
                 )
             ),
         )
+        body_container.add(content_box)
 
         if actions := self._notification.actions:
-            self.add(
+            body_container.add(
                 Box(
                     spacing=4,
                     orientation="h",
@@ -139,7 +174,6 @@ class NotificationWidget(EventBox):
                     ],
                 )
             )
-
         self.add(body_container)
 
         self._on_press_connection = self.connect(
@@ -213,7 +247,9 @@ class NotificationManager(Window):
         )
 
         self.revealer = Revealer(
-            child=Box(name="notification-container", children=self.scrolled_window),
+            child=Box(
+                name="notification-window-container", children=self.scrolled_window
+            ),
             transition_duration=NotificationConfig.TRANSITION_DURATION,
             transition_type=NotificationConfig.REVEALER_TRANSITION_TYPE,
         )
@@ -305,7 +341,6 @@ class NotificationManager(Window):
 
         # snap
         target_x = min(POSITIONS.keys(), key=lambda x: abs(win_x - x))
-
         self.set_geometry(POSITIONS[target_x])
 
     def _handle_notification_added(self, source, notification_id: int):
@@ -326,8 +361,13 @@ class NotificationManager(Window):
                 on_close_callback=self._update_ui_state,
             )
 
-            self._active_notifications.append(notification_widget)
-            self.active_notifications_box.add(notification_widget)
+            if not info.SILENT:
+                if len(self._active_notifications) > 2:
+                    self._move_to_revealer(self.active_notifications_box.get_children()[0])
+                self._active_notifications.append(notification_widget)
+                self.active_notifications_box.add(notification_widget)
+            else:
+                self._move_to_revealer(notification_widget=notification_widget)
             self._update_ui_state()
 
         except Exception as e:
@@ -341,8 +381,8 @@ class NotificationManager(Window):
 
             if notification_widget in self._active_notifications:
                 self._active_notifications.remove(notification_widget)
+                self.active_notifications_box.remove(notification_widget)
 
-            self.active_notifications_box.remove(notification_widget)
             self.viewport.add(notification_widget)
 
             self._update_ui_state()

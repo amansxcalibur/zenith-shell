@@ -106,6 +106,12 @@ class NetworkService(Service):
             self.wifi_dev = None
             self.handle_prop_change(self.wifi_dev, None)
 
+    def do_toggle_wifi_connection(self):
+        if self.wifi_dev.get_active_connection():
+            self.wifi_dev.disconnect()
+        else:
+            self.wifi_dev.reapply_connection()
+
     def print_state(self):
         print(
             "wifi: ", self.wifi_dev.get_state(), "    client: ", self.client.get_state()

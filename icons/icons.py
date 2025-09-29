@@ -142,6 +142,7 @@ chromium: str = chr(0xf268)
 spotify: str = chr(0xf1bc)
 disc: str = chr(0xede9)
 disc_off: str = "&#xf118;"
+silent: str = chr(0xf0376)
 
 # Brightness
 brightness_low: str = "&#xeb7d;"

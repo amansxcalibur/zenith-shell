@@ -19,13 +19,13 @@
 #notification-container{
     background-color: var(--surface);
     border-radius: 30px;
-    padding: 10px;
+    padding: 6px;
 }
 
 #notification-window-container{
-    background-color: var(--surface);
+    background-color: rgba(49, 49, 49, 0.801);
     border-radius: 30px;
-    padding:6px;
+    padding: 10px;
     margin-bottom: 3px;
 }
 
