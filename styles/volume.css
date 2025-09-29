@@ -173,6 +173,7 @@ highlight {
 
 #control-slider-mui trough {
   border-radius: 0 12px 12px 0;
+  padding-right: 6px; /* counter slider negative margins */
 }
 
 #control-slider-mui.vertical trough {
@@ -200,6 +201,8 @@ highlight {
 
 #control-slider-mui.vertical trough {
   border-radius: 12px 12px 12px 12px;
+  padding-right: 0px;
+  padding-top: 10px; /* counter slider negative margins */
 }
 
 #control-slider-mui.vertical.mute highlight,

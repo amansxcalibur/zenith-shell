@@ -5,6 +5,7 @@ from fabric.widgets.stack import Stack
 from fabric.widgets.revealer import Revealer
 from fabric.widgets.centerbox import CenterBox
 import icons.icons as icons
+import config.info as info
 from fabric.utils.helpers import exec_shell_command_async
 
 
@@ -88,7 +89,7 @@ class Tile(Box):
         print(self.toggle, self.get_name())
         name = self.get_name()
         exec_shell_command_async(
-            f"fabric-cli exec bar-example \"notch.dashboard.handle_tile_menu_expand('{name}', {self.toggle})\""
+            f"fabric-cli exec {info.SHELL_NAME} \"notch.dashboard.handle_tile_menu_expand('{name}', {self.toggle})\""
         )
 
     def mini_view(self):

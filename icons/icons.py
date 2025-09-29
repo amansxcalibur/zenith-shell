@@ -82,7 +82,7 @@ world_off: str = "&#xf1ca;"
 bluetooth: str = chr(0xf294)
 night: str = "&#xeaf8;"
 coffee: str = "&#xef0e;"
-notifications: str = "&#xea35;"
+notifications: str = chr(0xf0f3)
 
 wifi_off: str = "&#xecfa;"
 bluetooth_off: str = "&#xeceb;"

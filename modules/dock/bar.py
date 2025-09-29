@@ -1,24 +1,23 @@
 from fabric.widgets.box import Box
-from fabric.widgets.x11 import X11Window as Window
 from fabric.widgets.label import Label
-from fabric.widgets.eventbox import EventBox
-from fabric.widgets.label import Label
-from fabric.widgets.box import Box
 from fabric.widgets.button import Button
+from fabric.widgets.eventbox import EventBox
 from fabric.widgets.datetime import DateTime
 from fabric.widgets.x11 import X11Window as Window
 
-import subprocess
-from modules.controls import ControlsManager
 from modules.systray import SystemTray
 from modules.workspaces import Workspaces
-from modules.metrics import MetricsSmall, Battery
 from modules.workspaces import Workspaces
+from modules.controls import ControlsManager
+from modules.metrics import MetricsSmall, Battery
+from modules.dock.layout_manager import LayoutManager
 from modules.dock.module_overlay import HoverOverlay, HolePlaceholder
+
 import config.info as info
 import icons.icons as icons
 from utils.helpers import toggle_class
-from modules.dock.layout_manager import LayoutManager
+
+import subprocess
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -258,4 +257,4 @@ class DockBar(Window):
     def toggle_vertical(self):
         # toggle_config_vertical_flag()
         # restart bar
-        subprocess.run([f"{info.HOME_DIR}/i3scripts/flaunch.sh"])
+        subprocess.run([f"{info.SCRIPTS_DIR}/flaunch.sh"])

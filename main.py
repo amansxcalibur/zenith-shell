@@ -1,12 +1,16 @@
 import fabric
 from fabric import Application
-from fabric.utils import get_relative_path, monitor_file
-from modules.notifications import NotificationPopup
 from fabric.widgets.x11 import X11Window as Window
 Window.toggle_visibility = lambda self: self.set_visible(not self.is_visible())
 
+from fabric.utils import get_relative_path, monitor_file
+
 from modules.notch import Notch
 from modules.dock.bar import DockBar
+from modules.notifications import NotificationPopup
+from modules.notification import NotificationManager
+
+from config.info import SHELL_NAME
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -21,16 +25,18 @@ if __name__ == "__main__":
     pill_size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
     pill_size_group.add_widget(dockBar.pill)
     pill_size_group.add_widget(notch.stack)
-    notification = NotificationPopup()
+    controls_notification = NotificationPopup()
+    notification = NotificationManager()
 
     app_kwargs = {
         "notch": notch,
         "dockBar": dockBar,
-        "notification" : notification,
+        "controls_notification" : controls_notification,
+        "notification": notification,
         "open_inspector": False,
     }
 
-    app = Application("bar-example",**app_kwargs)
+    app = Application(SHELL_NAME,**app_kwargs)
 
     def set_css(*args):
         app.set_stylesheet_from_file(get_relative_path("./main.css"))

@@ -3,6 +3,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
+SHELL_NAME = 'bar-example'
 ALLOWED_PLAYERS = ['vlc', 'cmus', 'firefox', 'spotify', 'chromium']
 USERNAME = os.getlogin()
 HOSTNAME = os.uname().nodename

@@ -13,6 +13,7 @@ from modules.player_mini import PlayerContainerMini
 import icons.icons as icons
 import config.info as info
 
+
 class Dashboard(Box):
     def __init__(self, controls, **kwargs):
         super().__init__(
@@ -26,7 +27,9 @@ class Dashboard(Box):
         self.wifi = Network()
         self.bluetooth = Bluetooth()
         self.mini_player = PlayerContainerMini()
-        self.mini_player_tile = TileSpecial(props=self.mini_player, mini_props=self.mini_player.get_mini_view())
+        self.mini_player_tile = TileSpecial(
+            props=self.mini_player, mini_props=self.mini_player.get_mini_view()
+        )
 
         self.controls = controls
         self.brightness_revealer_mui = self.controls.get_brightness_slider_mui()
@@ -69,10 +72,25 @@ class Dashboard(Box):
 
         self.tiles = Box(
             spacing=3,
+            orientation='v',
             children=[
-                self.wifi,
-                self.bluetooth,
-                self.mini_player_tile,
+                Box(
+                    spacing=3,
+                    children=[
+                        self.wifi,
+                        self.bluetooth,
+                        self.mini_player_tile,
+                    ],
+                ),
+                # Box(
+                #     spacing=3,
+                #     children=[
+                        # Box(style='background-color:white; min-height:60px; min-width:70px; border-radius:20px;'),
+                        # Box(style='background-color:white; min-height:60px; min-width:140px; border-radius:20px;'),
+                        # Box(style='background-color:white; min-height:60px; min-width:140px; border-radius:20px;'),
+                        # Box(style='background-color:white; min-height:60px; min-width:70px; border-radius:20px;'),
+                #     ],
+                # )
             ],
         )
         self.low_bat_msg_2 = Label(label="Notification ctl test")
@@ -105,7 +123,6 @@ class Dashboard(Box):
         self.notification_container = Revealer(
             transition_duration=250,
             transition_type="slide-down",
-            style="background-color:blue;",
             h_expand=True,
             child=Box(
                 h_expand=True,
@@ -115,7 +132,7 @@ class Dashboard(Box):
                         name="notification-container",
                         orientation="v",
                         v_expand=True,
-                        style="padding:3px; padding-top:0px",
+                        spacing=3,
                         children=[self.notification_box, self.notification_box_2],
                     ),
                     Box(
@@ -123,13 +140,12 @@ class Dashboard(Box):
                         h_expand=True,
                         children=self.wavy,
                     ),
-                ]
+                ],
             ),
             child_revealed=True,
         )
         self.children = [
             Box(
-                name="inner",
                 orientation="h",
                 children=[
                     CenterBox(
@@ -141,7 +157,7 @@ class Dashboard(Box):
                     self.brightness_revealer_mui,
                 ],
             ),
-            Box(name="inner", children=self.tiles),
+            Box(children=self.tiles),
             Box(
                 children=[
                     self.notification_container,
@@ -154,16 +170,18 @@ class Dashboard(Box):
             self.notification_container.set_reveal_child(False)
         else:
             self.notification_container.set_reveal_child(True)
-        for i in self.tiles:
-            if i.get_name() == tile:
-                print("found")
-            else:
-                if toggle:
-                    i.mini_view()
-                    i.icon.add_style_class("mini")
-                    i.icon.remove_style_class("maxi")
+        
+        for rows in self.tiles:
+            for elem in rows:
+                if elem.get_name() == tile:
+                    print("found")
                 else:
-                    i.maxi_view()
-                    i.icon.add_style_class("maxi")
-                    i.icon.remove_style_class("mini")
+                    if toggle:
+                        elem.mini_view()
+                        elem.icon.add_style_class("mini")
+                        elem.icon.remove_style_class("maxi")
+                    else:
+                        elem.maxi_view()
+                        elem.icon.add_style_class("maxi")
+                        elem.icon.remove_style_class("mini")
         print("search complete")

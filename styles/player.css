@@ -118,6 +118,7 @@
 }
 #source.mini{
     margin-left: -20px;
+    margin-bottom: 5px;
 }
 
 #controls{
@@ -147,10 +148,11 @@
 }
 
 #pause-button {
-    /* background-color: var(--surface); */
+    all: unset;
     background-color: var(--primary-player);
     border-radius: 16px;
     padding: 10px;
+    transition: border-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 
 .vertical #pause-button{

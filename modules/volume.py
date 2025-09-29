@@ -96,7 +96,7 @@ class VolumeMaterial3(AnimatedScale):
             print("toggling mute", is_muted)
             self.is_muted = is_muted
             self.handle_mute_toggle(is_muted)
-        self.update_volume(new_val)
+        self.update_volume(new_val, is_muted)
 
     def handle_mute_toggle(self, is_muted):
         if is_muted:
@@ -106,9 +106,9 @@ class VolumeMaterial3(AnimatedScale):
             self.remove_style_class("mute")
             self.add_style_class("vol")
 
-    def update_volume(self, volume):
+    def update_volume(self, volume, is_muted):
         if volume is not None:
-            if volume > 1:
+            if volume > 1 and not is_muted:
                 self.add_style_class('vol-overflow-slider')
             else:
                 self.remove_style_class('vol-overflow-slider')
