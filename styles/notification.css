@@ -41,6 +41,22 @@
     min-width: 27px;
     color: var(--outline);
 }
+#notification-clear-label{
+    min-width: 27px;
+    color: var(--outline);
+}
+.trash-icon-adjust{
+    font-size: 25px;
+    margin-bottom: -3px;
+    margin-top: -3px;
+    margin-left: -1px;
+    margin-right: 1px;
+}
+.trash-up-icon-adjust{
+    font-size: 21px;
+    margin-left: -2px;
+    margin-right: 2px;
+}
 
 #notification-scrolled-window{
     min-width: 364px;
@@ -49,4 +65,13 @@
 
 #notification-scrolled-window viewport{
     border-radius: 25px;
+}
+
+.action-button{
+    border-radius: 16px;
+    background-color: var(--surface);
+}
+
+.action-button:focus{
+    background-color: var(--surface-bright);
 }

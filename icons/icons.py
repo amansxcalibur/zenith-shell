@@ -83,6 +83,8 @@ bluetooth: str = chr(0xf294)
 night: str = "&#xeaf8;"
 coffee: str = "&#xef0e;"
 notifications: str = chr(0xf0f3)
+trash_up: str = chr(0xef90)
+trash: str = chr(0xf0a79)
 
 wifi_off: str = "&#xecfa;"
 bluetooth_off: str = "&#xeceb;"
@@ -131,7 +133,6 @@ paperclip: str = "&#xeb02;"
 accept: str = "&#xea5e;"
 # cancel: str = "&#xeb55;"
 cancel: str = chr(0xea76)
-trash: str = "&#xeb41;"
 
 # Config
 config: str = "&#xeb20;"
@@ -157,6 +158,9 @@ cloud_off: str = "&#xed3e;"
 loader: str = "&#xeca3;"
 radar: str = "&#xf017;"
 emoji: str = "&#xeaf7;"
+trisquel: str = chr(0xf344)
+alien: str = chr(0xf089a)
+material: str = chr(0xf0986)
 
 # Music
 next: str = chr(0xf0f27)

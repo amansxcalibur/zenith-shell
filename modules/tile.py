@@ -1,19 +1,19 @@
-from typing import Callable
-
 from fabric.widgets.box import Box
 from fabric.widgets.button import Button
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.widgets.revealer import Revealer
+
 import icons.icons as icons
 import config.info as info
+from utils.cursor import add_hover_cursor
+
 from fabric.utils.helpers import exec_shell_command_async
 
 
 class Tile(Box):
     def __init__(
         self,
-        *,
         menu: bool = False,
         markup: str = icons.blur,
         label: str = "__",
@@ -43,8 +43,9 @@ class Tile(Box):
         self.type_box = Button(
             style="all:unset;",
             on_clicked=self.handle_state_toggle,
+            style_classes="tile-type",
+            h_expand=True,
             child=Box(
-                style_classes="tile-type",
                 orientation="v",
                 v_expand=True,
                 h_expand=True,
@@ -52,10 +53,10 @@ class Tile(Box):
                 children=[self.tile_label, self.props],
             ),
         )
+        
 
         self.menu_button = Button(
             style_classes="tile-button",
-            h_expand=True,
             child=Label(style_classes="tile-icon", markup=icons.arrow_head),
             on_clicked=self.handle_menu_click,
         )
@@ -66,16 +67,17 @@ class Tile(Box):
             self.content_button = Revealer(
                 transition_duration=150,
                 transition_type="slide-left",
-                h_expand=True,
-                child=Box(children=[self.type_box, self.menu_button]),
+                child=Box(h_expand=True, children=[self.type_box, self.menu_button]),
                 child_revealed=True,
+                h_expand=True,
             )
         else:
             self.content_button = Revealer(
                 transition_duration=150,
                 transition_type="slide-left",
-                child=Box(children=[self.type_box]),
+                child=Box(h_expand=True, children=[self.type_box]),
                 child_revealed=True,
+                h_expand=True,
             )
 
         self.normal_view = Box(
@@ -99,6 +101,12 @@ class Tile(Box):
         )
 
         self.children = self.stack
+
+        
+        add_hover_cursor(self.menu)
+        add_hover_cursor(self.type_box)
+        add_hover_cursor(self.menu_button)
+        add_hover_cursor(self.icon_wrapper)
 
     def handle_state_toggle(self, *_):
         self.state = not self.state

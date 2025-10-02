@@ -4,6 +4,7 @@ from loguru import logger
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
+from fabric.widgets.stack import Stack
 from fabric.widgets.revealer import Revealer
 from fabric.widgets.eventbox import EventBox
 from widgets.rounded_image import RoundedImage
@@ -269,12 +270,19 @@ class NotificationManager(Window):
             child=self.viewport,
         )
 
-        self.revealer = Revealer(
-            child=Box(
+        self.revealer = Box(
+            children=Box(
                 name="notification-window-container", children=self.scrolled_window
             ),
-            transition_duration=NotificationConfig.TRANSITION_DURATION,
-            transition_type=NotificationConfig.REVEALER_TRANSITION_TYPE,
+            # transition_duration=NotificationConfig.TRANSITION_DURATION,
+            # transition_type=NotificationConfig.REVEALER_TRANSITION_TYPE,
+        )
+
+        self.boxer = Label(label='g', style="min-height:2px; min-width:2px; background-color:blue; border-radius:100%;")
+        self.wrapper = Stack(
+            children=[self.revealer, self.boxer, ],
+            transition_duration=300,
+            transition_type="crossfade",
         )
 
         self.active_notifications_box = Box(
@@ -286,14 +294,14 @@ class NotificationManager(Window):
             child=Label(name="notification-reveal-label", markup=icons.notifications),
             tooltip_text="Show/Hide notifications",
             on_clicked=lambda *_: self.toggle_notification_stack_reveal(),
-            visible=False,
+            visible=True,
         )
         self.clear_btn = Button(
             name="notification-reveal-btn",
             child=Label(name="notification-clear-label", markup=icons.trash),
             tooltip_text="Show/Hide notifications",
             on_clicked=lambda *_: self.close_all_notifications(),
-            visible=False,
+            visible=True,
         )
 
         self.hover_area = EventBox(
@@ -303,7 +311,7 @@ class NotificationManager(Window):
 
         self.children = Box(
             orientation="v",
-            style=f"min-height:{NotificationConfig.WINDOW_MIN_HEIGHT}px; min-width:{NotificationConfig.WINDOW_MIN_WIDTH}px",
+            # style=f"min-height:{NotificationConfig.WINDOW_MIN_HEIGHT}px; min-width:{NotificationConfig.WINDOW_MIN_WIDTH}px",
             h_expand=True,
             children=[
                 self.hover_area,
@@ -318,7 +326,7 @@ class NotificationManager(Window):
                         Box(
                             orientation="v",
                             children=[
-                                self.revealer,
+                                self.wrapper,
                                 self.active_notifications_box,
                             ],
                         ),
@@ -429,7 +437,7 @@ class NotificationManager(Window):
     def _update_ui_state(self):
         # active_notifications[] isnt updated yet
         has_active_notifications = len(self.active_notifications_box.get_children()) > 0
-        has_revealed_notifications = self.revealer.child_revealed
+        has_revealed_notifications = True
 
         if has_revealed_notifications:
             widget = self.clear_btn.get_children()[0]
@@ -441,8 +449,8 @@ class NotificationManager(Window):
             toggle_class(widget, "trash-icon-adjust", "trash-up-icon-adjust")
 
         should_show_button = has_active_notifications or has_revealed_notifications
-        self.reveal_btn.set_visible(should_show_button)
-        self.clear_btn.set_visible(should_show_button)
+        # self.reveal_btn.set_visible(should_show_button)
+        # self.clear_btn.set_visible(should_show_button)
 
     def _handle_hover_reveal(self, source, event):
         if (
@@ -454,10 +462,14 @@ class NotificationManager(Window):
 
     def toggle_notification_stack_reveal(self):
         try:
-            if not self.revealer.child_revealed:
-                self.revealer.reveal()
+            if self.wrapper.get_visible_child() == self.boxer:
+                # self.revealer.reveal()
+                toggle_class(self.revealer, 'hide-notif', 'reveal-notif')
+                self.wrapper.set_visible_child(self.revealer)
             else:
-                self.revealer.unreveal()
+                toggle_class(self.revealer, 'reveal-notif', 'hide-notif')
+                self.wrapper.set_visible_child(self.boxer)
+                # self.revealer.unreveal()
 
             self._update_ui_state()
 

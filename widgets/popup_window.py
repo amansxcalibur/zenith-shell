@@ -80,7 +80,9 @@ class PopupWindow(Window):
             abs_y = root_y + widget_alloc.y - win_alloc.height - 3
 
             # print(abs_x, abs_y)
-            self.get_window().move(abs_x, abs_y)
+            win = self.get_window()
+            if win is not None:
+                win.move(abs_x, abs_y)
             # self.visible = True
         except Exception as e:
             logger.error(f"Failed to place popup window: {e}")

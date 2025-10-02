@@ -90,7 +90,7 @@ class Dashboard(Box):
                     spacing=3,
                     children=[
                         self.silent,
-                        Box(style='background-color:var(--surface-bright); border-radius:20px;', h_expand=True),
+                        CenterBox(style='background-color:var(--surface-bright); border-radius:20px;', h_expand=True, center_children=Label(markup=icons.material, style="font-size:25px; color: var(--outline)")),
                         Tile(style_classes=['off']),
                         # Box(style='background-color:white; min-height:60px; min-width:140px; border-radius:20px;'),
                         # Box(style='background-color:white; min-height:60px; min-width:70px; border-radius:20px;'),

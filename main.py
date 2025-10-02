@@ -9,6 +9,7 @@ from modules.notch import Notch
 from modules.dock.bar import DockBar
 from modules.notifications import NotificationPopup
 from modules.notification import NotificationManager
+from modules.notification_bar import NotificationBar
 
 from config.info import SHELL_NAME
 
@@ -27,12 +28,14 @@ if __name__ == "__main__":
     pill_size_group.add_widget(notch.stack)
     controls_notification = NotificationPopup()
     notification = NotificationManager()
+    # notif_bar = NotificationBar()
 
     app_kwargs = {
         "notch": notch,
         "dockBar": dockBar,
         "controls_notification" : controls_notification,
         "notification": notification,
+        # "notification-bar": notif_bar,
         "open_inspector": False,
     }
 

@@ -1,0 +1,148 @@
+#main-notif{
+    /* min-height: 48px; */
+    background-color: transparent;
+}
+
+#hori-notif{
+    background-color: transparent;
+    box-shadow: 0px 17px 0 0 black;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+}
+
+#hori-notif.pill{
+    background-color: transparent;
+    box-shadow: 0px -25px 0 10px black;
+    border-top-left-radius: 50px;
+    border-top-right-radius: 50px;
+}
+
+#vert-notif{
+    margin-left:50px; margin-right:50px;
+    /* background-color: red; */
+}
+
+#vert-notif.expand{
+    min-height: 50px;
+    min-width: 313px;
+    /* min-height: 36px; */
+    /* min-width: 446px; */
+    transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1), min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+#vert-notif.contractor{
+    min-height: 0px;
+    min-width: 0px;
+    transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1), min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+#hori-notif.expander{
+    border-bottom-right-radius: 20px;
+    border-bottom-left-radius: 20px;
+    transition: border-bottom-right-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1), border-bottom-left-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+#hori-notif.contractor{
+    border-bottom-right-radius: 0px;
+    border-bottom-left-radius: 0px;
+    transition: border-bottom-right-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1), border-bottom-left-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+#start-notif-controls, #end-notif-controls{
+    background-color: black;
+    min-width: 48px;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+#start-notif-controls{
+    margin-right: -1px;
+}
+#end-notif-controls{
+    margin-left: -1px;
+}
+
+/* #start-notif-controls.expander{
+    border-bottom-right-radius: 24px;
+    transition: border-bottom-right-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1)
+} */
+#end-notif-controls.expander, #start-notif-controls.expander{
+    border-bottom-left-radius: 24px;
+    border-bottom-right-radius: 24px;
+    transition: border-bottom-left-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1),
+                border-bottom-right-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1)
+}
+/* #start-notif-controls.contractor{
+    border-bottom-right-radius: 0px;
+    transition: border-bottom-right-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1)
+} */
+#end-notif-controls.contractor, #start-notif-controls.contractor{
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+    transition: border-bottom-left-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1),
+                border-bottom-left-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1)
+}
+
+#bottom{
+    background-color: black;
+}
+
+#text{
+    /* margin: -99px; */
+    min-width: 44px;
+    background-color: black;
+    border-radius: 20px;
+}
+
+#text-container{
+    min-height: 44px;
+    padding: 3px;
+    min-width: 50px;
+}
+
+#text.expand{
+    margin: 0px;
+    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1)
+}
+
+#pill-container{
+    padding: 3px;
+}
+
+#pill-container.contracter {
+  transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+  /* animation: loadSlot2 0.5s ease; */
+}
+
+#pill-container.expander {
+  min-height: 194px;
+  min-width: 200px;
+  transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+  /* animation: loadSlot1 0.5s ease; */
+}
+
+/* #inner-end{
+    background-color: beige;
+} */
+
+#end-notif-control-left-drop, #start-notif-control-left-drop{
+    min-width: 47px;
+    background-color: transparent;
+    box-shadow: 0px -20px 0 0 black;
+}
+#start-notif-control-left-drop{
+    border-top-right-radius: 50px;
+    margin-right:-5px
+}
+#end-notif-control-left-drop{
+    border-top-left-radius: 50px;
+    margin-left:-5px
+}
+
+.reveal-notif{
+    margin:0px; 
+    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+.hide-notif{
+    margin:-900px;
+    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1)
+}

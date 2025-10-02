@@ -415,6 +415,8 @@ class PlayerContainer(Box):
                 for btn in self.player_switch_container.center_children:
                     if btn.get_name() == player_instance.get_name():
                         self.player_switch_container.remove_center(btn)
+                        btn.destroy()
+                player_instance.destroy()
                 self.update_player_list()
                 break
         if len(self.players) == 0:

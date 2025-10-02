@@ -175,6 +175,8 @@ class PlayerService(Service):
                     f"{HOME_DIR}/fabric/config/matugen/player_runtime.toml",
                     "-j",
                     "hex",
+                    "-t",
+                    "scheme-fidelity"
                 ],
                 capture_output=True,
                 text=True,

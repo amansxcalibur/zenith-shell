@@ -22,6 +22,7 @@ class Notification(Revealer):
     def __init__(self, **kwargs):
         super().__init__(
             name="notification-revealer",
+            style="padding-top:6px",
             transition_duration=250,
             transition_type="slide-down",
             child_revealed=False,
