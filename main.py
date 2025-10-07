@@ -9,7 +9,7 @@ from modules.notch import Notch
 from modules.dock.bar import DockBar
 from modules.notifications import NotificationPopup
 from modules.notification import NotificationManager
-from modules.notification_bar import NotificationBar
+# from modules.notification_bar import NotificationBar
 
 from config.info import SHELL_NAME
 

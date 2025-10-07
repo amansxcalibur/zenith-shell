@@ -237,3 +237,8 @@ highlight {
   color: black;
   font-size: 18px;
 }
+
+#vol-brightness-container {
+  background-color: black;
+  border-radius: 18px;
+}

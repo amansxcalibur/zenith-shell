@@ -217,16 +217,11 @@ button:focus {
   box-shadow: -25px 0px 0 0 black;
 }
 
-#vol-brightness-container {
-  background-color: black;
-  border-radius: 17px;
-}
-
 #orientation-btn {
+  all: unset;
   background-color: black;
   border-radius: 17px;
-  min-height: 36px;
-  min-width: 36px;
+  min-width: 37px;
   padding: 0px;
 }
 

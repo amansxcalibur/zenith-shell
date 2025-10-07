@@ -35,11 +35,11 @@ class WigglyWidget(Gtk.DrawingArea, Service):
         self.connect("motion-notify-event", self.on_motion)
         self.connect("button-release-event", self.on_button_release)
 
-        GLib.timeout_add(16, self.update)  # 60 FPS
+        self.add_tick_callback(self.update)  # matches screen refresh rate
 
         self.show_all()
 
-    def animate_amplitude_to(self):
+    def animate_amplitude_to(self, *_):
         if abs(self.amplitude - self.amplitude_target) < 0.01:
             self.amplitude = self.amplitude_target
             self.queue_draw()
@@ -57,7 +57,7 @@ class WigglyWidget(Gtk.DrawingArea, Service):
             self.amplitude_target = 2
             self.amplitude_step = (2 - self.amplitude) / 10.0
 
-        GLib.timeout_add(16, self.animate_amplitude_to) # animation stops when False is returned btw
+        self.add_tick_callback(self.animate_amplitude_to) # animation stops when False is returned btw
 
 
     def update_value_from_x(self, x):
@@ -108,7 +108,7 @@ class WigglyWidget(Gtk.DrawingArea, Service):
             self.update_amplitude(False)
         return True
 
-    def update(self):
+    def update(self, *_):
         if self.dragging == False:
             self.phase += self.speed
             self.queue_draw()
@@ -157,7 +157,7 @@ class WigglyWidget(Gtk.DrawingArea, Service):
         
         # This is for anti aliasing. When line width becomes 1px and the position is not an integer, two lines of opacity 50% is drawn on two pixel rows. 
         # This moves the line to make it pixel perfect hence not needing anti aliasing
-        cr.translate(0, 0.5)
+        # cr.translate(0, 0.5)
 
         cr.move_to(last_x + 2*arc_radius, height/2)
         cr.line_to(alloc_width, height/2)

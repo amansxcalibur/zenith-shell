@@ -1,29 +1,41 @@
 import time
+from enum import Enum
 from fabric.widgets.box import Box
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.overlay import Overlay
 from utils.helpers import toggle_class
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib
 
 SPACING = 0
+DEFAULT_MARGIN = 0
+FOCUS_MARGIN = 3
+
+
+class ModuleRelation(Enum):
+    MAIN = 0
+    ADJACENT_NEIGHBOUR_EXPAND = 1
+    NEIGHBOUR_EXPAND = 2
+    COLLAPSE = 3
 
 
 class LayoutManager:
     def __init__(self, dock, side, **kwargs):
         self.dock = dock
         self.side = side
+        self.curr_hovered_index = -1
 
     def init_layout(self):
-        self.hole = Box(name="hori")
+        self.main_hole = Box(name="hori")
         self.starter_box = Box(name="start", h_expand=True)
         self.ender_box = Box(name="end", h_expand=True)
         self.starter_box.last_hover_time = time.monotonic()
         self.ender_box.last_hover_time = time.monotonic()
         self._last_event_update_time = time.monotonic()
-        self.main_hole = Box(
+        self.main_hole_container = Box(
             name="dock-place",
             children=[
                 self.starter_box,
@@ -31,7 +43,7 @@ class LayoutManager:
                     h_expand=True,
                     orientation="v",
                     children=[
-                        self.hole,
+                        self.main_hole,
                         Box(v_expand=True, style="background-color:black"),
                     ],
                 ),
@@ -40,13 +52,19 @@ class LayoutManager:
             style="min-height:40px;",
         )
         self.placeholders = (
-            self.dock.placeholders_left if self.side == "left" else self.dock.placeholders_right
+            self.dock.placeholders_left
+            if self.side == "left"
+            else self.dock.placeholders_right
         )
         self.hover_overlay_row = (
-            self.dock.hover_overlay_row_left if self.side == "left" else self.dock.hover_overlay_row_right
+            self.dock.hover_overlay_row_left
+            if self.side == "left"
+            else self.dock.hover_overlay_row_right
         )
         self.hole_state = (
-            self.dock.hole_state_left if self.side == "left" else self.dock.hole_state_right
+            self.dock.hole_state_left
+            if self.side == "left"
+            else self.dock.hole_state_right
         )
 
         self.placeholder_row = Box(style="min-height:40px;", h_expand=True)
@@ -59,15 +77,13 @@ class LayoutManager:
                         Box(name="spacer", style=f"min-width:{SPACING}px;")
                     )
                 else:
-                    self.placeholder_row.add(self.main_hole)
+                    self.placeholder_row.add(self.main_hole_container)
                     self.placeholder_row.add(
                         Box(h_expand=True, style="background-color:black")
                     )
         else:
-            self.placeholder_row.add(
-                Box(h_expand=True, style="background-color:black")
-            )
-            self.placeholder_row.add(self.main_hole)
+            self.placeholder_row.add(Box(h_expand=True, style="background-color:black"))
+            self.placeholder_row.add(self.main_hole_container)
             for i, module in enumerate(self.placeholders):
                 if i > 0:
                     self.placeholder_row.add(
@@ -93,175 +109,185 @@ class LayoutManager:
             "leave-notify-event", lambda w, e: self.set_hole_state(w, e, False)
         )
         self._last_event_update_time = time.monotonic()
-        GLib.timeout_add(500, lambda hover_time = self._last_event_update_time: self._trigger_default_hover(hover_time))
-
+        GLib.timeout_add(
+            500,
+            lambda hover_time=self._last_event_update_time: self._trigger_default_hover(
+                hover_time
+            ),
+        )
 
     def set_hole_state(self, source, event, state: bool):
+        """Handles main hole collapse on module unhover."""
         if not state:
             self.starter_box.add_style_class("start")
             self.ender_box.add_style_class("end")
-            if self.side=="left":
+            if self.side == "left":
                 self.starter_box.set_style("min-width:0px; background-color:black")
             else:
                 self.ender_box.set_style("min-width:0px; background-color:black")
             toggle_class(self.starter_box, "expander", "contractor")
             toggle_class(self.ender_box, "expander", "contractor")
-            self.hole.set_style(
+            self.main_hole.set_style(
                 "min-height:0px; min-width:0px; margin-top:0px;"
                 "transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1),"
                 "min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1), margin-top 0.25s cubic-bezier(0.5, 0.25, 0, 1)"
             )
             self.hole_state = False
             self._last_event_update_time = time.monotonic()
-            GLib.timeout_add(500, lambda hover_time = self._last_event_update_time: self._trigger_default_hover(hover_time))
+            # trigger default state
+            GLib.timeout_add(
+                500,
+                lambda hover_time=self._last_event_update_time: self._trigger_default_hover(
+                    hover_time
+                ),
+            )
 
     def handle_hover(self, source, id: int):
+        """Hover handler for dock modules"""
+        self.curr_hovered_index = id
         self._last_event_update_time = time.monotonic()
         self.starter_box.last_hover_time = time.monotonic()
         self.ender_box.last_hover_time = time.monotonic()
-        if self.side == "left":
-            enumerate_thru = self.hover_overlay_row.children[:-1]
-        else:
-            enumerate_thru = self.hover_overlay_row.children[1:]
-        for i, overlay in enumerate(enumerate_thru):
 
+        overlays = self._get_active_overlays()
+
+        # update all overlays with new hover state
+        for i, overlay in enumerate(overlays):
             overlay.last_hover_time = time.monotonic()
             self._apply_hover_effects(i, overlay, id)
-        if self.side=="left":
-            self._update_spacers(source._id, id)
+
+        self._update_spacers(source._id, id)
         self.hole_state = True
 
-    def _apply_hover_effects(self, i, overlay, id):
-        if id < 0:
-            return
-        
+    def _get_active_overlays(self):
+        """Get the list of overlays to process based on side."""
         if self.side == "left":
-
-            if i < id:
-                if overlay.width == 0:
-                    overlay.width = overlay.get_allocation().width
-                width = overlay.width if i != id - 1 else overlay.width - 20
-                if width < 0:
-                    width = 0
-                style = f"min-width:{width}px;"
-                if self.hole_state:
-                    style += " transition: min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1);"
-                overlay._hole.set_style(style)
-
-            elif i > id:
-                style = "min-width:0px; background-color:transparent;"
-                if self.hole_state:
-                    style += " transition: min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1);"
-                overlay._hole.set_style(style)
-
-            elif i == id:
-                self._handle_main_hole(i, overlay)
+            return self.hover_overlay_row.children[:-1]
         else:
-            if i < id:
-                style = "min-width:0px; background-color:transparent;"
-                if self.hole_state:
-                    style += " transition: min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1);"
-                overlay._hole.set_style(style)
+            return self.hover_overlay_row.children[1:]
 
-            elif i > id:
-                
-                if overlay.width == 0:
-                    overlay.width = overlay.get_allocation().width
-                width = overlay.width if i != id + 1 else overlay.width - 20
-                if width < 0:
-                    width = 0
-                style = f"min-width:{width}px;"
-                if self.hole_state:
-                    style += " transition: min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1);"
-                overlay._hole.set_style(style)
+    def _apply_hover_effects(self, overlay_index, overlay, hovered_id):
+        if hovered_id < 0:
+            return
 
-            elif i == id:
-                self._handle_main_hole(i, overlay)
+        animated = self.hole_state
+        relation = self._get_overlay_relation(overlay_index, hovered_id)
+
+        if relation == ModuleRelation.MAIN:
+            overlay.expand_as_main(animated=animated)
+            self._handle_main_hole(overlay_index, overlay)
+
+        elif relation == ModuleRelation.ADJACENT_NEIGHBOUR_EXPAND:
+            overlay.expand_as_neighbor(is_adjacent=True, animated=animated)
+
+        elif relation == ModuleRelation.NEIGHBOUR_EXPAND:
+            overlay.expand_as_neighbor(is_adjacent=False, animated=animated)
+
+        elif relation == ModuleRelation.COLLAPSE:
+            overlay.collapse(animated=animated)
+
+    def _get_overlay_relation(self, overlay_index, hovered_id):
+        """Determine the relationship between an overlay and the hovered item."""
+        if overlay_index == hovered_id:
+            return ModuleRelation.MAIN
+
+        if self.side == "left":
+            if overlay_index < hovered_id:
+                return (
+                    ModuleRelation.ADJACENT_NEIGHBOUR_EXPAND
+                    if overlay_index == hovered_id - 1
+                    else ModuleRelation.NEIGHBOUR_EXPAND
+                )
+            else:
+                return ModuleRelation.COLLAPSE
+        else:
+            if overlay_index > hovered_id:
+                return (
+                    ModuleRelation.ADJACENT_NEIGHBOUR_EXPAND
+                    if overlay_index == hovered_id + 1
+                    else ModuleRelation.NEIGHBOUR_EXPAND
+                )
+            else:
+                return ModuleRelation.COLLAPSE
 
     def _handle_main_hole(self, i, overlay):
-        if self.side=="left":
-            main_hole_width = overlay.width + (40 if i != 0 else 0)
-        else:
-            main_hole_width = overlay.width + (40 if i != len(self.dock.visual_modules_right)-1 else 0)
-        num_modules = len(self.dock.visual_modules_left) if self.side == "left" else len(self.dock.visual_modules_right)
-        
-
+        num_modules = (
+            len(self.dock.visual_modules_left)
+            if self.side == "left"
+            else len(self.dock.visual_modules_right)
+        )
         if self.side == "left":
-            # left edge
-            if i == 0:
-                self.starter_box.remove_style_class("start")
-                self.ender_box.remove_style_class("end")
-                self.main_hole.set_style(
-                    f"min-height:0px; min-width:{overlay.width}px; margin-top:0px;"
-                )
-                self.starter_box.set_style("min-width:0px; background-color:black;")
-                GLib.timeout_add(250, self._delayed_clear_style_edges(self.starter_box))
-            else:
-                self.starter_box.set_style("min-width:20px;")
-                self.ender_box.set_style("min-width:20px;")
-                self.starter_box.add_style_class("start")
-                self.ender_box.add_style_class("end")
+            is_edge = i == 0
+            main_hole_width = overlay.width + (0 if is_edge else 40)
         else:
-            # right edge
-            if i == num_modules - 1:
-                self.starter_box.remove_style_class("start")
-                self.ender_box.remove_style_class("end")
-                self.main_hole.set_style(
-                    f"min-height:0px; min-width:{overlay.width}px; margin-top:0px;"
-                )
-                self.ender_box.set_style("min-width:0px;")
-                GLib.timeout_add(250, self._delayed_clear_style_edges(self.ender_box))
-            else:
-                self.starter_box.set_style("min-width:20px;")
-                self.ender_box.set_style("min-width:20px;")
-                self.starter_box.add_style_class("start")
-                self.ender_box.add_style_class("end")
-    
-        self.hole.set_style(
+            is_edge = i == num_modules - 1
+            main_hole_width = overlay.width + (0 if is_edge else 40)
+
+        if is_edge:
+            self._setup_edge_hole(overlay, i)
+        else:
+            self._setup_regular_hole(overlay)
+
+        # animate the main_hole
+        self.main_hole.set_style(
             f"min-height:40px; min-width:{overlay.width}px;"
             "transition: min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1),"
             "min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1);"
         )
 
+        # animate main_hole_container
+        # keeps the main_hole_container size constant to make its child (self.main_hole) appear to collapse towards the box center, not the start.
         if self.hole_state:
-            overlay._hole.set_style(
-                "min-width:0px; transition: min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1); "
-            )
-            GLib.timeout_add(250, self._delayed_clear_style(overlay))
-            self.main_hole.set_style(
+            self.main_hole_container.set_style(
                 f"min-height:0px; min-width:{main_hole_width}px; margin-top:0px;"
                 "transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1),"
                 "min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1), margin-top 0.25s cubic-bezier(0.5, 0.25, 0, 1);"
             )
         else:
-            overlay._hole.set_style("min-width:0px; background-color:transparent;")
-            self.main_hole.set_style(
+            self.main_hole_container.set_style(
                 f"min-height:0px; min-width:{main_hole_width}px; margin-top:0px;"
             )
 
         toggle_class(self.starter_box, "contractor", "expander")
         toggle_class(self.ender_box, "contractor", "expander")
 
-    def _delayed_clear_style(self, widget):
-        hover_time = widget.last_hover_time
-        # the lambda is delayed, not this func
-        return lambda hover_time = hover_time: (
-            (widget._hole.set_style("min-width:0px; background-color:transparent;") or False)
-            if widget.last_hover_time == hover_time
-            else False
+    def _setup_edge_hole(self, overlay, index):
+        """Setup hole styling for edge modules."""
+        self.starter_box.remove_style_class("start")
+        self.ender_box.remove_style_class("end")
+        self.main_hole_container.set_style(
+            f"min-height:0px; min-width:{overlay.width}px; margin-top:0px;"
         )
-    
+
+        if self.side == "left":
+            self.starter_box.set_style("min-width:0px; background-color:black;")
+            GLib.timeout_add(250, self._delayed_clear_style_edges(self.starter_box))
+        else:
+            self.ender_box.set_style("min-width:0px;")
+            GLib.timeout_add(250, self._delayed_clear_style_edges(self.ender_box))
+
+    def _setup_regular_hole(self, overlay):
+        """Setup hole styling for regular (non-edge) modules."""
+        self.starter_box.set_style("min-width:20px;")
+        self.ender_box.set_style("min-width:20px;")
+        self.starter_box.add_style_class("start")
+        self.ender_box.add_style_class("end")
+
     def _delayed_clear_style_edges(self, widget):
         hover_time = widget.last_hover_time
-        return lambda hover_time = hover_time: (
+        # the lambda is delayed, not this func
+        return lambda hover_time=hover_time: (
             (widget.set_style("min-width:0px; background-color:transparent;") or False)
             if widget.last_hover_time == hover_time
             else False
         )
 
     def _update_spacers(self, source_id, hovered_id):
+        # spacers exists between each placeholders to mimic the spacing between overlay modules
         for i, module in enumerate(self.placeholder_row.children):
-            if (self.side=="left" and i % 2 == 1) or (self.side=="right" and i>1 and i%2==0):
+            if (self.side == "left" and i % 2 == 1) or (
+                self.side == "right" and i > 1 and i % 2 == 0
+            ):
                 if hovered_id < 0:
                     module.set_style(f"background-color:black; min-width:{SPACING}px")
                 elif i / 2 > source_id and i < len(self.placeholder_row.children) - 1:
@@ -273,17 +299,5 @@ class LayoutManager:
             return False
         if self.hover_overlay_row and self.hover_overlay_row.children:
             overlay = self.hover_overlay_row.children[0 if self.side == "left" else -1]
-            
-            if self.side == "left":
-                overlay.children[0].set_style("" \
-                "padding-bottom:4px; padding-left:3px; padding-right:2px;" \
-                "transition: padding-bottom 0.1s cubic-bezier(0.5, 0.25, 0, 1)"
-                )
-                self.handle_hover(overlay, 0)
-            else:
-                overlay.children[0].set_style("" \
-                "padding-bottom:3px; padding-left:2px; padding-right:3px;" \
-                "transition: padding-bottom 0.1s cubic-bezier(0.5, 0.25, 0, 1)"
-                )
-                self.handle_hover(overlay, len(self.hover_overlay_row)-2)
-        return False 
+            overlay.on_hover(overlay, None)
+        return False

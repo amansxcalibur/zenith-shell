@@ -2,11 +2,8 @@
     all:unset;
     padding: 0px;
     margin: 0px;
-    /* min-height: 34px; */
     padding-left: 5px;
     padding-right: 5px;
-    border-radius: 15px;
-    /* margin-right: 3px; */
 }
 
 #date-time, label{
@@ -15,10 +12,9 @@
 }
 
 #date-time-container{
+    margin: 0px;
     padding: 0px;
     padding-left: 0px;
     border-radius: 17px;
     background-color: black;
-    margin: 0px;
-    /* box-shadow: 25px -30px 0 10px black; */
 }

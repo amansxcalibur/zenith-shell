@@ -1,7 +1,8 @@
 #systray{
-    background-color: black;
-    padding: 2px;
-    margin: 0px;
+    background-color: var(--surface-bright);
+    padding: 1px;
+    /* margin-top: 0px;
+    margin-bottom: 3px; */
     border-radius: 17px;
 }
 
@@ -12,7 +13,7 @@
 
 #tray-button{
     /* background-color: #1c1c1c; */
-    background-color: var(--surface);
+    background-color: var(--shadow);
     border: none;
-    border-radius: 16px;
+    border-radius: 100%;
 }
