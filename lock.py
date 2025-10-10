@@ -216,7 +216,7 @@ class LockScreen(Window):
                     h_align="fill",
                     v_align="fill",
                     orientation="v",
-                    children=WavyCircle(),
+                    children=WavyCircle(size=(400, 400)),
                 ),
                 self.status_label,
                 self.entry,
