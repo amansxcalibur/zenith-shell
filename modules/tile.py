@@ -20,7 +20,7 @@ class Tile(Box):
         props: Label = Label(style_classes="tile-label", label="N/A", h_align="start"),
         **kwargs,
     ):
-        default_classes = ["tile"]
+        default_classes = ["tile", "off"]
         extra_classes = kwargs.pop("style_classes", [])
         merged_classes = default_classes + extra_classes
         markup_styles = kwargs.pop("markup_style", "")

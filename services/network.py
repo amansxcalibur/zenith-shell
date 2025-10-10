@@ -30,6 +30,7 @@ class NetworkService(Service):
         #     print("Active connection:", connection.get_id(), type)
 
         devices = self.client.get_devices()
+        self.wifi_dev = None
         for dev in devices:
             if dev.get_device_type() == NM.DeviceType.WIFI:
                 self.wifi_dev = dev

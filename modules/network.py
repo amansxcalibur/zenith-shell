@@ -21,6 +21,7 @@ class Network(Tile):
             props=self.label,
             markup=icons.wifi,
             menu=True,
+            style_classes = ['off'],
             **kwargs,
         )
         self.nm = NetworkService()

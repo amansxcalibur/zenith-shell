@@ -71,24 +71,6 @@ class WigglyWidget(Gtk.DrawingArea, Service):
         self.update_amplitude(True)
         self.update_value_from_x(event.x)
         return True
-    
-    # def animate_progress_to(self):
-    #     print("frame")
-    #     if self.value < self.value_target:
-    #         self.value = self.value_target
-    #         print(self.value)
-    #         self.queue_draw()
-    #         return False
-    #     else:
-    #         self.value += self.value_step
-    #         self.queue_draw()
-    #         return True
-
-    # def update_value_from_signal(self, new_value):
-    #     self.value_target = min(1.0, new_value)
-    #     steps = 60  # 1s / 16ms ≈ 60 frames
-    #     self.value_step = (self.value_target - self.value) / steps
-    #     GLib.timeout_add(16, self.animate_progress_to)
 
     def update_value_from_signal(self, new_value):
         self.value = min(1.0, new_value)
