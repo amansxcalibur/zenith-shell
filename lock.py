@@ -2,6 +2,7 @@ from fabric import Application
 from fabric.widgets.box import Box
 from fabric.widgets.entry import Entry
 from fabric.widgets.label import Label
+from fabric.widgets.centerbox import CenterBox
 from fabric.widgets.x11 import X11Window as Window
 from fabric.utils.helpers import get_relative_path, monitor_file
 
@@ -14,6 +15,7 @@ from loguru import logger
 import threading
 import time
 from typing import Optional
+
 
 try:
     from Xlib import X, XK
@@ -32,13 +34,6 @@ from gi.repository import Gtk, GLib
 class InputGrabber:
     """Handles X11 keyboard and pointer grabbing."""
     
-    KEYSYM_MAP = {
-        XK.XK_Return: "Return",
-        XK.XK_BackSpace: "BackSpace",
-        XK.XK_Escape: "Escape",
-        XK.XK_Delete: "Delete",
-    }
-    
     def __init__(self, window, on_keypress_callback):
         self.window = window
         self.on_keypress = on_keypress_callback
@@ -46,6 +41,26 @@ class InputGrabber:
         self.xwin = None
         self._running = False
         self._thread: Optional[threading.Thread] = None
+
+        self.special_keys = {
+            XK.XK_Return: "Return",
+            XK.XK_KP_Enter: "Return",  # Numpad Enter
+            XK.XK_BackSpace: "BackSpace",
+            XK.XK_Escape: "Escape",
+            XK.XK_Delete: "Delete",
+            XK.XK_KP_Delete: "Delete",  # Numpad Delete
+        }
+        
+        self.ignored_keys = {
+            XK.XK_Caps_Lock,
+            XK.XK_Shift_L, XK.XK_Shift_R,
+            XK.XK_Control_L, XK.XK_Control_R,
+            XK.XK_Alt_L, XK.XK_Alt_R,
+            XK.XK_Meta_L, XK.XK_Meta_R,
+            XK.XK_Super_L, XK.XK_Super_R,
+            XK.XK_Hyper_L, XK.XK_Hyper_R,
+            XK.XK_Num_Lock, XK.XK_Scroll_Lock,
+        }
         
     def try_grab(self) -> bool:
         """Attempt to grab keyboard and pointer input."""
@@ -73,6 +88,7 @@ class InputGrabber:
             time=X.CurrentTime,
         )
         
+        # Optionally grab pointer to prevent clicks outside
         pointer_result = self.xwin.grab_pointer(
             owner_events=False,
             event_mask=X.ButtonPressMask | X.ButtonReleaseMask | X.PointerMotionMask,
@@ -85,13 +101,11 @@ class InputGrabber:
         
         if keyboard_result == X.GrabSuccess:
             logger.info("Keyboard grab successful")
-            if pointer_result == X.GrabSuccess:
-                logger.info("Pointer grab successful")
             self._start_event_loop()
             self.display.sync()
             return True
         else:
-            logger.warning(f"Keyboard grab failed ({keyboard_result})")
+            logger.warning(f"Keyboard grab failed (result={keyboard_result})")
             return False
     
     def _start_event_loop(self):
@@ -115,15 +129,47 @@ class InputGrabber:
                 break
     
     def _process_keypress(self, event):
-        keysym = self.display.keycode_to_keysym(event.detail, event.state)
+        """Process X11 KeyPress events using Xlib's built-in conversion."""
+        keycode = event.detail
         
-        if keysym in self.KEYSYM_MAP:
-            keyname = self.KEYSYM_MAP[keysym]
-        else:
-            keyname = XK.keysym_to_string(keysym)
+        # check modifier state
+        shift = bool(event.state & X.ShiftMask)
+        ctrl = bool(event.state & X.ControlMask)
+        alt = bool(event.state & X.Mod1Mask)
+        caps_lock = bool(event.state & X.LockMask)
         
-        if keyname:
+        keysym = self.display.keycode_to_keysym(keycode, 1 if shift else 0)
+        
+        # ignore modifier keys
+        if keysym in self.ignored_keys:
+            return
+        
+        # handle special keys
+        if keysym in self.special_keys:
+            keyname = self.special_keys[keysym]
+            logger.debug(f"Special key: {keyname}")
             GLib.idle_add(self.on_keypress, keyname)
+            return
+        
+        try:
+            char = XK.keysym_to_string(keysym)
+            if char and len(char) == 1:
+                if caps_lock and char.isalpha():
+                    char = char.lower() if shift else char.upper()
+                
+                # only process printable characters
+                if char.isprintable():
+                    logger.debug(f"Character: '{char}' (shift={shift}, caps={caps_lock} {char.isupper()})")
+                    GLib.idle_add(self.on_keypress, char)
+                else:
+                    logger.debug(f"Non-printable character (ord={ord(char)})")
+            else:
+                keysym_base = self.display.keycode_to_keysym(keycode, 0)
+                keyname = XK.keysym_to_string(keysym_base)
+                logger.debug(f"Unhandled keysym: {keysym} (name={keyname})")
+                
+        except Exception as e:
+            logger.debug(f"Failed to convert keysym {keysym}: {e}")
     
     def cleanup(self):
         """Release X11 grabs and cleanup resources."""
@@ -203,14 +249,14 @@ class LockScreen(Window):
         self.entry.set_visibility(False)  # hide password text
         self.entry.connect("activate", self._on_entry_activate)
         
-        box = Box(
+        box = CenterBox(
             orientation="v",
             v_align="center",
             h_expand=True,
             v_expand=True,
             h_align="center",
             spacing=10,
-            children=[
+            center_children=[
                 Box(
                     spacing=10,children = [
                     Box(
