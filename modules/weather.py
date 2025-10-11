@@ -43,7 +43,7 @@ class WeatherService(Service):
             "description": "",
         }
 
-        GLib.timeout_add_seconds(3600, self._fetch_weather)  # Update every hour
+        GLib.timeout_add_seconds(3600, self._fetch_weather)  # update every hour
 
     def _fetch_weather(self, *_):
         GLib.Thread.new("weather-fetch", self._fetch_weather_thread, None)

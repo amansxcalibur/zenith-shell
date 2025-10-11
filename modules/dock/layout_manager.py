@@ -121,10 +121,12 @@ class LayoutManager:
         if not state:
             self.starter_box.add_style_class("start")
             self.ender_box.add_style_class("end")
-            if self.side == "left":
+
+            if self.curr_hovered_index == 0 and self.side == "left":
                 self.starter_box.set_style("min-width:0px; background-color:black")
-            else:
+            elif self.curr_hovered_index == len(self.placeholders)-1 and self.side == "right":
                 self.ender_box.set_style("min-width:0px; background-color:black")
+
             toggle_class(self.starter_box, "expander", "contractor")
             toggle_class(self.ender_box, "expander", "contractor")
             self.main_hole.set_style(
