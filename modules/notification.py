@@ -93,19 +93,25 @@ class NotificationWidget(EventBox):
         body_container = Box(name="notification-box", orientation="v", spacing=10)
         content_box = Box(spacing=10)
 
-        if image_pixbuf := self._notification.image_pixbuf:
-            content_box.add(
-                RoundedImage(
-                    v_align="start",
-                    pixbuf=image_pixbuf.scale_simple(
-                        NotificationConfig.IMAGE_SIZE,
-                        NotificationConfig.IMAGE_SIZE,
-                        GdkPixbuf.InterpType.BILINEAR,
-                    ),
-                    style="border-radius:16px;",
+        try:
+            if image_pixbuf := self._notification.image_pixbuf:
+                content_box.add(
+                    RoundedImage(
+                        v_align="start",
+                        pixbuf=image_pixbuf.scale_simple(
+                            NotificationConfig.IMAGE_SIZE,
+                            NotificationConfig.IMAGE_SIZE,
+                            GdkPixbuf.InterpType.BILINEAR,
+                        ),
+                        style="border-radius:16px;",
+                    )
                 )
-            )
-        else:
+            else:
+                content_box.add(
+                    Label(name="notification-icon", v_align="start", markup=icons.blur)
+                )
+        except Exception as e:
+            logger.error(f"Failed to resolve image_pixbuff: {e}")
             content_box.add(
                 Label(name="notification-icon", v_align="start", markup=icons.blur)
             )
@@ -396,7 +402,10 @@ class NotificationManager(Window):
             )
 
             if not info.SILENT:
-                if len(self._active_notifications) >= NotificationConfig.MAX_ACTIVE_NOTIFS:
+                if (
+                    len(self._active_notifications)
+                    >= NotificationConfig.MAX_ACTIVE_NOTIFS
+                ):
                     self._move_to_revealer(
                         self.active_notifications_box.get_children()[0]
                     )

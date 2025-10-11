@@ -6,6 +6,7 @@ from fabric.widgets.datetime import DateTime
 from fabric.widgets.x11 import X11Window as Window
 
 from modules.systray import SystemTray
+from modules.weather import WeatherMini
 from modules.workspaces import Workspaces
 from modules.workspaces import Workspaces
 from modules.controls import ControlsManager
@@ -59,6 +60,7 @@ class DockBar(Window):
         self.systray = SystemTray()
         self.metrics = MetricsSmall()
         self.battery = Battery()
+        self.weather_mini = WeatherMini()
         self.vol_brightness_box = self.controls.get_controls_box()
         self.date_time = Box(
             name="date-time-container",
@@ -90,6 +92,7 @@ class DockBar(Window):
             self.vertical_toggle_btn,
             self.workspaces,
             self.vol_brightness_box,
+            self.weather_mini,
         ]
         self.user_modules_right = [
             self.systray,

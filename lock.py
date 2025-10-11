@@ -5,7 +5,8 @@ from fabric.widgets.label import Label
 from fabric.widgets.x11 import X11Window as Window
 from fabric.utils.helpers import get_relative_path, monitor_file
 
-from modules.wavy_clock import WavyCircle
+from modules.weather import WeatherPill
+from modules.wavy_clock import WavyClock
 from config.info import USERNAME
 
 import pam
@@ -211,13 +212,24 @@ class LockScreen(Window):
             spacing=10,
             children=[
                 Box(
-                    h_expand=True,
-                    v_expand=True,
-                    h_align="fill",
-                    v_align="fill",
-                    orientation="v",
-                    children=WavyCircle(size=(400, 400)),
-                ),
+                    spacing=10,children = [
+                    Box(
+                        h_expand=True,
+                        v_expand=True,
+                        h_align="fill",
+                        v_align="fill",
+                        orientation="v",
+                        children=WavyClock(size=(400, 400)),
+                    ),
+                    Box(
+                        h_expand=True,
+                        v_expand=True,
+                        h_align="fill",
+                        v_align="fill",
+                        orientation="v",
+                        children=WeatherPill(size=(400, 400)),
+                    ),
+                ]),
                 self.status_label,
                 self.entry,
             ],

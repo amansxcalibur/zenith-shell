@@ -12,8 +12,8 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib
 
 
-class WavyCircle(Gtk.DrawingArea):
-    def __init__(self, size: Tuple[int, int] = (153, 153)):
+class WavyClock(Gtk.DrawingArea):
+    def __init__(self, size: Tuple[int, int] = (140, 140), dark: True = False):
         super().__init__()
         self.set_size_request(size[0], size[1])
         self.connect("draw", self.on_draw)
@@ -31,7 +31,7 @@ class WavyCircle(Gtk.DrawingArea):
         height = self.get_allocated_height()
         cx, cy = width / 2, height / 2
 
-        base_radius = min(width, height) * 0.4
+        base_radius = min(width, height) * 0.45
         amplitude = base_radius * 0.05
         frequency = 10
 

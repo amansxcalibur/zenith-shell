@@ -1,0 +1,5 @@
+#weather-mini-container{
+    background-color: var(--surface-bright);
+    padding: 7px;
+    border-radius: 18px;
+}

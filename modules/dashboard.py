@@ -1,18 +1,21 @@
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
-from fabric.widgets.centerbox import CenterBox
+from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
+from fabric.widgets.centerbox import CenterBox
 
 from modules.network import Network
 from modules.tile import TileSpecial, Tile
 from modules.bluetooth import Bluetooth
-from modules.wavy_clock import WavyCircle
+from modules.wavy_clock import WavyClock
 from modules.notification import NotificationTile
 from modules.player_mini import PlayerContainerMini
+from modules.weather import WeatherPill
 
 import icons.icons as icons
 import config.info as info
+from utils.cursor import add_hover_cursor
 
 from loguru import logger
 
@@ -38,13 +41,33 @@ class Dashboard(Box):
         self.controls = controls
         self.brightness_revealer_mui = self.controls.get_brightness_slider_mui()
 
-        self.wavy = self.gtk_wrapper = CenterBox(
+        self.wavy_clock = CenterBox(
             orientation="v",
             h_expand=True,
             v_expand=True,
             h_align="fill",
             v_align="fill",
-            center_children=WavyCircle(),
+            center_children=WavyClock(dark=False),
+        )
+        self.weather_pill = CenterBox(
+            orientation="v",
+            h_expand=True,
+            v_expand=True,
+            h_align="fill",
+            v_align="fill",
+            center_children=WeatherPill(dark=False),
+        )
+        self.widget_stack = Stack(
+            name="widget-stack",
+            transition_type="crossfade",
+            transition_duration=100,
+            style_classes="" if not info.VERTICAL else "vertical",
+            children=(
+                [
+                    self.wavy_clock,
+                    self.weather_pill,
+                ]
+            ),
         )
 
         self.low_bat_msg = Label(label="Low Battery fam (<15%)")
@@ -132,6 +155,7 @@ class Dashboard(Box):
             child=Box(
                 h_expand=True,
                 v_expand=True,
+                spacing=3,
                 children=[
                     Box(
                         name="notification-container",
@@ -140,11 +164,13 @@ class Dashboard(Box):
                         spacing=3,
                         children=[self.notification_box, self.notification_box_2],
                     ),
-                    Box(
+                    add_hover_cursor(widget = Button(
+                        style="all:unset",
                         v_expand=True,
                         h_expand=True,
-                        children=self.wavy,
-                    ),
+                        child=self.widget_stack,
+                        on_clicked=lambda *_: self.cycle_widgets(),
+                    )),
                 ],
             ),
             child_revealed=True,
@@ -196,3 +222,16 @@ class Dashboard(Box):
                             logger.error(f'Failed to switch {elem.get_name()} to mini view')
 
         print("search complete")
+
+    def cycle_widgets(self, forward=True):
+        if not self.widget_stack:
+            return
+        
+        widget_list = self.widget_stack.get_children()
+
+        current_player = self.widget_stack.get_visible_child()
+        current_index = widget_list.index(current_player)
+
+        next_index = (current_index + (1 if forward else -1)) % len(widget_list)
+        next_player = widget_list[next_index]
+        self.widget_stack.set_visible_child(next_player)
