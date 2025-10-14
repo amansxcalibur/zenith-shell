@@ -229,9 +229,9 @@ class Dashboard(Box):
         
         widget_list = self.widget_stack.get_children()
 
-        current_player = self.widget_stack.get_visible_child()
-        current_index = widget_list.index(current_player)
+        current_widget = self.widget_stack.get_visible_child()
+        current_index = widget_list.index(current_widget)
 
         next_index = (current_index + (1 if forward else -1)) % len(widget_list)
-        next_player = widget_list[next_index]
-        self.widget_stack.set_visible_child(next_player)
+        next_widget = widget_list[next_index]
+        self.widget_stack.set_visible_child(next_widget)

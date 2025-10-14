@@ -13,7 +13,7 @@ from gi.repository import Gtk, GLib
 
 
 class WavyClock(Gtk.DrawingArea):
-    def __init__(self, size: Tuple[int, int] = (140, 140), dark: True = False):
+    def __init__(self, size: Tuple[int, int] = (-1, 140), dark: True = False):
         super().__init__()
         self.set_size_request(size[0], size[1])
         self.connect("draw", self.on_draw)
@@ -72,7 +72,7 @@ class WavyClock(Gtk.DrawingArea):
         hour_angle = (hour / 12.0 - ANGLE_OFFSET) * math.tau
         minute_angle = (minute / 60.0 - ANGLE_OFFSET) * math.tau
 
-        dot_radius = int(width / 21)  # 7
+        dot_radius = int(width / 20)  # 7
         hour_orbit = base_radius * 0.8 - dot_radius * 4
         minute_orbit = base_radius * 0.8 - dot_radius * 2
         second_orbit = base_radius * 0.8

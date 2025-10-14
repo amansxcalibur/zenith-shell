@@ -32,8 +32,8 @@ class WeatherService(Service):
 
     def _init_singleton(self):
         super().__init__()
-        self.CITY = "india"
-        self.API_URL = f"https://wttr.in/{self.CITY}?format=%l+%z+%t+%f+%c+%C"
+        self.CITY = "Kerala"
+        self.API_URL = f"https://wttr.in/~{self.CITY}?format=%l+%z+%t+%f+%c+%C"
         self.details = {
             "location": "",
             "time": "",
@@ -96,7 +96,7 @@ class WeatherMini(Box):
         self.emoji.set_label(details['emoji'])
 
 class WeatherPill(Gtk.DrawingArea):
-    def __init__(self, size: Tuple[int, int] = (140, 140), dark: bool = False):
+    def __init__(self, size: Tuple[int, int] = (-1, 140), dark: bool = False):
         super().__init__()
         self.set_size_request(size[0], size[1])
         self.connect("draw", self.on_draw)
@@ -176,6 +176,9 @@ class WeatherPill(Gtk.DrawingArea):
         ctx.show_text(temp_text)
 
         # draw emoji
+        text_color = "--foreground" if self.dark else "--foreground"
+        ctx.set_source_rgb(*self._get_color(text_color))
+
         emoji_cx = base_radius / 1.35
         emoji_cy = width - base_radius / 1.35
         

@@ -55,7 +55,7 @@ class PowerMenu(Box):
     def lock(self, *_):
         print("Locking...")
         self.close_power_menu()
-        exec_shell_command_async(f"bash {SCRIPTS_DIR}/wallpaper/lock.sh")
+        exec_shell_command_async(f"bash {SCRIPTS_DIR}/lock.sh")
 
     def suspend(self, *_):
         print("Suspending...")
