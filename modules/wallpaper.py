@@ -104,7 +104,7 @@ class WallpaperSelector(Box):
         self.scheme_dropdown.set_tooltip_text("Select color scheme")
         for key, display_name in self.schemes.items():
             self.scheme_dropdown.append(key, display_name)
-        self.scheme_dropdown.set_active_id("scheme-tonal-spot")
+        self.scheme_dropdown.set_active_id("scheme-fidelity")
         self.scheme_dropdown.connect("changed", self.on_scheme_changed)
 
         # Create a switcher to enable/disable Matugen (enabled by default)

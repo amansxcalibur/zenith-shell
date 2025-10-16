@@ -15,7 +15,15 @@ from config.info import SHELL_NAME
 
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
+
+def glib_warning(domain, level, message):
+    import traceback
+    print(f"\n--- GLib Warning ---\nDomain: {domain}\nLevel: {level}\nMessage: {message}\n")
+    traceback.print_stack()  # shows Python call stack
+
+GLib.log_set_handler(None, GLib.LogLevelFlags.LEVEL_WARNING | GLib.LogLevelFlags.LEVEL_CRITICAL, glib_warning)
+
 
 if __name__ == "__main__":
     notch = Notch()

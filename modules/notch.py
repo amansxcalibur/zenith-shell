@@ -233,6 +233,7 @@ class Notch(Window):
             toggle_class(self.dashboard, "reveal", "hide")
             toggle_class(self.power_menu, 'hide-menu', 'reveal-menu')
             self.stack.set_visible_child(self.power_menu)
+            self.power_menu.btn_lock.grab_focus()
         else:
             self.unfocus_notch()
             self.lift_box.set_style("min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)")
