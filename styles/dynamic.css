@@ -221,12 +221,12 @@ button:focus {
   all: unset;
   background-color: black;
   border-radius: 17px;
-  min-width: 37px;
+  min-width: 38px;
   padding: 0px;
 }
 
 #orientation-btn:hover {
-  border-radius: 15px;
+  /* border-radius: 15px; */
   transition: border 0.1s cubic-bezier(0.5, 0.25, 0, 1);
 }
 

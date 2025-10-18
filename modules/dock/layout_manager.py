@@ -119,12 +119,15 @@ class LayoutManager:
     def set_hole_state(self, source, event, state: bool):
         """Handles main hole collapse on module unhover."""
         if not state:
+            print("event:", event, "\n")
             self.starter_box.add_style_class("start")
             self.ender_box.add_style_class("end")
 
             if self.curr_hovered_index == 0 and self.side == "left":
+                self.starter_box.last_hover_time = time.monotonic()
                 self.starter_box.set_style("min-width:0px; background-color:black")
             elif self.curr_hovered_index == len(self.placeholders)-1 and self.side == "right":
+                self.ender_box.last_hover_time = time.monotonic()
                 self.ender_box.set_style("min-width:0px; background-color:black")
 
             toggle_class(self.starter_box, "expander", "contractor")
@@ -143,6 +146,7 @@ class LayoutManager:
                     hover_time
                 ),
             )
+            self.curr_hovered_index = -1
 
     def handle_hover(self, source, id: int):
         """Hover handler for dock modules"""
@@ -262,7 +266,7 @@ class LayoutManager:
         )
 
         if self.side == "left":
-            self.starter_box.set_style("min-width:0px; background-color:black;")
+            self.starter_box.set_style("min-width:0px;")
             GLib.timeout_add(250, self._delayed_clear_style_edges(self.starter_box))
         else:
             self.ender_box.set_style("min-width:0px;")

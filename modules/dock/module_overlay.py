@@ -1,11 +1,12 @@
-import gi
-
-gi.require_version("Gtk", "3.0")
-from gi.repository import GLib, Gdk, Gtk
+import time
 
 from fabric.widgets.box import Box
 from fabric.widgets.eventbox import EventBox
 from fabric.core.service import Service, Signal
+
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import GLib, Gdk, Gtk
 
 DEFAULT_MARGIN = 2
 FOCUS_MARGIN = 3
@@ -39,8 +40,6 @@ class HoverOverlay(EventBox, Service):
         self.is_currently_hovered = False
         self.is_currently_expanded = False
 
-        import time
-
         self.last_hover_time = time.monotonic()
 
         self.add(self._target)
@@ -57,6 +56,8 @@ class HoverOverlay(EventBox, Service):
     def on_hover(self, widget, event):
         self.is_currently_hovered = True
         self.is_currently_expanded = True
+
+        # raise widget
         self._target.set_style(
             f""
             f"padding-bottom:{FOCUS_MARGIN}px; padding-left:{FOCUS_MARGIN}px; padding-right:{FOCUS_MARGIN}px; "
@@ -65,18 +66,19 @@ class HoverOverlay(EventBox, Service):
         self.hole_index(self._id)
 
     def on_unhover(self, widget, event):
-        # hovering to a child widget, don't unhover
+        # hovering to an inner child widget, don't unhover
         if event and event.detail == Gdk.NotifyType.INFERIOR:
             return
         self.is_currently_hovered = False
         self.is_currently_expanded = False
+
+        # lower widget
         self._target.set_style(
             ""
             f"padding-left:{FOCUS_MARGIN}px; padding-right:{FOCUS_MARGIN}px; padding-bottom: {DEFAULT_MARGIN}px; padding-top: {DEFAULT_MARGIN}px;"
             "transition: padding-bottom 0.1s cubic-bezier(0.5, 0.25, 0, 1), padding-top 0.1s cubic-bezier(0.5, 0.25, 0, 1)"
         )
         self._hole.set_style("min-width:0px;")
-        self.hole_index(-1)
 
     def on_target_resize(self, widget, allocation):
         new_width = allocation.width

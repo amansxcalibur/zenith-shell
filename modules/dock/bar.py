@@ -17,10 +17,12 @@ from modules.dock.module_overlay import HoverOverlay, HolePlaceholder
 import config.info as info
 import icons.icons as icons
 from utils.helpers import toggle_class
+from utils.cursor import add_hover_cursor
 
 import subprocess
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
@@ -76,7 +78,7 @@ class DockBar(Window):
                 style_classes="" if not info.VERTICAL else "vertical",
             ),
         )
-        self.vertical_toggle_btn = Button(
+        self.vertical_toggle_btn = add_hover_cursor(Button(
             name="orientation-btn",
             child=Label(
                 name="orientation-label",
@@ -87,7 +89,7 @@ class DockBar(Window):
                 ),
             ),
             on_clicked=lambda b, *_: self.toggle_vertical(),
-        )
+        ))
         self.user_modules_left = [
             self.vertical_toggle_btn,
             self.workspaces,
@@ -131,7 +133,7 @@ class DockBar(Window):
         ]
 
         self.hover_overlay_row_left = Box(
-            style="min-height:40px;",
+            style="min-height:41px;",  # (40+1)px cuz 1.5px margins is replaced with 2px
             spacing=SPACING,
             h_expand=True,
             children=[
@@ -246,6 +248,8 @@ class DockBar(Window):
         self.bool = False
 
     def set_hole_state(self, source, event, state: bool, side: str):
+        # this function solely exist to reset and collapse the hole when the cursor travels to
+        # the edge within the bar(see edge_fallback) because ModuleOverlay.unhover() ignores events that are INFERIOR
         if side == "left":
             self.layout_manager_left.set_hole_state(source, event, state)
         else:
