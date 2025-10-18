@@ -1,6 +1,37 @@
 #weather-mini-container{
     background-color: var(--surface-bright);
+    border-radius: 18px;
+}
+
+#weather-refresh-btn{
+    all: unset;
     padding-left: 7px;
     padding-right: 7px;
-    border-radius: 18px;
+}
+
+#weather-card{
+    padding: 15px;
+    background-color: var(--surface-bright);
+    border-radius: 20px;
+    min-height: 170px;
+}
+
+#weather-location.card{
+    font-size: 17px;
+    color: var(--primary);
+}
+
+#weather-emoji.card{
+    font-size: 40px;
+    color: white;
+}
+
+#weather-temp.card{
+    font-size: 55px;
+    font-weight: 600;
+    color: var(--primary);
+}
+.weather-icons{
+    font-size: 20px;
+    color: var(--primary);
 }

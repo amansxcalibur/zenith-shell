@@ -1,14 +1,20 @@
-from typing import Tuple
 import math
 import cairo
 import requests
 from loguru import logger
+from typing import Tuple
+from dataclasses import dataclass
 
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
-from fabric.core.service import Service, Signal
+from fabric.widgets.button import Button
+from fabric.widgets.eventbox import EventBox
+from fabric.core.service import Service, Signal, Property
 
+from widgets.popup_window import PopupWindow
 import config.info as info
+import icons.icons as icons
+from utils.cursor import add_hover_cursor
 from utils.colors import get_css_variable, hex_to_rgb01
 
 import gi
@@ -18,32 +24,76 @@ gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, GLib, Pango, PangoCairo
 
 
+@dataclass
+class WeatherData:
+    location: str = ""
+    time: str = ""
+    temp: str = "__"
+    feels_like: str = ""
+    emoji: str = ""
+    description: str = ""
+    pressure: str = ""
+    wind: str = ""
+    humidity: str = ""
+
+    @classmethod
+    def from_api_response(cls, response_text: str) -> "WeatherData":
+        """Parse API response into WeatherData"""
+        try:
+            split_data = response_text.split()
+            return cls(
+                location=split_data[0],
+                time=f"Updated {split_data[1]}",
+                temp=split_data[2].lstrip("+").rstrip("C"),
+                feels_like=split_data[3].lstrip("+").rstrip("C"),
+                emoji=split_data[4],
+                pressure=split_data[5],
+                wind=split_data[6],
+                humidity=split_data[7],
+                description=" ".join(split_data[8:]),
+            )
+        except (IndexError, AttributeError) as e:
+            logger.error(f"Failed to parse weather data: {e}")
+            return cls(temp="??", emoji="?")
+
+    @classmethod
+    def error_state(cls) -> "WeatherData":
+        """Return weather data in error state"""
+        return cls(temp="??", emoji="_")
+
+
 class WeatherService(Service):
     _instance = None
+    UPDATE_INTERVAL_SECONDS = 3600  # 1 hour
+    API_TIMEOUT_SECONDS = 5
 
     @Signal
-    def value_changed(self, details: object) -> None:...
+    def value_changed(self, weather_data: object) -> None: ...
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._init_singleton()
+            cls._instance._initialized = False
         return cls._instance
 
-    def _init_singleton(self):
-        super().__init__()
-        self.CITY = "Kerala"
-        self.API_URL = f"https://wttr.in/~{self.CITY}?format=%l+%z+%t+%f+%c+%C"
-        self.details = {
-            "location": "",
-            "time": "",
-            "temp": "__",
-            "feels_like": "",
-            "emoji": "",
-            "description": "",
-        }
+    def __init__(self):
+        if self._initialized:
+            return
 
-        GLib.timeout_add_seconds(3600, self._fetch_weather)  # update every hour
+        super().__init__()
+        self._initialized = True
+
+        self.CITY = "Kerala"
+        self.API_URL = f"https://wttr.in/~{self.CITY}?format=%l+%z+%t+%f+%c+%P+%w+%h+%C"
+        self._current_data = WeatherData()
+
+        # update every hour
+        GLib.timeout_add_seconds(self.UPDATE_INTERVAL_SECONDS, self._fetch_weather)
+        self._fetch_weather()  # init
+
+    @Property(str, "readable")
+    def current_data(self):
+        return self._current_data
 
     def _fetch_weather(self, *_):
         GLib.Thread.new("weather-fetch", self._fetch_weather_thread, None)
@@ -51,49 +101,158 @@ class WeatherService(Service):
 
     def _fetch_weather_thread(self, *_):
         try:
-            response = requests.get(url=self.API_URL, timeout=5)
-            split_data = response.text.split()
-            
-            self.details = {
-                "location": split_data[0].upper(),
-                "time": f"Updated {split_data[1]}",
-                "temp": split_data[2].lstrip("+").rstrip("C"),
-                "feels_like": split_data[3].lstrip("+").rstrip("C"),
-                "emoji": split_data[4],
-                "description": " ".join(split_data[5:]),
-            }
+            response = requests.get(url=self.API_URL, timeout=self.API_TIMEOUT_SECONDS)
+            response.raise_for_status()
+            weather_data = WeatherData.from_api_response(response.text)
+            self._current_data = weather_data
         except Exception as e:
             logger.error(f"Weather fetch failed: {e}")
-            self.details["temp"] = "??"
-            self.details["emoji"] = "_"
-        
-        self.value_changed(self.details)
+            weather_data = WeatherData.error_state()
+            self._current_data = weather_data
 
-class WeatherMini(Box):
+        self.value_changed(weather_data)
+
+
+class WeatherMini(EventBox):
     def __init__(self, **kwargs):
         super().__init__(name="weather-mini-container", spacing=3, **kwargs)
 
-        self.details = {
-            "location": "",
-            "time": "",
-            "temp": "__",
-            "feels_like": "",
-            "emoji": "_",
-            "description": "",
-        }
-
-        self.temperature = Label(name="weather-temp", label=self.details['temp'])
-        self.emoji = Label(name="weather-emoji", label=self.details['emoji'])
-
-        self.children = [self.emoji, self.temperature]
-        
         self.service = WeatherService()
-        self.service.connect('value-changed', self.update_weather)
-        self.service._fetch_weather()
+        initial_data = self.service.current_data
 
-    def update_weather(self, source, details:object):
-        self.temperature.set_label(details['temp'])
-        self.emoji.set_label(details['emoji'])
+        self.temperature = Label(name="weather-temp", label=initial_data.temp)
+        self.emoji = Label(name="weather-emoji", label=initial_data.emoji)
+
+        self.children = Button(
+            name="weather-refresh-btn",
+            child=Box(children=[self.emoji, self.temperature]),
+            on_clicked=self.service._fetch_weather,
+        )
+
+        add_hover_cursor(self)
+
+        self.service.connect("value-changed", self._on_weather_update)
+
+        self.build_popup_win()
+
+    def build_popup_win(self):
+        self.popup_win = PopupWindow(
+            widget=self,
+            child=WeatherCard(),
+        )
+
+    def _on_weather_update(self, source, data: WeatherData):
+        self.temperature.set_label(data.temp)
+        self.emoji.set_label(data.emoji)
+
+
+class WeatherCard(Box):
+    def __init__(self, **kwargs):
+        super().__init__(name="weather-card", spacing=20, **kwargs)
+
+        self.service = WeatherService()
+        initial_data = self.service.current_data
+
+        # temperature
+        self.temperature_label = Label(
+            name="weather-temp",
+            style_classes=["card"],
+            v_align="end",
+            label=initial_data.temp,
+        )
+
+        self.emoji = Label(
+            name="weather-emoji",
+            style_classes=["card"],
+            h_align="start",
+            label=initial_data.emoji,
+        )
+
+        # location
+        self.location = Label(
+            name="weather-location",
+            style_classes=["card"],
+            h_align="end",
+            label=initial_data.location,
+        )
+
+        # weather metrics
+        self.humidity_label = Label(
+            name="weather-humidity", style_classes=["card"], label=initial_data.humidity
+        )
+
+        self.pressure_label = Label(
+            name="weather-pressure", style_classes=["card"], label=initial_data.pressure
+        )
+
+        self.wind_label = Label(
+            name="weather-wind", style_classes=["card"], label=initial_data.wind
+        )
+
+        self.description = Label(
+            name="weather-desc",
+            style_classes=["card"],
+            h_align="end",
+            label=initial_data.description,
+        )
+
+        self.children = [
+            Box(
+                orientation="v",
+                children=[
+                    self.emoji,
+                    Box(v_expand=True, children=self.temperature_label),
+                ],
+            ),
+            Box(
+                orientation="v",
+                children=[
+                    Box(
+                        orientation="v",
+                        v_align="start",
+                        h_align="end",
+                        children=[self.location, self.description],
+                    ),
+                    Box(
+                        v_expand=True,
+                        h_align="end",
+                        v_align="end",
+                        orientation="v",
+                        children=[
+                            self._create_metric_row(
+                                self.humidity_label, icons.humidity
+                            ),
+                            self._create_metric_row(self.wind_label, icons.wind),
+                            self._create_metric_row(
+                                self.pressure_label, icons.pressure
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ]
+
+        self.service.connect("value-changed", self.update_weather)
+
+    def _create_metric_row(self, label: Label, icon_markup: str) -> Box:
+        return Box(
+            h_align="end",
+            spacing=5,
+            children=[
+                label,
+                Label(style_classes=["weather-icons"], markup=icon_markup),
+            ],
+        )
+
+    def update_weather(self, source, data: WeatherData):
+        self.temperature_label.set_label(data.temp)
+        self.location.set_label(data.location)
+        self.emoji.set_label(data.emoji)
+        self.humidity_label.set_label(data.humidity)
+        self.wind_label.set_label(data.wind)
+        self.pressure_label.set_label(data.pressure)
+        self.description.set_label(data.description)
+
 
 class WeatherPill(Gtk.DrawingArea):
     def __init__(self, size: Tuple[int, int] = (-1, 140), dark: bool = False):
@@ -102,23 +261,15 @@ class WeatherPill(Gtk.DrawingArea):
         self.connect("draw", self.on_draw)
 
         self.dark = dark
-        self.details = {
-            "location": "",
-            "time": "",
-            "temp": "__",
-            "feels_like": "",
-            "emoji": "",
-            "description": "",
-        }
 
         self.service = WeatherService()
-        self.service.connect('value-changed', self.update_weather)
-        self.service._fetch_weather() # init
-        
+        self._current_data = self.service.current_data
+        self.service.connect("value-changed", self.on_weather_update)
+
         self.show()
 
-    def update_weather(self, source, details:object):
-        self.details = details
+    def on_weather_update(self, source, data: WeatherData):
+        self._current_data = data
         GLib.idle_add(self.queue_draw)
 
     def _get_color(self, css_var: str) -> Tuple[float, float, float]:
@@ -163,15 +314,16 @@ class WeatherPill(Gtk.DrawingArea):
         ctx.set_source_rgb(*self._get_color(text_color))
 
         ctx.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
-        ctx.set_font_size(width/2.5)
-        temp_text = self.details["temp"]
+        ctx.set_font_size(width / 2.5)
+
+        temp_text = self._current_data.temp
         extents = ctx.text_extents(temp_text)
-        
+
         temp_cx = width - base_radius
         temp_cy = base_radius / 1.125
         ctx.move_to(
             temp_cx - (extents.x_bearing + extents.width / 2),
-            temp_cy - (extents.y_bearing + extents.height / 2)
+            temp_cy - (extents.y_bearing + extents.height / 2),
         )
         ctx.show_text(temp_text)
 
@@ -181,14 +333,13 @@ class WeatherPill(Gtk.DrawingArea):
 
         emoji_cx = base_radius / 1.35
         emoji_cy = width - base_radius / 1.35
-        
+
         layout = PangoCairo.create_layout(ctx)
-        layout.set_text(self.details["emoji"], -1)
+        layout.set_text(self._current_data.emoji, -1)
         layout.set_font_description(Pango.FontDescription(f"Sans Bold {width/4}"))
-        
+
         ink_rect, logical_rect = layout.get_pixel_extents()
         ctx.move_to(
-            emoji_cx - logical_rect.width / 2,
-            emoji_cy - logical_rect.height / 2
+            emoji_cx - logical_rect.width / 2, emoji_cy - logical_rect.height / 2
         )
         PangoCairo.show_layout(ctx, layout)

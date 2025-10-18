@@ -173,6 +173,11 @@ shuffle: str = chr(0xf074)
 disable_shuffle: str = chr(0xf049e)
 headphones: str = chr(0xee58)
 
+# Weather
+humidity: str = chr(0xe275)
+wind: str = chr(0xe27e)
+pressure: str = chr(0xf084d)
+
 # Settings
 settings: str = chr(0xf1a2a)
 blur: str = chr(0xf00b5)

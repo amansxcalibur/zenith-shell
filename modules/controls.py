@@ -65,11 +65,16 @@ class ControlsManager:
             service_instance=self.brightness_manager.service,
             orientation="v",
         )
-        self.vol_brightness_box = EventBox(child=Box(
-            name="vol-brightness-container",
-            orientation="h",
-            children=[self.volume_manager.vol_small, self.brightness_manager.brightness_small],
-        ))
+        self.vol_brightness_box = EventBox(
+            child=Box(
+                name="vol-brightness-container",
+                orientation="h",
+                children=[
+                    self.volume_manager.vol_small, 
+                    self.brightness_manager.brightness_small
+                ],
+            )
+        )
         self.popup_win = PopupWindow(
             widget=self.vol_brightness_box,
             child=Box(
