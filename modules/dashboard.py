@@ -70,12 +70,12 @@ class Dashboard(Box):
             ),
         )
 
-        self.low_bat_msg = Label(label="Low Battery fam (<15%)")
+        self.low_bat_msg = Label(label="Welcome to (=Zenith=)")
 
         self.content_box = Box(
             orientation="v",
             children=[
-                Label(name="notification-source", label="ZENITH", h_align=True),
+                Label(name="notification-source", label="Zenith Shell", h_align=True),
                 self.low_bat_msg,
             ],
         )
@@ -99,7 +99,7 @@ class Dashboard(Box):
 
         self.tiles = Box(
             spacing=3,
-            orientation='v',
+            orientation="v",
             children=[
                 Box(
                     spacing=3,
@@ -113,8 +113,14 @@ class Dashboard(Box):
                     spacing=3,
                     children=[
                         self.silent,
-                        CenterBox(style='background-color:var(--surface-bright); border-radius:20px;', h_expand=True, center_children=Label(markup=icons.material, style="font-size:25px; color: var(--outline)")),
-                        Tile(style_classes=['off']),
+                        CenterBox(
+                            style="background-color:var(--surface-bright); border-radius:20px;",
+                            h_expand=True,
+                            center_children=Label(
+                                label="~", style="font-size:25px; color: var(--outline)"
+                            ),
+                        ),
+                        Tile(style_classes=["off"]),
                         # Box(style='background-color:white; min-height:60px; min-width:140px; border-radius:20px;'),
                         # Box(style='background-color:white; min-height:60px; min-width:70px; border-radius:20px;'),
                     ],
@@ -162,15 +168,43 @@ class Dashboard(Box):
                         orientation="v",
                         v_expand=True,
                         spacing=3,
-                        children=[self.notification_box, self.notification_box_2],
+                        children=[
+                            Label(
+                                label="Notification Center",
+                                style="color:var(--foreground); margin-bottom:3px;",
+                            ),
+                            self.notification_box,
+                            self.notification_box_2,
+                        ],
                     ),
-                    add_hover_cursor(widget = Button(
-                        style="all:unset",
-                        v_expand=True,
+                    Box(
+                        orientation="v",
                         h_expand=True,
-                        child=self.widget_stack,
-                        on_clicked=lambda *_: self.cycle_widgets(),
-                    )),
+                        v_expand=True,
+                        children=[
+                            Box(
+                                h_align="end",
+                                children=[
+                                    Label(
+                                        markup=icons.edit,
+                                        style="font-size:25px; margin-right:15px; color:var(--foreground)",
+                                    ),
+                                    Label(
+                                        markup=icons.settings, style="font-size:25px; color:var(--foreground)"
+                                    ),
+                                ],
+                            ),
+                            add_hover_cursor(
+                                widget=Button(
+                                    style="all:unset",
+                                    v_expand=True,
+                                    h_expand=True,
+                                    child=self.widget_stack,
+                                    on_clicked=lambda *_: self.cycle_widgets(),
+                                )
+                            ),
+                        ],
+                    ),
                 ],
             ),
             child_revealed=True,
@@ -201,8 +235,7 @@ class Dashboard(Box):
             self.notification_container.set_reveal_child(False)
         else:
             self.notification_container.set_reveal_child(True)
-        
-        
+
         rows = self.tiles.get_children()
         for row in rows:
             elems = row.get_children()
@@ -214,19 +247,23 @@ class Dashboard(Box):
                         try:
                             elem.mini_view()
                         except:
-                            logger.error(f'Failed to switch {elem.get_name()} to mini view')
+                            logger.error(
+                                f"Failed to switch {elem.get_name()} to mini view"
+                            )
                     else:
                         try:
                             elem.maxi_view()
                         except:
-                            logger.error(f'Failed to switch {elem.get_name()} to mini view')
+                            logger.error(
+                                f"Failed to switch {elem.get_name()} to mini view"
+                            )
 
         print("search complete")
 
     def cycle_widgets(self, forward=True):
         if not self.widget_stack:
             return
-        
+
         widget_list = self.widget_stack.get_children()
 
         current_widget = self.widget_stack.get_visible_child()

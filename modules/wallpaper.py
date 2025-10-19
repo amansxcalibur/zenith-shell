@@ -62,7 +62,7 @@ class WallpaperSelector(Box):
         self.viewport.set_model(Gtk.ListStore(GdkPixbuf.Pixbuf, str))
         self.viewport.set_pixbuf_column(0)
         # Hide text column so only the image is shown
-        self.viewport.set_text_column(1)
+        self.viewport.set_text_column(0)
         self.viewport.set_item_width(0)
         self.viewport.connect("item-activated", self.on_wallpaper_selected)
 

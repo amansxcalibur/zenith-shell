@@ -72,7 +72,7 @@ class WavyClock(Gtk.DrawingArea):
         hour_angle = (hour / 12.0 - ANGLE_OFFSET) * math.tau
         minute_angle = (minute / 60.0 - ANGLE_OFFSET) * math.tau
 
-        dot_radius = int(width / 20)  # 7
+        dot_radius = int(width / 18)  # 7
         hour_orbit = base_radius * 0.8 - dot_radius * 4
         minute_orbit = base_radius * 0.8 - dot_radius * 2
         second_orbit = base_radius * 0.8

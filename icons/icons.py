@@ -179,8 +179,9 @@ wind: str = chr(0xe27e)
 pressure: str = chr(0xf084d)
 
 # Settings
-settings: str = chr(0xf1a2a)
+settings: str = chr(0xf013)
 blur: str = chr(0xf00b5)
+edit: str = chr(0xf01f)
 
 exceptions: list[str] = ['font_family', 'font_weight', 'span']
 
