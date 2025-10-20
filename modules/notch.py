@@ -60,7 +60,6 @@ class Notch(Window):
 
 
         self.launcher = AppLauncher(notch=self)
-        # self.launcher = Box()
         self.launcher.add_style_class("launcher-contract-init")
         self.wallpaper = WallpaperSelector(notch=self)
         self.wallpaper.add_style_class("wallpaper-contract")

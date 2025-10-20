@@ -194,6 +194,8 @@ class WeatherCard(Box):
             style_classes=["card"],
             h_align="end",
             label=initial_data.description,
+            line_wrap="word-char",
+            max_chars_width=15,
         )
 
         self.children = [

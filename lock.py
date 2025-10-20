@@ -34,6 +34,12 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk
 
+# TODO: 
+# - handle runtime keymap changes.
+# - multi monitor setups
+# - handle screen configuration change
+# - mlock for passwords (sweat cpython)
+# - dpms handle
 
 class InputGrabber:
     """Handles X11 keyboard and pointer grabbing."""
@@ -88,7 +94,7 @@ class InputGrabber:
         self.xwin = self.display.create_resource_object("window", xid)
 
         self.xwin.change_attributes(
-            # override_redirect=True,
+            override_redirect=True,
             event_mask=X.KeyPressMask
             | X.KeyReleaseMask
         )
@@ -243,7 +249,7 @@ class Authenticator:
 
 class LockScreen(Window):
     def __init__(self):
-        super().__init__(title="Lock Screen", layer="top", type_hint="normal")
+        super().__init__(title="Lock Screen", layer="top", type_hint="splashscreen")
 
         self.fullscreen()
         # self.set_keep_above(True)
@@ -304,10 +310,14 @@ class LockScreen(Window):
     def _on_mapped(self, *_):
         GLib.idle_add(self._try_grab_input_with_retry)
 
-    def _try_grab_input_with_retry(self):
+    def _try_grab_input_with_retry(self, attempts:int = 100):
         if not self.grabber.try_grab():
-            logger.warning("Grab failed, retrying in 100ms...")
-            GLib.timeout_add(100, self._try_grab_input_with_retry)
+            logger.warning(f"Grab failed (Attempts left:{attempts}), retrying in 100ms...")
+            if attempts>0:
+                GLib.timeout_add(10, self._try_grab_input_with_retry, attempts-1)
+            else:
+                logger.error("Could not successfully grab inputs")
+                self._unlock()
             return False
         return False
 
