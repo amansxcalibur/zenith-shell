@@ -12,7 +12,7 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.widgets.label import Label
 from fabric.utils.helpers import exec_shell_command_async, exec_shell_command
 import config.info as info
-import icons.icons as icons
+import icons
 from PIL import Image
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor

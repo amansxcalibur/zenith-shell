@@ -12,7 +12,7 @@ import os
 import re
 import math
 import subprocess
-import icons.icons as icons
+import icons
 import config.info as info
 
 class AppLauncher(Box):

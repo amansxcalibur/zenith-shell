@@ -8,7 +8,7 @@ from fabric.widgets.eventbox import EventBox
 from services.player_service import PlayerManager, PlayerService
 from modules.wiggle_bar import WigglyWidget
 
-import icons.icons as icons
+import icons
 import config.info as info
 
 from loguru import logger
@@ -172,11 +172,6 @@ class PlayerMini(Box):
         if current_artwork:
             self._apply_artwork(self._player_service, current_artwork)
 
-    def on_destroy(self, *_):
-        """Cleanup widget on destroy"""
-        logger.debug(f"PlayerMini UI destroyed for {self._player_service._player.props.player_name}")
-        # service cleanup is handled by PlayerManager
-
     def on_update_track_position(self, sender, pos, dur):
         if dur == 0:
             return
@@ -287,6 +282,11 @@ class PlayerMini(Box):
             self._player_service._player.set_shuffle(False)
         shuffle_button.get_child().set_style("color: var(--outline)")
 
+    def on_destroy(self, *_):
+        """Cleanup widget on destroy"""
+        logger.debug(f"PlayerMini UI destroyed for {self._player_service._player.props.player_name}")
+        # service cleanup is handled by PlayerManager
+
 
 class PlaceholderMini(Box):
     def __init__(self, **kwargs):
@@ -364,8 +364,7 @@ class PlayerContainerMini(Box):
         
         self.mini_tile_icon = Label(
             name="disc",
-            style_classes=["tile-icon"],
-            style="font-size:30px; margin:0px; padding:0px;",
+            style_classes=["tile-icon", "special"],
             markup=icons.disc,
             justification="center",
         )
@@ -386,10 +385,10 @@ class PlayerContainerMini(Box):
         # track UI instances: player_name -> PlayerMini widget
         self.player_widgets = {}
         
-        self.init_players()
-        
         self.event_box.connect("scroll-event", self.on_scroll)
         self.stack.connect("notify::visible-child", self.on_visible_child_changed)
+        
+        self.init_players()
 
     def init_players(self):
         """Create UI instances of existing players"""

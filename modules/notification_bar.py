@@ -8,7 +8,7 @@ from fabric.widgets.overlay import Overlay
 
 
 import config.info as info
-import icons.icons as icons
+import icons
 from utils.helpers import toggle_class
 
 import subprocess

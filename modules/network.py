@@ -3,7 +3,7 @@ from fabric.widgets.label import Label
 from modules.tile import Tile
 from services.network import NetworkService
 
-import icons.icons as icons
+import icons
 
 class Network(Tile):
     def __init__(self, **kwargs):

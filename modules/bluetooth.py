@@ -2,7 +2,7 @@ from fabric.widgets.label import Label
 
 from modules.tile import Tile
 
-import icons.icons as icons
+import icons
 
 class Bluetooth(Tile):
     def __init__(self, **kwargs):

@@ -7,7 +7,7 @@ from fabric.widgets.eventbox import EventBox
 from widgets.animated_scale import AnimatedScale
 from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
 from services.volume_service import VolumeService
-import icons.icons as icons
+import icons
 import config.info as info
 
 class VolumeSlider(AnimatedScale):

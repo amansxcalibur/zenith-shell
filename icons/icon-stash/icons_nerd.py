@@ -1,9 +1,3 @@
-# Parameters
-font_family: str = 'tabler-icons'
-font_weight: str = 'normal'
-
-span: str = f"<span font-family='{font_family}' font-weight='{font_weight}'>"
-
 #Panels
 apps: str = "&#xf1fd;"
 dashboard: str = "&#xea87;"
@@ -183,11 +177,18 @@ settings: str = chr(0xf013)
 blur: str = chr(0xf00b5)
 edit: str = chr(0xf01f)
 
-exceptions: list[str] = ['font_family', 'font_weight', 'span']
-
 # Vertical
 toggle_horizontal: str = chr(0xf0885)
 toggle_vertical: str = chr(0xf0886)
+
+
+# Parameters
+font_family: str = ' '
+font_weight: str = 'normal'
+
+span: str = f"<span font-family='{font_family}' font-weight='{font_weight}'>"
+
+exceptions: list[str] = ['font_family', 'font_weight', 'span']
 
 def apply_span() -> None:
     global_dict = globals()

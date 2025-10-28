@@ -25,6 +25,18 @@
     font-family: "ZedMono NF", sans-serif;
   } */
 
+/* * {
+  font-family: "Material Symbols Rounded";
+} */
+
+.material-label {
+    font-family: "Material Symbols Rounded";
+    /* font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; */
+    /* display: inline-block; */
+    /* width: 1em; */
+    /* text-align: center; */
+}
+
 #right {
   border-top-left-radius: 18px;
 }
@@ -232,22 +244,21 @@ button:focus {
 
 #orientation-label {
   color: var(--foreground);
-  font-size: 20px;
-  margin-left: -7px;
+  font-size: 25px;
 }
 
-#pill{
+#pill {
   background-color: black;
   /* min-height: 0px;
   min-width: 0px; */
 }
 
-#pill.expand{
+#pill.expand {
   min-width: 100px;
   min-height: 0px;
 }
 
-#start-container{
+#start-container {
   background-color: red;
   min-width: 1000px;
 }

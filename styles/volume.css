@@ -88,7 +88,12 @@
 #vol-label,
 #mic-label,
 #brightness-label {
-  font-size: 20px;
+  font-size: 25px;
+}
+
+#vol-label{
+  font-size: 23px;
+  margin-top: -1px; 
 }
 
 #vol-label.muted,
@@ -124,10 +129,7 @@
   margin-left: -9px;
   margin-bottom: -1px;
 }
-.brightness-adjust {
-  margin-left: -7px;
-  margin-bottom: -1px;
-}
+
 #brightness-label,
 #vol-label {
   color: antiquewhite;
@@ -230,12 +232,12 @@ highlight {
 .scale-icon-container {
   background-color: var(--primary);
   border-radius: 12px 0 0 12px;
-  min-width: 30px;
+  min-width: 35px;
 }
 
 .scale-icon {
   color: black;
-  font-size: 18px;
+  font-size: 22px;
 }
 
 #vol-brightness-container {

@@ -3,7 +3,7 @@ from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.utils.helpers import exec_shell_command_async
 
-import icons.icons as icons
+import icons
 from config.info import SCRIPTS_DIR, SHELL_NAME
 
 

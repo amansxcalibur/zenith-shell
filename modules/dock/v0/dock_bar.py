@@ -8,10 +8,11 @@ from i3ipc import Connection
 from modules.systray import SystemTray
 from modules.workspaces import Workspaces
 from modules.metrics import MetricsSmall, Battery
-import config.info as info
-import icons.icons as icons
-from utils.helpers import toggle_class
 from modules.dock.v0.dock_modules import DockModuleOverlay
+
+import config.info as info
+import icons
+from utils.helpers import toggle_class
 
 import gi
 
@@ -70,9 +71,7 @@ class DockBar(Window):
             child=Label(
                 name="orientation-label",
                 markup=(
-                    icons.toggle_vertical
-                    if not info.VERTICAL
-                    else icons.toggle_horizontal
+                    icons.toggle_orientation
                 ),
             ),
             on_clicked=lambda b, *_: self.toggle_vertical(),

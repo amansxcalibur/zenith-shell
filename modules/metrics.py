@@ -19,7 +19,7 @@ from fabric.core.service import Service, Signal
 from services.animator import Animator
 from widgets.popup_window import PopupWindow
 from widgets.animated_scale import AnimatedScale
-import icons.icons as icons
+import icons as icons
 
 import config.info as info
 
@@ -428,7 +428,7 @@ class Battery(Button):
 
         # ------------------ Battery ------------------
         self.bat_icon = Label(
-            name="bat-icon", style_classes="metrics-icon", markup=icons.battery
+            angle=90,name="bat-icon", style_classes="metrics-icon", markup=icons.battery
         )
         self.bat_circle = CircularProgressBar(
             name="metrics-circle",
@@ -481,7 +481,6 @@ class Battery(Button):
             default_value=0,
         )
         self.batt_fabricator.changed.connect(self.update_battery)
-        GLib.idle_add(self.update_battery, None, shared_provider.get_battery())
 
         # Initial state of the revealers and variables for hover management
         self.hide_timer = None

@@ -3,7 +3,7 @@ from services.animator import Animator
 
 class AnimatedCircularProgressBar(CircularProgressBar):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(line_style='round',**kwargs)
         self.animator = (
             Animator(
                 bezier_curve=(0.15, 0.88, 0.68, 0.95),

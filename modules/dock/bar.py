@@ -15,7 +15,7 @@ from modules.dock.layout_manager import LayoutManager
 from modules.dock.module_overlay import HoverOverlay, HolePlaceholder
 
 import config.info as info
-import icons.icons as icons
+import icons
 from utils.helpers import toggle_class
 from utils.cursor import add_hover_cursor
 
@@ -83,9 +83,7 @@ class DockBar(Window):
             child=Label(
                 name="orientation-label",
                 markup=(
-                    icons.toggle_vertical
-                    if not info.VERTICAL
-                    else icons.toggle_horizontal
+                    icons.toggle_orientation
                 ),
             ),
             on_clicked=lambda b, *_: self.toggle_vertical(),

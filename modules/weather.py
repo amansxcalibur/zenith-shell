@@ -13,7 +13,7 @@ from fabric.core.service import Service, Signal, Property
 
 from widgets.popup_window import PopupWindow
 import config.info as info
-import icons.icons as icons
+import icons
 from utils.cursor import add_hover_cursor
 from utils.colors import get_css_variable, hex_to_rgb01
 

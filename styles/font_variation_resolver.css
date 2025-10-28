@@ -1,0 +1,68 @@
+#resolver-container {
+  /* background-color: var(--surface-dull);
+  padding: 20px;
+  margin: 0px;
+  min-width: 400px;
+  border-radius: 20px; */
+}
+
+.variation-type-label {
+  min-width: 80px;
+}
+
+#control-slider-mui.variation-scale highlight,
+#control-slider-mui.variation-scale trough {
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+
+#stack-switcher {
+  all: unset;
+}
+
+#settings {
+  background-color: var(--shadow);
+  border-radius: 40px;
+  padding: 20px;
+}
+
+#settings-stack {
+  background-color: var(--surface-dull);
+  padding: 20px;
+  margin: 0px;
+  min-width: 400px;
+  border-radius: 20px;
+}
+
+.settings-option-btn {
+  all: unset;
+  padding: 15px;
+  border-radius: 15px;
+}
+
+.settings-option-btn:hover {
+  background-color: var(--surface);
+}
+
+.settings-option-btn.checked {
+  background-color: var(--surface-bright);
+  border-radius: 25px;
+}
+
+.settings-option-btn.checked > * > * {
+  /* color: var(--surface); */
+}
+
+.settings-option-label{}
+
+#notebook header {
+  all: unset;
+  background-color: aqua;
+  padding: 0px;
+  margin: 0px;
+}
+
+#settings-tab {
+  all: unset;
+  background-color: black;
+}

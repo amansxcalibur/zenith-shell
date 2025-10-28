@@ -119,7 +119,6 @@ class LayoutManager:
     def set_hole_state(self, source, event, state: bool):
         """Handles main hole collapse on module unhover."""
         if not state:
-            print("event:", event, "\n")
             self.starter_box.add_style_class("start")
             self.ender_box.add_style_class("end")
 

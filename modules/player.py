@@ -7,7 +7,7 @@ from fabric.widgets.stack import Stack
 from services.player_service import PlayerManager, PlayerService
 from modules.wiggle_bar import WigglyWidget
 
-import icons.icons as icons
+import icons
 import config.info as info
 
 from loguru import logger

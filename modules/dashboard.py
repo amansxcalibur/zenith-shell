@@ -13,7 +13,7 @@ from modules.notification import NotificationTile
 from modules.player_mini import PlayerContainerMini
 from modules.weather import WeatherPill
 
-import icons.icons as icons
+import icons
 import config.info as info
 from utils.cursor import add_hover_cursor
 
@@ -190,7 +190,7 @@ class Dashboard(Box):
                                         style="font-size:25px; margin-right:15px; color:var(--foreground)",
                                     ),
                                     Label(
-                                        markup=icons.settings, style="font-size:25px; color:var(--foreground)"
+                                        markup=icons.settings, style="font-size:25px; color:var(--foreground);"
                                     ),
                                 ],
                             ),

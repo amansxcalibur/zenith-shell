@@ -8,7 +8,7 @@ from modules.metrics import MetricsProvider
 from modules.controls import ControlsManager
 
 import config.info as info
-import icons.icons as icons
+import icons
 
 import gi
 

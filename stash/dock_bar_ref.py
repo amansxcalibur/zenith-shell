@@ -14,7 +14,7 @@ from modules.systray import SystemTray
 from modules.workspaces import Workspaces
 from utils.helpers import toggle_config_vertical_flag
 import config.info as info
-import icons.icons as icons
+import icons.icons_material as icons
 
 from utils.cursor import add_hover_cursor
 

@@ -8,6 +8,7 @@
   --on-secondary: {{colors.on_secondary.default.hex}};
   --tertiary: {{colors.tertiary.default.hex}};
   --on-tertiary: {{colors.on_tertiary.default.hex}};
+  --surface-dull: {{colors.surface.default.hex | set_lightness: -2.5}};
   --surface: {{colors.surface.default.hex}};
   --surface-bright: {{colors.surface_bright.default.hex}};
   --error: {{colors.error.default.hex}};

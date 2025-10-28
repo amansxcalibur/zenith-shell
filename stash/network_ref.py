@@ -5,7 +5,7 @@ from fabric.widgets.button import Button
 # from services.network import NetworkClient
 # import info as data
 from fabric.utils.helpers import exec_shell_command_async, invoke_repeater
-import icons.icons as icons
+import icons.icons_material as icons
 import psutil
 
 class NetworkApplet(Button):

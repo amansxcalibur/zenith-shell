@@ -4,7 +4,7 @@ from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.widgets.revealer import Revealer
 
-import icons.icons as icons
+import icons
 import config.info as info
 from utils.cursor import add_hover_cursor
 
@@ -57,7 +57,7 @@ class Tile(Box):
 
         self.menu_button = Button(
             style_classes="tile-button",
-            child=Label(style_classes="tile-icon", markup=icons.arrow_head),
+            child=Label(style_classes="tile-icon", markup=icons.arrow_forward),
             on_clicked=self.handle_menu_click,
         )
 

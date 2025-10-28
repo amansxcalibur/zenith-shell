@@ -11,7 +11,7 @@ from gi.repository import Gdk
 
 from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
 from widgets.animated_scale import AnimatedScale
-import icons.icons as icons
+import icons
 import subprocess
 import re
 import config.info as info
@@ -105,7 +105,6 @@ class BrightnessSmall(Box):
         self.brightness_label = Label(
             name="brightness-label",
             markup=icons.brightness,
-            style_classes="brightness-adjust",
         )
         self.progress_bar = AnimatedCircularProgressBar(
             name="button-brightness",

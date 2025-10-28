@@ -73,7 +73,7 @@ class Notch(Window):
         self.stack = Stack(
             name="pill-container",
             transition_type="crossfade",
-            transition_duration=100,
+            transition_duration=250,
             children=[
                 self.pill_compact,
                 # self.user,

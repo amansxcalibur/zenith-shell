@@ -16,7 +16,7 @@ from fabric.utils import invoke_repeater
 from modules.tile import Tile
 
 from utils.helpers import toggle_class
-import icons.icons as icons
+import icons
 import config.info as info
 
 import gi

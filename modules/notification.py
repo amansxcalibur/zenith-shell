@@ -15,7 +15,7 @@ from fabric.utils import invoke_repeater
 from modules.tile import Tile
 
 from utils.helpers import toggle_class
-import icons.icons as icons
+import icons
 import config.info as info
 
 import gi
@@ -128,7 +128,8 @@ class NotificationWidget(EventBox):
                                 label=self._notification.app_name,
                                 h_align="start",
                                 v_expand=True,
-                                ellipsization="start",
+                                ellipsization="end",
+                                max_chars_width=27,
                             )
                             .build()
                             .add_style_class("app-name")
@@ -428,7 +429,12 @@ class NotificationManager(Window):
                 self._active_notifications.remove(notification_widget)
                 self.active_notifications_box.remove(notification_widget)
 
-            self.viewport.add(notification_widget)
+            # flex tape fix
+            if notification_widget.get_parent() is not self.viewport:
+                self.viewport.add(notification_widget)
+            else:
+                logger.debug("Skipping re-add: widget already in viewport")
+
 
             self._update_ui_state()
 

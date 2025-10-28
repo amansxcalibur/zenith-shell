@@ -27,7 +27,7 @@ A SOSS shell for <b>X11</b> and <b>i3wm</b>, crafted using [fabric](https://gith
 <img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/screenshots/lockscreen.png">
 
 > [!WARNING]
-> The lockscreen is currently an MVP and may not handle all edge cases. While functional, please test thoroughly in a safe environment before relying on it for security-critical scenarios.
+> The lockscreen is currently a WIP and may not handle all edge cases. While barely functional, it is far from secure. Please test thoroughly in a safe environment before relying on it for security-critical scenarios.
 
 > [!NOTE]
 > This repository **does not include** my i3 configuration scripts or shell control integrations, which are essential for full functionality and automation.
