@@ -76,7 +76,7 @@ class ControlsManager:
             )
         )
         self.popup_win = PopupWindow(
-            widget=self.vol_brightness_box,
+            pointing_widget=self.vol_brightness_box,
             child=Box(
                 name="control-slider-mui-container",
                 spacing=7,

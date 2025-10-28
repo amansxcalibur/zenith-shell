@@ -137,7 +137,7 @@ class WeatherMini(EventBox):
 
     def build_popup_win(self):
         self.popup_win = PopupWindow(
-            widget=self,
+            pointing_widget=self,
             child=WeatherCard(),
         )
 

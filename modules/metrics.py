@@ -337,7 +337,7 @@ class MetricsSmall(Button):
         self.disk_slider = MetricsSliderMaterial3(orientation='v')
 
         self.popup_win = PopupWindow(
-            widget=self,
+            pointing_widget=self,
             child=Box(
                 name="control-slider-mui-container",
                 spacing=7,
