@@ -193,52 +193,64 @@ class PlayerMini(Box):
         def _apply():
             self.album_cover.set_style(f"background-image:url('{art_path}')")
             self.set_style(f"background-image:url('{art_path}')")
+            return False
         GLib.idle_add(_apply)
 
     def on_metadata(self, sender, metadata, player):
         keys = metadata.keys()
         if "xesam:artist" in keys and "xesam:title" in keys:
             song_title = metadata["xesam:title"]
-            self.song.set_label(song_title)
-
             artist_list = metadata["xesam:artist"]
             artist_name = artist_list[0] if artist_list else "Unknown Artist"
-            self.artist.set_label(artist_name)
 
-        if (
-            player.props.playback_status.value_name
-            == "PLAYERCTL_PLAYBACK_STATUS_PLAYING"
-        ):
-            self.on_play(self._player_service)
+            def _update_metadata_labels():
+                self.song.set_label(song_title)
+                self.artist.set_label(artist_name)
+                return False
+            
+            GLib.idle_add(_update_metadata_labels)
 
-        if player.props.shuffle == True:
-            self.shuffle_button.get_child().set_markup(icons.disable_shuffle)
-            self.shuffle_button.get_child().set_name("disable-shuffle")
-        else:
-            self.shuffle_button.get_child().set_markup(icons.shuffle)
-            self.shuffle_button.get_child().set_name("shuffle")
+        self.on_shuffle(sender, player, player.props.shuffle)
+
+        def _update_playback_status():
+            if (
+                player.props.playback_status.value_name
+                == "PLAYERCTL_PLAYBACK_STATUS_PLAYING"
+            ):
+                self.on_play(self._player_service)
+            return False
+        
+        GLib.idle_add(_update_playback_status)
 
     def on_pause(self, sender):
-        self.play_pause_button.get_child().set_markup(icons.play)
+        def _set_pause_markup():
+            self.play_pause_button.get_child().set_markup(icons.play)
+        GLib.idle_add(_set_pause_markup)
+
         self.wiggly.dragging = True
         self.wiggly.update_amplitude(True)
         self.wiggly.pause = True
 
     def on_play(self, sender):
-        self.play_pause_button.get_child().set_markup(icons.pause)
+        def _set_play_markup():
+            self.play_pause_button.get_child().set_markup(icons.pause)
+        GLib.idle_add(_set_play_markup)
+
         self.wiggly.pause = False
         self.wiggly.dragging = False
         self.wiggly.update_amplitude(False)
 
     def on_shuffle(self, sender, player, status):
         logger.debug(f"Shuffle callback status: {status}")
-        if status == False:
-            self.shuffle_button.get_child().set_markup(icons.shuffle)
-            self.shuffle_button.get_child().set_name("shuffle")
-        else:
-            self.shuffle_button.get_child().set_markup(icons.disable_shuffle)
-            self.shuffle_button.get_child().set_name("disable-shuffle")
-        self.shuffle_button.get_child().set_style("color: white")
+        def _update_shuffle_status():
+            if status == False:
+                self.shuffle_button.get_child().set_markup(icons.shuffle)
+                self.shuffle_button.get_child().set_name("shuffle")
+            else:
+                self.shuffle_button.get_child().set_markup(icons.disable_shuffle)
+                self.shuffle_button.get_child().set_name("disable-shuffle")
+        # self.shuffle_button.get_child().set_style("color: white")
+        GLib.idle_add(_update_shuffle_status)
 
     def handle_next(self):
         self._player_service._player.next()
@@ -259,18 +271,18 @@ class PlayerMini(Box):
             self.play_pause_button.get_child().set_markup(icons.play)
 
         if is_playing:
-            _set_pause_ui()
+            GLib.idle_add(_set_pause_ui)
         else:
-            _set_play_ui()
+            GLib.idle_add(_set_play_ui)
 
         try:
             self._player_service._player.play_pause()
         except Exception as e:
             # revert if signal failed
             if is_playing:
-                _set_pause_ui()
+                GLib.idle_add(_set_pause_ui)
             else:
-                _set_play_ui()
+                GLib.idle_add(_set_play_ui)
             logger.warning(f"Failed to toggle playback: {e}")
 
     def handle_shuffle(self, shuffle_button):
@@ -280,7 +292,7 @@ class PlayerMini(Box):
             logger.debug(f"Setting to true: {self._player_service._player.props.player_name}")
         else:
             self._player_service._player.set_shuffle(False)
-        shuffle_button.get_child().set_style("color: var(--outline)")
+        # shuffle_button.get_child().set_style("color: var(--outline)")
 
     def on_destroy(self, *_):
         """Cleanup widget on destroy"""
@@ -434,11 +446,14 @@ class PlayerContainerMini(Box):
 
     def switch_player(self, player_name, button):
         """Switch to a specific player"""
-        self.stack.set_visible_child_name(player_name)
+        def _switch_idle():
+            self.stack.set_visible_child_name(player_name)
 
-        for btn in self.player_switch_container.center_children:
-            btn.remove_style_class("active")
-        button.add_style_class("active")
+            for btn in self.player_switch_container.center_children:
+                btn.remove_style_class("active")
+            button.add_style_class("active")
+
+        GLib.idle_add(_switch_idle)
 
     def on_player_vanish(self, manager, player_name: str):
         """Called when a player disappears"""
@@ -482,11 +497,15 @@ class PlayerContainerMini(Box):
             return
             
         curr_name = curr.get_name()
-        for btn in self.player_switch_container.center_children:
-            if btn.get_name() == curr_name:
-                btn.add_style_class("active")
-            else:
-                btn.remove_style_class("active")
+        def _update_buttons():
+            for btn in self.player_switch_container.center_children:
+                if btn.get_name() == curr_name:
+                    btn.add_style_class("active")
+                else:
+                    btn.remove_style_class("active")
+            return False
+        
+        GLib.idle_add(_update_buttons)
 
     def on_scroll(self, widget, event):
         """Handle scroll events to switch between players"""
@@ -530,8 +549,11 @@ class PlayerContainerMini(Box):
             return
             
         curr_player = curr_child.get_name()
-        self.mini_tile_icon.set_name(curr_player)
-        self.mini_tile_icon.set_markup(getattr(icons, curr_player, icons.disc))
+
+        def _update_mini_tile_icon():
+            self.mini_tile_icon.set_name(curr_player)
+            self.mini_tile_icon.set_markup(getattr(icons, curr_player, icons.disc))
+        GLib.idle_add(_update_mini_tile_icon)
 
     def get_mini_view(self):
         """Get the mini tile view widget"""

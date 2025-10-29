@@ -57,7 +57,7 @@ class Tile(Box):
 
         self.menu_button = Button(
             style_classes="tile-button",
-            child=Label(style_classes="tile-icon", markup=icons.arrow_forward),
+            child=Label(name="menu-btn", style_classes="tile-icon", markup=icons.arrow_forward),
             on_clicked=self.handle_menu_click,
         )
 

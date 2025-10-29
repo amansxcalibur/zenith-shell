@@ -30,13 +30,13 @@ class Player(Box):
         player = self._player_service._player
         MAX_CHARS = 30
 
-        GLib.idle_add(
-            lambda: (
-                self.set_style(
-                    f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
-                )
+        def _set_initial_bg():
+            self.set_style(
+                f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
             )
-        )
+            return False
+
+        GLib.idle_add(_set_initial_bg)
 
         self.player_icon = Label(
             name=player.props.player_name,
@@ -62,13 +62,18 @@ class Player(Box):
             justification="left",
             h_align="start",
             ellipsization="end",
+            max_chars_width=MAX_CHARS,
         )
-        self.song.set_max_width_chars(MAX_CHARS)
+        # self.song.set_max_width_chars(MAX_CHARS)
 
         self.artist = Label(
-            name="artist", label="artist", justification="left", h_align="start"
+            name="artist",
+            label="artist",
+            justification="left",
+            h_align="start",
+            max_chars_width=MAX_CHARS,
         )
-        self.artist.set_max_width_chars(MAX_CHARS)
+        # self.artist.set_max_width_chars(MAX_CHARS)
 
         self.music = Box(
             name="music",
@@ -205,13 +210,6 @@ class Player(Box):
         if current_artwork:
             self._apply_artwork(self._player_service, current_artwork)
 
-    def on_destroy(self, *_):
-        """Widget cleanup on destroy"""
-        logger.debug(
-            f"Player UI destroyed for {self._player_service._player.props.player_name}"
-        )
-        # service cleanup is handled by PlayerManager
-
     def on_update_track_position(self, sender, pos, dur):
         if dur == 0:
             return
@@ -232,11 +230,15 @@ class Player(Box):
     def _update_track_info(self, metadata, keys):
         if "xesam:artist" in keys and "xesam:title" in keys:
             song_title = metadata["xesam:title"]
-            self.song.set_label(song_title)
-
             artist_list = metadata["xesam:artist"]
             artist_name = artist_list[0] if artist_list else "Unknown Artist"
-            self.artist.set_label(artist_name)
+
+            def _update_metadata_label():
+                self.song.set_label(song_title)
+                self.artist.set_label(artist_name)
+                return False
+
+            GLib.idle_add(_update_metadata_label)
 
     def _apply_artwork(self, source, art_path):
         GLib.idle_add(lambda: self.set_style(f"background-image:url('{art_path}')"))
@@ -249,7 +251,7 @@ class Player(Box):
             self.player_icon.set_style(f"color: {primary_color}")
             self.player_source.set_style(f"background-color: {primary_color}")
 
-        GLib.idle_add(lambda: _apply())
+        GLib.idle_add(_apply)
 
     def _update_playback_status(self):
         if (
@@ -258,49 +260,57 @@ class Player(Box):
         ):
             self.on_play(self._player_service)
 
-    def _update_shuffle_status(self):
-        child = self.shuffle_button.get_child()
-        if self._player_service._player.props.shuffle:
-            child.set_markup(icons.disable_shuffle)
-            child.set_name("disable-shuffle")
-        else:
-            child.set_markup(icons.shuffle)
-            child.set_name("shuffle")
+    def _update_shuffle_status(self, status):
+        def _update():
+            child = self.shuffle_button.get_child()
+            if status:
+                child.set_markup(icons.disable_shuffle)
+                child.set_name("disable-shuffle")
+            else:
+                child.set_markup(icons.shuffle)
+                child.set_name("shuffle")
+            return False
+
+        GLib.idle_add(_update)
 
     def on_metadata(self, sender, metadata, player):
         keys = metadata.keys()
         self._update_track_info(metadata, keys)
         self._update_playback_status()
-        self._update_shuffle_status()
+        self._update_shuffle_status(player.props.shuffle)
 
     def on_pause(self, sender):
-        child = self.play_pause_button.get_child()
-        child.set_markup(icons.play)
-        child.set_name("pause-label")
+        def _set_pause_ui():
+            child = self.play_pause_button.get_child()
+            child.set_markup(icons.play)
+            child.set_name("pause-label")
+            self.play_pause_button.add_style_class("pause-track")
+            return False
+
+        GLib.idle_add(_set_pause_ui)
+
         self.wiggly.dragging = True
         self.wiggly.update_amplitude(True)
         self.wiggly.pause = True
-        self.play_pause_button.add_style_class("pause-track")
 
     def on_play(self, sender):
-        child = self.play_pause_button.get_child()
-        child.set_markup(icons.pause)
-        child.set_name("play-label")
+        def _set_play_ui():
+            child = self.play_pause_button.get_child()
+            child.set_markup(icons.pause)
+            child.set_name("play-label")
+            self.play_pause_button.remove_style_class("pause-track")
+            return False
+
+        GLib.idle_add(_set_play_ui)
+
         self.wiggly.pause = False
         self.wiggly.dragging = False
         self.wiggly.update_amplitude(False)
-        self.play_pause_button.remove_style_class("pause-track")
 
     def on_shuffle(self, sender, player, status):
         logger.debug(f"Shuffle callback status: {status}")
-        child = self.shuffle_button.get_child()
-        if status:
-            child.set_markup(icons.disable_shuffle)
-            child.set_name("disable-shuffle")
-        else:
-            child.set_markup(icons.shuffle)
-            child.set_name("shuffle")
-        child.set_style("color: white")
+        self._update_shuffle_status(status)
+        # child.set_style("color: white")
 
     def handle_next(self):
         self._player_service._player.next()
@@ -318,25 +328,27 @@ class Player(Box):
             self.play_pause_button.get_child().set_markup(icons.pause)
             self.play_pause_button.remove_style_class("pause-track")
             self.play_pause_button.get_child().set_name("pause-label")
+            return False
 
         def _set_play_ui():
             self.play_pause_button.get_child().set_markup(icons.play)
             self.play_pause_button.add_style_class("pause-track")
             self.play_pause_button.get_child().set_name("play-label")
+            return False
 
         if is_playing:
-            _set_play_ui()
+            GLib.idle_add(_set_play_ui)
         else:
-            _set_pause_ui()
+            GLib.idle_add(_set_pause_ui)
 
         try:
             self._player_service._player.play_pause()
         except Exception as e:
             # revert if signal failed
             if is_playing:
-                _set_play_ui()
+                GLib.idle_add(_set_play_ui)
             else:
-                _set_pause_ui()
+                GLib.idle_add(_set_pause_ui)
             logger.warning(f"Failed to toggle playback: {e}")
 
     def handle_shuffle(self, shuffle_button):
@@ -348,15 +360,23 @@ class Player(Box):
             )
         else:
             self._player_service._player.set_shuffle(False)
-        shuffle_button.get_child().set_style("color: var(--outline)")
+        # shuffle_button.get_child().set_style("color: var(--outline)")
+
+    def on_destroy(self, *_):
+        logger.debug(
+            f"Player UI destroyed for {self._player_service._player.props.player_name}"
+        )
+        # service cleanup is handled by PlayerManager
 
 
 class Placeholder(Box):
     def __init__(self, **kwargs):
         super().__init__(style_classes="player", **kwargs)
 
-        self.set_style(
-            f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+        GLib.idle_add(
+            lambda: self.set_style(
+                f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+            )
         )
 
         self.children = [
@@ -443,11 +463,15 @@ class PlayerContainer(Box):
 
     def switch_player(self, player_name, button):
         """Switch to a specific player"""
-        self.stack.set_visible_child_name(player_name)
+        def _switch():
+            self.stack.set_visible_child_name(player_name)
 
-        for btn in self.player_switch_container.center_children:
-            btn.remove_style_class("active")
-        button.add_style_class("active")
+            for btn in self.player_switch_container.center_children:
+                btn.remove_style_class("active")
+            button.add_style_class("active")
+            return False
+        
+        GLib.idle_add(_switch)
 
     def on_player_vanish(self, manager, player_name: str):
         """Called when a player disappears"""
@@ -491,11 +515,16 @@ class PlayerContainer(Box):
             return
 
         curr_name = curr.get_name()
-        for btn in self.player_switch_container.center_children:
-            if btn.get_name() == curr_name:
-                btn.add_style_class("active")
-            else:
-                btn.remove_style_class("active")
+        
+        def _update_buttons():
+            for btn in self.player_switch_container.center_children:
+                if btn.get_name() == curr_name:
+                    btn.add_style_class("active")
+                else:
+                    btn.remove_style_class("active")
+            return False
+        
+        GLib.idle_add(_update_buttons)
 
     def register_keybindings(self):
         """Register keyboard shortcuts"""

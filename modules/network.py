@@ -12,7 +12,7 @@ class Network(Tile):
             label="Disconnected",
             h_align="start",
             ellipsization="end",
-            max_chars_width=9
+            max_chars_width=8
         )
         self.state = None
 

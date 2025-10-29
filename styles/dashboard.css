@@ -77,6 +77,10 @@
   transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 
+#menu-btn{
+  margin-left: 0px;
+}
+
 .app-name{
   color: var(--outline);
   font-size: 15px;
@@ -89,4 +93,3 @@
 .body{
   color: var(--foreground);
 }
-
