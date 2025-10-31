@@ -5,8 +5,9 @@ from fabric.widgets.eventbox import EventBox
 from modules.volume import VolumeSmall, VolumeSlider, VolumeMaterial3
 from modules.brightness import BrightnessSlider, BrightnessSmall, BrightnessMaterial3
 from widgets.popup_window import PopupWindow
-from services.brightness_service import BrightnessService
 from services.volume_service import VolumeService
+from services.brightness_service import BrightnessService
+
 import config.info as info
 
 import gi
@@ -47,7 +48,7 @@ class AutoHideRevealer:
 class ControlsManager:
     _instance = None
 
-    def __new__(cls, notch=None):
+    def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._init_controls()
@@ -97,7 +98,7 @@ class ControlsManager:
 class BrightnessManager:
     _instance = None
 
-    def __new__(cls, notch=None):
+    def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._init_manager()
@@ -147,7 +148,7 @@ class BrightnessManager:
 class VolumeManager:
     _instance = None
 
-    def __new__(cls, notch=None):
+    def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._init_manager()

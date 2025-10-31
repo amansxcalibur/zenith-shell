@@ -1,34 +1,48 @@
 import os
-import hashlib
 import shutil
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import GdkPixbuf, Gtk, GLib, Gio, Gdk
-from fabric.widgets.box import Box
-from fabric.widgets.centerbox import CenterBox
-from fabric.widgets.entry import Entry
-from fabric.widgets.button import Button
-from fabric.widgets.scrolledwindow import ScrolledWindow
-from fabric.widgets.label import Label
-from fabric.utils.helpers import exec_shell_command_async, exec_shell_command
-import config.info as info
-import icons
+import asyncio
+import hashlib
 from PIL import Image
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
-import asyncio
+
+from fabric.widgets.box import Box
+from fabric.widgets.entry import Entry
+from fabric.widgets.label import Label
+from fabric.widgets.button import Button
+from fabric.widgets.centerbox import CenterBox
+from fabric.widgets.scrolledwindow import ScrolledWindow
+from fabric.utils.helpers import exec_shell_command_async, exec_shell_command
+
+import icons
+import config.info as info
+
+import gi
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import GdkPixbuf, Gtk, GLib, Gio, Gdk
+
 
 class WallpaperSelector(Box):
-    CACHE_DIR = os.path.expanduser("~/.cache/zenith-shell/thumbs")  # Changed from wallpapers to thumbs
+    CACHE_DIR = os.path.expanduser(
+        "~/.cache/zenith-shell/thumbs"
+    )  # Changed from wallpapers to thumbs
 
-    def __init__(self, **kwargs):
-        self.notch = kwargs["notch"]
+    def __init__(self, pill, **kwargs):
+        self._pill = pill
         # Delete the old cache directory if it exists
         old_cache_dir = os.path.expanduser("~/.cache/zenith-shell/wallpapers")
         if os.path.exists(old_cache_dir):
             shutil.rmtree(old_cache_dir)
-        
-        super().__init__(name="wallpapers", spacing=10, orientation="v", h_expand=False, v_expand=False, **kwargs)
+
+        super().__init__(
+            name="wallpapers",
+            spacing=10,
+            orientation="v",
+            h_expand=False,
+            v_expand=False,
+            **kwargs,
+        )
         os.makedirs(self.CACHE_DIR, exist_ok=True)
 
         # Process old wallpapers: use os.scandir for efficiency and only loop
@@ -44,12 +58,16 @@ class WallpaperSelector(Box):
                         new_full_path = os.path.join(info.WALLPAPERS_DIR, new_name)
                         try:
                             os.rename(full_path, new_full_path)
-                            print(f"Renamed old wallpaper '{full_path}' to '{new_full_path}'")
+                            print(
+                                f"Renamed old wallpaper '{full_path}' to '{new_full_path}'"
+                            )
                         except Exception as e:
                             print(f"Error renaming file {full_path}: {e}")
 
         # Refresh the file list after potential renaming
-        self.files = sorted([f for f in os.listdir(info.WALLPAPERS_DIR) if self._is_image(f)])
+        self.files = sorted(
+            [f for f in os.listdir(info.WALLPAPERS_DIR) if self._is_image(f)]
+        )
         self.thumbnails = []
         self.thumbnail_queue = []
         self.executor = ThreadPoolExecutor(max_workers=4)  # Shared executor
@@ -81,7 +99,7 @@ class WallpaperSelector(Box):
             name="search-entry-walls",
             placeholder="Search Wallpapers...",
             h_expand=True,
-            style_classes='' if not info.VERTICAL else "vertical",
+            style_classes="" if not info.VERTICAL else "vertical",
             notify_text=lambda entry, *_: self.arrange_viewport(entry.get_text()),
             on_key_press_event=self.on_search_entry_key_press,
         )
@@ -115,9 +133,7 @@ class WallpaperSelector(Box):
         # self.matugen_switcher.set_halign(Gtk.Align.CENTER)
         # self.matugen_switcher.set_active(True)
 
-        self.mat_icon = Label(name="mat-label", 
-                              markup=icons.palette
-                              )
+        self.mat_icon = Label(name="mat-label", markup=icons.palette)
 
         # Add the switcher to the header_box's start_children
         self.header_box = CenterBox(
@@ -126,13 +142,13 @@ class WallpaperSelector(Box):
             orientation="h",
             # start_children=[self.matugen_switcher, self.mat_icon],
             # start_children=[self.scheme_dropdown,],
-            start_children=[self.search_entry,self.scheme_dropdown],
+            start_children=[self.search_entry, self.scheme_dropdown],
             end_children=[
                 Button(
                     name="close-button",
                     child=Label(name="close-label", markup=icons.cancel),
                     tooltip_text="Exit",
-                    on_clicked=lambda *_: self.notch.close()
+                    on_clicked=lambda *_: self._pill.close(),
                 )
             ],
         )
@@ -221,14 +237,16 @@ class WallpaperSelector(Box):
         #     exec_shell_command_async(
         #         f'swww img {full_path} -t outer --transition-duration 1.5 --transition-step 255 --transition-fps 60 -f Nearest'
         #     )
-        exec_shell_command_async(f'feh --zoom fill --bg-fill {full_path}')
-        f = open(f'{info.HOME_DIR}/.cache/zenith-shell/current_wallpaper.txt', "w")
+        exec_shell_command_async(f"feh --zoom fill --bg-fill {full_path}")
+        f = open(f"{info.HOME_DIR}/.cache/zenith-shell/current_wallpaper.txt", "w")
         f.write(full_path)
         f.close()
 
         async def generate_theme():
             # the themes are updated when the "changed" signal is emitted by the monitor watching the styles directory.
-            exec_shell_command(f'matugen image {full_path} -t {selected_scheme} -c {info.HOME_DIR}/fabric/config/matugen/config.toml')
+            exec_shell_command(
+                f"matugen image {full_path} -t {selected_scheme} -c {info.HOME_DIR}/fabric/config/matugen/config.toml"
+            )
             print("this is the selected scheme ", selected_scheme)
 
         asyncio.run(generate_theme())
@@ -252,8 +270,14 @@ class WallpaperSelector(Box):
             if event.keyval in (Gdk.KEY_Up, Gdk.KEY_Down):
                 schemes_list = list(self.schemes.keys())
                 current_id = self.scheme_dropdown.get_active_id()
-                current_index = schemes_list.index(current_id) if current_id in schemes_list else 0
-                new_index = (current_index - 1) % len(schemes_list) if event.keyval == Gdk.KEY_Up else (current_index + 1) % len(schemes_list)
+                current_index = (
+                    schemes_list.index(current_id) if current_id in schemes_list else 0
+                )
+                new_index = (
+                    (current_index - 1) % len(schemes_list)
+                    if event.keyval == Gdk.KEY_Up
+                    else (current_index + 1) % len(schemes_list)
+                )
                 self.scheme_dropdown.set_active(new_index)
                 return True
             elif event.keyval == Gdk.KEY_Right:
@@ -277,7 +301,9 @@ class WallpaperSelector(Box):
             return
 
         if self.selected_index == -1:
-            new_index = 0 if keyval in (Gdk.KEY_Down, Gdk.KEY_Right) else total_items - 1
+            new_index = (
+                0 if keyval in (Gdk.KEY_Down, Gdk.KEY_Right) else total_items - 1
+            )
         else:
             current_index = self.selected_index
             allocation = self.viewport.get_allocation()
@@ -302,14 +328,19 @@ class WallpaperSelector(Box):
         self.viewport.unselect_all()
         path = Gtk.TreePath.new_from_indices([new_index])
         self.viewport.select_path(path)
-        self.viewport.scroll_to_path(path, False, 0.5, 0.5)  # Ensure the selected icon is visible
+        self.viewport.scroll_to_path(
+            path, False, 0.5, 0.5
+        )  # Ensure the selected icon is visible
         self.selected_index = new_index
 
     def _start_thumbnail_thread(self):
         thread = GLib.Thread.new("thumbnail-loader", self._preload_thumbnails, None)
 
     def _preload_thumbnails(self, _data):
-        futures = [self.executor.submit(self._process_file, file_name) for file_name in self.files]
+        futures = [
+            self.executor.submit(self._process_file, file_name)
+            for file_name in self.files
+        ]
         concurrent.futures.wait(futures)
         GLib.idle_add(self._process_batch)
 
@@ -354,7 +385,9 @@ class WallpaperSelector(Box):
 
     @staticmethod
     def _is_image(file_name: str) -> bool:
-        return file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp'))
+        return file_name.lower().endswith(
+            (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp")
+        )
 
     def on_search_entry_focus_out(self, widget, event):
         if self.get_mapped():

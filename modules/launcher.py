@@ -16,7 +16,7 @@ import icons
 import config.info as info
 
 class AppLauncher(Box):
-    def __init__(self, **kwargs):
+    def __init__(self, pill, **kwargs):
         super().__init__(
             name="app-launcher",
             visible=False,
@@ -24,7 +24,7 @@ class AppLauncher(Box):
             **kwargs,
         )
 
-        self.notch = kwargs["notch"]
+        self._pill = pill
         self.selected_index = -1  # Track the selected item index
 
         self._arranger_handler: int = 0
@@ -94,7 +94,7 @@ class AppLauncher(Box):
     def close_launcher(self):
         self.viewport.children = []
         self.selected_index = -1  # Reset selection
-        self.notch.close()
+        self._pill.close()
         # self.notch.close_notch()
 
     def open_launcher(self):
@@ -241,11 +241,11 @@ class AppLauncher(Box):
             return
         match text:
             case ":w":
-                self.notch.open_notch("wallpapers")
+                self._pill.open_pill("wallpapers")
             case ":d":
-                self.notch.open_notch("dashboard")
+                self._pill.open_pill("dashboard")
             case ":p":
-                self.notch.open_notch("power")
+                self._pill.open_pill("power")
             case _:
                 children = self.viewport.get_children()
                 if children:

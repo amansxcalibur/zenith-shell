@@ -1,6 +1,6 @@
-from fabric.widgets.button import Button
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
+from fabric.widgets.button import Button
 from fabric.utils.helpers import exec_shell_command_async
 
 import icons
@@ -78,4 +78,6 @@ class PowerMenu(Box):
         exec_shell_command_async("shutdown now")
 
     def close_power_menu(self):
-        exec_shell_command_async(f"fabric-cli exec {SHELL_NAME} 'notch.toggle_power_menu()'")
+        exec_shell_command_async(
+            f"fabric-cli exec {SHELL_NAME} 'pill.toggle_power_menu()'"
+        )

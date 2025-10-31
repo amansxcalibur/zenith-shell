@@ -1,156 +1,107 @@
-#wallpaper-icons:selected {
-    background-color: var(--outline);
-    border-radius: 0px;
-  }
-  
-  #scheme-dropdown {
-    background-color: var(--surface);
-    border-radius: 16px;
-  }
-  
-  #scheme-dropdown > * > * {
-    font-weight: bold;
-    color: var(--outline);
-    border: transparent 1px solid;
-    border-radius: 16px;
-  }
-
-  #scheme-dropdown > * > *:hover,
-  #scheme-dropdown> * > *:focus {
-    background-color: var(--surface-bright);
-    color: whitesmoke;
-  }
-  
-  #scheme-dropdown.box button.box.cellview {
-    background-color: var(--primary);
-  }
-  
-  #scheme-dropdown.box button.box.cellview:selected {
-    background-color: var(--surface-bright);
-  }
-  
-  #search-entry-walls {
-    min-width: 485px;
-    border-radius: 16px;
-    background-color: var(--surface);
-    margin-right: 10px;
-  }
-
-  #search-entry-walls.vertical{
-    min-width: 490px;
-  }
-  
-  /* Customize the overall switch appearance */
-  #matugen-switcher {
-    min-width: 40px;
-    min-height: 20px;
-    background-color: var(--surface);
-    border-radius: 15px;
-    padding: 2px;
-    transition: background-color 0.3s ease;
-  }
-  
-  /* Style the switch's slider */
-  #matugen-switcher slider {
-    background-color: var(--primary);
-    border-radius: 16px;
-    min-width: 20px;
-    min-height: 20px;
-    transition: background-color 0.1s cubic-bezier(0.5, 0.25, 0, 1.25), transform 0.25s cubic-bezier(0.5, 0.25, 0, 1.25);
-  }
-  
-  /* When the switch is active (checked) */
-  #matugen-switcher:checked {
-    background-color: var(--primary);
-  }
-  
-  /* Optional: additional styling for the slider when active */
-  #matugen-switcher:checked slider {
-    background-color: var(--shadow);
-  }
-  
-  #mat-label {
-    font-size: 24px;
-    margin-left: 4px;
-  }
-
-  .wallpaper-init{
-    margin: -999px;
-  }
-
-  .wallpaper-contract{
-    margin: -380px;
-    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
-    /* animation: wallContract 0.5s ease; */
-  }
-
-  /* #wallpapers.vertical.wallpaper-contract{
-    margin: -360px;
-    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
-  } */
-
-  .wallpaper-expand{
-    min-width: 740px;
-    min-height: 500px;
-    margin: 0px;
-    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
-    /* animation: wallExpand 0.5s ease; */
-  }
-
-  .vertical.wallpaper-expand{
-    min-width: 500px;
-    min-height: 787px;
-    margin: 0px;
-    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
-  }
-
-  @keyframes wallExpand {
-    0% {
-      margin: -150px;
-      min-width: 500px;
-      min-height: 245px;
-    }
-    100% {
-      margin: 0px;
-      min-width: 740px;
-      min-height: 500px;
-    }
-  }
-  @keyframes wallContract {
-    0% {
-      margin: 0px;
-    }
-    100% {
-      margin: -300px;
-    }
-  }
-  
-  *:not(entry) {
-    background-image: none;
+#wallpapers {
+  padding: 10px;
+  background-color: black;
+  border-radius: 25px;
+  min-height: 680px;
 }
-#wallpaper-icons{
+
+#wallpaper-icons:selected {
+  background-color: var(--outline);
+  border-radius: 0px;
+}
+
+#scheme-dropdown {
+  background-color: var(--surface);
+  border-radius: 16px;
+}
+
+#scheme-dropdown > * > * {
+  font-weight: bold;
+  color: var(--outline);
+  border: transparent 1px solid;
+  border-radius: 16px;
+}
+
+#scheme-dropdown > * > *:hover,
+#scheme-dropdown > * > *:focus {
+  background-color: var(--surface-bright);
+  color: whitesmoke;
+}
+
+#scheme-dropdown.box button.box.cellview {
+  background-color: var(--primary);
+}
+
+#scheme-dropdown.box button.box.cellview:selected {
+  background-color: var(--surface-bright);
+}
+
+#search-entry-walls {
+  min-width: 485px;
+  border-radius: 16px;
+  background-color: var(--surface);
+  margin-right: 10px;
+}
+
+#search-entry-walls.vertical {
+  min-width: 490px;
+}
+
+/* Customize the overall switch appearance */
+#matugen-switcher {
+  min-width: 40px;
+  min-height: 20px;
+  background-color: var(--surface);
+  border-radius: 15px;
+  padding: 2px;
+  transition: background-color 0.3s ease;
+}
+
+/* Style the switch's slider */
+#matugen-switcher slider {
+  background-color: var(--primary);
+  border-radius: 16px;
+  min-width: 20px;
+  min-height: 20px;
+  transition: background-color 0.1s cubic-bezier(0.5, 0.25, 0, 1.25),
+    transform 0.25s cubic-bezier(0.5, 0.25, 0, 1.25);
+}
+
+/* When the switch is active (checked) */
+#matugen-switcher:checked {
+  background-color: var(--primary);
+}
+
+/* Optional: additional styling for the slider when active */
+#matugen-switcher:checked slider {
+  background-color: var(--shadow);
+}
+
+#mat-label {
+  font-size: 24px;
+  margin-left: 4px;
+}
+
+*:not(entry) {
+  background-image: none;
+}
+#wallpaper-icons {
   border-bottom-left-radius: 20px;
   border-bottom-right-radius: 20px;
   background-image: none;
   background-color: black;
 }
-#scrolled-window.launcher.horizontal{
+#scrolled-window.launcher.horizontal {
   border-bottom-left-radius: 20px;
   border-bottom-right-radius: 20px;
   padding: 8px;
 }
 
-*{
+* {
   background-image: none;
   border-image: none;
 }
 
-#wallpapers{
-  padding: 10px;
-  background-color: black;
-  border-radius: 25px;
-}
-
-#scheme-dropdown{
+#scheme-dropdown {
   margin-right: 10px;
 }

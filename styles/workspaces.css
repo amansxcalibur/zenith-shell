@@ -1,69 +1,54 @@
-.active-workspace{
-    background-color: var(--primary);
-    min-width: 50px;
-    /* min-height: 5px; */
-    min-height: 1px;
-    border-radius: 20px;
-    margin: 0px;
-    padding: 0px;
+.active-workspace {
+  background-color: var(--primary);
+  min-width: 50px;
+  /* min-height: 5px; */
+  min-height: 1px;
+  border-radius: 20px;
+  margin: 0px;
+  padding: 0px;
 }
 
-.active-workspace.vertical{
-    min-height: 50px;
-    min-width: 8px;
+.active-workspace.vertical {
+  min-height: 50px;
+  min-width: 8px;
 }
 
-.workspace-button{
-    background-color: rgb(59, 54, 48);
-    min-width: 8px;
-    min-height: 8px;
-    /* min-height: 15px; */
-    border-radius: 10px;
-    margin: 0px;
-    padding: 0px;
+.workspace-button {
+  background-color: rgb(59, 54, 48);
+  min-width: 8px;
+  min-height: 8px;
+  /* min-height: 15px; */
+  border-radius: 10px;
+  margin: 0px;
+  padding: 0px;
 }
 
-#workspace-container{
-    background-color: black;
-    border-radius: 100px;
-    /* min-height: 37px; */
-    margin: 0px;
-    padding: 13px;
+#workspace-container {
+  background-color: black;
+  border-radius: 100px;
+  /* min-height: 37px; */
+  margin: 0px;
+  padding: 13px;
 }
 
-#active-window{
-    background-color: black;
-    /* margin: 3px; */
-    padding: 15px;
-    color: white;
-    border-radius: 25px;
+#active-window {
+  background-color: black;
+  padding: 15px;
+  color: white;
+  border-radius: 25px;
 }
 
-.used-workspace{
-    background-color: var(--foreground);
+.used-workspace {
+  background-color: var(--foreground);
 }
 
-.hide{
-    margin:-999px;
-    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+#workspaces {
+  /* box-shadow: -30px -30px 0 10px black; */
+  border-radius: 20px;
 }
 
-.reveal{
-    margin:0px;
-    transition: margin 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+#workspaces.vertical {
+  padding: 0px;
+  box-shadow: none;
+  /* background-color: red; */
 }
-
-#workspaces{
-    /* box-shadow: -30px -30px 0 10px black; */
-    border-radius: 20px;
-}
-
-#workspaces.vertical{
-    padding: 0px;
-    box-shadow: none;
-    /* background-color: red; */
-}
-
-/* .test{
-    --primary:#ff0000;
-} */

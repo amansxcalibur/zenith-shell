@@ -1,7 +1,7 @@
 from fabric.widgets.box import Box
-from fabric.widgets.button import Button
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
+from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
 
 import icons
@@ -99,6 +99,8 @@ class Tile(Box):
             h_expand=True,
             children=[self.normal_view, self.menu],
         )
+        self.stack.set_interpolate_size(True)
+        self.stack.set_homogeneous(False)
 
         self.children = self.stack
 
@@ -125,7 +127,7 @@ class Tile(Box):
         print(self.toggle, self.get_name())
         name = self.get_name()
         exec_shell_command_async(
-            f"fabric-cli exec {info.SHELL_NAME} \"notch.dashboard.handle_tile_menu_expand('{name}', {self.toggle})\""
+            f"fabric-cli exec {info.SHELL_NAME} \"pill.dashboard.handle_tile_menu_expand('{name}', {self.toggle})\""
         )
 
     def mini_view(self):
@@ -166,15 +168,13 @@ class TileSpecial(Box):
             v_align="start",
             children=[self.normal_view, self.collapsed_view],
         )
+        self.stack.set_interpolate_size(True)
+        self.stack.set_homogeneous(False)
 
         self.children = self.stack
 
     def mini_view(self):
-        self.normal_view.set_style("margin:-999px")
-        self.collapsed_view.set_style("margin:0px;")
         self.stack.set_visible_child(self.collapsed_view)
 
     def maxi_view(self):
-        self.collapsed_view.set_style("margin:-999px")
-        self.normal_view.set_style("margin:0px;")
         self.stack.set_visible_child(self.normal_view)

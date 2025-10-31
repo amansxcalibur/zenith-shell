@@ -1,11 +1,12 @@
 import os
 import gi
-gi.require_version('Gtk', '3.0')
+
+gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk
 
 # meta
-SHELL_NAME = 'bar-example'
-ALLOWED_PLAYERS = ['vlc', 'cmus', 'firefox', 'spotify', 'chromium']
+SHELL_NAME = "zenith"
+ALLOWED_PLAYERS = ["vlc", "cmus", "firefox", "spotify", "chromium"]
 USERNAME = os.getlogin()
 HOSTNAME = os.uname().nodename
 BRIGHTNESS_DEV = "intel_backlight"
