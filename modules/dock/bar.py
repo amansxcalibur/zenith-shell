@@ -30,7 +30,7 @@ SPACING = 0
 
 
 class DockBar(Window):
-    def __init__(self, **kwargs):
+    def __init__(self, pill, **kwargs):
         super().__init__(
             name="dock-bar",
             layer="bottom",
@@ -43,6 +43,7 @@ class DockBar(Window):
             v_expand=True,
             **kwargs,
         )
+        self._pill_ref = pill
 
         self.hole_state_left = False
         self.hole_state_right = False
@@ -184,7 +185,7 @@ class DockBar(Window):
                     lambda w, v, side="right": self.handle_hover(w, v, side=side),
                 )
 
-        self.pill = Box(name="vert")
+        self.pill_dock = Box(name="vert")
 
         self.edge_fallback_left = EventBox(
             h_expand=True,
@@ -209,14 +210,14 @@ class DockBar(Window):
         )
         self.left_pill_curve = Box(name="start", h_expand=True)
         self.right_pill_curve = Box(name="end", h_expand=True)
-        self.pill_container = Box(
+        self.pill_dock_container = Box(
             children=[
                 self.left_pill_curve,
                 Box(
                     name="hori",
                     style_classes="pill",
                     orientation="v",
-                    children=[self.pill, Box(name="bottom", v_expand=True)],
+                    children=[self.pill_dock, Box(name="bottom", v_expand=True)],
                 ),
                 self.right_pill_curve,
             ]
@@ -224,7 +225,7 @@ class DockBar(Window):
 
         self.children = Box(
             name="main",
-            children=[self.start_children, self.pill_container, self.end_children],
+            children=[self.start_children, self.pill_dock_container, self.end_children],
         )
 
         size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
@@ -232,15 +233,15 @@ class DockBar(Window):
         size_group.add_widget(self.end_children)
 
     def open(self):
-        toggle_class(self.pill, "contractor", "expand")
-        toggle_class(self.pill_container, "contractor", "expander")
+        toggle_class(self.pill_dock, "contractor", "expand")
+        toggle_class(self.pill_dock_container, "contractor", "expander")
         toggle_class(self.left_pill_curve, "contractor", "expander")
         toggle_class(self.right_pill_curve, "contractor", "expander")
         self.bool = True
 
     def close(self):
-        toggle_class(self.pill, "expand", "contractor")
-        toggle_class(self.pill_container, "expander", "contractor")
+        toggle_class(self.pill_dock, "expand", "contractor")
+        toggle_class(self.pill_dock_container, "expander", "contractor")
         toggle_class(self.left_pill_curve, "expander", "contractor")
         toggle_class(self.right_pill_curve, "expander", "contractor")
         self.bool = False
@@ -263,3 +264,8 @@ class DockBar(Window):
         # toggle_config_vertical_flag()
         # restart bar
         subprocess.run([f"{info.SCRIPTS_DIR}/flaunch.sh"])
+
+    def toggle_visibility(self):
+        visible = not self.is_visible()
+        self.set_visible(visible)
+        self._pill_ref._dock_is_visible = visible

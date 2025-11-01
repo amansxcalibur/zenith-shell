@@ -261,3 +261,9 @@
 /* #progress-container.vertical {
     margin-bottom: 15px;
 } */
+
+#placeholder-icon{
+  margin-left: -50px;
+  margin-bottom: -20px;
+  margin-right: -20px;
+}

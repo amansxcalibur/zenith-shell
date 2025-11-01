@@ -74,9 +74,7 @@
 #button-mic,
 #button-brightness {
   color: var(--surface-bright);
-  /* border: 3px solid var(--primary); */
   border: 3px solid var(--primary);
-  /* border: 3px solid rgb(235, 161, 161); */
 }
 
 #button-volume.muted,
@@ -111,19 +109,13 @@
 #button-bar-brightness {
   border: none;
   box-shadow: none;
-  /* background-color: red; */
   min-width: 37px;
   min-height: 37px;
   border-radius: 45%;
 }
 #vol-button,
 #brightness-button {
-  /* box-shadow: none; */
   border: none;
-  /* background-color: blueviolet; */
-  /* min-width: 40px; */
-  /* min-height: 20px; */
-  /* border-radius: 45%; */
 }
 .muted {
   margin-left: -9px;

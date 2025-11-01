@@ -170,8 +170,8 @@ class Dashboard(Box):
                         spacing=3,
                         children=[
                             Label(
-                                label="Notification Center",
-                                style="color:var(--foreground); margin-bottom:3px;",
+                                label="SOSS Agenda",
+                                style="color:var(--foreground); margin-bottom:3px; font-family: Roboto Flex",
                             ),
                             self.notification_box,
                             self.notification_box_2,

@@ -1,5 +1,7 @@
-from typing import Callable
+import time
+from datetime import datetime
 from loguru import logger
+from typing import Callable
 
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
@@ -90,6 +92,7 @@ class NotificationWidget(EventBox):
         self._on_press_connection = None
         self._timeout_id = None
         self._scaled_pixbuf = None
+        self.timestamp = datetime.now()
 
         body_container = Box(name="notification-box", orientation="v", spacing=10)
         content_box = Box(spacing=10)
@@ -126,16 +129,29 @@ class NotificationWidget(EventBox):
                     Box(
                         orientation="v",
                         children=[
-                            Label(
-                                label=self._notification.app_name,
-                                h_align="start",
-                                v_expand=True,
-                                ellipsization="end",
-                                max_chars_width=27,
-                            )
-                            .build()
-                            .add_style_class("app-name")
-                            .unwrap(),
+                            Box(
+                                spacing=6,
+                                children=[
+                                    Label(
+                                        label=self._notification.app_name,
+                                        h_align="start",
+                                        v_expand=True,
+                                        ellipsization="end",
+                                        max_chars_width=27,
+                                    )
+                                    .build()
+                                    .add_style_class("app-name")
+                                    .unwrap(),
+                                    Box(style_classes=["seperator"], v_align="center"),
+                                    Label(
+                                        label=self.timestamp.strftime("%H:%M"),
+                                        h_align="end",
+                                    )
+                                    .build()
+                                    .add_style_class("timestamp")
+                                    .unwrap(),
+                                ]
+                            ),
                             Label(
                                 label=self._notification.summary,
                                 h_align="start",
@@ -274,6 +290,7 @@ class NotificationManager(Window):
             "offset_y": 0,
             "start_pos": None,
         }
+        self.last_hover_time = 0
         self._notification_service = None
         self._active_notifications = []
 
@@ -490,6 +507,11 @@ class NotificationManager(Window):
             event.detail == Gdk.NotifyType.INFERIOR
         ):  # hovering to a child widget, don't toggle
             return
+
+        now = time.time()
+        if now - self.last_hover_time < 0.3:
+            return  # ignore rapid flickers
+        self.last_hover_time = now
 
         self.toggle_notification_stack_reveal()
 

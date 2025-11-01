@@ -13,8 +13,8 @@ class VariableFontMixin:
     # default variation ranges - can be overridden by subclasses
     VARIATION_DEFAULTS = {}
 
-    def __init__(self, size=48, **variations):
-        self.size = size
+    def __init__(self, font_size=48, **variations):
+        self.font_size = font_size
         self.variations = {**self.VARIATION_DEFAULTS, **variations}
         self._font_applied = False
 
@@ -35,11 +35,36 @@ class VariableFontMixin:
 class BaseMaterialLabel(Label, VariableFontMixin):
     """Base class for labels with variable font support"""
 
-    FONT_FAMILY = "sans-serif"  # override in subclasses
+    # override in subclasses
+    FONT_FAMILY = "sans-serif"
+    VARIATION_KEYS = set()
 
-    def __init__(self, text, size=48, style_classes=None, **variations):
-        Label.__init__(self, style_classes=style_classes or [])
-        VariableFontMixin.__init__(self, size=size, **variations)
+    def __init__(
+        self,
+        text,
+        font_size=48,
+        style_classes=None,
+        h_expand=True,
+        v_expand=True,
+        **kwargs,
+    ):
+        variation_kwargs = {}
+        label_kwargs = {}
+
+        for key, value in kwargs.items():
+            if key in self.VARIATION_KEYS:
+                variation_kwargs[key] = value
+            else:
+                label_kwargs[key] = value
+
+        Label.__init__(
+            self,
+            style_classes=style_classes or [],
+            h_expand=h_expand,
+            v_expand=v_expand,
+            **label_kwargs,
+        )
+        VariableFontMixin.__init__(self, font_size=font_size, **variation_kwargs)
 
         self.text = text
         self.set_text(text)
@@ -69,7 +94,7 @@ class BaseMaterialLabel(Label, VariableFontMixin):
 
     def _create_font_description(self):
         """Create a Pango font description with variations"""
-        font_desc = Pango.FontDescription.from_string(f"{self.FONT_FAMILY} {self.size}")
+        font_desc = Pango.FontDescription.from_string(f"{self.FONT_FAMILY} {self.font_size}")
         variation_string = self._build_variation_string()
         if variation_string:
             font_desc.set_variations(variation_string)
@@ -87,8 +112,9 @@ class BaseMaterialLabel(Label, VariableFontMixin):
         print(f"Variations: {font_desc.get_variations()}")
 
     def set_text_content(self, text):
+        """Update the text content and refresh the font"""
         self.text = text
-        self.set_text(text)
+        Label.set_text(self, text)
         self._update_font()
 
 
@@ -102,11 +128,12 @@ class MaterialIconLabel(BaseMaterialLabel):
         "GRAD": 0,
         "opsz": 48,
     }
+    VARIATION_KEYS = {"FILL", "wght", "GRAD", "opsz"}
 
-    def __init__(self, icon_text, size=48, fill=1, wght=400, grad=0, opsz=48, **kwargs):
+    def __init__(self, icon_text, font_size=48, fill=1, wght=400, grad=0, opsz=48, **kwargs):
         super().__init__(
             text=icon_text,
-            size=size,
+            font_size=font_size,
             style_classes=["material-label"],
             FILL=fill,
             wght=wght,
@@ -141,11 +168,12 @@ class MaterialFontLabel(BaseMaterialLabel):
         "slnt": 0,
         "XTRA": 468,
     }
+    VARIATION_KEYS = {"wght", "GRAD", "opsz", "wdth", "ital", "slnt", "XTRA"}
 
     def __init__(
         self,
         text,
-        size=48,
+        font_size=48,
         wght=400,
         grad=0,
         opsz=48,
@@ -157,7 +185,7 @@ class MaterialFontLabel(BaseMaterialLabel):
     ):
         super().__init__(
             text=text,
-            size=size,
+            font_size=font_size,
             wght=wght,
             GRAD=grad,
             opsz=opsz,
@@ -188,10 +216,7 @@ class MaterialFontLabel(BaseMaterialLabel):
             XTRA=XTRA,
         )
 
-    def set_icon(self, icon_text):
-        self.set_text_content(icon_text)
-
-    def set_icon(self, text):
+    def update_text(self, text):
         self.set_text_content(text)
 
 
@@ -210,21 +235,21 @@ class MaterialIconLabelRaw(Gtk.DrawingArea, VariableFontMixin):
         "opsz": 48,
     }
 
-    def __init__(self, icon_text, size=48, fill=1, wght=400, grad=0, opsz=48):
+    def __init__(self, icon_text, font_size=48, fill=1, wght=400, grad=0, opsz=48, **kwargs):
         Gtk.DrawingArea.__init__(self)
         VariableFontMixin.__init__(
-            self, size=size, FILL=fill, wght=wght, GRAD=grad, opsz=opsz
+            self, font_size=font_size, FILL=fill, wght=wght, GRAD=grad, opsz=opsz, **kwargs
         )
 
         self.icon_text = icon_text
-        self.set_size_request(size + 10, size + 10)
+        self.set_size_request(font_size + 10, font_size + 10)
         self.connect("draw", self._on_draw)
 
     def _on_draw(self, widget, cr):
         layout = PangoCairo.create_layout(cr)
 
         # create font description with variations
-        font_desc = Pango.FontDescription.from_string(f"{self.FONT_FAMILY} {self.size}")
+        font_desc = Pango.FontDescription.from_string(f"{self.FONT_FAMILY} {self.font_size}")
         variation_string = self._build_variation_string()
         if variation_string:
             font_desc.set_variations(variation_string)

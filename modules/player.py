@@ -369,6 +369,7 @@ class Player(Box):
         )
         # service cleanup is handled by PlayerManager
 
+from widgets.material_label import MaterialIconLabel
 
 class Placeholder(Box):
     def __init__(self, **kwargs):
@@ -382,11 +383,13 @@ class Placeholder(Box):
 
         self.children = [
             Label(label="Nothing Playing", h_expand=True),
-            Label(
-                markup=icons.disc,
+            Box(v_align='end',children=MaterialIconLabel(
+                name="placeholder-icon",
+                icon_text='\ue019',
+                h_align="end",
                 v_align="end",
-                style="font-size:40px; margin-left:-30px; margin-bottom:-18px",
-            ),
+                font_size=40,
+            ),)
         ]
 
 

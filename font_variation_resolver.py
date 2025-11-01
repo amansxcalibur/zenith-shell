@@ -96,7 +96,13 @@ class IconDemoTab:
             orientation="v",
             spacing=5,
             children=[
-                MaterialIconLabel("\ue88a", size=48, fill=fill, wght=wght, grad=grad),
+                MaterialIconLabel(
+                    icon_text="\ue88a",
+                    font_size=48,
+                    fill=fill,
+                    wght=wght,
+                    grad=grad
+                ),
                 Label(label=f"FILL={fill}\nwght={wght}\nGRAD={grad}"),
             ],
         )
@@ -107,15 +113,20 @@ class IconDemoTab:
         box = Box(orientation="v", spacing=10)
         box.set_border_width(10)
 
-        # main icon
-        self.icon_widget = MaterialIconLabel("\ue88a", size=64, fill=1, wght=400)
+        # main icon - using named parameter
+        self.icon_widget = MaterialIconLabel(
+            icon_text="\ue88a",
+            font_size=64,
+            fill=1,
+            wght=400
+        )
         box.pack_start(self.icon_widget, False, False, 10)
 
         # control sliders
         self.fill_scale = self._create_slider(box, "FILL", 0, 1, 0.1, 1)
         self.wght_scale = self._create_slider(box, "wght", 100, 700, 50, 400)
         self.grad_scale = self._create_slider(box, "GRAD", -25, 200, 25, 0)
-        self.opsz_scale = self._create_slider(box, "OPSZ", 10, 200, 25, 0)
+        self.opsz_scale = self._create_slider(box, "opsz", 20, 48, 4, 48)
 
         # icon selection buttons
         box.pack_start(self._create_icon_selector(), False, False, 0)
@@ -154,7 +165,7 @@ class IconDemoTab:
 
         for icon_char in self.DEMO_ICONS:
             btn = Button(
-                child=MaterialIconLabel(icon_text=icon_char, size=24),
+                child=MaterialIconLabel(icon_text=icon_char, font_size=24),
                 on_clicked=lambda w, ic=icon_char: self._change_icon(ic),
             )
             icon_box.pack_start(btn, False, False, 0)
@@ -204,7 +215,7 @@ class FontDemoTab:
         box.set_border_width(10)
 
         # main font label
-        self.font_label = MaterialFontLabel("WOW", size=64, fill=1, wght=400)
+        self.font_label = MaterialFontLabel("WOW", font_size=64, fill=1, wght=400)
         box.pack_start(self.font_label, False, False, 10)
 
         # lock toggle
@@ -400,7 +411,7 @@ class IconResolverWindow(Window):
         button = Button(style_classes=["settings-option-btn"])
         box = Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
 
-        icon = MaterialIconLabel(icon_text=tab_config.icon, size=17)
+        icon = MaterialIconLabel(icon_text=tab_config.icon, font_size=17)
         label = Label(style_classes=["settings-option-label"], markup=tab_config.label)
 
         box.pack_start(icon, False, False, 0)

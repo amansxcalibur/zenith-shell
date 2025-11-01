@@ -27,6 +27,7 @@ class Pill(Window):
             all_visible=True,
         )
         self._current_compact_mode = None
+        self._dock_is_visible = True
 
         # pill-compact
         self.active_window = ActiveWindow()
@@ -93,9 +94,10 @@ class Pill(Window):
         exec_shell_command_async(f"i3-msg focus mode_toggle")
 
     def lift_pill(self):
-        self.lift_box.set_style(
-            "min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)"
-        )
+        if self._dock_is_visible:
+            self.lift_box.set_style(
+                "min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)"
+            )
 
     def lower_pill(self):
         self.lift_box.set_style(

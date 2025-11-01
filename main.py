@@ -23,11 +23,11 @@ import setproctitle
 if __name__ == "__main__":
     setproctitle.setproctitle(SHELL_NAME)
     pill = Pill()
-    dockBar = DockBar()
+    dockBar = DockBar(pill=pill)
     pill.set_role("pill")
     dockBar.set_title("fabric-dock")
     pill_size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
-    pill_size_group.add_widget(dockBar.pill)
+    pill_size_group.add_widget(dockBar.pill_dock)
     pill_size_group.add_widget(pill.pill_container)
     controls_notification = NotificationPopup()
     notification = NotificationManager()
