@@ -136,20 +136,20 @@ class WallpaperSelector(Box):
         self.mat_icon = Label(name="mat-label", markup=icons.palette)
 
         # Add the switcher to the header_box's start_children
-        self.header_box = CenterBox(
+        self.header_box = Box(
             name="header-box",
-            spacing=8,
             orientation="h",
-            # start_children=[self.matugen_switcher, self.mat_icon],
-            # start_children=[self.scheme_dropdown,],
-            start_children=[self.search_entry, self.scheme_dropdown],
-            end_children=[
+            # spacing=8,
+            h_expand=True,
+            children=[
+                self.search_entry,
+                self.scheme_dropdown,
                 Button(
                     name="close-button",
                     child=Label(name="close-label", markup=icons.cancel),
                     tooltip_text="Exit",
                     on_clicked=lambda *_: self._pill.close(),
-                )
+                ),
             ],
         )
 

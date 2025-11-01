@@ -64,7 +64,6 @@ class Player(Box):
             ellipsization="end",
             max_chars_width=MAX_CHARS,
         )
-        # self.song.set_max_width_chars(MAX_CHARS)
 
         self.artist = Label(
             name="artist",
@@ -73,7 +72,6 @@ class Player(Box):
             h_align="start",
             max_chars_width=MAX_CHARS,
         )
-        # self.artist.set_max_width_chars(MAX_CHARS)
 
         self.music = Box(
             name="music",

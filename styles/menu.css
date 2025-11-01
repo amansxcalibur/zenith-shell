@@ -1,0 +1,42 @@
+menu {
+  border: solid 1px;
+  border-radius: 16px;
+  border-color: var(--surface);
+  background-color: var(--surface-bright);
+  padding: 6px;
+}
+
+menu > menuitem {
+  border-radius: 10px;
+  padding: 6px 10px;
+}
+
+menu > menuitem:hover {
+  background-color: var(--primary);
+}
+
+menu > menuitem:hover > label {
+  color: var(--shadow);
+}
+
+tooltip {
+  border: solid 1px;
+  border-color: var(--surface);
+  background-color: var(--shadow);
+  animation: tooltipShow 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+@keyframes tooltipShow {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+tooltip > * {
+  padding: 6px 10px;
+  border-radius: 10px;
+}

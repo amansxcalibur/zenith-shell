@@ -70,8 +70,11 @@
 .action-button{
     border-radius: 16px;
     background-color: var(--surface);
+    padding: 5px;
+    border: 1px solid var(--surface-semi-bright);
 }
 
-.action-button:focus{
+.action-button:focus,
+.action-button:hover{
     background-color: var(--surface-bright);
 }

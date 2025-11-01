@@ -1,19 +1,11 @@
 #systray{
     background-color: var(--surface-bright);
     padding: 1px;
-    /* margin-top: 0px;
-    margin-bottom: 3px; */
     border-radius: 17px;
 }
 
-#systray.vertical{
-    padding: 2px;
-    margin: 0px;
-}
-
 #tray-button{
-    /* background-color: #1c1c1c; */
     background-color: var(--shadow);
-    border: none;
     border-radius: 100%;
+    padding: 7px;
 }

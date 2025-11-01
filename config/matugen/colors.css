@@ -10,6 +10,7 @@
   --on-tertiary: {{colors.on_tertiary.default.hex}};
   --surface-dull: {{colors.surface.default.hex | set_lightness: -2.5}};
   --surface: {{colors.surface.default.hex}};
+  --surface-semi-bright: {{colors.surface_bright.default.hex | set_lightness: -9.0}};
   --surface-bright: {{colors.surface_bright.default.hex}};
   --error: {{colors.error.default.hex}};
   --error-dim: {{colors.error.default.hex | set_lightness: -10.0}};

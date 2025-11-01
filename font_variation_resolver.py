@@ -154,12 +154,8 @@ class IconDemoTab:
 
         for icon_char in self.DEMO_ICONS:
             btn = Button(
-                label=icon_char,
+                child=MaterialIconLabel(icon_text=icon_char, size=24),
                 on_clicked=lambda w, ic=icon_char: self._change_icon(ic),
-            )
-            btn_label = btn.get_child()
-            btn_label.modify_font(
-                Pango.FontDescription.from_string("Material Symbols Rounded 24")
             )
             icon_box.pack_start(btn, False, False, 0)
 
@@ -196,6 +192,7 @@ class FontDemoTab:
         self.locked = False
         self.scales = {}
         self.master_scale = None
+        self._updating = False
 
         self._build_ui()
 
@@ -258,6 +255,9 @@ class FontDemoTab:
         self._update_font(None)
 
     def _update_font(self, widget):
+        if self._updating:  # Prevent recursive updates
+            return
+
         if self.locked:
             self._apply_master_control()
 
@@ -285,11 +285,14 @@ class FontDemoTab:
         }
 
         # update sliders without triggering callbacks
-        for name, value in updates.items():
-            scale = self.scales[name]
-            scale.handler_block_by_func(self._update_font)
-            scale.set_value(value)
-            scale.handler_unblock_by_func(self._update_font)
+        self._updating = True
+        try:
+            for name, value in updates.items():
+                # scale.handler_block_by_func(self._update_font)
+                self.scales[name].set_value(value)
+                # scale.handler_unblock_by_func(self._update_font)
+        finally:
+            self._updating = False
 
     def _scale_value(self, master_val, scale_name):
         """Scale master value to target range"""

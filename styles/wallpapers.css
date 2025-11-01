@@ -3,6 +3,7 @@
   background-color: black;
   border-radius: 25px;
   min-height: 680px;
+  min-width: 726px;
 }
 
 #wallpaper-icons:selected {
@@ -20,12 +21,17 @@
   color: var(--outline);
   border: transparent 1px solid;
   border-radius: 16px;
+  padding: 5px;
 }
 
 #scheme-dropdown > * > *:hover,
 #scheme-dropdown > * > *:focus {
   background-color: var(--surface-bright);
   color: whitesmoke;
+}
+
+#scheme-dropdown cellview:selected{
+  background-color: var(--surface-bright);
 }
 
 #scheme-dropdown.box button.box.cellview {
@@ -37,7 +43,6 @@
 }
 
 #search-entry-walls {
-  min-width: 485px;
   border-radius: 16px;
   background-color: var(--surface);
   margin-right: 10px;

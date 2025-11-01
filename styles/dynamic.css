@@ -1,3 +1,7 @@
+* {
+  all: unset;
+}
+
 /* * {
     font-family: "ZedMono NF", sans-serif;
   } */

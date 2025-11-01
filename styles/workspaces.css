@@ -1,11 +1,11 @@
 .active-workspace {
   background-color: var(--primary);
   min-width: 50px;
-  /* min-height: 5px; */
   min-height: 1px;
   border-radius: 20px;
   margin: 0px;
   padding: 0px;
+  transition: all 0.15s linear;
 }
 
 .active-workspace.vertical {
@@ -14,13 +14,13 @@
 }
 
 .workspace-button {
-  background-color: rgb(59, 54, 48);
-  min-width: 8px;
-  min-height: 8px;
-  /* min-height: 15px; */
+  background-color: var(--surface-bright);
+  min-width: 9px;
+  min-height: 9px;
   border-radius: 10px;
   margin: 0px;
   padding: 0px;
+  transition: all 0.15s linear;
 }
 
 #workspace-container {
@@ -34,7 +34,7 @@
 #active-window {
   background-color: black;
   padding: 15px;
-  color: white;
+  color: var(--foreground);
   border-radius: 25px;
 }
 
