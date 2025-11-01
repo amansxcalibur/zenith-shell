@@ -89,20 +89,22 @@ class NotificationWidget(EventBox):
         self._on_close_callback = on_close_callback
         self._on_press_connection = None
         self._timeout_id = None
+        self._scaled_pixbuf = None
 
         body_container = Box(name="notification-box", orientation="v", spacing=10)
         content_box = Box(spacing=10)
 
         try:
             if image_pixbuf := self._notification.image_pixbuf:
+                self._scaled_pixbuf = image_pixbuf.scale_simple(
+                    NotificationConfig.IMAGE_SIZE,
+                    NotificationConfig.IMAGE_SIZE,
+                    GdkPixbuf.InterpType.BILINEAR,
+                )
                 content_box.add(
                     RoundedImage(
                         v_align="start",
-                        pixbuf=image_pixbuf.scale_simple(
-                            NotificationConfig.IMAGE_SIZE,
-                            NotificationConfig.IMAGE_SIZE,
-                            GdkPixbuf.InterpType.BILINEAR,
-                        ),
+                        pixbuf=self._scaled_pixbuf,
                         style="border-radius:16px;",
                     )
                 )
@@ -207,28 +209,53 @@ class NotificationWidget(EventBox):
             "button-press-event", lambda *_: timeout_callback(self)
         )
 
-        # destroy widget after the notification is closed
-        self._notification.connect(
-            "closed",
-            lambda *_: (
-                parent.remove(self) if (parent := self.get_parent()) else None,  # type: ignore
-                self._on_close_callback(),
-                self.destroy(),
-            ),
+        self._closed_connection = self._notification.connect(
+            "closed", self._on_notification_closed
         )
 
-        invoke_repeater(
+        self._timeout_repeater_id = invoke_repeater(
             NotificationConfig.TIMEOUT,
             lambda: timeout_callback(self),
             initial_call=False,
         )
 
-        # # automatically close the notification after the timeout period
-        # invoke_repeater(
-        #     NotificationConfig.TIMEOUT,,
-        #     lambda: self._notification.close("expired"),
-        #     initial_call=False,
-        # )
+    def _on_notification_closed(self, *_):
+        if parent := self.get_parent():
+            parent.remove(self)
+        self._on_close_callback()
+        self.cleanup()
+        self.destroy()
+
+    def cleanup(self):
+        # cancel timeout repeater
+        if self._timeout_repeater_id is not None:
+            from gi.repository import GLib
+
+            try:
+                GLib.source_remove(self._timeout_repeater_id)
+            except:
+                pass
+            self._timeout_repeater_id = None
+
+        # disconnect signals
+        if self._on_press_connection:
+            try:
+                self.disconnect(self._on_press_connection)
+            except:
+                pass
+            self._on_press_connection = None
+
+        if self._closed_connection and self._notification:
+            try:
+                self._notification.disconnect(self._closed_connection)
+            except:
+                pass
+            self._closed_connection = None
+
+        # clear pixbuf reference
+        self._scaled_pixbuf = None
+
+        logger.debug("NotificationWidget cleaned up")
 
 
 class NotificationManager(Window):
@@ -434,7 +461,6 @@ class NotificationManager(Window):
                 self.viewport.add(notification_widget)
             else:
                 logger.debug("Skipping re-add: widget already in viewport")
-
 
             self._update_ui_state()
 

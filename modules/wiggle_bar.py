@@ -2,7 +2,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib
 
-from fabric.core.service import Service, Signal
+from fabric.core.service import Service, Signal, Property
 
 import config.info as info
 from utils.colors import get_css_variable, hex_to_rgb01
@@ -14,12 +14,21 @@ class WigglyWidget(Gtk.DrawingArea, Service):
     @Signal
     def on_seek(self, ratio: float) -> None: ...
 
+    @Property(bool, default_value=False, flags="read-write")
+    def dragging(self) -> bool:
+        return self._dragging
+    
+    @dragging.setter
+    def dragging(self, dragging: bool) -> None:
+        self._dragging = dragging
+        return
+
     def __init__(self):
         super().__init__()
         self.phase = 0
         self.value = 0.0
         self.amplitude = 2
-        self.dragging = False
+        self._dragging = False
         self.pause = False
         self.speed = 0.05
 

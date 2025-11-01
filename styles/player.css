@@ -100,17 +100,19 @@
 }
 #play-next.mini,
 #play-previous.mini {
-  text-shadow: none;
   font-size: 30px;
   color: var(--surface-player);
+  padding-left: 1px;
+  padding-right: 1px;
 }
 #play-pause-label {
   color: var(--primary-player);
   text-shadow: none;
 }
 #play-pause-label.mini {
-  color: black;
-  text-shadow: none;
+  color: var(--surface-player);
+  padding-left: 2px;
+  padding-right: 2px;
 }
 
 #progress {
@@ -118,7 +120,6 @@
 }
 
 #pause-button {
-  all: unset;
   background-color: var(--primary-player);
   border-radius: 16px;
   padding: 10px;

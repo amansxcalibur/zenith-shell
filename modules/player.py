@@ -97,6 +97,9 @@ class Player(Box):
 
         self.wiggly = WigglyWidget()
         self.wiggly.connect("on-seek", self.on_seek)
+        # self.wiggly.connect("notify::dragging", self.on_dragging_changed)
+
+    
         self.wiggly_bar = Box(
             orientation="v",
             h_expand=True,
@@ -287,7 +290,7 @@ class Player(Box):
 
         GLib.idle_add(_set_pause_ui)
 
-        self.wiggly.dragging = True
+        self.wiggly._dragging = True
         self.wiggly.update_amplitude(True)
         self.wiggly.pause = True
 
@@ -302,7 +305,7 @@ class Player(Box):
         GLib.idle_add(_set_play_ui)
 
         self.wiggly.pause = False
-        self.wiggly.dragging = False
+        self.wiggly._dragging = False
         self.wiggly.update_amplitude(False)
 
     def on_shuffle(self, sender, player, status):

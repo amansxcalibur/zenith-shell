@@ -227,7 +227,7 @@ class PlayerMini(Box):
             self.play_pause_button.get_child().set_markup(icons.play)
         GLib.idle_add(_set_pause_markup)
 
-        self.wiggly.dragging = True
+        self.wiggly._dragging = True
         self.wiggly.update_amplitude(True)
         self.wiggly.pause = True
 
@@ -237,7 +237,7 @@ class PlayerMini(Box):
         GLib.idle_add(_set_play_markup)
 
         self.wiggly.pause = False
-        self.wiggly.dragging = False
+        self.wiggly._dragging = False
         self.wiggly.update_amplitude(False)
 
     def on_shuffle(self, sender, player, status):
