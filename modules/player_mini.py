@@ -16,7 +16,7 @@ from loguru import logger
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, GLib
+from gi.repository import GLib  # noqa: E402
 
 
 class PlayerMini(Box):
@@ -160,13 +160,13 @@ class PlayerMini(Box):
         self._player_service.connect("artwork-change", self._apply_artwork)
 
         # connect cleanup
-        self.connect('destroy', self.on_destroy)
+        self.connect("destroy", self.on_destroy)
 
         # init metadata
         self.on_metadata(
             self._player_service, metadata=player.props.metadata, player=player
         )
-        
+
         # init artwork
         current_artwork = self._player_service.get_artwork()
         if current_artwork:
@@ -194,6 +194,7 @@ class PlayerMini(Box):
             self.album_cover.set_style(f"background-image:url('{art_path}')")
             self.set_style(f"background-image:url('{art_path}')")
             return False
+
         GLib.idle_add(_apply)
 
     def on_metadata(self, sender, metadata, player):
@@ -207,7 +208,7 @@ class PlayerMini(Box):
                 self.song.set_label(song_title)
                 self.artist.set_label(artist_name)
                 return False
-            
+
             GLib.idle_add(_update_metadata_labels)
 
         self.on_shuffle(sender, player, player.props.shuffle)
@@ -219,12 +220,13 @@ class PlayerMini(Box):
             ):
                 self.on_play(self._player_service)
             return False
-        
+
         GLib.idle_add(_update_playback_status)
 
     def on_pause(self, sender):
         def _set_pause_markup():
             self.play_pause_button.get_child().set_markup(icons.play)
+
         GLib.idle_add(_set_pause_markup)
 
         self.wiggly._dragging = True
@@ -234,6 +236,7 @@ class PlayerMini(Box):
     def on_play(self, sender):
         def _set_play_markup():
             self.play_pause_button.get_child().set_markup(icons.pause)
+
         GLib.idle_add(_set_play_markup)
 
         self.wiggly.pause = False
@@ -242,13 +245,15 @@ class PlayerMini(Box):
 
     def on_shuffle(self, sender, player, status):
         logger.debug(f"Shuffle callback status: {status}")
+
         def _update_shuffle_status():
-            if status == False:
+            if not status:
                 self.shuffle_button.get_child().set_markup(icons.shuffle)
                 self.shuffle_button.get_child().set_name("shuffle")
             else:
                 self.shuffle_button.get_child().set_markup(icons.disable_shuffle)
                 self.shuffle_button.get_child().set_name("disable-shuffle")
+
         # self.shuffle_button.get_child().set_style("color: white")
         GLib.idle_add(_update_shuffle_status)
 
@@ -287,16 +292,20 @@ class PlayerMini(Box):
 
     def handle_shuffle(self, shuffle_button):
         logger.debug(f"Shuffle: {self._player_service._player.props.shuffle}")
-        if self._player_service._player.props.shuffle == False:
+        if not self._player_service._player.props.shuffle:
             self._player_service._player.set_shuffle(True)
-            logger.debug(f"Setting to true: {self._player_service._player.props.player_name}")
+            logger.debug(
+                f"Setting to true: {self._player_service._player.props.player_name}"
+            )
         else:
             self._player_service._player.set_shuffle(False)
         # shuffle_button.get_child().set_style("color: var(--outline)")
 
     def on_destroy(self, *_):
         """Cleanup widget on destroy"""
-        logger.debug(f"PlayerMini UI destroyed for {self._player_service._player.props.player_name}")
+        logger.debug(
+            f"PlayerMini UI destroyed for {self._player_service._player.props.player_name}"
+        )
         # service cleanup is handled by PlayerManager
 
 
@@ -348,7 +357,7 @@ class PlayerContainerMini(Box):
         self.manager = PlayerManager()
         self.manager.connect("new-player", self.on_new_player)
         self.manager.connect("player-vanish", self.on_player_vanish)
-        
+
         self.placeholder = PlaceholderMini()
         self.stack = Stack(
             transition_type="crossfade",
@@ -373,7 +382,7 @@ class PlayerContainerMini(Box):
             ),
             center_children=[],
         )
-        
+
         self.mini_tile_icon = Label(
             name="disc",
             style_classes=["tile-icon", "special"],
@@ -386,20 +395,20 @@ class PlayerContainerMini(Box):
             v_expand=False,
             center_children=self.mini_tile_icon,
         )
-        
+
         self.event_box = EventBox(
             events=["scroll"],
             child=Box(children=[self.stack, self.player_switch_container]),
         )
-        
+
         self.children = self.event_box
-        
+
         # track UI instances: player_name -> PlayerMini widget
         self.player_widgets = {}
-        
+
         self.event_box.connect("scroll-event", self.on_scroll)
         self.stack.connect("notify::visible-child", self.on_visible_child_changed)
-        
+
         self.init_players()
 
     def init_players(self):
@@ -411,28 +420,28 @@ class PlayerContainerMini(Box):
     def on_new_player(self, manager, player_name: str, player_service: PlayerService):
         """Called when PlayerManager creates a new PlayerService"""
         logger.info(f"Creating mini UI for player: {player_name}")
-        
+
         # avoid duplicate UI creation
         if player_name in self.player_widgets:
             logger.warning(f"Mini UI for {player_name} already exists, skipping")
             return
-        
+
         # create widget with the service
         player_widget = PlayerMini(player_service=player_service)
         player_widget.wiggly_bar.queue_draw()
         player_widget.set_name(player_name)
-        
+
         # store reference
         self.player_widgets[player_name] = player_widget
-        
+
         logger.debug(f"Stacking mini: {player_name}")
         self.stack.add_named(player_widget, player_name)
-        
+
         # remove placeholder if this is the first player
         if len(self.player_widgets) == 1:
             self.stack.remove(self.placeholder)
             self.stack.set_visible_child_name(player_name)
-        
+
         # add switch button
         self.player_switch_container.add_center(
             Button(
@@ -441,11 +450,12 @@ class PlayerContainerMini(Box):
                 on_clicked=lambda b: self.switch_player(player_name, b),
             )
         )
-        
+
         self.update_player_list()
 
     def switch_player(self, player_name, button):
         """Switch to a specific player"""
+
         def _switch_idle():
             self.stack.set_visible_child_name(player_name)
 
@@ -458,16 +468,16 @@ class PlayerContainerMini(Box):
     def on_player_vanish(self, manager, player_name: str):
         """Called when a player disappears"""
         logger.info(f"Removing mini UI for player: {player_name}")
-        
+
         if player_name not in self.player_widgets:
             logger.warning(f"No mini UI found for {player_name}")
             return
-        
+
         # get the widget
         player_widget = self.player_widgets[player_name]
-        
+
         self.stack.remove(player_widget)
-        
+
         # remove switch button
         for btn in self.player_switch_container.center_children:
             if btn.get_name() == player_name:
@@ -476,10 +486,10 @@ class PlayerContainerMini(Box):
                 break
 
         player_widget.destroy()
-        
+
         # remove from tracking dict
         del self.player_widgets[player_name]
-        
+
         # show placeholder or first available player
         if len(self.player_widgets) == 0:
             self.stack.add_named(self.placeholder, "placeholder")
@@ -487,7 +497,7 @@ class PlayerContainerMini(Box):
         else:
             first_player = next(iter(self.player_widgets.keys()))
             self.stack.set_visible_child_name(first_player)
-        
+
         self.update_player_list()
 
     def update_player_list(self):
@@ -495,8 +505,9 @@ class PlayerContainerMini(Box):
         curr = self.stack.get_visible_child()
         if not curr:
             return
-            
+
         curr_name = curr.get_name()
+
         def _update_buttons():
             for btn in self.player_switch_container.center_children:
                 if btn.get_name() == curr_name:
@@ -504,7 +515,7 @@ class PlayerContainerMini(Box):
                 else:
                     btn.remove_style_class("active")
             return False
-        
+
         GLib.idle_add(_update_buttons)
 
     def on_scroll(self, widget, event):
@@ -523,10 +534,10 @@ class PlayerContainerMini(Box):
         current_player = self.stack.get_visible_child()
         if not isinstance(current_player, PlayerMini):
             return
-            
+
         player_names = list(self.player_widgets.keys())
         current_name = current_player.get_name()
-        
+
         try:
             current_index = player_names.index(current_name)
         except ValueError:
@@ -545,14 +556,15 @@ class PlayerContainerMini(Box):
     def on_visible_child_changed(self, *args):
         """Update mini tile icon when visible player changes"""
         curr_child = self.stack.get_visible_child()
-        if not curr_child or not hasattr(curr_child, 'get_name'):
+        if not curr_child or not hasattr(curr_child, "get_name"):
             return
-            
+
         curr_player = curr_child.get_name()
 
         def _update_mini_tile_icon():
             self.mini_tile_icon.set_name(curr_player)
             self.mini_tile_icon.set_markup(getattr(icons, curr_player, icons.disc))
+
         GLib.idle_add(_update_mini_tile_icon)
 
     def get_mini_view(self):
@@ -562,20 +574,20 @@ class PlayerContainerMini(Box):
     def cleanup(self):
         """Cleanup all resources on application shutdown"""
         logger.info("Cleaning up PlayerContainerMini")
-        
+
         # cleanup all widgets
         for player_name, widget in list(self.player_widgets.items()):
             try:
                 widget.destroy()
             except Exception as e:
                 logger.error(f"Error destroying mini widget for {player_name}: {e}")
-        
+
         self.player_widgets.clear()
-        
+
         # cleanup the manager
         try:
             self.manager.cleanup_all()
         except Exception as e:
             logger.error(f"Error cleaning up manager: {e}")
-        
+
         logger.info("PlayerContainerMini cleanup complete")

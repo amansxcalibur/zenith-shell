@@ -1,34 +1,36 @@
-.active-workspace {
-  background-color: var(--primary);
-  min-width: 50px;
-  min-height: 1px;
-  border-radius: 20px;
-  margin: 0px;
-  padding: 0px;
-  transition: all 0.15s linear;
+#workspaces-container{
+    background-color: var(--surface-bright);
+    border-radius: 17px;
+    padding: 13px;
+    margin-top: 1px;
 }
 
-.active-workspace.vertical {
-  min-height: 50px;
-  min-width: 8px;
+#workspaces>button {
+    padding: 5px;
+    transition: all 0.15s steps(8);
+    background-color: var(--foreground);
+    border-radius: 10px;
 }
 
-.workspace-button {
-  background-color: var(--surface-bright);
-  min-width: 9px;
-  min-height: 9px;
-  border-radius: 10px;
-  margin: 0px;
-  padding: 0px;
-  transition: all 0.15s linear;
+#workspaces>button>label {
+    font-size: 0px;
 }
 
-#workspace-container {
-  background-color: black;
-  border-radius: 100px;
-  /* min-height: 37px; */
-  margin: 0px;
-  padding: 13px;
+#workspaces>button:hover {
+    background-color: var(--error-dim);
+}
+
+#workspaces>button.urgent {
+    background-color: var(--error);
+}
+
+#workspaces>button.active {
+    padding: 0px 32px;
+    background-color: var(--primary);
+}
+
+#workspaces>button.empty {
+    background-color: var(--background);
 }
 
 #active-window {
@@ -38,17 +40,48 @@
   border-radius: 25px;
 }
 
+/* ------V0------- */
+
+/* .active-workspace {
+  background-color: var(--primary);
+  border-radius: 20px;
+  margin: 0px;
+  padding: 0px 25px;
+}
+
+.active-workspace.vertical {
+  min-height: 50px;
+  min-width: 8px;
+}
+
+.workspace-button {
+  background-color: var(--background);
+  border-radius: 10px;
+  margin: 0px;
+  padding: 5px;
+  
+}
+
+#workspace-container {
+  background-color: var(--surface-bright);
+  border-radius: 100px;
+  margin: 0px;
+  padding: 13px;
+}
+
+#workspace-container > button{
+transition: padding 0.15s steps(8);
+}
+
 .used-workspace {
   background-color: var(--foreground);
 }
 
 #workspaces {
-  /* box-shadow: -30px -30px 0 10px black; */
   border-radius: 20px;
 }
 
 #workspaces.vertical {
   padding: 0px;
   box-shadow: none;
-  /* background-color: red; */
-}
+} */

@@ -1,20 +1,22 @@
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
-from fabric.widgets.eventbox import EventBox
-from fabric.widgets.overlay import Overlay
 from fabric.widgets.button import Button
+from fabric.widgets.overlay import Overlay
+from fabric.widgets.eventbox import EventBox
 from fabric.utils.helpers import exec_shell_command_async
+
+import config.info as info
+from widgets.animated_scale import AnimatedScale
+from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
+
+import re
+import icons
+import subprocess
+
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk
-
-from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
-from widgets.animated_scale import AnimatedScale
-import icons
-import subprocess
-import re
-import config.info as info
+from gi.repository import Gdk  # noqa: E402
 
 
 def supports_backlight():

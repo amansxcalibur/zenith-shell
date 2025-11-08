@@ -1,11 +1,15 @@
-# Ignore virtual environments
+# Virtual environments
 venv/
 gengir/
-# Ignore compiled Python files
+
+# Compiled Python files
 __pycache__/
 *.pyc
 *.pyo
-#
-/fabric-cli
 
+# Build sources
+/fabric-cli
 gray/
+
+# VSCode settings
+.vscode/*

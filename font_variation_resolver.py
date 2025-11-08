@@ -42,6 +42,7 @@ class DragHandler:
 
         new_x = int(event.x_root - self.offset_x)
         new_y = int(event.y_root - self.offset_y)
+        print(new_x, new_y)
 
         self.window.get_window().move(new_x, new_y)
 
@@ -444,7 +445,7 @@ def main():
     win = IconResolverWindow()
     win.show_all()
 
-    app = Application("material-icon-test", test_window=win, open_inspector=True)
+    app = Application("material-icon-test", test_window=win, open_inspector=False)
 
     def load_css(*args):
         app.set_stylesheet_from_file(get_relative_path("./main.css"))
