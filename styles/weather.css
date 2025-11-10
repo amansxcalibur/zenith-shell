@@ -9,10 +9,18 @@
     padding-right: 7px;
 }
 
-#weather-card{
+#weather-tile{
     padding: 15px;
     background-color: var(--surface-bright);
     border-radius: 20px;
+}
+
+#weather-tile.updated-time-label{
+    padding: 5px 15px;
+    color: var(--primary);
+}
+
+#weather-tile.card{
     min-height: 170px;
 }
 

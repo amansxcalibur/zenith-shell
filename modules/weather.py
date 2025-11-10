@@ -1,4 +1,5 @@
 import math
+import time
 import cairo
 import requests
 from loguru import logger
@@ -18,6 +19,7 @@ from utils.cursor import add_hover_cursor
 from utils.colors import get_css_variable, hex_to_rgb01
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 gi.require_version("PangoCairo", "1.0")
@@ -148,10 +150,12 @@ class WeatherMini(EventBox):
 
 class WeatherCard(Box):
     def __init__(self, **kwargs):
-        super().__init__(name="weather-card", spacing=20, **kwargs)
+        super().__init__(spacing=5, orientation='v', **kwargs)
 
         self.service = WeatherService()
         initial_data = self.service.current_data
+
+        self.last_updated_label = Label(name="weather-tile", style_classes=["updated-time-label"], label=f"Last updated: __", h_align="start")
 
         # temperature
         self.temperature_label = Label(
@@ -199,34 +203,44 @@ class WeatherCard(Box):
         )
 
         self.children = [
+            self.last_updated_label,
             Box(
-                orientation="v",
-                children=[
-                    self.emoji,
-                    Box(v_expand=True, children=self.temperature_label),
-                ],
-            ),
-            Box(
-                orientation="v",
+                name="weather-tile",
+                style_classes=["card"],
+                spacing=20,
                 children=[
                     Box(
-                        orientation="v",
-                        v_align="start",
-                        h_align="end",
-                        children=[self.location, self.description],
-                    ),
-                    Box(
-                        v_expand=True,
-                        h_align="end",
-                        v_align="end",
                         orientation="v",
                         children=[
-                            self._create_metric_row(
-                                self.humidity_label, icons.humidity
+                            self.emoji,
+                            Box(v_expand=True, children=self.temperature_label),
+                        ],
+                    ),
+                    Box(
+                        orientation="v",
+                        children=[
+                            Box(
+                                orientation="v",
+                                v_align="start",
+                                h_align="end",
+                                children=[self.location, self.description],
                             ),
-                            self._create_metric_row(self.wind_label, icons.wind),
-                            self._create_metric_row(
-                                self.pressure_label, icons.pressure
+                            Box(
+                                v_expand=True,
+                                h_align="end",
+                                v_align="end",
+                                orientation="v",
+                                children=[
+                                    self._create_metric_row(
+                                        self.humidity_label, icons.humidity
+                                    ),
+                                    self._create_metric_row(
+                                        self.wind_label, icons.wind
+                                    ),
+                                    self._create_metric_row(
+                                        self.pressure_label, icons.pressure
+                                    ),
+                                ],
                             ),
                         ],
                     ),
@@ -254,6 +268,7 @@ class WeatherCard(Box):
         self.wind_label.set_label(data.wind)
         self.pressure_label.set_label(data.pressure)
         self.description.set_label(data.description)
+        self.last_updated_label.set_label(f"Last updated: {time.strftime("%I:%M %p")}")
 
 
 class WeatherPill(Gtk.DrawingArea):
