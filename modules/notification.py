@@ -236,11 +236,18 @@ class NotificationWidget(EventBox):
         )
 
     def _on_notification_closed(self, *_):
-        if parent := self.get_parent():
-            parent.remove(self)
-        self._on_close_callback()
-        self.cleanup()
-        self.destroy()
+        try:
+            if parent := self.get_parent():
+                parent.remove(self)
+            self._on_close_callback()
+            self.cleanup()
+            self.destroy()
+        except Exception as e:
+            logger.error(f"Error in _on_notification_closed: {e}")
+            try:
+                self.cleanup()
+            except:
+                pass
 
     def cleanup(self):
         # cancel timeout repeater
@@ -455,7 +462,7 @@ class NotificationManager(Window):
                         self.active_notifications_box.get_children()[0]
                     )
                 self._active_notifications.append(notification_widget)
-                self.active_notifications_box.add(notification_widget)
+                self.active_notifications_box.pack_end(notification_widget, True, None, 0)
             else:
                 self._move_to_revealer(notification_widget=notification_widget)
             self._update_ui_state()
@@ -475,7 +482,7 @@ class NotificationManager(Window):
 
             # flex tape fix
             if notification_widget.get_parent() is not self.viewport:
-                self.viewport.add(notification_widget)
+                self.viewport.pack_end(notification_widget, True, None, 0)
             else:
                 logger.debug("Skipping re-add: widget already in viewport")
 
@@ -531,19 +538,44 @@ class NotificationManager(Window):
         # iterate over a COPY!!
         for notification_widget in self._active_notifications[:]:
             try:
-                self._active_notifications.remove(notification_widget)
+                # self._active_notifications.remove(notification_widget)
                 notification_widget._notification.close()
             except Exception as e:
-                logger.error(f"Failed to close notification: {e}")
+                try:
+                    if notification_widget in self._active_notifications:
+                        self._active_notifications.remove(notification_widget)
+                    if notification_widget.get_parent():
+                        notification_widget.get_parent().remove(notification_widget)
+                    notification_widget.cleanup()
+                    notification_widget.destroy()
+                except Exception as cleanup_error:
+                    logger.error(f"Failed to cleanup notification: {cleanup_error}")
 
         for notification_widget in self.viewport.get_children()[:]:
             try:
                 notification_widget._notification.close()
             except Exception as e:
-                logger.error(f"Failed to close notification: {e}")
+                try:
+                    if notification_widget.get_parent():
+                        notification_widget.get_parent().remove(notification_widget)
+                    notification_widget.cleanup()
+                    notification_widget.destroy()
+                except Exception as cleanup_error:
+                    logger.error(f"Failed to cleanup revealed notification: {cleanup_error}")        
+
+        self._active_notifications.clear()
 
         self._update_ui_state()
 
     def destroy(self):
+        if self._notification_service:
+            try:
+                self._notification_service.disconnect_by_func(
+                    self._handle_notification_added
+                )
+            except:
+                pass
+            self._notification_service = None
+
         self.close_all_notifications()
         super().destroy()

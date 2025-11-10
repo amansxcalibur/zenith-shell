@@ -1,9 +1,11 @@
 #date-time{
     all:unset;
-    padding: 0px;
+    padding: 0px 8px;
     margin: 0px;
-    padding-left: 5px;
-    padding-right: 5px;
+
+    font-family: Roboto Flex;
+    font-weight: 600;
+    margin-bottom: -2px;
 }
 
 #date-time, label{

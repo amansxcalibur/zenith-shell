@@ -89,20 +89,14 @@
   font-size: 25px;
 }
 
-#vol-label{
+#vol-label {
   font-size: 23px;
-  margin-top: -1px; 
+  margin-top: -1px;
 }
 
 #vol-label.muted,
 #mic-label.muted {
   color: var(--outline);
-}
-
-* {
-  box-shadow: none;
-  background-image: none;
-  border-image: none;
 }
 
 #button-bar-vol,
@@ -117,6 +111,9 @@
 #brightness-button {
   border: none;
 }
+#vol-button {
+  padding: 9px;
+}
 .muted {
   margin-left: -9px;
   margin-bottom: -1px;
@@ -125,10 +122,6 @@
 #brightness-label,
 #vol-label {
   color: antiquewhite;
-}
-* {
-  background-image: none;
-  border-image: none;
 }
 
 /* #control-slider-mui {

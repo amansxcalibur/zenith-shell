@@ -1,4 +1,5 @@
 from fabric.widgets.box import Box
+from fabric.widgets.svg import Svg
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.overlay import Overlay
@@ -9,6 +10,8 @@ from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
 from services.volume_service import VolumeService
 import icons
 import config.info as info
+from utils.colors import get_css_variable
+
 
 class VolumeSlider(AnimatedScale):
     def __init__(self, **kwargs):
@@ -137,7 +140,8 @@ class VolumeSmall(Box):
             end_angle=270,
         )
 
-        self.vol_label = Label(name="vol-label", markup=icons.vol_high)
+        # self.vol_label = Label(name="vol-label", markup=icons.vol_high)
+        self.vol_label = Svg(name="vol-label", svg_string=icons.volume_modern, style="color:antiquewhite")
         self.vol_button = Button(
             name="vol-button", on_clicked=self.toggle_mute, child=self.vol_label
         )
@@ -181,15 +185,19 @@ class VolumeSmall(Box):
 
         if muted:
             self.progress_bar.add_style_class("muted")
-            self.vol_label.add_style_class("muted")
-            self.vol_button.get_child().set_markup(icons.vol_off)
+            # self.vol_label.add_style_class("muted")
+            color = get_css_variable(file_path=f"{info.HOME_DIR}/fabric/styles/colors.css", var_name='outline')
+            self.vol_label.set_style(f"color: {color}")
+            self.vol_button.get_child().set_from_string(icons.volume_mute_modern)
         else:
             self.progress_bar.remove_style_class("muted")
-            self.vol_label.remove_style_class("muted")
+            # self.vol_label.remove_style_class("muted")
+            self.vol_label.set_style('color:antiquewhite;')
+            self.vol_button.get_child().set_from_string(icons.volume_modern)
 
-            if volume > 74:
-                self.vol_button.get_child().set_markup(icons.vol_high)
-            elif volume > 0:
-                self.vol_button.get_child().set_markup(icons.vol_medium)
-            else:
-                self.vol_button.get_child().set_markup(icons.vol_mute)
+            # if volume > 74:
+            #     self.vol_button.get_child().set_markup(icons.vol_high)
+            # elif volume > 0:
+            #     self.vol_button.get_child().set_markup(icons.vol_medium)
+            # else:
+            #     self.vol_button.get_child().set_markup(icons.vol_mute)

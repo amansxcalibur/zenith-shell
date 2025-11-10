@@ -1,26 +1,21 @@
-import re
-import subprocess
-
 import psutil
 from gi.repository import GLib
 
-from fabric.core.fabricator import Fabricator
 from fabric.widgets.box import Box
-from fabric.widgets.button import Button
-from fabric.widgets.circularprogressbar import CircularProgressBar
-from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
-from fabric.widgets.eventbox import EventBox
 from fabric.widgets.label import Label
+from fabric.widgets.scale import Scale
+from fabric.widgets.button import Button
+from fabric.widgets.eventbox import EventBox
 from fabric.widgets.revealer import Revealer
 from fabric.core.fabricator import Fabricator
-from fabric.widgets.scale import Scale
 from fabric.core.service import Service, Signal
+from fabric.widgets.circularprogressbar import CircularProgressBar
 
-from services.animator import Animator
 from widgets.popup_window import PopupWindow
 from widgets.animated_scale import AnimatedScale
-import icons as icons
+from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
 
+import icons as icons
 import config.info as info
 
 
@@ -525,7 +520,7 @@ class Battery(Button):
         percentage = int(value)
         self.bat_level.set_label(self._format_percentage(percentage))
 
-        if percentage <= 15 and charging == False:
+        if percentage <= 15 and not charging:
             self.bat_icon.add_style_class("alert")
             self.bat_circle.add_style_class("alert")
             self.bat_circle.add_style_class("low-bat")
@@ -541,13 +536,13 @@ class Battery(Button):
             self.bat_icon.set_markup(icons.battery)
             self.bat_circle.add_style_class("full-bat")
             charging_status = f"{icons.bat_full} Fully Charged"
-        elif charging == True:
+        elif charging:
             self.bat_icon.set_markup(icons.battery_charging)
             charging_status = f"{icons.bat_charging} Charging"
-        elif percentage <= 15 and charging == False:
+        elif percentage <= 15 and not charging:
             # self.bat_icon.set_markup(icons.alert)
             charging_status = f"{icons.bat_low} Low Battery"
-        elif charging == False:
+        elif not charging:
             # self.bat_icon.set_markup(icons.discharging)
             charging_status = f"{icons.discharging} Discharging"
         else:
