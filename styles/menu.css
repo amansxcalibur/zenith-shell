@@ -19,6 +19,10 @@ menu > menuitem:hover > label {
   color: var(--shadow);
 }
 
+/* .popup, .background{
+  all:unset;
+} */
+
 tooltip {
   border: solid 1px;
   border-color: var(--surface);
@@ -40,3 +44,4 @@ tooltip > * {
   padding: 6px 10px;
   border-radius: 10px;
 }
+

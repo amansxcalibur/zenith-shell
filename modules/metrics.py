@@ -11,7 +11,7 @@ from fabric.core.fabricator import Fabricator
 from fabric.core.service import Service, Signal
 from fabric.widgets.circularprogressbar import CircularProgressBar
 
-from widgets.popup_window import PopupWindow
+from widgets.popup_window import SharedPopupWindow
 from widgets.animated_scale import AnimatedScale
 from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
 
@@ -327,11 +327,12 @@ class MetricsSmall(Button):
         self.connect("leave-notify-event", self.on_mouse_leave)
 
         # sliders for popup window
-        self.cpu_slider = MetricsSliderMaterial3(orientation='v')
-        self.ram_slider = MetricsSliderMaterial3(orientation='v')
-        self.disk_slider = MetricsSliderMaterial3(orientation='v')
+        self.cpu_slider = MetricsSliderMaterial3(orientation="v")
+        self.ram_slider = MetricsSliderMaterial3(orientation="v")
+        self.disk_slider = MetricsSliderMaterial3(orientation="v")
 
-        self.popup_win = PopupWindow(
+        self.popup_win = SharedPopupWindow()
+        self.popup_win.add_child(
             pointing_widget=self,
             child=Box(
                 name="control-slider-mui-container",
@@ -423,7 +424,10 @@ class Battery(Button):
 
         # ------------------ Battery ------------------
         self.bat_icon = Label(
-            angle=90,name="bat-icon", style_classes="metrics-icon", markup=icons.battery
+            angle=90,
+            name="bat-icon",
+            style_classes="metrics-icon",
+            markup=icons.battery,
         )
         self.bat_circle = CircularProgressBar(
             name="metrics-circle",

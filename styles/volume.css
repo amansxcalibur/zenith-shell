@@ -155,7 +155,7 @@ highlight {
 #control-slider-mui highlight {
   background-color: var(--primary);
   border-radius: 0 4px 4px 0;
-  box-shadow: 4px 0 0 4px black;
+  /* box-shadow: 4px 0 0 4px black; */
 }
 
 #control-slider-mui trough {
@@ -177,13 +177,13 @@ highlight {
   min-width: 40px;
   border-radius: 10px;
   min-height: 4px;
-  box-shadow: 0 0 0 4px black;
+  /* box-shadow: 0 0 0 4px black; */
 }
 
 #control-slider-mui.vertical highlight {
   background-color: var(--primary);
   border-radius: 4px 4px 12px 12px;
-  box-shadow: 0 4px 0 4px black;
+  /* box-shadow: 0 4px 0 4px black; */
 }
 
 #control-slider-mui.vertical trough {
@@ -204,10 +204,8 @@ highlight {
 
 #control-slider-mui-container {
   padding: 7px;
-  background-color: black;
+  background-color: var(--shadow);
   border-radius: 17px;
-  margin-left: 13px; /* These margins are to prevent window resize due to low width when re allocating */
-  margin-right: 13px;
 }
 
 #control-slider-label {
@@ -221,11 +219,11 @@ highlight {
 }
 
 .scale-icon {
-  color: black;
+  color: var(--shadow);
   font-size: 22px;
 }
 
 #vol-brightness-container {
-  background-color: black;
+  background-color: var(--shadow);
   border-radius: 18px;
 }

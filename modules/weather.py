@@ -12,7 +12,7 @@ from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
 from fabric.core.service import Service, Signal, Property
 
-from widgets.popup_window import PopupWindow
+from widgets.popup_window import SharedPopupWindow
 import config.info as info
 import icons
 from utils.cursor import add_hover_cursor
@@ -138,10 +138,8 @@ class WeatherMini(EventBox):
         self.build_popup_win()
 
     def build_popup_win(self):
-        self.popup_win = PopupWindow(
-            pointing_widget=self,
-            child=WeatherCard(),
-        )
+        self.popup_win = SharedPopupWindow()
+        self.popup_win.add_child(pointing_widget=self, child=WeatherCard())
 
     def _on_weather_update(self, source, data: WeatherData):
         self.temperature.set_label(data.temp)

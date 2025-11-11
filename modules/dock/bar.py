@@ -72,11 +72,6 @@ class DockBar(Window):
             children=DateTime(
                 name="date-time",
                 formatters=["%H\n%M"] if info.VERTICAL else ["%I:%M %p", "%H:%M", "%A", "%m-%d-%Y"],
-                # h_align="center",
-                # v_align="center",
-                # h_expand=True,
-                # v_expand=True,
-                # style_classes="" if not info.VERTICAL else "vertical",
             ),
         )
         self.vertical_toggle_btn = add_hover_cursor(Button(
@@ -94,10 +89,10 @@ class DockBar(Window):
             self.workspaces,
             self.vol_brightness_box,
             self.weather_mini,
+            self.metrics,
         ]
         self.user_modules_right = [
             self.systray,
-            self.metrics,
             self.battery,
             self.date_time,
         ]

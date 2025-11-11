@@ -4,7 +4,9 @@ from fabric.widgets.eventbox import EventBox
 
 from modules.volume import VolumeSmall, VolumeSlider, VolumeMaterial3
 from modules.brightness import BrightnessSlider, BrightnessSmall, BrightnessMaterial3
-from widgets.popup_window import PopupWindow
+
+from widgets.popup_window import SharedPopupWindow
+
 from services.volume_service import VolumeService
 from services.brightness_service import BrightnessService
 
@@ -76,7 +78,9 @@ class ControlsManager:
                 ],
             )
         )
-        self.popup_win = PopupWindow(
+
+        self.popup_win = SharedPopupWindow()
+        self.popup_win.add_child(
             pointing_widget=self.vol_brightness_box,
             child=Box(
                 name="control-slider-mui-container",
