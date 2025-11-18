@@ -58,10 +58,26 @@
   all: unset;
   min-width: 400px;
   min-height: 300px;
+  background-color: var(--surface-bright);
+  /* border-radius: 20px; */
+  /* margin: 2px; */
+}
+
+#menu-header{
+  padding: 5px 5px 0px 5px;
 }
 
 #menu-btn{
   margin-left: 0px;
+}
+
+#menu-title{
+  font-size: 20px;
+}
+
+#menu-close-button{
+  border-radius: 100%;
+  margin-left: -29px;
 }
 
 .app-name{

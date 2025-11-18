@@ -1,0 +1,75 @@
+#connection-container{
+    /* padding: 5px; */
+    /* background-color: var(--surface); */
+}
+
+#ap-button.active{
+    background-color: var(--surface);
+}
+
+#ap-button.hover, #ap-button.focus{
+background-color: var(--surface-semi-bright);
+  }
+
+
+#ap-button{
+    padding: 10px 20px;
+    border-radius: 5px;
+    background-color: var(--surface);
+    min-height: 40px;
+}
+
+#ap-label{
+}
+
+#subsection-heading-label{
+    font-size: 16px;
+    font-weight: 600;
+}
+
+#subsection-heading-container{
+    padding: 0px 10px 0px 10px;
+}
+
+.menu-icon{
+    font-size: 26px;
+    /* background-color: red; */
+    margin: -10px 0px; /* material icons have some inherent padding */
+}
+
+#network-scrolled-window{
+    
+}
+
+#network-scrolled-window-container{
+    border-radius: 17px;
+    /* background-color: aquamarine; */
+}
+
+#network-menu{
+    margin: 5px;
+    margin-top: 15px;
+    /* background-color: red; */
+}
+
+#password-dialog-box{
+    background-color: var(--surface);
+    border-radius: 20px;
+    padding: 10px;
+}
+
+#dialog-btn{
+    background-color: var(--surface-bright);
+    border-radius: 10px;
+    padding: 10px;
+}
+
+#password-dialog-entry{
+    padding: 10px;
+    border: 1px solid var(--surface-bright);
+    border-radius: 20px;
+}
+
+#dialog-btn:hover{
+    background-color: var(--outline);
+}

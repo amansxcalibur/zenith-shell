@@ -41,6 +41,8 @@ from gi.repository import Gtk, GLib, Gdk
 # - mlock for passwords (sweat cpython)
 # - dpms handle
 
+# WARNING: THIS SETUP IS NOT SECURE
+
 class InputGrabber:
     """Handles X11 keyboard and pointer grabbing."""
 

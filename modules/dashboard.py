@@ -78,7 +78,7 @@ class Dashboard(Box):
                 Label(name="notification-source", label="Zenith Shell", h_align=True),
                 self.low_bat_msg,
             ],
-        )
+        )   
 
         close_btn = Button(
             name="close-button",

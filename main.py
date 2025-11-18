@@ -16,12 +16,13 @@ from config.info import SHELL_NAME
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 
 import setproctitle
 
 if __name__ == "__main__":
     setproctitle.setproctitle(SHELL_NAME)
+    GLib.set_prgname(SHELL_NAME)
     pill = Pill()
     dockBar = DockBar(pill=pill)
     pill.set_role("pill")

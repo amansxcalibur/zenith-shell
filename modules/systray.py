@@ -8,7 +8,16 @@ import config.info as info
 
 class SystemTray(Gtk.Box):
     def __init__(self, pixel_size: int = 20, **kwargs) -> None:
-        super().__init__(name="systray", orientation=Gtk.Orientation.VERTICAL if info.VERTICAL else Gtk.Orientation.HORIZONTAL, spacing=1, **kwargs)
+        super().__init__(
+            name="systray",
+            orientation=(
+                Gtk.Orientation.VERTICAL
+                if info.VERTICAL
+                else Gtk.Orientation.HORIZONTAL
+            ),
+            spacing=1,
+            **kwargs,
+        )
         self.set_visible(False)  # Initially hidden when empty.
         self.pixel_size = pixel_size
         self.watcher = Gray.Watcher()
@@ -21,7 +30,9 @@ class SystemTray(Gtk.Box):
     def on_item_added(self, _, identifier: str):
         item = self.watcher.get_item_for_identifier(identifier)
         item_button = self.do_bake_item_button(item)
-        item.connect("removed", lambda *args: (item_button.destroy(), self._update_visibility()))
+        item.connect(
+            "removed", lambda *args: (item_button.destroy(), self._update_visibility())
+        )
         self.add(item_button)
         item_button.show_all()
         self._update_visibility()

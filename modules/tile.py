@@ -7,16 +7,19 @@ from fabric.widgets.revealer import Revealer
 import icons
 import config.info as info
 from utils.cursor import add_hover_cursor
+from widgets.clipping_box import ClippingBox
 
 from fabric.utils.helpers import exec_shell_command_async
 
 
-class Tile(Box):
+class Tile(ClippingBox):
     def __init__(
         self,
+        title: str = "",
         menu: bool = False,
         markup: str = icons.blur,
         label: str = "__",
+        menu_children=None,
         props: Label = Label(style_classes="tile-label", label="N/A", h_align="start"),
         **kwargs,
     ):
@@ -28,7 +31,7 @@ class Tile(Box):
 
         self.state = False
         self.props = props
-        
+
         self.icon = Label(style_classes="tile-icon", markup=markup, style=markup_styles)
         self.icon_wrapper = Button(
             style="all:unset;",
@@ -53,11 +56,12 @@ class Tile(Box):
                 children=[self.tile_label, self.props],
             ),
         )
-        
 
         self.menu_button = Button(
             style_classes="tile-button",
-            child=Label(name="menu-btn", style_classes="tile-icon", markup=icons.arrow_forward),
+            child=Label(
+                name="menu-btn", style_classes="tile-icon", markup=icons.arrow_forward
+            ),
             on_clicked=self.handle_menu_click,
         )
 
@@ -87,10 +91,32 @@ class Tile(Box):
             ],
         )
 
-        self.menu = Button(
-            style_classes="tile-menu",
-            child=Label(label="hi!"),
+        self.menu_close_btn = Button(
+            name="menu-close-button",
+            child=Label(name="close-label", markup=icons.cancel),
+            tooltip_text="Exit",
             on_clicked=self.handle_menu_click,
+        )
+
+        self.menu = Box(
+            style_classes="tile-menu",
+            orientation="v",
+            children=(
+                [
+                    Box(
+                        name="menu-header",
+                        children=[
+                            Label(
+                                name="menu-title",
+                                label=title if title is not "" else label,
+                                h_expand=True,
+                            ),
+                            self.menu_close_btn,
+                        ],
+                    ),
+                ]
+                + ([menu_children] if menu_children else [Label(label="hi!")])
+            ),
         )
 
         self.stack = Stack(
@@ -104,7 +130,6 @@ class Tile(Box):
 
         self.children = self.stack
 
-        
         add_hover_cursor(self.menu)
         add_hover_cursor(self.type_box)
         add_hover_cursor(self.menu_button)

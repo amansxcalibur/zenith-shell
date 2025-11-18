@@ -1,5 +1,4 @@
 # dashboard
-wifi: str = "\ue63e"
 arrow_forward: str = "\ue5e1"
 bluetooth: str = "\ue1a7"
 
@@ -24,6 +23,15 @@ battery: str = "\uf304"
 battery_charging: str = "\uf250"
 
 blur: str = "\ue3a5"
+refresh: str = "\ue5d5"
+sync_saved_locally: str = "\uf820"
+
+# wifi
+wifi: str = "\ue63e"
+wifi_1: str = "\ue4ca"
+wifi_2: str = "\ue4d9"
+wifi_3: str = "\uef16"
+wifi_4: str = "\uef10"
 
 # Vertical
 toggle_orientation: str = "\uf2d5"
