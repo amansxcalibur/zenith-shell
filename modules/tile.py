@@ -151,9 +151,17 @@ class Tile(ClippingBox):
             self.menu.remove_style_class("contract")
         print(self.toggle, self.get_name())
         name = self.get_name()
+
         exec_shell_command_async(
             f"fabric-cli exec {info.SHELL_NAME} \"pill.dashboard.handle_tile_menu_expand('{name}', {self.toggle})\""
         )
+
+    def close(self):
+        self.toggle = False
+        self.menu.add_style_class("contract")
+        self.menu.remove_style_class("expand")
+        self.stack.set_visible_child(self.normal_view)
+        self.maxi_view()
 
     def mini_view(self):
         self.content_button.set_reveal_child(False)
@@ -203,3 +211,6 @@ class TileSpecial(Box):
 
     def maxi_view(self):
         self.stack.set_visible_child(self.normal_view)
+
+    def close(self):
+        self.maxi_view()

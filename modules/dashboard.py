@@ -78,7 +78,7 @@ class Dashboard(Box):
                 Label(name="notification-source", label="Zenith Shell", h_align=True),
                 self.low_bat_msg,
             ],
-        )   
+        )
 
         close_btn = Button(
             name="close-button",
@@ -190,7 +190,8 @@ class Dashboard(Box):
                                         style="font-size:25px; margin-right:15px; color:var(--foreground)",
                                     ),
                                     Label(
-                                        markup=icons.settings, style="font-size:25px; color:var(--foreground);"
+                                        markup=icons.settings,
+                                        style="font-size:25px; color:var(--foreground);",
                                     ),
                                 ],
                             ),
@@ -230,7 +231,18 @@ class Dashboard(Box):
             ),
         ]
 
-    def handle_tile_menu_expand(self, tile: str, toggle: bool):
+        self.connect("unmap", lambda *_: self.close_all())
+
+    def close_all(self):
+        self.notification_container.set_reveal_child(True)
+        rows = self.tiles.get_children()
+        for row in rows:
+            elems = row.get_children()
+            for elem in elems:
+                if hasattr(elem, "close"):
+                    elem.close()
+
+    def handle_tile_menu_expand(self, tile: str, toggle: bool, close: bool = False):
         if toggle:
             self.notification_container.set_reveal_child(False)
         else:
@@ -257,8 +269,6 @@ class Dashboard(Box):
                             logger.error(
                                 f"Failed to switch {elem.get_name()} to mini view"
                             )
-
-        print("search complete")
 
     def cycle_widgets(self, forward=True):
         if not self.widget_stack:

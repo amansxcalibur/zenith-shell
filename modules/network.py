@@ -555,6 +555,7 @@ class Network(Tile):
         self.wifi_toggle = Gtk.Switch(name="matugen-switcher")
         self.wifi_toggle.connect("notify::active", self._on_toggle_wifi)
         self.wifi_toggle.set_active(True)
+        self.wifi_toggle.set_visible(True)
 
         self.active_connection = ClippingBox(
             name="network-scrolled-window-container", orientation="v", children=[]

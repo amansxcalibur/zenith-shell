@@ -458,8 +458,9 @@ class NotificationManager(Window):
                     len(self._active_notifications)
                     >= NotificationConfig.MAX_ACTIVE_NOTIFS
                 ):
+                    active_children = self.active_notifications_box.get_children()
                     self._move_to_revealer(
-                        self.active_notifications_box.get_children()[0]
+                        active_children[len(active_children)-1]
                     )
                 self._active_notifications.append(notification_widget)
                 self.active_notifications_box.pack_end(notification_widget, True, None, 0)
