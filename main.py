@@ -5,8 +5,9 @@ Window.toggle_visibility = lambda self: self.set_visible(not self.is_visible())
 
 from fabric.utils import get_relative_path, monitor_file
 
-from modules.pill import Pill
-from modules.dock.bar import DockBar
+from modules.core.pill import Pill
+from modules.corners import Corners
+from modules.core.dock.bar import DockBar
 from modules.notifications import NotificationPopup
 from modules.notification import NotificationManager
 # from modules.notification_bar import NotificationBar
@@ -32,11 +33,13 @@ if __name__ == "__main__":
     pill_size_group.add_widget(pill.pill_container)
     controls_notification = NotificationPopup()
     notification = NotificationManager()
+    corners = Corners()
     # notif_bar = NotificationBar()
 
     app_kwargs = {
         "pill": pill,
         "dockBar": dockBar,
+        "corners": corners,
         "controls_notification": controls_notification,
         "notification": notification,
         # "notification-bar": notif_bar,
@@ -53,8 +56,3 @@ if __name__ == "__main__":
     set_css()
 
     app.run()
-
-    # corner = Corners()
-    # app_corner = Application('corners', corner)
-    # app_corner.set_stylesheet_from_file(get_relative_path("./styles/corner.css"))
-    # app_corner.run()
