@@ -2,6 +2,7 @@ from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.widgets.x11 import X11Window as Window
+from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
 from modules.dashboard import Dashboard
@@ -15,14 +16,21 @@ from modules.wallpaper import WallpaperSelector
 import config.info as info
 
 
-class Pill(Window):
+class Pill(Window, Service):
+
+    @Signal
+    def on_drag(self, drag_state: object, new_x: int, new_y: int): ...
+
+    @Signal
+    def on_drag_end(self, drag_state: object): ...
+
     def __init__(self, **kwargs):
         super().__init__(
             name="pill",
             layer="top",
-            geometry="bottom" if not info.VERTICAL else "left",
+            geometry="bottom",
             type_hint="normal",
-            margin="-8px -4px -8px -4px",
+            margin=(0,0,0,0),
             visible=True,
             all_visible=True,
         )
@@ -86,6 +94,21 @@ class Pill(Window):
         self.children = self.pill_container
 
         self.add_keybinding("Escape", lambda *_: self.close())
+
+        self._drag_state = {
+            "dragging": False,
+            "offset_x": 0,
+            "offset_y": 0,
+            "start_pos": None,
+        }
+
+        # drag events
+        self.connect("button-press-event", self.on_button_press)
+        self.connect("motion-notify-event", self.on_motion)
+        self.connect("button-release-event", self.on_button_release)
+
+    def setter(self):
+        self.margin=(100,100,0,0)
 
     def focus_pill(self):
         exec_shell_command_async('i3-msg [window_role="pill"] focus')
@@ -189,3 +212,31 @@ class Pill(Window):
         self.pill_compact.set_visible_child(_next_mode)
         self.stack.set_visible_child(self.pill_compact)
         self._current_compact_mode = _next_mode
+
+    def on_button_press(self, widget, event):
+        if event.button == 1:  # Left mouse button
+            self._drag_state["dragging"] = True
+            win_x, win_y = self.get_position()
+            self._drag_state["offset_x"] = event.x_root - win_x
+            self._drag_state["offset_y"] = event.y_root - win_y
+            self._drag_state["start_pos"] = (win_x, win_y)
+
+    def on_motion(self, widget, event):
+        if not self._drag_state["dragging"]:
+            return
+
+        new_x = int(event.x_root - self._drag_state["offset_x"])
+        new_y = int(event.y_root - self._drag_state["offset_y"])
+
+        self.on_drag(self._drag_state, new_x, new_y)
+        self.move(new_x, new_y)
+
+    def on_button_release(self, widget, event):
+        if event.button != 1 or not self._drag_state["dragging"]:
+            return
+
+        self._drag_state["dragging"] = False
+        self.on_drag_end(self._drag_state)
+
+    def get_drag_state(self):
+        return self._drag_state

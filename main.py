@@ -6,10 +6,11 @@ Window.toggle_visibility = lambda self: self.set_visible(not self.is_visible())
 from fabric.utils import get_relative_path, monitor_file
 
 from modules.core.pill import Pill
-from modules.corners import Corners
+# from modules.corners import Corners
 from modules.core.dock.bar import DockBar
 from modules.notifications import NotificationPopup
 from modules.notification import NotificationManager
+from modules.core.shell_window_manager import ShellWindowManager
 # from modules.notification_bar import NotificationBar
 
 from config.info import SHELL_NAME
@@ -28,18 +29,16 @@ if __name__ == "__main__":
     dockBar = DockBar(pill=pill)
     pill.set_role("pill")
     dockBar.set_title("fabric-dock")
-    pill_size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
-    pill_size_group.add_widget(dockBar.pill_dock)
-    pill_size_group.add_widget(pill.pill_container)
+    window_manager = ShellWindowManager(pill = pill, dockBar = dockBar)
     controls_notification = NotificationPopup()
     notification = NotificationManager()
-    corners = Corners()
+    # corners = Corners()
     # notif_bar = NotificationBar()
 
     app_kwargs = {
         "pill": pill,
         "dockBar": dockBar,
-        "corners": corners,
+        # "corners": corners,
         "controls_notification": controls_notification,
         "notification": notification,
         # "notification-bar": notif_bar,

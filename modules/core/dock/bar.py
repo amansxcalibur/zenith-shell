@@ -11,11 +11,11 @@ from modules.workspaces import Workspaces
 from modules.workspaces import Workspaces
 from modules.controls import ControlsManager
 from modules.metrics import MetricsSmall, Battery
-from modules.dock.layout_manager import LayoutManager
-from modules.dock.module_overlay import HoverOverlay, HolePlaceholder
+from modules.core.dock.layout_manager import LayoutManager
+from modules.core.dock.module_overlay import HoverOverlay, HolePlaceholder
 
-import config.info as info
 import icons
+import config.info as info
 from utils.helpers import toggle_class
 from utils.cursor import add_hover_cursor
 
@@ -44,6 +44,9 @@ class DockBar(Window):
             **kwargs,
         )
         self._pill_ref = pill
+
+        self.is_open = False
+        self._pill_is_docked = True
 
         self.hole_state_left = False
         self.hole_state_right = False
@@ -149,7 +152,7 @@ class DockBar(Window):
         )
 
         self.hover_overlay_row_right = Box(
-            style="min-height:40px;",
+            style="min-height:41px;",
             spacing=SPACING,
             h_expand=True,
             children=[self.edge_fallback_right],  # fallback first
@@ -227,19 +230,44 @@ class DockBar(Window):
         size_group.add_widget(self.start_children)
         size_group.add_widget(self.end_children)
 
+    def get_is_open(self):
+        return self.is_open
+    
+    def set_pill_docked(self, docked: bool):
+        self._pill_is_docked = docked
+
+    def override_close(self):
+        self._pill_is_docked = False
+        self._apply_close_visual()
+        
+    def override_reset(self):
+        self._pill_is_docked = True
+        if self.is_open:
+            self._apply_open_visual()
+        else:
+            self._apply_close_visual()
+
     def open(self):
+        self.is_open = True
+        if self._pill_is_docked:
+            self._apply_open_visual()
+
+    def close(self):
+        self.is_open = False
+        if self._pill_is_docked:
+            self._apply_close_visual()
+
+    def _apply_open_visual(self):
         toggle_class(self.pill_dock, "contractor", "expand")
         toggle_class(self.pill_dock_container, "contractor", "expander")
         toggle_class(self.left_pill_curve, "contractor", "expander")
         toggle_class(self.right_pill_curve, "contractor", "expander")
-        self.bool = True
 
-    def close(self):
+    def _apply_close_visual(self):
         toggle_class(self.pill_dock, "expand", "contractor")
         toggle_class(self.pill_dock_container, "expander", "contractor")
         toggle_class(self.left_pill_curve, "expander", "contractor")
         toggle_class(self.right_pill_curve, "expander", "contractor")
-        self.bool = False
 
     def set_hole_state(self, source, event, state: bool, side: str):
         # this function solely exist to reset and collapse the hole when the cursor travels to
