@@ -1,8 +1,7 @@
 from fabric.widgets.box import Box
-from fabric.widgets.centerbox import CenterBox
-from fabric.widgets.button import Button
 from fabric.widgets.x11 import X11Window as Window
 from fabric.widgets.shapes import Corner
+
 from gi.repository import GLib
 
 class MyCorner(Box):

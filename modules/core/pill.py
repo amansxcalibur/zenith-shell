@@ -107,9 +107,6 @@ class Pill(Window, Service):
         self.connect("motion-notify-event", self.on_motion)
         self.connect("button-release-event", self.on_button_release)
 
-    def setter(self):
-        self.margin=(100,100,0,0)
-
     def focus_pill(self):
         exec_shell_command_async('i3-msg [window_role="pill"] focus')
 

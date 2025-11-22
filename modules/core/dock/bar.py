@@ -1,5 +1,6 @@
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
+from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.datetime import DateTime
@@ -74,19 +75,23 @@ class DockBar(Window):
             v_expand=True,
             children=DateTime(
                 name="date-time",
-                formatters=["%H\n%M"] if info.VERTICAL else ["%I:%M %p", "%H:%M", "%A", "%m-%d-%Y"],
-            ),
-        )
-        self.vertical_toggle_btn = add_hover_cursor(Button(
-            name="orientation-btn",
-            child=Label(
-                name="orientation-label",
-                markup=(
-                    icons.toggle_orientation
+                formatters=(
+                    ["%H\n%M"]
+                    if info.VERTICAL
+                    else ["%I:%M %p", "%H:%M", "%A", "%m-%d-%Y"]
                 ),
             ),
-            on_clicked=lambda b, *_: self.toggle_vertical(),
-        ))
+        )
+        self.vertical_toggle_btn = add_hover_cursor(
+            Button(
+                name="orientation-btn",
+                child=Label(
+                    name="orientation-label",
+                    markup=(icons.toggle_orientation),
+                ),
+                on_clicked=lambda b, *_: self.toggle_vertical(),
+            )
+        )
         self.user_modules_left = [
             self.vertical_toggle_btn,
             self.workspaces,
@@ -220,10 +225,18 @@ class DockBar(Window):
                 self.right_pill_curve,
             ]
         )
+        self.compact = Box(style="min-width:1px; min-height:1px; background-color:black")
+        self.stack = Stack(
+            transition_duration=300,
+            transition_type="over-up",
+            children=[self.pill_dock_container, self.compact],
+        )
+        self.stack.set_interpolate_size(True)
+        self.stack.set_homogeneous(False)
 
         self.children = Box(
             name="main",
-            children=[self.start_children, self.pill_dock_container, self.end_children],
+            children=[self.start_children, self.stack, self.end_children],
         )
 
         size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
@@ -232,16 +245,18 @@ class DockBar(Window):
 
     def get_is_open(self):
         return self.is_open
-    
+
     def set_pill_docked(self, docked: bool):
         self._pill_is_docked = docked
 
     def override_close(self):
         self._pill_is_docked = False
+        self.stack.set_visible_child(self.compact)
         self._apply_close_visual()
-        
+
     def override_reset(self):
         self._pill_is_docked = True
+        self.stack.set_visible_child(self.pill_dock_container)
         if self.is_open:
             self._apply_open_visual()
         else:
