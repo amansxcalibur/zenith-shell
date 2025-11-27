@@ -5,7 +5,7 @@ from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
 
 import icons
-import config.info as info
+from config.info import SHELL_NAME
 from utils.cursor import add_hover_cursor
 from widgets.clipping_box import ClippingBox
 
@@ -153,7 +153,7 @@ class Tile(ClippingBox):
         name = self.get_name()
 
         exec_shell_command_async(
-            f"fabric-cli exec {info.SHELL_NAME} \"pill.dashboard.handle_tile_menu_expand('{name}', {self.toggle})\""
+            f"fabric-cli exec {SHELL_NAME} \"pill.dashboard.handle_tile_menu_expand('{name}', {self.toggle})\""
         )
 
     def close(self):

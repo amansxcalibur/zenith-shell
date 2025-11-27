@@ -14,7 +14,7 @@ from modules.player_mini import PlayerContainerMini
 from modules.weather import WeatherPill
 
 import icons
-import config.info as info
+from config.info import config
 from utils.cursor import add_hover_cursor
 
 from loguru import logger
@@ -61,7 +61,7 @@ class Dashboard(Box):
             name="widget-stack",
             transition_type="crossfade",
             transition_duration=100,
-            style_classes="" if not info.VERTICAL else "vertical",
+            style_classes="" if not config.VERTICAL else "vertical",
             children=(
                 [
                     self.wavy_clock,
@@ -89,7 +89,7 @@ class Dashboard(Box):
 
         self.notification_box = Box(
             name="notification-box",
-            style_classes="vertical" if info.VERTICAL else "horizontal",
+            style_classes="vertical" if config.VERTICAL else "horizontal",
             children=[
                 Label(name="notification-icon", h_align=True, markup=icons.blur),
                 Box(h_expand=True, children=self.content_box),
@@ -146,7 +146,7 @@ class Dashboard(Box):
 
         self.notification_box_2 = Box(
             name="notification-box",
-            style_classes="vertical" if info.VERTICAL else "horizontal",
+            style_classes="vertical" if config.VERTICAL else "horizontal",
             children=[
                 Label(name="notification-icon", h_align=True, markup=icons.blur),
                 Box(h_expand=True, children=self.content_box_2),

@@ -9,7 +9,7 @@ from services.player_service import PlayerManager, PlayerService
 from modules.wiggle_bar import WigglyWidget
 
 import icons
-import config.info as info
+from config.info import config, HOME_DIR
 
 from loguru import logger
 
@@ -26,7 +26,7 @@ class PlayerMini(Box):
         self._player_service = player_service
         player = self._player_service._player
 
-        if not info.VERTICAL:
+        if not config.VERTICAL:
             self.remove_style_class("vertical")
 
         self.player_name = Label(
@@ -36,7 +36,7 @@ class PlayerMini(Box):
         )
 
         self.set_style(
-            f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+            f"background-image:url('{HOME_DIR}/.cache/walls/low_rez.png')"
         )
 
         self.song = Label(
@@ -91,7 +91,7 @@ class PlayerMini(Box):
 
         self.album_cover = Box(style_classes="album-image")
         self.album_cover.set_style(
-            f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+            f"background-image:url('{HOME_DIR}/.cache/walls/low_rez.png')"
         )
 
         self.children = [
@@ -114,7 +114,7 @@ class PlayerMini(Box):
                     ),
                     Box(
                         name="controls",
-                        style_classes="horizontal" if not info.VERTICAL else "vertical",
+                        style_classes="horizontal" if not config.VERTICAL else "vertical",
                         spacing=5,
                         h_expand=True,
                         children=[
@@ -314,11 +314,11 @@ class PlaceholderMini(Box):
         super().__init__(style_classes="player-mini", **kwargs)
 
         self.set_style(
-            f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+            f"background-image:url('{HOME_DIR}/.cache/walls/low_rez.png')"
         )
         self.album_cover = Box(style_classes="album-image")
         self.album_cover.set_style(
-            f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+            f"background-image:url('{HOME_DIR}/.cache/walls/low_rez.png')"
         )
         self.player_name = Label(
             style_classes=["player-icon", "mini"], markup=icons.disc
@@ -377,7 +377,7 @@ class PlayerContainerMini(Box):
             orientation="v",
             style_classes=(
                 ["horizontal-player", "mini"]
-                if not info.VERTICAL
+                if not config.VERTICAL
                 else "vertical-player"
             ),
             center_children=[],

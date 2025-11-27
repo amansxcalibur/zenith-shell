@@ -5,6 +5,8 @@ from typing import Optional, Dict, Any, List, Callable
 
 from fabric.core.service import Service, Signal, Property
 
+from config.info import config
+
 import gi
 
 try:
@@ -559,6 +561,9 @@ class NetworkService(Service):
         else:
             self.connection_change("", False, DeviceStatus.NO_DEVICE.value)
 
+        # init on/off
+        self.toggle_wifi_radio(enabled=config.network.wifi.ON)
+
     def scan(self) -> bool:
         if not self.scan_manager:
             return False
@@ -671,6 +676,10 @@ class NetworkService(Service):
 
             logger.info(f"Setting WiFi radio: {new_state}")
             self.client.wireless_set_enabled(new_state)
+            
+            # CHANGES THE CONFIG!!
+            config.network.wifi.ON = new_state
+
             return True
         except Exception as e:
             logger.error(f"Failed to toggle WiFi: {e}")

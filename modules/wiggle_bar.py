@@ -1,13 +1,12 @@
-import gi
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk, GLib
+import math, cairo
 
 from fabric.core.service import Service, Signal, Property
 
-import config.info as info
-from utils.colors import get_css_variable, hex_to_rgb01
+import gi
 
-import math, cairo
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, Gdk
+
 
 class WigglyWidget(Gtk.DrawingArea, Service):
 

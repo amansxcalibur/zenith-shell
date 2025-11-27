@@ -16,7 +16,7 @@ from modules.core.dock.layout_manager import LayoutManager
 from modules.core.dock.module_overlay import HoverOverlay, HolePlaceholder
 
 import icons
-import config.info as info
+from config.info import config
 from utils.helpers import toggle_class
 from utils.cursor import add_hover_cursor
 
@@ -35,7 +35,7 @@ class DockBar(Window):
         super().__init__(
             name="dock-bar",
             layer="bottom",
-            geometry="bottom",
+            geometry=config.bar['POSITION'],
             type_hint="dock",
             margin="0px",
             visible=True,
@@ -71,13 +71,13 @@ class DockBar(Window):
         self.vol_brightness_box = self.controls.get_controls_box()
         self.date_time = Box(
             name="date-time-container",
-            style_classes="" if not info.VERTICAL else "vertical",
+            style_classes="" if not config.VERTICAL else "vertical",
             v_expand=True,
             children=DateTime(
                 name="date-time",
                 formatters=(
                     ["%H\n%M"]
-                    if info.VERTICAL
+                    if config.VERTICAL
                     else ["%I:%M %p", "%H:%M", "%A", "%m-%d-%Y"]
                 ),
             ),
@@ -301,7 +301,7 @@ class DockBar(Window):
     def toggle_vertical(self):
         # toggle_config_vertical_flag()
         # restart bar
-        subprocess.run([f"{info.SCRIPTS_DIR}/flaunch.sh"])
+        subprocess.run([f"{config.SCRIPTS_DIR}/flaunch.sh"])
 
     def toggle_visibility(self):
         visible = not self.is_visible()

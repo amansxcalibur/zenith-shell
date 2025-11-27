@@ -15,7 +15,7 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.utils.helpers import exec_shell_command_async, exec_shell_command
 
 import icons
-import config.info as info
+from config.info import config, HOME_DIR
 
 import gi
 
@@ -48,14 +48,14 @@ class WallpaperSelector(Box):
         # Process old wallpapers: use os.scandir for efficiency and only loop
         # over image files that actually need renaming (they're not already lowercase
         # and with hyphens instead of spaces)
-        with os.scandir(info.WALLPAPERS_DIR) as entries:
+        with os.scandir(config.WALLPAPERS_DIR) as entries:
             for entry in entries:
                 if entry.is_file() and self._is_image(entry.name):
                     # Check if the file needs renaming: file should be lowercase and have hyphens instead of spaces
                     if entry.name != entry.name.lower() or " " in entry.name:
                         new_name = entry.name.lower().replace(" ", "-")
-                        full_path = os.path.join(info.WALLPAPERS_DIR, entry.name)
-                        new_full_path = os.path.join(info.WALLPAPERS_DIR, new_name)
+                        full_path = os.path.join(config.WALLPAPERS_DIR, entry.name)
+                        new_full_path = os.path.join(config.WALLPAPERS_DIR, new_name)
                         try:
                             os.rename(full_path, new_full_path)
                             print(
@@ -66,7 +66,7 @@ class WallpaperSelector(Box):
 
         # Refresh the file list after potential renaming
         self.files = sorted(
-            [f for f in os.listdir(info.WALLPAPERS_DIR) if self._is_image(f)]
+            [f for f in os.listdir(config.WALLPAPERS_DIR) if self._is_image(f)]
         )
         self.thumbnails = []
         self.thumbnail_queue = []
@@ -99,7 +99,7 @@ class WallpaperSelector(Box):
             name="search-entry-walls",
             placeholder="Search Wallpapers...",
             h_expand=True,
-            style_classes="" if not info.VERTICAL else "vertical",
+            style_classes="" if not config.VERTICAL else "vertical",
             notify_text=lambda entry, *_: self.arrange_viewport(entry.get_text()),
             on_key_press_event=self.on_search_entry_key_press,
         )
@@ -162,7 +162,7 @@ class WallpaperSelector(Box):
         self.search_entry.grab_focus()
 
     def setup_file_monitor(self):
-        gfile = Gio.File.new_for_path(info.WALLPAPERS_DIR)
+        gfile = Gio.File.new_for_path(config.WALLPAPERS_DIR)
         self.file_monitor = gfile.monitor_directory(Gio.FileMonitorFlags.NONE, None)
         self.file_monitor.connect("changed", self.on_directory_changed)
 
@@ -183,8 +183,8 @@ class WallpaperSelector(Box):
             if self._is_image(file_name):
                 # Convert filename to lowercase and replace spaces with "-"
                 new_name = file_name.lower().replace(" ", "-")
-                full_path = os.path.join(info.WALLPAPERS_DIR, file_name)
-                new_full_path = os.path.join(info.WALLPAPERS_DIR, new_name)
+                full_path = os.path.join(config.WALLPAPERS_DIR, file_name)
+                new_full_path = os.path.join(config.WALLPAPERS_DIR, new_name)
                 if new_name != file_name:
                     try:
                         os.rename(full_path, new_full_path)
@@ -227,7 +227,7 @@ class WallpaperSelector(Box):
     def on_wallpaper_selected(self, iconview, path):
         model = iconview.get_model()
         file_name = model[path][1]
-        full_path = os.path.join(info.WALLPAPERS_DIR, file_name)
+        full_path = os.path.join(config.WALLPAPERS_DIR, file_name)
         selected_scheme = self.scheme_dropdown.get_active_id()
         # if self.matugen_switcher.get_active():
         #     # Matugen is enabled: run the normal command.
@@ -238,14 +238,14 @@ class WallpaperSelector(Box):
         #         f'swww img {full_path} -t outer --transition-duration 1.5 --transition-step 255 --transition-fps 60 -f Nearest'
         #     )
         exec_shell_command_async(f"feh --zoom fill --bg-fill {full_path}")
-        f = open(f"{info.HOME_DIR}/.cache/zenith-shell/current_wallpaper.txt", "w")
+        f = open(f"{HOME_DIR}/.cache/zenith-shell/current_wallpaper.txt", "w")
         f.write(full_path)
         f.close()
 
         async def generate_theme():
             # the themes are updated when the "changed" signal is emitted by the monitor watching the styles directory.
             exec_shell_command(
-                f"matugen image {full_path} -t {selected_scheme} -c {info.HOME_DIR}/fabric/config/matugen/config.toml"
+                f"matugen image {full_path} -t {selected_scheme} -c {HOME_DIR}/fabric/config/matugen/config.toml"
             )
             print("this is the selected scheme ", selected_scheme)
 
@@ -255,7 +255,7 @@ class WallpaperSelector(Box):
         try:
             img = Image.open(full_path)
             img.thumbnail((400, 200))
-            cache_path = f"{info.HOME_DIR}/.cache/walls/low_rez.png"
+            cache_path = f"{HOME_DIR}/.cache/walls/low_rez.png"
             os.makedirs(os.path.dirname(cache_path), exist_ok=True)
             img.save(cache_path, format="PNG", quality=100)
         except Exception as e:
@@ -345,7 +345,7 @@ class WallpaperSelector(Box):
         GLib.idle_add(self._process_batch)
 
     def _process_file(self, file_name):
-        full_path = os.path.join(info.WALLPAPERS_DIR, file_name)
+        full_path = os.path.join(config.WALLPAPERS_DIR, file_name)
         cache_path = self._get_cache_path(file_name)
         if not os.path.exists(cache_path):
             try:

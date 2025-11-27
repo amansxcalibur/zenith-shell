@@ -9,7 +9,7 @@ from widgets.animated_scale import AnimatedScale
 from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
 from services.volume_service import VolumeService
 import icons
-import config.info as info
+from config.info import config, HOME_DIR
 from utils.colors import get_css_variable
 
 
@@ -17,11 +17,11 @@ class VolumeSlider(AnimatedScale):
     def __init__(self, **kwargs):
         super().__init__(
             name="control-slider",
-            orientation="h" if not info.VERTICAL else "v",
+            orientation="h" if not config.VERTICAL else "v",
             h_expand=True,
             has_origin=True,
-            inverted=True if info.VERTICAL else False,
-            style_classes="" if not info.VERTICAL else "vertical",
+            inverted=True if config.VERTICAL else False,
+            style_classes="" if not config.VERTICAL else "vertical",
             increments=(0.01, 0.1),
             **kwargs,
         )
@@ -186,7 +186,7 @@ class VolumeSmall(Box):
         if muted:
             self.progress_bar.add_style_class("muted")
             # self.vol_label.add_style_class("muted")
-            color = get_css_variable(file_path=f"{info.HOME_DIR}/fabric/styles/colors.css", var_name='outline')
+            color = get_css_variable(file_path=f"{HOME_DIR}/fabric/styles/colors.css", var_name='outline')
             self.vol_label.set_style(f"color: {color}")
             self.vol_button.get_child().set_from_string(icons.volume_mute_modern)
         else:

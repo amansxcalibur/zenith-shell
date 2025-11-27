@@ -5,7 +5,7 @@ from gi.repository import GLib
 from fabric.core.service import Service, Signal
 from fabric.utils.helpers import monitor_file
 
-from config.info import BRIGHTNESS_DEV
+from config.info import config
 
 
 class BrightnessService(Service):
@@ -27,7 +27,7 @@ class BrightnessService(Service):
         self.max_brightness = -1
         self.brightness_monitor = None
 
-        backlight_path = f"/sys/class/backlight/{BRIGHTNESS_DEV}"
+        backlight_path = f"/sys/class/backlight/{config.BRIGHTNESS_DEV}"
         try:
             self.brightness_monitor = monitor_file(backlight_path)
             self.max_brightness = self._read_max_brightness(backlight_path)

@@ -13,7 +13,7 @@ from modules.workspaces import ActiveWindow
 from modules.controls import ControlsManager
 from modules.wallpaper import WallpaperSelector
 
-import config.info as info
+from config.info import config, SHELL_NAME
 
 
 class Pill(Window, Service):
@@ -30,12 +30,14 @@ class Pill(Window, Service):
             layer="top",
             geometry="bottom",
             type_hint="normal",
-            margin=(0,0,0,0),
+            margin=(0, 0, 0, 0),
             visible=True,
             all_visible=True,
         )
         self._current_compact_mode = None
         self._dock_is_visible = True
+        # for custom geometry handle in ShellWindowManager
+        self._pos = config.pill.POSITION # changes the config
 
         # pill-compact
         self.active_window = ActiveWindow()
@@ -47,14 +49,14 @@ class Pill(Window, Service):
             name="collapsed",
             transition_type="crossfade",
             transition_duration=250,
-            style_classes="" if not info.VERTICAL else "vertical",
+            style_classes="" if not config.VERTICAL else "vertical",
             children=(
                 [
                     self.user,
                     self.active_window.active_window,
                     self.dot_placeholder,
                 ]
-                if not info.VERTICAL
+                if not config.VERTICAL
                 else [self.workspaces]
             ),
         )
@@ -114,7 +116,9 @@ class Pill(Window, Service):
         exec_shell_command_async(f"i3-msg focus mode_toggle")
 
     def lift_pill(self):
-        if self._dock_is_visible:
+        if self._dock_is_visible and (
+            (self._pos["x"], self._pos["y"]) == ("center", "bottom")
+        ):
             self.lift_box.set_style(
                 "min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)"
             )
@@ -125,10 +129,10 @@ class Pill(Window, Service):
         )
 
     def open_dock(self):
-        exec_shell_command_async(f" fabric-cli exec {info.SHELL_NAME} 'dockBar.open()'")
+        exec_shell_command_async(f" fabric-cli exec {SHELL_NAME} 'dockBar.open()'")
 
     def close_dock(self):
-        exec_shell_command_async(f"fabric-cli exec {info.SHELL_NAME} 'dockBar.close()'")
+        exec_shell_command_async(f"fabric-cli exec {SHELL_NAME} 'dockBar.close()'")
 
     def open(self):
         # opens launcher

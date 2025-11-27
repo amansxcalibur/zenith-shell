@@ -9,8 +9,7 @@ from fabric.i3.widgets import (
 import threading
 from i3ipc import Connection, Event
 
-import config.info as info
-
+from config.info import config
 
 class i3Connector:
     _instance = None
@@ -62,7 +61,7 @@ class i3Connector:
         self.active_window.setter_label(e.container.name)
 
     def on_session_restart(self, i3, e):
-        if info.VERTICAL:
+        if config.VERTICAL:
             i3.command("gaps left all set 44px")
             i3.command("gaps top all set 3px")
         else:
@@ -89,8 +88,8 @@ class Workspaces(Box):
             name="workspaces-container",
             visible=True,
             all_visible=True,
-            style_classes="" if not info.VERTICAL else "vertical",
-            orientation="h" if not info.VERTICAL else "v",
+            style_classes="" if not config.VERTICAL else "vertical",
+            orientation="h" if not config.VERTICAL else "v",
             h_align="fill",
         )
 

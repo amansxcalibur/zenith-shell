@@ -3,7 +3,7 @@ import gi
 gi.require_version("Gray", "0.1")
 from gi.repository import Gray, Gtk, Gdk, GdkPixbuf, GLib
 
-import config.info as info
+from config.info import config
 
 
 class SystemTray(Gtk.Box):
@@ -12,7 +12,7 @@ class SystemTray(Gtk.Box):
             name="systray",
             orientation=(
                 Gtk.Orientation.VERTICAL
-                if info.VERTICAL
+                if config.VERTICAL
                 else Gtk.Orientation.HORIZONTAL
             ),
             spacing=1,

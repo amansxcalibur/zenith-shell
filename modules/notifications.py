@@ -7,7 +7,7 @@ from fabric.widgets.x11 import X11Window as Window
 from modules.metrics import MetricsProvider
 from modules.controls import ControlsManager
 
-import config.info as info
+from config.info import config
 import icons
 
 import gi
@@ -26,7 +26,7 @@ class Notification(Revealer):
             transition_duration=250,
             transition_type="slide-down",
             child_revealed=False,
-            style_classes="vertical" if info.VERTICAL else "horizontal",
+            style_classes="vertical" if config.VERTICAL else "horizontal",
             **kwargs
         )
 
@@ -53,7 +53,7 @@ class Notification(Revealer):
 
         self.notification_box = Box(
             name="notification-box",
-            style_classes="vertical" if info.VERTICAL else "horizontal",
+            style_classes="vertical" if config.VERTICAL else "horizontal",
             children=[
                 Label(name="notification-icon", h_align=True, markup=icons.blur),
                 Box(h_expand=True, children=self.content_box),
@@ -63,7 +63,7 @@ class Notification(Revealer):
 
         self.children = self.notification_box
 
-        if info.VERTICAL:
+        if config.VERTICAL:
             self.notification_box.remove_style_class("horizontal")
 
     def check_low_bat(self, _source, battery_percent: float, is_charging: bool):

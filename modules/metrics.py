@@ -16,7 +16,7 @@ from widgets.animated_scale import AnimatedScale
 from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
 
 import icons as icons
-import config.info as info
+from config.info import config
 
 
 class MetricsProvider(Service):
@@ -212,7 +212,7 @@ class MetricsSmall(Button):
     def __init__(self, **kwargs):
         super().__init__(name="metrics-small", **kwargs)
 
-        if info.VERTICAL:
+        if config.VERTICAL:
             self.add_style_class("vertical")
 
         # ------------------ CPU ------------------
@@ -233,7 +233,7 @@ class MetricsSmall(Button):
         self.cpu_revealer = Revealer(
             name="metrics-cpu-revealer",
             transition_duration=250,
-            transition_type="slide-left" if not info.VERTICAL else "slide-down",
+            transition_type="slide-left" if not config.VERTICAL else "slide-down",
             child=self.cpu_level,
             child_revealed=False,
         )
@@ -262,7 +262,7 @@ class MetricsSmall(Button):
         self.ram_revealer = Revealer(
             name="metrics-ram-revealer",
             transition_duration=250,
-            transition_type="slide-left" if not info.VERTICAL else "slide-down",
+            transition_type="slide-left" if not config.VERTICAL else "slide-down",
             child=self.ram_level,
             child_revealed=False,
         )
@@ -291,7 +291,7 @@ class MetricsSmall(Button):
         self.disk_revealer = Revealer(
             name="metrics-disk-revealer",
             transition_duration=250,
-            transition_type="slide-left" if not info.VERTICAL else "slide-down",
+            transition_type="slide-left" if not config.VERTICAL else "slide-down",
             child=self.disk_level,
             child_revealed=False,
         )
@@ -306,7 +306,7 @@ class MetricsSmall(Button):
 
         self.main_box = Box(
             spacing=0,
-            orientation="v" if info.VERTICAL else "h",
+            orientation="v" if config.VERTICAL else "h",
             visible=True,
             all_visible=True,
             h_expand=True,
@@ -349,7 +349,7 @@ class MetricsSmall(Button):
         self.hover_counter = 0
 
     def _format_percentage(self, value: int) -> str:
-        if info.VERTICAL:
+        if config.VERTICAL:
             return f"{value}"
         else:
             return f"{value}%"
@@ -419,7 +419,7 @@ class Battery(Button):
     def __init__(self, **kwargs):
         super().__init__(name="bat-small", **kwargs)
 
-        if info.VERTICAL:
+        if config.VERTICAL:
             self.add_style_class("vertical")
 
         # ------------------ Battery ------------------
@@ -442,7 +442,7 @@ class Battery(Button):
         self.bat_revealer = Revealer(
             name="metrics-bat-revealer",
             transition_duration=250,
-            transition_type="slide-left" if not info.VERTICAL else "slide-down",
+            transition_type="slide-left" if not config.VERTICAL else "slide-down",
             child=self.bat_level,
             child_revealed=False,
         )
@@ -457,7 +457,7 @@ class Battery(Button):
 
         self.main_box = Box(
             spacing=0,
-            orientation="h" if not info.VERTICAL else "v",
+            orientation="h" if not config.VERTICAL else "v",
             visible=True,
             all_visible=True,
             h_expand=True,
@@ -486,7 +486,7 @@ class Battery(Button):
         self.hover_counter = 0
 
     def _format_percentage(self, value: int) -> str:
-        if info.VERTICAL:
+        if config.VERTICAL:
             return f"{value}"
         else:
             return f"{value}%"

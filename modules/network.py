@@ -553,8 +553,8 @@ class Network(Tile):
         self.nm.connect("connection-result", self._on_connection_result)
 
         self.wifi_toggle = Gtk.Switch(name="matugen-switcher")
-        self.wifi_toggle.connect("notify::active", self._on_toggle_wifi)
         self.wifi_toggle.set_active(True)
+        self.wifi_toggle.connect("notify::active", self._do_toggle_wifi)
         self.wifi_toggle.set_visible(True)
 
         self.active_connection = ClippingBox(
@@ -651,7 +651,7 @@ class Network(Tile):
         except Exception as e:
             logger.error(f"Failed to initialize network state: {e}")
 
-    def _on_toggle_wifi(self, switch: Gtk.Switch, pspec: Any) -> None:
+    def _do_toggle_wifi(self, switch: Gtk.Switch, pspec: Any) -> None:
         if not self._is_initialized:
             return
 

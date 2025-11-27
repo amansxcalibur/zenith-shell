@@ -10,7 +10,7 @@ from widgets.popup_window import SharedPopupWindow
 from services.volume_service import VolumeService
 from services.brightness_service import BrightnessService
 
-import config.info as info
+from  config.info import config
 
 import gi
 
@@ -114,7 +114,7 @@ class BrightnessManager:
         self._connect_signals()
 
     def _init_widgets(self):
-        transition = "slide-down" if not info.VERTICAL else "slide-right"
+        transition = "slide-down" if not config.VERTICAL else "slide-right"
 
         self.brightness_revealer = AutoHideRevealer(
             revealer=Revealer(
@@ -169,7 +169,7 @@ class VolumeManager:
         self.mui_slider = VolumeMaterial3(min_value=0, max_value=2, orientation="v")
         volume_overflow_slider.add_style_class("vol-overflow-slider")
 
-        transition = "slide-down" if not info.VERTICAL else "slide-right"
+        transition = "slide-down" if not config.VERTICAL else "slide-right"
 
         self.volume_revealer = AutoHideRevealer(
             revealer=Revealer(

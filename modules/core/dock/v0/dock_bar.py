@@ -8,7 +8,7 @@ from i3ipc import Connection
 from modules.systray import SystemTray
 from modules.workspaces import Workspaces
 from modules.metrics import MetricsSmall, Battery
-from modules.dock.v0.dock_modules import DockModuleOverlay
+from modules.core.dock.v0.dock_modules import DockModuleOverlay
 
 import config.info as info
 import icons

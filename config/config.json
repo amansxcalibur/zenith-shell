@@ -1,0 +1,49 @@
+{
+    "system": {
+        "SILENT": false,
+        "VERTICAL": false,
+        "BRIGHTNESS_DEV": "intel_backlight",
+        "ALLOWED_PLAYERS": [
+            "vlc",
+            "cmus",
+            "firefox",
+            "spotify",
+            "chromium"
+        ]
+    },
+    "paths": {
+        "WALLPAPERS_DIR": "~/Pictures/Wallpapers/",
+        "SCRIPTS_DIR": "~/i3scripts"
+    },
+    "dashboard": {
+        "WIDGETS_ENABLED": [
+            "clock",
+            "weather",
+            "system"
+        ],
+        "REFRESH_INTERVAL": 5000,
+        "SHOW_NOTIFICATIONS": true
+    },
+    "bar": {
+        "POSITION": "bottom",
+        "HEIGHT": 32,
+        "SPACING": 8,
+        "COMPONENTS": [
+            "workspaces",
+            "title",
+            "systray",
+            "clock"
+        ]
+    },
+    "pill": {
+        "POSITION": {
+            "x": "center",
+            "y": "bottom"
+        }
+    },
+    "network": {
+        "wifi": {
+            "ON": true
+        }
+    }
+}

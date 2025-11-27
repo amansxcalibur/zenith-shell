@@ -79,8 +79,8 @@ class ShellWindowManager:
 
         if self.animator.playing:
             return
-
-        self._snap_pill(animate=False)
+        
+        self._snap_pill(animate=False, fixed=True)
 
     def _set_dock_state(self, source, drag_state, x: int, y: int):
         geo = self._get_monitor_geometry(self.pill)
@@ -95,7 +95,7 @@ class ShellWindowManager:
         else:
             self.dockBar.override_close()
 
-    def _snap_pill(self, animate: bool = True):
+    def _snap_pill(self, animate: bool = True, fixed: bool = False):
         geo = self._get_monitor_geometry(self.pill)
         win_x, win_y = self.pill.get_position()
         win_w, win_h = self.pill.get_size()
@@ -116,11 +116,23 @@ class ShellWindowManager:
             "bottom": available_height - win_h,
         }
 
-        target_x_name = min(x_targets, key=lambda k: abs(win_x - x_targets[k]))
-        target_y_name = min(y_targets, key=lambda k: abs(win_y - y_targets[k]))
+        if not fixed:
+            target_x_name = min(x_targets, key=lambda k: abs(win_x - x_targets[k]))
+            target_y_name = min(y_targets, key=lambda k: abs(win_y - y_targets[k]))
 
-        target_x = x_targets[target_x_name]
-        target_y = y_targets[target_y_name]
+            # CHANGES THE CONFIG!!
+            self.pill._pos['x'] = target_x_name
+            self.pill._pos['y'] = target_y_name
+
+            target_x = x_targets[target_x_name]
+            target_y = y_targets[target_y_name]
+        
+        else:
+            target_x_name = self.pill._pos['x']
+            target_y_name = self.pill._pos['y']
+
+            target_x = x_targets[target_x_name]
+            target_y = y_targets[target_y_name]
 
         # If snapping to bottom and dock is open, push it down into the dock
         if target_y_name == "bottom" and target_x_name == "center":

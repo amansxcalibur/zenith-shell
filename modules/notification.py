@@ -1,7 +1,7 @@
 import time
-from datetime import datetime
 from loguru import logger
 from typing import Callable
+from datetime import datetime
 
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
@@ -16,9 +16,9 @@ from fabric.utils import invoke_repeater
 
 from modules.tile import Tile
 
-from utils.helpers import toggle_class
 import icons
-import config.info as info
+from config.info import config
+from utils.helpers import toggle_class
 
 import gi
 
@@ -41,7 +41,7 @@ class NotificationConfig:
     MARGIN = 3
     IMAGE_BORDER_RADIUS = 18
     SNAP_THRESHOLD = 50
-    SILENT = info.SILENT
+    SILENT = config.SILENT
 
 
 class NotificationTile(Tile):
@@ -62,17 +62,21 @@ class NotificationTile(Tile):
             markup_style="margin-right:18px; margin-right:18px;",
             **kwargs,
         )
+        self.update_visual()
 
-    def handle_state_toggle(self, *_):
-        info.SILENT = not info.SILENT
-        if info.SILENT:
+    def update_visual(self):
+        if config.SILENT:
             self.remove_style_class("off")
             self.add_style_class("on")
             self.props.set_label("On")
         else:
             self.remove_style_class("on")
             self.add_style_class("off")
-            self.props.set_label("Off")
+            self.props.set_label("Off") 
+
+    def handle_state_toggle(self, *_):
+        config.SILENT =  not  config.SILENT
+        self.update_visual()
         return super().handle_state_toggle(*_)
 
 
@@ -453,7 +457,7 @@ class NotificationManager(Window):
                 on_close_callback=self._update_ui_state,
             )
 
-            if not info.SILENT:
+            if not config.SILENT:
                 if (
                     len(self._active_notifications)
                     >= NotificationConfig.MAX_ACTIVE_NOTIFS

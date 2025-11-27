@@ -1,8 +1,9 @@
 from typing import Tuple
-import gi
-import config.info as info
+
+from config.info import HOME_DIR
 from utils.colors import get_css_variable, hex_to_rgb01
 
+import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
@@ -24,7 +25,7 @@ class Shape(Gtk.DrawingArea):
             return self._override_color
 
         hex_color = get_css_variable(
-            f"{info.HOME_DIR}/fabric/styles/colors.css",
+            f"{HOME_DIR}/fabric/styles/colors.css",
             "--on-primary" if self.dark else "--primary",
         )
         return hex_to_rgb01(hex_color)

@@ -5,7 +5,7 @@ from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 from fabric.utils.helpers import exec_shell_command_async
 
-import config.info as info
+from config.info import config
 from widgets.animated_scale import AnimatedScale
 from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
 
@@ -36,11 +36,11 @@ class BrightnessSlider(AnimatedScale):
     def __init__(self, device: str, service_instance, **kwargs):
         super().__init__(
             name="control-slider",
-            orientation="h" if not info.VERTICAL else "v",
+            orientation="h" if not config.VERTICAL else "v",
             h_expand=True,
             has_origin=True,
-            inverted=True if info.VERTICAL else False,
-            style_classes="" if not info.VERTICAL else "vertical",
+            inverted=True if config.VERTICAL else False,
+            style_classes="" if not config.VERTICAL else "vertical",
             increments=(0.01, 0.1),
             **kwargs,
         )

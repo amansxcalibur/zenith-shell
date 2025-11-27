@@ -13,7 +13,7 @@ import re
 import math
 import subprocess
 import icons
-import config.info as info
+from config.info import config
 
 class AppLauncher(Box):
     def __init__(self, pill, **kwargs):
@@ -54,7 +54,7 @@ class AppLauncher(Box):
         self.scrolled_window = ScrolledWindow(
             name="scrolled-window",
             spacing=10,
-            style_classes="" if not info.VERTICAL else "vertical",
+            style_classes="" if not config.VERTICAL else "vertical",
             min_content_size=(450, 105),
             max_content_size=(450, 105),
             child=self.viewport,

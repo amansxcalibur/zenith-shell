@@ -8,7 +8,7 @@ from services.player_service import PlayerManager, PlayerService
 from modules.wiggle_bar import WigglyWidget
 
 import icons
-import config.info as info
+from config.info import config, HOME_DIR
 
 from loguru import logger
 import gi
@@ -22,7 +22,7 @@ class Player(Box):
         super().__init__(style_classes="player", orientation="v", **kwargs)
 
         # vertical class binding from unknown source
-        if not info.VERTICAL:
+        if not config.VERTICAL:
             self.remove_style_class("vertical")
 
         self.duration = 0.0
@@ -32,7 +32,7 @@ class Player(Box):
 
         def _set_initial_bg():
             self.set_style(
-                f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+                f"background-image:url('{HOME_DIR}/.cache/walls/low_rez.png')"
             )
             return False
 
@@ -123,7 +123,7 @@ class Player(Box):
             ),
             Box(
                 name="controls",
-                style_classes="horizontal" if not info.VERTICAL else "vertical",
+                style_classes="horizontal" if not config.VERTICAL else "vertical",
                 spacing=5,
                 children=(
                     [
@@ -146,7 +146,7 @@ class Player(Box):
                         ),
                         self.shuffle_button,
                     ]
-                    if not info.VERTICAL
+                    if not config.VERTICAL
                     else [
                         CenterBox(
                             orientation="v",
@@ -377,7 +377,7 @@ class Placeholder(Box):
 
         GLib.idle_add(
             lambda: self.set_style(
-                f"background-image:url('{info.HOME_DIR}/.cache/walls/low_rez.png')"
+                f"background-image:url('{HOME_DIR}/.cache/walls/low_rez.png')"
             )
         )
 
@@ -414,7 +414,7 @@ class PlayerContainer(Box):
             name="player-switch-container",
             orientation="h",
             style_classes=(
-                "horizontal-player" if not info.VERTICAL else "vertical-player"
+                "horizontal-player" if not config.VERTICAL else "vertical-player"
             ),
             center_children=[],
         )

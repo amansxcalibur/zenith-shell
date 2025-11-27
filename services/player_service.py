@@ -2,7 +2,7 @@ from fabric.utils import bulk_connect
 from fabric.core.service import Service, Signal
 from fabric import Fabricator
 
-from config.info import ALLOWED_PLAYERS, CACHE_DIR, HOME_DIR
+from config.info import config, CACHE_DIR, HOME_DIR
 
 import urllib.parse, urllib.request
 import os
@@ -10,9 +10,9 @@ import hashlib
 import subprocess
 import json
 from pathlib import Path
-import gi
 from loguru import logger
 
+import gi
 gi.require_version("Playerctl", "2.0")
 from gi.repository import Playerctl, GLib
 
@@ -50,7 +50,7 @@ class PlayerService(Service):
         self._is_cleaning_up = False
         self._signal_ids = []  # track signal connection IDs
         
-        if player.props.player_name in ALLOWED_PLAYERS:
+        if player.props.player_name in config.ALLOWED_PLAYERS:
             # store signal IDs for proper disconnection
             self._signal_ids.append(
                 self._player.connect("playback-status::playing", self.on_play)
@@ -349,7 +349,7 @@ class PlayerManager(Service):
         logger.info("Initializing all existing players")
         for player_obj in self._manager.props.player_names:
             name_str = player_obj.name
-            if name_str in ALLOWED_PLAYERS:
+            if name_str in config.ALLOWED_PLAYERS:
                 logger.info(f"Initializing existing player: {name_str}")
                 self._create_and_register_player(player_obj)
 
@@ -384,7 +384,7 @@ class PlayerManager(Service):
         name_str = name.name
         logger.info(f"Player appeared: {name_str}")
         
-        if name_str in ALLOWED_PLAYERS:
+        if name_str in config.ALLOWED_PLAYERS:
             self._create_and_register_player(name)
         else:
             logger.debug(f"Player {name_str} not in allowed list")
