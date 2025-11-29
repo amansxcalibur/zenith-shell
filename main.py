@@ -9,9 +9,12 @@ from modules.core.pill import Pill
 from modules.corners import Corners
 from modules.core.dock.bar import DockBar
 from modules.notifications import NotificationPopup
-from modules.notification import NotificationManager
+from modules.notification_stack.notificaiton import NotificationManager
 from modules.core.shell_window_manager import ShellWindowManager
 # from modules.notification_bar import NotificationBar
+from modules.notification_stack.top_bar import TopBar
+from modules.notification_stack.shell_window_manager import ShellTopWindowManager
+from modules.notification_stack.top_pill import TopPill
 
 from config.info import SHELL_NAME
 from config.i3_config import i3_border_setter
@@ -29,7 +32,9 @@ if __name__ == "__main__":
     dockBar.set_title("fabric-dock")
     window_manager = ShellWindowManager(pill = pill, dockBar = dockBar)
     controls_notification = NotificationPopup()
-    notification = NotificationManager()
+    top_pill = TopPill()
+    top_bar = TopBar(pill=top_pill)
+    top_window_manager = ShellTopWindowManager(pill=top_pill, dockBar=top_bar)
     corners = Corners()
     # notif_bar = NotificationBar()
 
@@ -38,7 +43,7 @@ if __name__ == "__main__":
         "dockBar": dockBar,
         "corners": corners,
         "controls_notification": controls_notification,
-        "notification": notification,
+        # "notification": notification,
         # "notification-bar": notif_bar,
         "open_inspector": False,
     }

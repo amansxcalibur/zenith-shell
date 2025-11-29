@@ -8,7 +8,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk
 
 
-class ShellWindowManager:
+class ShellTopWindowManager:
     DOCK_HEIGHT = 43
 
     def __init__(self, pill, dockBar):
@@ -84,9 +84,8 @@ class ShellWindowManager:
 
     def _set_dock_state(self, source, drag_state, x: int, y: int):
         geo = self._get_monitor_geometry(self.pill)
-        win_w, win_h = self.pill.get_size()
 
-        pill_is_in_dock_zone = (y + win_h) > (geo.height - self.DOCK_HEIGHT) and (
+        pill_is_in_dock_zone = (y) < (self.DOCK_HEIGHT) and (
             geo.width // 4 < x < 3 * geo.width // 4
         )
 
@@ -130,6 +129,8 @@ class ShellWindowManager:
         else:
             target_x_name = self.pill._pos['x']
             target_y_name = self.pill._pos['y']
+
+            
 
             target_x = x_targets[target_x_name]
             target_y = y_targets[target_y_name]

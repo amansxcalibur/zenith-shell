@@ -1,0 +1,88 @@
+/* #hori-top{
+    background-color: transparent;
+    box-shadow: 0px 17px 0 0 black;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+} */
+
+#hori-top.pill{
+    background-color: transparent;
+    box-shadow: 0px -15px 0 2px black;
+    border-top-left-radius: 25px;
+    border-top-right-radius: 25px;
+}
+
+#vert-top{
+    /* background-color: red; */
+}
+
+#vert-top.expand{
+    min-height: 40px;
+    /* min-height: 36px; */
+    /* min-width: 446px; */
+    transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1), min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+#vert-top.contractor{
+    min-height: 0px;
+    min-width: 0px;
+    transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1), min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+#hori-top.expander{
+    border-top-right-radius: 20px;
+    border-top-left-radius: 20px;
+    transition: border-bottom-right-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1), border-bottom-left-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+#hori-top.contractor{
+    border-top-right-radius: 0px;
+    border-top-left-radius: 0px;
+    transition: border-bottom-right-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1), border-bottom-left-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+#start-top, #end-top{
+    background-color: black;
+    min-width: 20px;
+    border-bottom-right-radius: 20px;
+    border-bottom-left-radius: 20px;
+    /* border-bottom-right-radius: 20px; */
+}
+#start-top.expander{
+    border-bottom-right-radius: 20px;
+    transition: border-bottom-right-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1)
+}
+#end-top.expander{
+    border-bottom-left-radius: 20px;
+    transition: border-bottom-left-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1)
+}
+#start-top.contractor{
+    border-bottom-right-radius: 0px;
+    transition: border-bottom-right-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1)
+}
+#end-top.contractor{
+    border-bottom-left-radius: 0px;
+    transition: border-bottom-left-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1)
+}
+
+#bottom-top{
+    background-color: black;
+}
+
+#left-edge, #right-edge{
+    background-color: transparent;
+    min-width: 25px;
+    box-shadow: 0px -15px 0 2px black;
+}
+
+#left-edge{
+    border-top-right-radius: 25px;   
+}
+
+#right-edge{
+    border-top-left-radius: 25px;
+}
+
+#top-main{
+    min-height: 1px;
+}

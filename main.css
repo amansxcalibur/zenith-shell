@@ -19,4 +19,5 @@
 @import url("styles/font_variation_resolver.css");
 @import url("styles/menu.css");
 @import url("styles/network.css");
-@import url("styles/corner.css");
+@import url("styles/corners.css");
+@import url("styles/top_bar.css");

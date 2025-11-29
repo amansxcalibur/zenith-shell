@@ -45,5 +45,22 @@
         "wifi": {
             "ON": true
         }
+    },
+    "top-bar": {
+        "POSITION": "bottom",
+        "HEIGHT": 32,
+        "SPACING": 8,
+        "COMPONENTS": [
+            "workspaces",
+            "title",
+            "systray",
+            "clock"
+        ]
+    },
+    "top_pill": {
+        "POSITION": {
+            "x": "center",
+            "y": "top"
+        }
     }
 }

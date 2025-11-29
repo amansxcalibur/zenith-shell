@@ -251,7 +251,7 @@ class DockBar(Window):
 
     def override_close(self):
         self._pill_is_docked = False
-        self.stack.set_visible_child(self.compact)
+        # self.stack.set_visible_child(self.compact)
         self._apply_close_visual()
 
     def override_reset(self):
