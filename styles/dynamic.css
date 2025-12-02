@@ -27,7 +27,9 @@
   color: white;
   background-color: black;
   border-radius: 25px;
-  padding: 15px;
+  padding: 13px 15px;
+  font-family: Roboto Flex;
+  font-weight: 600;
 }
 
 button:focus {

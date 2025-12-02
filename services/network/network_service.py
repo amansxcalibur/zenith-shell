@@ -666,6 +666,7 @@ class NetworkService(Service):
 
     def toggle_wifi_radio(self, enabled: Optional[bool] = None) -> bool:
         # enabled: True(enable), False(disable), None(toggle)
+        print("I was toggled in the service")
         if not self.client:
             logger.error("Cannot toggle WiFi: no client")
             return False
@@ -676,11 +677,8 @@ class NetworkService(Service):
 
             logger.info(f"Setting WiFi radio: {new_state}")
             self.client.wireless_set_enabled(new_state)
-            
-            # CHANGES THE CONFIG!!
-            config.network.wifi.ON = new_state
-
             return True
+
         except Exception as e:
             logger.error(f"Failed to toggle WiFi: {e}")
             return False

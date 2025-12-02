@@ -1,41 +1,44 @@
-#workspaces-container{
-    background-color: var(--surface-bright);
-    border-radius: 17px;
-    padding: 13px;
-    margin-top: 1px;
+#workspaces-container {
+  background-color: var(--surface-bright);
+  border-radius: 17px;
+  padding: 13px;
+  margin-top: 1px;
 }
 
-#workspaces>button {
-    padding: 5px;
-    transition: all 0.15s steps(8);
-    background-color: var(--foreground);
-    border-radius: 10px;
+#workspaces > button {
+  padding: 5px;
+  transition: all 0.15s steps(8);
+  background-color: var(--foreground);
+  border-radius: 10px;
 }
 
-#workspaces>button>label {
-    font-size: 0px;
+#workspaces > button > label {
+  font-size: 0px;
 }
 
-#workspaces>button:hover {
-    background-color: var(--error-dim);
+#workspaces > button:hover {
+  background-color: var(--error-dim);
 }
 
-#workspaces>button.urgent {
-    background-color: var(--error);
+#workspaces > button.urgent {
+  background-color: var(--error);
 }
 
-#workspaces>button.active {
-    padding: 0px 32px;
-    background-color: var(--primary);
+#workspaces > button.active {
+  padding: 0px 32px;
+  background-color: var(--primary);
 }
 
-#workspaces>button.empty {
-    background-color: var(--background);
+#workspaces > button.empty {
+  background-color: var(--background);
 }
 
 #active-window {
   background-color: black;
-  padding: 15px;
+  padding: 13px 15px;
+  font-family: Roboto Flex;
+  font-weight: 600;
+  /* margin-bottom: -2px; */
   color: var(--foreground);
   border-radius: 25px;
 }

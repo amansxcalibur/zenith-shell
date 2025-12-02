@@ -48,17 +48,17 @@ class Corners(Window):
                         MyCorner("top-right"),
                     ],
                 ),
-                # Box(v_expand=True),
-                # Box(
-                #     name="bottom-corners",
-                #     orientation="h",
-                #     h_align="fill",
-                #     children=[
-                #         MyCorner("bottom-left"),
-                #         Box(h_expand=True),
-                #         MyCorner("bottom-right"),
-                #     ],
-                # ),
+                Box(v_expand=True),
+                Box(
+                    name="bottom-corners",
+                    orientation="h",
+                    h_align="fill",
+                    children=[
+                        MyCorner("bottom-left"),
+                        Box(h_expand=True),
+                        MyCorner("bottom-right"),
+                    ],
+                ),
             ],
         )
 

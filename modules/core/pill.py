@@ -13,7 +13,7 @@ from modules.workspaces import ActiveWindow
 from modules.controls import ControlsManager
 from modules.wallpaper import WallpaperSelector
 
-from config.info import config, SHELL_NAME
+from config.info import config, SHELL_NAME, USERNAME, HOSTNAME
 
 
 class Pill(Window, Service):
@@ -41,7 +41,7 @@ class Pill(Window, Service):
 
         # pill-compact
         self.active_window = ActiveWindow()
-        self.user = Label(name="user-label", label="aman@brewery")
+        self.user = Label(name="user-label", label=f"{USERNAME}@{HOSTNAME}")
         self.dot_placeholder = Box(style="min-width:1px; min-height:1px;")
         self.user.add_style_class("hide")
         self.active_window.active_window.add_style_class("hide")
