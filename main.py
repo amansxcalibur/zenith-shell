@@ -14,6 +14,7 @@ from modules.core.shell_window_manager import ShellWindowManager
 # from modules.notification_bar import NotificationBar
 
 from config.info import SHELL_NAME
+from config.i3_config import i3_border_setter
 
 from gi.repository import GLib
 
@@ -46,6 +47,7 @@ if __name__ == "__main__":
 
     def set_css(*args):
         app.set_stylesheet_from_file(get_relative_path("./main.css"))
+        i3_border_setter()
 
     app.style_monitor = monitor_file(get_relative_path("./styles"))
     app.style_monitor.connect("changed", set_css)
