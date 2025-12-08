@@ -132,7 +132,7 @@
   /* background-color: var(--surface-bright); */
   padding: 9px 5px 9px 5px;
   min-width: 30px;
-  border-radius: 17px;
+  border-radius: 15px;
   border: none;
 }
 
@@ -153,4 +153,10 @@
 #top-pill-container{
     all: unset;
     padding: 2px 3px 2px 3px;
+}
+
+#close-control-label{
+  color: var(--outline);
+  margin: -7px;
+  font-size: 25px;
 }

@@ -13,14 +13,11 @@ from fabric.widgets.x11 import X11Window as Window
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.notifications import Notifications, Notification
 from fabric.utils import invoke_repeater
-from fabric.core.service import Service, Signal
-
-from fabric.utils.helpers import exec_shell_command_async
 
 from modules.tile import Tile
 
 import icons
-from config.info import config, SHELL_NAME
+from config.info import config
 from utils.helpers import toggle_class
 
 import gi
@@ -78,7 +75,8 @@ class NotificationTile(Tile):
             self.props.set_label("Off") 
 
     def handle_state_toggle(self, *_):
-        config.SILENT =  not  config.SILENT
+        # CHANGES CONFIG
+        config.SILENT =  not config.SILENT
         self.update_visual()
         return super().handle_state_toggle(*_)
 
@@ -288,27 +286,10 @@ class NotificationWidget(EventBox):
         logger.debug("NotificationWidget cleaned up")
 
 
-class NotificationManager(Box, Service):
-
-    @Signal
-    def on_drag(self, drag_state: object, new_x: int, new_y: int): ...
-
-    @Signal
-    def on_drag_end(self, drag_state: object): ...
-
+class NotificationManager():
     def __init__(self, **kwargs):
-        super().__init__(
-            visible=True,
-            all_visible=True,
-            **kwargs,
-        )
-        self._drag_state = {
-            "dragging": False,
-            "offset_x": 0,
-            "offset_y": 0,
-            "start_pos": None,
-        }
-        self._pos = {'x':'center', 'y':'top'}
+        super().__init__(**kwargs,)
+        
         self.last_hover_time = 0
         self._notification_service = None
         self._active_notifications = []
@@ -351,11 +332,12 @@ class NotificationManager(Box, Service):
             size=2, orientation="v", spacing=NotificationConfig.SPACING
         )
 
-        self.reveal_btn = Button(
+        # TODO
+        self.silent_btn = Button(
             # name="notification-reveal-btn",
             child=Label(name="notification-reveal-label", markup=icons.notifications),
             tooltip_text="Show/Hide notifications",
-            on_clicked=lambda *_: self.toggle_notification_stack_reveal(),
+            on_clicked=lambda *_: self.handle_silent_state_toggle(),
             # visible=False,
         )
         self.clear_btn = Button(
@@ -366,74 +348,42 @@ class NotificationManager(Box, Service):
             # visible=False,
         )
 
-        # self.hover_area = EventBox(
-        #     events="enter-notify",
-        #     child=Box(style="min-height:2px;"),
-        # )
-
-        self.children = Box(
+        self.notification_history = Box(
             orientation="v",
             style=f"min-height:{NotificationConfig.WINDOW_MIN_HEIGHT}px; min-width:{NotificationConfig.WINDOW_MIN_WIDTH}px",
             h_expand=True,
             children=[
-                # self.hover_area,
                 Box(
                     spacing=NotificationConfig.SPACING,
-                    # style=f"margin: {NotificationConfig.MARGIN}px;",
                     children=[
-                        # Box(
-                        #     v_align="start",
-                        #     children=self.clear_btn,
-                        # ),
                         Box(
                             orientation="v",
                             children=[
                                 self.revealer,
-                                self.active_notifications_box,
                             ],
                         ),
-                        # Box(
-                        #     v_align="start",
-                        #     children=self.reveal_btn,
-                        # ),
                     ],
                     v_align="start",
                 ),
-                # Button(child=Label(label='delete'), on_clicked=self.close_all_notifications)
             ],
         )
 
-        # self.hover_area.connect("enter-notify-event", self._handle_hover_reveal)
+        self.notification_history.get_controls = self.get_controls
+        self.active_notifications_box.get_controls = self.get_controls
 
-        # drag events
-        self.connect("button-press-event", self.on_button_press)
-        self.connect("motion-notify-event", self.on_motion)
-        self.connect("button-release-event", self.on_button_release)
-
-    def on_button_press(self, widget, event):
-        if event.button == 1:  # Left mouse button
-            self._drag_state["dragging"] = True
-            win_x, win_y = self.get_position()
-            self._drag_state["offset_x"] = event.x_root - win_x
-            self._drag_state["offset_y"] = event.y_root - win_y
-            self._drag_state["start_pos"] = (win_x, win_y)
-
-    def on_motion(self, widget, event):
-        if not self._drag_state["dragging"]:
-            return
-
-        new_x = int(event.x_root - self._drag_state["offset_x"])
-        new_y = int(event.y_root - self._drag_state["offset_y"])
-
-        self.on_drag(self._drag_state, new_x, new_y)
-        self.move(new_x, new_y)
-
-    def on_button_release(self, widget, event):
-        if event.button != 1 or not self._drag_state["dragging"]:
-            return
-
-        self._drag_state["dragging"] = False
-        self.on_drag_end(self._drag_state)
+    def get_notifications_box(self):
+        return self.notification_history
+    
+    def get_active_notifications_box(self):
+        return self.active_notifications_box
+    
+    # TODO: sync system
+    def handle_silent_state_toggle(self, *_):
+        return
+        # CHANGES CONFIG
+        config.SILENT =  not config.SILENT
+        if self.silent_btn is not None:
+            self.silent_btn.add_style_class('active')
 
     def _handle_notification_added(self, source, notification_id: int):
         if not self._notification_service:
@@ -453,7 +403,9 @@ class NotificationManager(Box, Service):
                 on_close_callback=self._update_ui_state,
             )
 
-            if not config.SILENT:
+            if config.SILENT or self.revealer.child_revealed:
+                self._move_to_revealer(notification_widget=notification_widget)
+            else:
                 if (
                     len(self._active_notifications)
                     >= NotificationConfig.MAX_ACTIVE_NOTIFS
@@ -464,8 +416,7 @@ class NotificationManager(Box, Service):
                     )
                 self._active_notifications.append(notification_widget)
                 self.active_notifications_box.pack_end(notification_widget, True, None, 0)
-            else:
-                self._move_to_revealer(notification_widget=notification_widget)
+
             self._update_ui_state()
 
         except Exception as e:
@@ -506,7 +457,7 @@ class NotificationManager(Box, Service):
             widget.set_markup(icons.trash_up)
             toggle_class(widget, "trash-icon-adjust", "trash-up-icon-adjust")
 
-        should_show_button = has_active_notifications or has_revealed_notifications
+        # should_show_button = has_active_notifications or has_revealed_notifications
         # self.reveal_btn.set_visible(should_show_button)
         # self.clear_btn.set_visible(should_show_button)
 
@@ -527,6 +478,8 @@ class NotificationManager(Box, Service):
         try:
             if not self.revealer.child_revealed:
                 self.revealer.reveal()
+                for notification_widget in self._active_notifications[:]:
+                    self._move_to_revealer(notification_widget)
             else:
                 self.revealer.unreveal()
 
@@ -537,6 +490,8 @@ class NotificationManager(Box, Service):
 
     def open_notification_stack(self):
         self.revealer.reveal()
+        for notification_widget in self._active_notifications[:]:
+            self._move_to_revealer(notification_widget)
         self._update_ui_state()
 
     def close_notification_stack(self):
@@ -547,7 +502,6 @@ class NotificationManager(Box, Service):
         # iterate over a COPY!!
         for notification_widget in self._active_notifications[:]:
             try:
-                # self._active_notifications.remove(notification_widget)
                 notification_widget._notification.close()
             except Exception as e:
                 try:
@@ -593,5 +547,4 @@ class NotificationManager(Box, Service):
         return self._drag_state
     
     def get_controls(self):
-        # return [self.reveal_btn, self.clear_btn, Label(markup=icons.settings), Label(markup=icons.alien)]
-        return [self.reveal_btn, self.clear_btn]
+        return [self.clear_btn]

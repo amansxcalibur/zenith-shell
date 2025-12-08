@@ -1,12 +1,14 @@
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
+from fabric.widgets.button import Button
 from fabric.widgets.x11 import X11Window as Window
 from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
 from modules.notification_stack.notificaiton import NotificationManager
 
+import icons
 from config.info import config, SHELL_NAME
 
 
@@ -31,13 +33,21 @@ class TopPill(Window, Service):
             visible=True,
             all_visible=True,
         )
+        self._drag_state = {
+            "dragging": False,
+            "offset_x": 0,
+            "offset_y": 0,
+            "start_pos": None,
+        }
         self._current_compact_mode = None
         self._dock_is_visible = True
         # for custom geometry handle in ShellWindowManager
         self._pos = config.top_pill.POSITION # changes the config
         self.is_lift_enable = False
 
-        self.notification = NotificationManager()
+        self.notification_manager = NotificationManager()
+        self.notification = self.notification_manager.get_notifications_box()
+        self.active_notifications = self.notification_manager.get_active_notifications_box()
 
         # pill-compact
         self.dot_placeholder = Box(style="min-width:1px; min-height:1px;")
@@ -48,7 +58,7 @@ class TopPill(Window, Service):
             style_classes="" if not config.VERTICAL else "vertical",
             children=(
                 [
-                    self.dot_placeholder,
+                self.active_notifications,
                 ]
             ),
         )
@@ -76,14 +86,13 @@ class TopPill(Window, Service):
         )
         self.children = self.pill_container
 
-        self.add_keybinding("Escape", lambda *_: self.close())
+        self.pill_close_btn = Button(
+            child=Label(name="close-control-label", markup=icons.close),
+            tooltip_text="Exit",
+            on_clicked=lambda *_: self.close(),
+        )
 
-        self._drag_state = {
-            "dragging": False,
-            "offset_x": 0,
-            "offset_y": 0,
-            "start_pos": None,
-        }
+        self.add_keybinding("Escape", lambda *_: self.close())
 
         # drag events
         self.connect("button-press-event", self.on_button_press)
@@ -119,16 +128,16 @@ class TopPill(Window, Service):
 
     def toggle_notification(self):
         if self.stack.get_visible_child() != self.notification:
-            self._open_view(self.notification, focus_callback=self.notification.open_notification_stack())
+            self._open_view(self.notification, focus_callback=self.notification_manager.open_notification_stack())
         else:
-            self._close_view(unfocus_callback=self.notification.close_notification_stack())
+            self._close_view(unfocus_callback=self.notification_manager.close_notification_stack())
     
     def open(self):
         # opens notifications
         self._open_view(
             self.notification,
             lambda: (
-                self.notification.open_notification_stack(),
+                self.notification_manager.open_notification_stack(),
             ),
         )
 
@@ -142,8 +151,11 @@ class TopPill(Window, Service):
         self.stack.set_visible_child(view)
 
         controls = []
+        
         if hasattr(view, 'get_controls'):
             controls = view.get_controls()
+        
+        controls.append(self.pill_close_btn)
 
         self.child_changed(controls)
 

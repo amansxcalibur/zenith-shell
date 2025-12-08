@@ -5,13 +5,10 @@ from typing import Optional, List
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
-from fabric.widgets.button import Button
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.x11 import X11Window as Window
 
-import icons
-from config.info import config
 from utils.helpers import toggle_class
 from utils.cursor import add_hover_cursor
 
@@ -46,11 +43,14 @@ class TopBar(Window):
         self._pill_is_docked = True
         self.detach_mode = False
 
+        self._controls_visibility_timeout_id: int = None
         self._cleanup_timeout_id: Optional[int] = None
         self._cleanup_controls = None
         self._boxes_to_clean: List[Box] = []
 
         self.last_hover_time = 0
+
+        self._controls_size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
 
         self.init_modules()
         self.build_bar()
@@ -63,14 +63,14 @@ class TopBar(Window):
     def init_modules(self):
         # left
         self.left_compact = Box(
-            style="min-width:1px; min-height:1px; background-color:black"
+            style="min-width:1px; min-height:1px;"
         )
         self.left_child = Box(spacing=SPACING)
         self.left = self._create_stack([self.left_compact, self.left_child])
 
         # right
         self.right_compact = Box(
-            style="min-width:1px; min-height:1px; background-color:black"
+            style="min-width:1px; min-height:1px;"
         )
         self.right_child = Box(spacing=SPACING)
         self.right = self._create_stack([self.right_compact, self.right_child])
@@ -82,6 +82,10 @@ class TopBar(Window):
         self.end_children = Box(name="end-top", h_expand=True, children=self.right)
         self.left_edge = Box(name="left-edge", h_expand=True)
         self.right_edge = Box(name="right-edge", h_expand=True)
+
+        # Im too lazy to center the window based on pill
+        self._controls_size_group.add_widget(self.start_children)
+        self._controls_size_group.add_widget(self.end_children)
 
         # pill
         self.pill_dock = Box(name="vert-top")
@@ -161,11 +165,15 @@ class TopBar(Window):
         self._pill_is_docked = docked
 
     def override_close(self):
+        if self._pill_is_docked == False:
+            return
         self._pill_is_docked = False
         self.stack.set_visible_child(self.compact)
         self._apply_close_visual()
 
     def override_reset(self):
+        if self._pill_is_docked == True:
+            return
         self._pill_is_docked = True
         self.stack.set_visible_child(self.pill_dock_container)
         if self.is_open:
@@ -184,30 +192,45 @@ class TopBar(Window):
             self._apply_close_visual()
 
     def _apply_open_visual(self):
-        print("opening")
         self.left.set_visible_child(self.left_child)
         self.right.set_visible_child(self.right_child)
         toggle_class(self.pill_dock, "contractor", "expand")
         toggle_class(self.pill_dock_container, "contractor", "expander")
+        if self.detach_mode:
+            self.detach_controls(detach=True)
+
+        if self._controls_visibility_timeout_id:
+            GLib.source_remove(self._controls_visibility_timeout_id)
+        self.toggle_controls_visibility()
 
     def _apply_close_visual(self):
-        print("closing")
         self.left.set_visible_child(self.left_compact)
         self.right.set_visible_child(self.right_compact)
         toggle_class(self.pill_dock, "expand", "contractor")
         toggle_class(self.pill_dock_container, "expander", "contractor")
+        if self.detach_mode:
+            self.detach_controls(detach=False)
 
-    def toggle_visibility(self):
-        visible = not self.is_visible()
-        self.set_visible(visible)
-        self._pill_ref._dock_is_visible = visible
+        if self._controls_visibility_timeout_id:
+            GLib.source_remove(self._controls_visibility_timeout_id)
+        self._controls_visibility_timeout_id = GLib.timeout_add(TRANSITION_DURATION, self.toggle_controls_visibility)
+
+    def toggle_controls_visibility(self):
+        visible = self.start_children.is_visible()
+        if visible != self.is_open:
+            visible = not visible
+        else:
+            return
+        for widget in [self.start_children, self.end_children, self.left_edge, self.right_edge]:
+            widget.set_visible(visible)
+        # self._pill_ref._dock_is_visible = visible
 
     def bake_bar_buttons(self, widget):
         widget.add_style_class("top-bar-control-btn")
         return add_hover_cursor(widget=widget)
 
     def update_controls(self, source, child_controls):
-        logger.debug("Updating controls")
+        logger.debug("Updating controls", child_controls)
         if child_controls is None:
             child_controls = []
 
@@ -237,7 +260,7 @@ class TopBar(Window):
 
     def _create_control_containers(self, controls: List[Gtk.Widget]) -> tuple:
         timestamp = GLib.get_monotonic_time()
-        
+
         left = Box(
             name=f"left_ctrl_{timestamp}",
             style_classes=["top-bar-controls-box"],
@@ -258,31 +281,30 @@ class TopBar(Window):
                     target = left if index % 2 == 0 else right
                     target.add(self.bake_bar_buttons(control))
                 except Exception as e:
-                    print(f"Error adding control {index}: {e}")
+                    logger.error(f"Error adding control {index}: {e}")
 
         return left, right
-    
+
     def _safe_unparent_controls(self, *containers):
         for container in containers:
             if container in self._protected_boxes:
                 continue
-            
+
             try:
                 for child in list(container.get_children()):
                     container.remove(child)
             except Exception as e:
-                print(f"Error unparenting controls: {e}")
-    
+                logger.error(f"Error unparenting controls: {e}")
+
     def _queue_cleanup(self, boxes: List[Box]):
         for box in boxes:
             if box not in self._protected_boxes:
                 self._boxes_to_clean.append(box)
-        
+
         # schedule cleanup if not already scheduled
         if self._cleanup_timeout_id is None:
             self._cleanup_timeout_id = GLib.timeout_add(
-                CLEANUP_DELAY,
-                self._cleanup_scheduled_boxes
+                CLEANUP_DELAY, self._cleanup_scheduled_boxes
             )
 
     def _cleanup_scheduled_boxes(self) -> bool:
@@ -295,25 +317,30 @@ class TopBar(Window):
                     self.left.remove(box)
                 elif box.get_parent() == self.right:
                     self.right.remove(box)
-                
+
                 box.destroy()
             except Exception as e:
-                print(f"Error cleaning up box: {e}")
+                logger.error(f"Error cleaning up box: {e}")
 
         self._boxes_to_clean.clear()
         return False
 
-    def toggle_detach(self, detach = None):
+    def toggle_detach(self, detach=None):
         if detach is None:
             self.detach_mode = not self.detach_mode
             detach = self.detach_mode
-        
+
         if detach:
             self.detach_edge(detach=True)
+            if not self.is_open:
+                return
             GLib.timeout_add(DETACH_ANIMATION_DELAY, self.detach_controls, True)
         else:
-            self.detach_controls(detach=False)
-            GLib.timeout_add(DETACH_ANIMATION_DELAY + DETACH_TOGGLE_DELAY, self.detach_edge, False)
+            if self.is_open:
+                self.detach_controls(detach=False)
+            GLib.timeout_add(
+                DETACH_ANIMATION_DELAY + DETACH_TOGGLE_DELAY, self.detach_edge, False
+            )
 
     def detach_edge(self, detach=False):
         if detach:
@@ -334,7 +361,7 @@ class TopBar(Window):
                 toggle_class(self.start_children, "pushdown", "pushup")
                 toggle_class(self.end_children, "pushdown", "pushup")
 
-        def toggle_detach_class():
+        def toggle_detach_controls_class():
             if detach:
                 toggle_class(self.start_children, "attach", "detach")
                 toggle_class(self.end_children, "attach", "detach")
@@ -343,11 +370,13 @@ class TopBar(Window):
                 toggle_class(self.end_children, "detach", "attach")
 
         if detach:
-            toggle_detach_class()
+            toggle_detach_controls_class()
             GLib.timeout_add(DETACH_TOGGLE_DELAY, lambda: toggle_pushdown() or False)
         else:
             toggle_pushdown()
-            GLib.timeout_add(DETACH_TOGGLE_DELAY, lambda: toggle_detach_class() or False)
+            GLib.timeout_add(
+                DETACH_TOGGLE_DELAY, lambda: toggle_detach_controls_class() or False
+            )
 
     def _on_destroy(self, *args):
         # Cancel pending timeouts

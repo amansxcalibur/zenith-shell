@@ -9,6 +9,8 @@ notifications_off: str = "&#xece9;"
 
 notifications_clear: str = "&#xf814;"
 
+close: str = "\ue5cd"
+
 # player
 disc : str = "\ue019"
 

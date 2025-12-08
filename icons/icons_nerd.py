@@ -16,7 +16,6 @@ ssfull: str = "&#xeaea;"    # camera
 ssregion: str = "&#xf201;"    # camera
 screenrecord: str = "&#xeafa;"  # video
 ocr: str = "&#xfcc3;"          # text-recognition
-close : str = "&#xeb55;"
 
 # Circles
 temp: str = "&#xeb38;"
