@@ -1,15 +1,19 @@
-/* #hori-top{
-    background-color: transparent;
-    box-shadow: 0px 17px 0 0 black;
-    border-bottom-left-radius: 20px;
-    border-bottom-right-radius: 20px;
-} */
-
 #hori-top.pill {
   background-color: transparent;
-  box-shadow: 0px -20px 0 2px black;
+  /* translate shadow to the left the same distance as its spread. 
+  The overflowing right shadow is hidden by the next widget */
+  box-shadow: 10px -30px 0 10px black;
+  transition: border-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+#hori-top.pill.attach {
   border-top-left-radius: 30px;
   border-top-right-radius: 30px;
+}
+
+#hori-top.pill.detach {
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
 }
 
 #vert-top {
@@ -51,23 +55,42 @@
   min-width: 20px;
   border-bottom-right-radius: 20px;
   border-bottom-left-radius: 20px;
-  /* border-bottom-right-radius: 20px; */
+  transition: border-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1),
+              margin 0.05s cubic-bezier(0.5, 0.25, 0, 1),
+              padding 0.05s cubic-bezier(0.5, 0.25, 0, 1);
 }
-#start-top.expander {
-  border-bottom-right-radius: 20px;
-  transition: border-bottom-right-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+#start-top.attach {
+  border-top-right-radius: 0px;
+  border-top-left-radius: 0px;
+  padding-top: 0px;
 }
-#end-top.expander {
-  border-bottom-left-radius: 20px;
-  transition: border-bottom-left-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+#end-top.attach {
+  border-top-right-radius: 0px;
+  border-top-left-radius: 0px;
+  padding-top: 0px;
 }
-#start-top.contractor {
-  border-bottom-right-radius: 0px;
-  transition: border-bottom-right-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+#start-top.detach {
+  border-top-right-radius: 20px;
+  border-top-left-radius: 20px;
+  padding-top: 4px;
 }
-#end-top.contractor {
-  border-bottom-left-radius: 0px;
-  transition: border-bottom-left-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+#end-top.detach {
+  border-top-right-radius: 20px;
+  border-top-left-radius: 20px;
+  padding-top: 4px;
+}
+
+#start-top.attach.pushup {
+  margin-top: 0px;
+}
+#end-top.attach.pushup {
+  margin-top: 0px;
+}
+#start-top.detach.pushdown {
+  margin-top: 2px;
+}
+#end-top.detach.pushdown {
+  margin-top: 2px;
 }
 
 #bottom-top {
@@ -78,15 +101,26 @@
 #right-edge {
   background-color: transparent;
   min-width: 30px;
-  box-shadow: 0px -20px 0 2px black;
+  min-height: 60px; /* enough height for corners and negative margin to not push other widgets */
+  margin-bottom: -60px;
+  box-shadow: 0px -30px 0 0px black;
+  transition: border-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 
-#left-edge {
+#left-edge.attach {
   border-top-right-radius: 30px;
 }
 
-#right-edge {
+#right-edge.attach {
   border-top-left-radius: 30px;
+}
+
+#left-edge.detach {
+  border-top-right-radius: 0px;
+}
+
+#right-edge.detach {
+  border-top-left-radius: 0px;
 }
 
 #top-main {
@@ -108,10 +142,6 @@
 
 .top-bar-control-btn:hover, .top-bar-control-btn:active {
   background-color: var(--surface-bright);
-  /* padding: 9px 5px 9px 5px;
-  min-width: 30px;
-  border-radius: 17px;
-  border: none; */
 }
 
 #top-pill-stack{

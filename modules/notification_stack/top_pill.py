@@ -124,7 +124,7 @@ class TopPill(Window, Service):
             self._close_view(unfocus_callback=self.notification.close_notification_stack())
     
     def open(self):
-        # opens launcher
+        # opens notifications
         self._open_view(
             self.notification,
             lambda: (

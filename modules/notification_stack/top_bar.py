@@ -1,4 +1,6 @@
 import time
+from loguru import logger
+from typing import Optional, List
 
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
@@ -20,6 +22,11 @@ from gi.repository import Gtk, GLib, Gdk
 
 SPACING = 0
 CONTROLS_SPACING = 5
+TRANSITION_DURATION = 300
+CLEANUP_DELAY = 350
+HOVER_DEBOUNCE_MS = 300
+DETACH_ANIMATION_DELAY = 100
+DETACH_TOGGLE_DELAY = 150
 
 
 class TopBar(Window):
@@ -29,23 +36,19 @@ class TopBar(Window):
             layer="top",
             geometry="top",
             type_hint="notification",
-            margin="0px",
             visible=True,
             all_visible=True,
-            h_expand=True,
-            v_expand=True,
             **kwargs,
         )
         self._pill_ref = pill
 
         self.is_open = False
         self._pill_is_docked = True
+        self.detach_mode = False
 
-        self.hole_state_left = False
-        self.hole_state_right = False
-
+        self._cleanup_timeout_id: Optional[int] = None
         self._cleanup_controls = None
-        self._boxes_to_clean = []
+        self._boxes_to_clean: List[Box] = []
 
         self.last_hover_time = 0
 
@@ -53,103 +56,67 @@ class TopBar(Window):
         self.build_bar()
 
         self._pill_ref.connect("child-changed", self.update_controls)
-
         self.add_keybinding("Escape", lambda *_: self.close())
 
+        self.connect("destroy", self._on_destroy)
+
     def init_modules(self):
-        self.reveal_btn = Button(
-            # name="notification-reveal-btn",
-            child=Label(name="notification-reveal-label", markup=icons.notifications),
-            tooltip_text="Show/Hide notifications",
-            on_clicked=lambda *_: (
-                ... if True else self.toggle_notification_stack_reveal()
-            ),
-            # visible=False,
-        )
-        self.clear_btn = Button(
-            # name="notification-reveal-btn",
-            child=Label(name="notification-clear-label", markup=icons.trash),
-            tooltip_text="Show/Hide notifications",
-            on_clicked=lambda *_: ... if True else self.close_all_notifications(),
-            # visible=False,
-        )
-
-        self.user_modules_left = [
-            self.clear_btn,
-        ]
-        self.user_modules_right = [
-            self.reveal_btn,
-        ]
-
-    def build_bar(self):
+        # left
         self.left_compact = Box(
             style="min-width:1px; min-height:1px; background-color:black"
         )
-        self.left_child = Box(spacing=SPACING)  # Changed from Label
-        self.left = Stack(
-            transition_duration=300,
-            transition_type="crossfade",
-            children=[self.left_compact, self.left_child],
-        )
-        self.left.set_interpolate_size(True)
-        self.left.set_homogeneous(False)
+        self.left_child = Box(spacing=SPACING)
+        self.left = self._create_stack([self.left_compact, self.left_child])
 
+        # right
         self.right_compact = Box(
             style="min-width:1px; min-height:1px; background-color:black"
         )
-        self.right_child = Box(spacing=SPACING)  # Changed from Label
-        self.right = Stack(
-            transition_duration=300,
-            transition_type="crossfade",
-            children=[self.right_compact, self.right_child],
-        )
-        self.right.set_interpolate_size(True)
-        self.right.set_homogeneous(False)
+        self.right_child = Box(spacing=SPACING)
+        self.right = self._create_stack([self.right_compact, self.right_child])
 
-        self.start_children = Box(
-            name="start-top",
-            h_expand=True,
-            children=self.left,
-        )
-        self.end_children = Box(
-            name="end-top",
-            h_expand=True,
-            children=self.right,
-        )
+        self._protected_boxes = {self.left_compact, self.right_compact}
+
+    def build_bar(self):
+        self.start_children = Box(name="start-top", h_expand=True, children=self.left)
+        self.end_children = Box(name="end-top", h_expand=True, children=self.right)
         self.left_edge = Box(name="left-edge", h_expand=True)
         self.right_edge = Box(name="right-edge", h_expand=True)
 
+        # pill
         self.pill_dock = Box(name="vert-top")
-        self.pill_dock_container = Box(
-            children=[
-                Box(
-                    name="hori-top",
-                    style_classes="pill",
-                    orientation="v",
-                    children=[Box(name="bottom-top", v_expand=True), self.pill_dock],
-                ),
-            ]
+        self.pill_vertical = Box(
+            name="hori-top",
+            style_classes="pill",
+            orientation="v",
+            children=[Box(name="bottom-top", v_expand=True), self.pill_dock],
         )
+        self.pill_dock_container = Box(children=[self.pill_vertical])
+
         self.compact = Box(
             style="min-width:1px; min-height:1px; background-color:black"
         )
-        self.stack = Stack(
-            transition_duration=300,
-            transition_type="over-up",
-            children=[self.pill_dock_container, self.compact],
+        self.stack = self._create_stack(
+            [self.pill_dock_container, self.compact], transition_type="over-up"
         )
-        self.stack.set_interpolate_size(True)
-        self.stack.set_homogeneous(False)
 
+        # styles init
+        self.toggle_detach(detach=False)
+
+        # hover area
         self.hover_area = EventBox(
             events="enter-notify",
-            h_expand=True, 
-            child=Box(style="min-height:2px;"), # width defined in top-main
+            h_expand=True,
+            child=Box(style="min-height:2px;"),
         )
+        self.hover_area.connect("enter-notify-event", self._handle_hover_reveal)
 
+        # main
         self.children = Overlay(
             orientation="v",
-            overlays=Box(v_align="start", v_expand=False, h_expand=True, children=self.hover_area),
+            overlays=Box(
+                v_align="start", v_expand=False, h_expand=True, children=self.hover_area
+            ),
             child=Box(
                 name="top-main",
                 children=[
@@ -162,7 +129,17 @@ class TopBar(Window):
             ),
         )
 
-        self.hover_area.connect("enter-notify-event", self._handle_hover_reveal)
+    def _create_stack(
+        self, children: list, transition_type: str = "crossfade"
+    ) -> Stack:
+        stack = Stack(
+            transition_duration=TRANSITION_DURATION,
+            transition_type=transition_type,
+            children=children,
+        )
+        stack.set_interpolate_size(True)
+        stack.set_homogeneous(False)
+        return stack
 
     def _handle_hover_reveal(self, source, event):
         if (
@@ -191,7 +168,6 @@ class TopBar(Window):
     def override_reset(self):
         self._pill_is_docked = True
         self.stack.set_visible_child(self.pill_dock_container)
-        # print("top bar is ", self.is_open)
         if self.is_open:
             self._apply_open_visual()
         else:
@@ -221,11 +197,6 @@ class TopBar(Window):
         toggle_class(self.pill_dock, "expand", "contractor")
         toggle_class(self.pill_dock_container, "expander", "contractor")
 
-    def toggle_vertical(self):
-        # toggle_config_vertical_flag()
-        # restart bar
-        ...
-
     def toggle_visibility(self):
         visible = not self.is_visible()
         self.set_visible(visible)
@@ -236,104 +207,153 @@ class TopBar(Window):
         return add_hover_cursor(widget=widget)
 
     def update_controls(self, source, child_controls):
-        print("update controls", child_controls)
+        logger.debug("Updating controls")
+        if child_controls is None:
+            child_controls = []
 
-        # 3. Identify the OLD children (which are the current "content" children)
         old_left = self.left_child
         old_right = self.right_child
 
-        # --- NEW STEP: 0. IMMEDIATE RESCUE OF PERSISTENT CONTROLS ---
-        # Before creating new containers, we must unparent the controls
-        # from the containers they currently reside in (old_left/old_right).
-        # This prevents reparenting issues.
+        # unparent controls from old containers
+        self._safe_unparent_controls(old_left, old_right)
 
-        # Only rescue if the old containers are transient (i.e., not self.left_compact)
-        protected = [self.left_compact, self.right_compact]
+        next_left, next_right = self._create_control_containers(child_controls)
 
-        if old_left not in protected:
-            for child in old_left.get_children():
-                old_left.remove(child)
-
-        if old_right not in protected:
-            for child in old_right.get_children():
-                old_right.remove(child)
-
-        # 1. Create new containers with unique names
-        next_left = Box(
-            name=f"left_ctrl_{GLib.get_monotonic_time()}",
-            style_classes=["top-bar-controls-box"],
-            spacing=CONTROLS_SPACING,
-        )
-        next_right = Box(
-            name=f"right_ctrl_{GLib.get_monotonic_time()}",
-            style_classes=["top-bar-controls-box"],
-            spacing=CONTROLS_SPACING,
-        )
-
-        # Populate them
-        if not child_controls:
-            next_left.add(Label(label="empty"))
-            next_right.add(Label(label="empty"))
-        else:
-            # Controls are now unparented and safe to add to the new boxes
-            for index, control in enumerate(child_controls):
-                if index % 2 == 0:
-                    next_left.add(self.bake_bar_buttons(control))
-                else:
-                    next_right.add(self.bake_bar_buttons(control))
-
-        # 2. Add new containers to the Stacks
         self.left.add(next_left)
         self.right.add(next_right)
 
-        # --- NEW STEP: 3. TRACK OLD BOXES FOR LATER DESTRUCTION ---
-        # Add the now-empty old containers to the list for eventual cleanup.
-        # This tracks every container that needs removal.
-        if old_left not in protected:
-            self._boxes_to_clean.append(old_left)
-        if old_right not in protected:
-            self._boxes_to_clean.append(old_right)
+        # queue old containers for cleanup
+        self._queue_cleanup([old_left, old_right])
 
-        # 4. Update the "Main" references
+        # update references
         self.left_child = next_left
         self.right_child = next_right
 
-        # 5. Handle Visibility Logic (Remains unchanged)
         if self.is_open:
             self.left.set_visible_child(next_left)
             self.right.set_visible_child(next_right)
 
         self.show_all()
 
-        # 6. Cleanup Logic (Run only if a cleanup isn't already scheduled)
-        if self._cleanup_controls is not None:
-            # Cleanup is already scheduled, just let it run on the updated list
-            return
+    def _create_control_containers(self, controls: List[Gtk.Widget]) -> tuple:
+        timestamp = GLib.get_monotonic_time()
+        
+        left = Box(
+            name=f"left_ctrl_{timestamp}",
+            style_classes=["top-bar-controls-box"],
+            spacing=CONTROLS_SPACING,
+        )
+        right = Box(
+            name=f"right_ctrl_{timestamp}",
+            style_classes=["top-bar-controls-box"],
+            spacing=CONTROLS_SPACING,
+        )
 
-        def cleanup_scheduled_boxes():
-            # Crucial: Reset the tracker
-            self._cleanup_controls = None
+        if not controls:
+            left.add(Label(label="empty"))
+            right.add(Label(label="empty"))
+        else:
+            for index, control in enumerate(controls):
+                try:
+                    target = left if index % 2 == 0 else right
+                    target.add(self.bake_bar_buttons(control))
+                except Exception as e:
+                    print(f"Error adding control {index}: {e}")
 
-            # Remove and destroy all accumulated transient containers
-            for box in self._boxes_to_clean:
-                # Check if the box is still in the stack before removing
-                if box in self.left.get_children():
+        return left, right
+    
+    def _safe_unparent_controls(self, *containers):
+        for container in containers:
+            if container in self._protected_boxes:
+                continue
+            
+            try:
+                for child in list(container.get_children()):
+                    container.remove(child)
+            except Exception as e:
+                print(f"Error unparenting controls: {e}")
+    
+    def _queue_cleanup(self, boxes: List[Box]):
+        for box in boxes:
+            if box not in self._protected_boxes:
+                self._boxes_to_clean.append(box)
+        
+        # schedule cleanup if not already scheduled
+        if self._cleanup_timeout_id is None:
+            self._cleanup_timeout_id = GLib.timeout_add(
+                CLEANUP_DELAY,
+                self._cleanup_scheduled_boxes
+            )
+
+    def _cleanup_scheduled_boxes(self) -> bool:
+        self._cleanup_timeout_id = None
+
+        for box in self._boxes_to_clean:
+            try:
+                # remove from parent stack
+                if box.get_parent() == self.left:
                     self.left.remove(box)
-                elif box in self.right.get_children():
+                elif box.get_parent() == self.right:
                     self.right.remove(box)
+                
+                box.destroy()
+            except Exception as e:
+                print(f"Error cleaning up box: {e}")
 
-            # Clear the list after cleanup
-            self._boxes_to_clean.clear()
+        self._boxes_to_clean.clear()
+        return False
 
-            return False
+    def toggle_detach(self, detach = None):
+        if detach is None:
+            self.detach_mode = not self.detach_mode
+            detach = self.detach_mode
+        
+        if detach:
+            self.detach_edge(detach=True)
+            GLib.timeout_add(DETACH_ANIMATION_DELAY, self.detach_controls, True)
+        else:
+            self.detach_controls(detach=False)
+            GLib.timeout_add(DETACH_ANIMATION_DELAY + DETACH_TOGGLE_DELAY, self.detach_edge, False)
 
-        # Schedule the new cleanup and store the source ID
-        self._cleanup_controls = GLib.timeout_add(350, cleanup_scheduled_boxes)
+    def detach_edge(self, detach=False):
+        if detach:
+            toggle_class(self.left_edge, "attach", "detach")
+            toggle_class(self.right_edge, "attach", "detach")
+            toggle_class(self.pill_vertical, "attach", "detach")
+        else:
+            toggle_class(self.left_edge, "detach", "attach")
+            toggle_class(self.right_edge, "detach", "attach")
+            toggle_class(self.pill_vertical, "detach", "attach")
 
-    def tester(self):
-        label = Label(label="minansan konichiwa")
-        self.left.add_named(label, "silly")
-        self.left.set_visible_child(label)
+    def detach_controls(self, detach: bool = False):
+        def toggle_pushdown():
+            if detach:
+                toggle_class(self.start_children, "pushup", "pushdown")
+                toggle_class(self.end_children, "pushup", "pushdown")
+            else:
+                toggle_class(self.start_children, "pushdown", "pushup")
+                toggle_class(self.end_children, "pushdown", "pushup")
 
-    def set_unique_name(self, widget, prefix):
-        widget.set_name(f"{prefix}_{GLib.get_monotonic_time()}")
+        def toggle_detach_class():
+            if detach:
+                toggle_class(self.start_children, "attach", "detach")
+                toggle_class(self.end_children, "attach", "detach")
+            else:
+                toggle_class(self.start_children, "detach", "attach")
+                toggle_class(self.end_children, "detach", "attach")
+
+        if detach:
+            toggle_detach_class()
+            GLib.timeout_add(DETACH_TOGGLE_DELAY, lambda: toggle_pushdown() or False)
+        else:
+            toggle_pushdown()
+            GLib.timeout_add(DETACH_TOGGLE_DELAY, lambda: toggle_detach_class() or False)
+
+    def _on_destroy(self, *args):
+        # Cancel pending timeouts
+        if self._cleanup_timeout_id is not None:
+            GLib.source_remove(self._cleanup_timeout_id)
+            self._cleanup_timeout_id = None
+
+        # Clear all pending boxes
+        self._boxes_to_clean.clear()

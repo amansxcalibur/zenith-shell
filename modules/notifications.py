@@ -91,9 +91,9 @@ class NotificationPopup(Window):
         super().__init__(
             name="notification-popup",
             layer="top",
-            keyboard_mode="none",
-            exclusivity="none",
-            type_hint="notification",
+            geometry='top',
+            type_hint="normal",
+            margin="2px 0px 0px 0px",
             visible=True,
             all_visible=True,
             **kwargs
