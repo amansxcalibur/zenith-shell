@@ -298,9 +298,6 @@ class NotificationManager(Box, Service):
 
     def __init__(self, **kwargs):
         super().__init__(
-            layer="top",
-            type_hint="notification",
-            geometry="top",
             visible=True,
             all_visible=True,
             **kwargs,
@@ -355,39 +352,39 @@ class NotificationManager(Box, Service):
         )
 
         self.reveal_btn = Button(
-            name="notification-reveal-btn",
+            # name="notification-reveal-btn",
             child=Label(name="notification-reveal-label", markup=icons.notifications),
             tooltip_text="Show/Hide notifications",
             on_clicked=lambda *_: self.toggle_notification_stack_reveal(),
-            visible=False,
+            # visible=False,
         )
         self.clear_btn = Button(
-            name="notification-reveal-btn",
+            # name="notification-reveal-btn",
             child=Label(name="notification-clear-label", markup=icons.trash),
             tooltip_text="Show/Hide notifications",
             on_clicked=lambda *_: self.close_all_notifications(),
-            visible=False,
+            # visible=False,
         )
 
-        self.hover_area = EventBox(
-            events="enter-notify",
-            child=Box(style="min-height:2px;"),
-        )
+        # self.hover_area = EventBox(
+        #     events="enter-notify",
+        #     child=Box(style="min-height:2px;"),
+        # )
 
         self.children = Box(
             orientation="v",
             style=f"min-height:{NotificationConfig.WINDOW_MIN_HEIGHT}px; min-width:{NotificationConfig.WINDOW_MIN_WIDTH}px",
             h_expand=True,
             children=[
-                self.hover_area,
+                # self.hover_area,
                 Box(
                     spacing=NotificationConfig.SPACING,
-                    style=f"margin: {NotificationConfig.MARGIN}px;",
+                    # style=f"margin: {NotificationConfig.MARGIN}px;",
                     children=[
-                        Box(
-                            v_align="start",
-                            children=self.clear_btn,
-                        ),
+                        # Box(
+                        #     v_align="start",
+                        #     children=self.clear_btn,
+                        # ),
                         Box(
                             orientation="v",
                             children=[
@@ -395,10 +392,10 @@ class NotificationManager(Box, Service):
                                 self.active_notifications_box,
                             ],
                         ),
-                        Box(
-                            v_align="start",
-                            children=self.reveal_btn,
-                        ),
+                        # Box(
+                        #     v_align="start",
+                        #     children=self.reveal_btn,
+                        # ),
                     ],
                     v_align="start",
                 ),
@@ -406,7 +403,7 @@ class NotificationManager(Box, Service):
             ],
         )
 
-        self.hover_area.connect("enter-notify-event", self._handle_hover_reveal)
+        # self.hover_area.connect("enter-notify-event", self._handle_hover_reveal)
 
         # drag events
         self.connect("button-press-event", self.on_button_press)
@@ -594,3 +591,7 @@ class NotificationManager(Box, Service):
 
     def get_drag_state(self):
         return self._drag_state
+    
+    def get_controls(self):
+        # return [self.reveal_btn, self.clear_btn, Label(markup=icons.settings), Label(markup=icons.alien)]
+        return [self.reveal_btn, self.clear_btn]

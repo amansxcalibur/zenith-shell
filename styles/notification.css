@@ -27,6 +27,7 @@
     border-radius: 30px;
     padding: 10px;
     margin-bottom: 3px;
+    min-height: 40px;
 }
 
 #notification-reveal-btn{
@@ -37,16 +38,22 @@
 }
 
 #notification-reveal-label{
-    font-size: 20px;
-    min-width: 27px;
+    /* font-size: 20px; */
+    /* min-width: 27px; */
     color: var(--outline);
 }
 #notification-clear-label{
-    min-width: 27px;
+    /* min-width: 27px; */
+    font-size: 18px;
     color: var(--outline);
+    /* temp */
+    margin-bottom: -3px;
+    margin-top: -2px;
+    margin-left: -1px;
+    margin-right: 1px;
 }
 .trash-icon-adjust{
-    font-size: 25px;
+    /* font-size: 25px; */
     margin-bottom: -3px;
     margin-top: -3px;
     margin-left: -1px;

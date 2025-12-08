@@ -18,6 +18,9 @@ class TopPill(Window, Service):
     @Signal
     def on_drag_end(self, drag_state: object): ...
 
+    @Signal
+    def child_changed(self, child_controls: object): ...
+
     def __init__(self, **kwargs):
         super().__init__(
             name="pill",
@@ -57,7 +60,7 @@ class TopPill(Window, Service):
         self.lift_box = Box(style="min-height:0px;")  # 40-3-1 -3(dock padding)
 
         self.stack = Stack(
-            name="pill-stack",
+            name="top-pill-stack",
             transition_type="crossfade",
             transition_duration=250,
             children=[
@@ -69,7 +72,7 @@ class TopPill(Window, Service):
         self.stack.set_homogeneous(False)
 
         self.pill_container = Box(
-            name="pill-container", orientation="v", children=[self.stack]
+            name="top-pill-container", orientation="v", children=[self.stack]
         )
         self.children = self.pill_container
 
@@ -116,13 +119,12 @@ class TopPill(Window, Service):
 
     def toggle_notification(self):
         if self.stack.get_visible_child() != self.notification:
-            self._open_view(self.notification)
+            self._open_view(self.notification, focus_callback=self.notification.open_notification_stack())
         else:
-            self._close_view()
+            self._close_view(unfocus_callback=self.notification.close_notification_stack())
     
     def open(self):
         # opens launcher
-        print("bello")
         self._open_view(
             self.notification,
             lambda: (
@@ -139,17 +141,26 @@ class TopPill(Window, Service):
         self.open_dock()
         self.stack.set_visible_child(view)
 
+        controls = []
+        if hasattr(view, 'get_controls'):
+            controls = view.get_controls()
+
+        self.child_changed(controls)
+
         if focus_callback:
             focus_callback()
 
-    def _close_view(self):
+    def _close_view(self, unfocus_callback = None):
+        if unfocus_callback:
+            unfocus_callback()
+
         if self._current_compact_mode == self.dot_placeholder:
-            print("closing dock")
             self.close_dock()
             self.lift_pill()
 
         self.unfocus_pill()
         self.stack.set_visible_child(self.pill_compact)
+        self.child_changed([])
         self.show_all()
 
     def cycle_modes(self, forward=True):
