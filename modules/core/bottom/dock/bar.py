@@ -12,8 +12,8 @@ from modules.workspaces import Workspaces
 from modules.workspaces import Workspaces
 from modules.controls import ControlsManager
 from modules.metrics import MetricsSmall, Battery
-from modules.core.dock.layout_manager import LayoutManager
-from modules.core.dock.module_overlay import HoverOverlay, HolePlaceholder
+from modules.core.bottom.dock.layout_manager import LayoutManager
+from modules.core.bottom.dock.module_overlay import HoverOverlay, HolePlaceholder
 
 import icons
 from config.info import config
@@ -251,7 +251,7 @@ class DockBar(Window):
 
     def override_close(self):
         self._pill_is_docked = False
-        # self.stack.set_visible_child(self.compact)
+        self.stack.set_visible_child(self.compact)
         self._apply_close_visual()
 
     def override_reset(self):

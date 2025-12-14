@@ -6,7 +6,7 @@ from fabric.widgets.x11 import X11Window as Window
 from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
-from modules.notification_stack.notificaiton import NotificationManager
+from modules.notification import NotificationManager
 
 import icons
 from config.info import config, SHELL_NAME
@@ -222,3 +222,6 @@ class TopPill(Window, Service):
 
     def get_drag_state(self):
         return self._drag_state
+    
+    def update_controls_positions(self):
+        self.open()

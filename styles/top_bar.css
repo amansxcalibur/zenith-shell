@@ -2,7 +2,9 @@
   background-color: transparent;
   /* translate shadow to the left the same distance as its spread. 
   The overflowing right shadow is hidden by the next widget */
-  box-shadow: 10px -30px 0 10px black;
+  /* Well i've wrapped the container in a ClippingBox so this doesn't
+  really matter. But I'm leaving it here regardless. */
+  box-shadow: 10px -28px 0 10px black;
   transition: border-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 
@@ -125,11 +127,10 @@
 
 #top-main {
   min-height: 1px;
-  min-width: 540px;
+  min-width: 500px; /* min-width for event-box that triggers open/close */
 }
 
 .top-bar-control-btn {
-  /* background-color: var(--surface-bright); */
   padding: 9px 5px 9px 5px;
   min-width: 30px;
   border-radius: 15px;
@@ -157,6 +158,7 @@
 
 #close-control-label{
   color: var(--outline);
-  margin: -7px;
+  margin: -5px -4px;
   font-size: 25px;
+  /* background-color: red; */
 }

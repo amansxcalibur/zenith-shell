@@ -75,7 +75,8 @@ class NotificationTile(Tile):
             self.props.set_label("Off") 
 
     def handle_state_toggle(self, *_):
-        config.SILENT =  not  config.SILENT
+        # CHANGES CONFIG
+        config.SILENT =  not config.SILENT
         self.update_visual()
         return super().handle_state_toggle(*_)
 
@@ -285,22 +286,10 @@ class NotificationWidget(EventBox):
         logger.debug("NotificationWidget cleaned up")
 
 
-class NotificationManager(Window):
+class NotificationManager():
     def __init__(self, **kwargs):
-        super().__init__(
-            layer="top",
-            type_hint="notification",
-            geometry="top",
-            visible=True,
-            all_visible=True,
-            **kwargs,
-        )
-        self._drag_state = {
-            "dragging": False,
-            "offset_x": 0,
-            "offset_y": 0,
-            "start_pos": None,
-        }
+        super().__init__(**kwargs,)
+        
         self.last_hover_time = 0
         self._notification_service = None
         self._active_notifications = []
@@ -343,101 +332,58 @@ class NotificationManager(Window):
             size=2, orientation="v", spacing=NotificationConfig.SPACING
         )
 
-        self.reveal_btn = Button(
-            name="notification-reveal-btn",
+        # TODO
+        self.silent_btn = Button(
+            # name="notification-reveal-btn",
             child=Label(name="notification-reveal-label", markup=icons.notifications),
             tooltip_text="Show/Hide notifications",
-            on_clicked=lambda *_: self.toggle_notification_stack_reveal(),
-            visible=False,
+            on_clicked=lambda *_: self.handle_silent_state_toggle(),
+            # visible=False,
         )
         self.clear_btn = Button(
-            name="notification-reveal-btn",
+            # name="notification-reveal-btn",
             child=Label(name="notification-clear-label", markup=icons.trash),
             tooltip_text="Show/Hide notifications",
             on_clicked=lambda *_: self.close_all_notifications(),
-            visible=False,
+            # visible=False,
         )
 
-        self.hover_area = EventBox(
-            events="enter-notify",
-            child=Box(style="min-height:2px;"),
-        )
-
-        self.children = Box(
+        self.notification_history = Box(
             orientation="v",
             style=f"min-height:{NotificationConfig.WINDOW_MIN_HEIGHT}px; min-width:{NotificationConfig.WINDOW_MIN_WIDTH}px",
             h_expand=True,
             children=[
-                self.hover_area,
                 Box(
                     spacing=NotificationConfig.SPACING,
-                    style=f"margin: {NotificationConfig.MARGIN}px;",
                     children=[
-                        Box(
-                            v_align="start",
-                            children=self.clear_btn,
-                        ),
                         Box(
                             orientation="v",
                             children=[
                                 self.revealer,
-                                self.active_notifications_box,
                             ],
-                        ),
-                        Box(
-                            v_align="start",
-                            children=self.reveal_btn,
                         ),
                     ],
                     v_align="start",
                 ),
-                # Button(child=Label(label='delete'), on_clicked=self.close_all_notifications)
             ],
         )
 
-        self.hover_area.connect("enter-notify-event", self._handle_hover_reveal)
+        self.notification_history.get_controls = self.get_controls
+        self.active_notifications_box.get_controls = self.get_controls
 
-        # drag events
-        self.connect("button-press-event", self.on_button_press)
-        self.connect("motion-notify-event", self.on_motion)
-        self.connect("button-release-event", self.on_button_release)
-
-    def on_button_press(self, widget, event):
-        if event.button == 1:  # Left mouse button
-            self._drag_state["dragging"] = True
-            win_x, win_y = self.get_position()
-            self._drag_state["offset_x"] = event.x_root - win_x
-            self._drag_state["offset_y"] = event.y_root - win_y
-            self._drag_state["start_pos"] = (win_x, win_y)
-
-    def on_motion(self, widget, event):
-        if not self._drag_state["dragging"]:
-            return
-
-        new_x = int(event.x_root - self._drag_state["offset_x"])
-        new_y = int(event.y_root - self._drag_state["offset_y"])
-        self.move(new_x, new_y)
-
-    def on_button_release(self, widget, event):
-        if event.button != 1 or not self._drag_state["dragging"]:
-            return
-
-        self._drag_state["dragging"] = False
-
-        screen = Gdk.Display.get_default().get_monitor_at_window(self.get_window())
-        geo = screen.get_geometry()
-        win_x, win_y = self.get_position()
-        win_w, win_h = self.get_size()
-
-        left_x = 0
-        right_x = geo.width - win_w
-        center_x = (geo.width - win_w) // 2
-
-        POSITIONS = {center_x: "top", left_x: "top-left", right_x: "top-right"}
-
-        # snap
-        target_x = min(POSITIONS.keys(), key=lambda x: abs(win_x - x))
-        self.set_geometry(POSITIONS[target_x])
+    def get_notifications_box(self):
+        return self.notification_history
+    
+    def get_active_notifications_box(self):
+        return self.active_notifications_box
+    
+    # TODO: sync system
+    def handle_silent_state_toggle(self, *_):
+        return
+        # CHANGES CONFIG
+        config.SILENT =  not config.SILENT
+        if self.silent_btn is not None:
+            self.silent_btn.add_style_class('active')
 
     def _handle_notification_added(self, source, notification_id: int):
         if not self._notification_service:
@@ -457,7 +403,9 @@ class NotificationManager(Window):
                 on_close_callback=self._update_ui_state,
             )
 
-            if not config.SILENT:
+            if config.SILENT or self.revealer.child_revealed:
+                self._move_to_revealer(notification_widget=notification_widget)
+            else:
                 if (
                     len(self._active_notifications)
                     >= NotificationConfig.MAX_ACTIVE_NOTIFS
@@ -468,8 +416,7 @@ class NotificationManager(Window):
                     )
                 self._active_notifications.append(notification_widget)
                 self.active_notifications_box.pack_end(notification_widget, True, None, 0)
-            else:
-                self._move_to_revealer(notification_widget=notification_widget)
+
             self._update_ui_state()
 
         except Exception as e:
@@ -510,9 +457,9 @@ class NotificationManager(Window):
             widget.set_markup(icons.trash_up)
             toggle_class(widget, "trash-icon-adjust", "trash-up-icon-adjust")
 
-        should_show_button = has_active_notifications or has_revealed_notifications
-        self.reveal_btn.set_visible(should_show_button)
-        self.clear_btn.set_visible(should_show_button)
+        # should_show_button = has_active_notifications or has_revealed_notifications
+        # self.reveal_btn.set_visible(should_show_button)
+        # self.clear_btn.set_visible(should_show_button)
 
     def _handle_hover_reveal(self, source, event):
         if (
@@ -531,6 +478,8 @@ class NotificationManager(Window):
         try:
             if not self.revealer.child_revealed:
                 self.revealer.reveal()
+                for notification_widget in self._active_notifications[:]:
+                    self._move_to_revealer(notification_widget)
             else:
                 self.revealer.unreveal()
 
@@ -539,11 +488,20 @@ class NotificationManager(Window):
         except Exception as e:
             logger.error(f"Failed to toggle revealer: {e}")
 
+    def open_notification_stack(self):
+        self.revealer.reveal()
+        for notification_widget in self._active_notifications[:]:
+            self._move_to_revealer(notification_widget)
+        self._update_ui_state()
+
+    def close_notification_stack(self):
+        self.revealer.unreveal()
+        self._update_ui_state()
+
     def close_all_notifications(self, *_):
         # iterate over a COPY!!
         for notification_widget in self._active_notifications[:]:
             try:
-                # self._active_notifications.remove(notification_widget)
                 notification_widget._notification.close()
             except Exception as e:
                 try:
@@ -584,3 +542,9 @@ class NotificationManager(Window):
 
         self.close_all_notifications()
         super().destroy()
+
+    def get_drag_state(self):
+        return self._drag_state
+    
+    def get_controls(self):
+        return [self.clear_btn]

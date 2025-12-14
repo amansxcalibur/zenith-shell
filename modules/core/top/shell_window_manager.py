@@ -1,5 +1,7 @@
 from loguru import logger
 
+from fabric.widgets.x11 import X11WindowGeometry
+
 from services.animator import Animator
 
 import gi
@@ -18,7 +20,7 @@ class ShellTopWindowManager:
             )
 
         self.pill = pill
-        self.dockBar = dockBar
+        self.top_bar = dockBar
 
         self.pill_start_x, self.pill_start_y = self.pill.get_position()
         self.pill_target_x = self.pill_start_x
@@ -40,12 +42,12 @@ class ShellTopWindowManager:
         self.pill.connect("on-drag", self._set_dock_state)
         self.pill.connect("on-drag-end", lambda w, state: self._snap_pill())
         self.pill.connect("size-allocate", self._on_pill_resized)
-        self.dockBar.connect("notify::visible", self._on_dock_visibility_toggle)
+        self.top_bar.connect("notify::visible", self._on_dock_visibility_toggle)
 
         self._disconnect_geometry_enforcement(self.pill)
 
     def _setup_size_groups(self):
-        self.pill_size_group.add_widget(self.dockBar.pill_dock)
+        self.pill_size_group.add_widget(self.top_bar.pill_dock)
         self.pill_size_group.add_widget(self.pill.pill_container)
 
     def _remove_size_groups(self):
@@ -58,7 +60,7 @@ class ShellTopWindowManager:
 
     @property
     def dock_widget(self):
-        return self.dockBar
+        return self.top_bar
 
     def _get_monitor_geometry(self, widget):
         display = Gdk.Display.get_default()
@@ -66,7 +68,7 @@ class ShellTopWindowManager:
         return monitor.get_geometry()
 
     def _is_dock_visible(self):
-        return self.dockBar.get_visible()
+        return self.top_bar.get_visible()
 
     def _on_dock_visibility_toggle(self, *args):
         self._snap_pill()
@@ -85,14 +87,13 @@ class ShellTopWindowManager:
     def _set_dock_state(self, source, drag_state, x: int, y: int):
         geo = self._get_monitor_geometry(self.pill)
 
-        pill_is_in_dock_zone = (y) < (self.DOCK_HEIGHT) and (
-            geo.width // 4 < x < 3 * geo.width // 4
-        )
+        pill_is_in_dock_zone = (y) < (self.DOCK_HEIGHT)
 
+        # TopBar handles update-only-if-changed internally
         if pill_is_in_dock_zone:
-            self.dockBar.override_reset()
+            self.top_bar.override_reset()
         else:
-            self.dockBar.override_close()
+            self.top_bar.override_close()
 
     def _snap_pill(self, animate: bool = True, fixed: bool = False):
         geo = self._get_monitor_geometry(self.pill)
@@ -111,17 +112,19 @@ class ShellTopWindowManager:
 
         y_targets = {
             "top": 0,
-            "center": (available_height - win_h) // 2,
-            "bottom": available_height - win_h,
+            # "center": (available_height - win_h) // 2,
+            # "bottom": available_height - win_h,
         }
 
         if not fixed:
             target_x_name = min(x_targets, key=lambda k: abs(win_x - x_targets[k]))
             target_y_name = min(y_targets, key=lambda k: abs(win_y - y_targets[k]))
 
-            # CHANGES THE CONFIG!!
-            self.pill._pos['x'] = target_x_name
-            self.pill._pos['y'] = target_y_name
+            if self.pill._pos['x'] != target_x_name:
+                # CHANGES THE CONFIG!!
+                self.pill._pos['x'] = target_x_name
+                self.pill._pos['y'] = target_y_name
+                self.pill.update_controls_positions()
 
             target_x = x_targets[target_x_name]
             target_y = y_targets[target_y_name]
@@ -130,14 +133,23 @@ class ShellTopWindowManager:
             target_x_name = self.pill._pos['x']
             target_y_name = self.pill._pos['y']
 
-            
-
             target_x = x_targets[target_x_name]
             target_y = y_targets[target_y_name]
 
         # If snapping to bottom and dock is open, push it down into the dock
         if target_y_name == "bottom" and target_x_name == "center":
             target_y += dock_offset
+
+        geometry_map = {
+            "top-left": X11WindowGeometry.TOP_LEFT,
+            "top-center": X11WindowGeometry.TOP,
+            "top-right": X11WindowGeometry.TOP_RIGHT,
+        }
+        new_geometry = f'top-{target_x_name}'
+        
+        # update geometry if changed
+        if geometry_map.get(new_geometry) != self.top_bar.get_geometry():
+            self.top_bar.set_geometry(new_geometry)
 
         if animate:
             self._update_target_position(target_x, target_y)

@@ -18,10 +18,7 @@ DEFAULTS = {
         "BRIGHTNESS_DEV": "intel_backlight",
         "ALLOWED_PLAYERS": ["vlc", "cmus", "firefox", "spotify", "chromium"],
     },
-    "paths": {
-        "WALLPAPERS_DIR": "~/Pictures/Wallpapers/",
-        "SCRIPTS_DIR": "~/i3scripts",
-    },
+    "paths": {"WALLPAPERS_DIR": "~/Pictures/Wallpapers/", "SCRIPTS_DIR": "~/i3scripts"},
     "dashboard": {
         "WIDGETS_ENABLED": ["clock", "weather", "system"],
         "REFRESH_INTERVAL": 5000,
@@ -33,15 +30,12 @@ DEFAULTS = {
         "SPACING": 8,
         "COMPONENTS": ["workspaces", "title", "systray", "clock"],
     },
-    "pill": {
-        "POSITION": {"x": "center", "y": "bottom"},
-    },
-    "network": {
-        "wifi": {
-            "ON": True,
-        },
-    },
+    "pill": {"POSITION": {"x": "center", "y": "bottom"}},
+    "network": {"wifi": {"ON": True}},
+    "top_bar": {},
+    "top_pill": {"POSITION": {"x": "center", "y": "top"}},
 }
+
 
 # Non-configurable constants
 SHELL_NAME = "zenith"
