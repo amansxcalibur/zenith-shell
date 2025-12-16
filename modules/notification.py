@@ -9,7 +9,6 @@ from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
 from fabric.widgets.eventbox import EventBox
 from widgets.rounded_image import RoundedImage
-from fabric.widgets.x11 import X11Window as Window
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.notifications import Notifications, Notification
 from fabric.utils import invoke_repeater

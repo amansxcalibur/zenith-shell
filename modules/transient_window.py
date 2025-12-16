@@ -1,7 +1,7 @@
 from fabric.widgets.box import Box
+from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
-from fabric.widgets.label import Label
 from fabric.widgets.x11 import X11Window as Window
 
 from modules.metrics import MetricsProvider
@@ -10,13 +10,8 @@ from modules.controls import ControlsManager
 from config.info import config
 import icons
 
-import gi
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import GLib
-
-
-class Notification(Revealer):
+class LowBatteryBanner(Revealer):
     LOW_BATTERY_THRESHOLD = 15
 
     def __init__(self, **kwargs):
@@ -33,7 +28,7 @@ class Notification(Revealer):
         self.provider = MetricsProvider()
         self.provider.connect("battery-changed", self.check_low_bat)
 
-        self.warning_shown = False
+        self.dismissed = False
         self.low_bat_msg = Label(label="Low Battery fam (<15%)")
 
         self.content_box = Box(
@@ -75,41 +70,58 @@ class Notification(Revealer):
 
     def close_notification(self):
         self.hide_notification()
-        self.warning_shown = True
+        self.dismissed = True
 
     def reveal_notification(self):
-        if not self.warning_shown:
+        if not self.dismissed:
             self.set_reveal_child(True)
 
     def hide_notification(self):
-        self.warning_shown = False
+        self.dismissed = False
         self.set_reveal_child(False)
 
 
-class NotificationPopup(Window):
+class TransientWindow(Window):
     def __init__(self, **kwargs):
         super().__init__(
             name="notification-popup",
             layer="top",
-            geometry='top',
-            type_hint="normal",
-            margin="2px 0px 0px 0px",
-            visible=True,
-            all_visible=True,
+            geometry="top",
+            type_hint='notification',
+            visible=False,
             **kwargs
         )
+
         self.controls = ControlsManager()
-        self.volume_revealer = self.controls.get_volume_revealer()
-        self.volume_overflow_revealer = self.controls.get_volume_overflow_revealer()
-        self.brightness_revealer = self.controls.get_brightness_revealer()
+
+        self.revealers = [
+            LowBatteryBanner(),
+            self.controls.get_volume_revealer(),
+            self.controls.get_volume_overflow_revealer(),
+            self.controls.get_brightness_revealer(),
+        ]
+
+        for revealer in self.revealers:
+            revealer.connect("notify::reveal-child", self._on_reveal_intent)
+            revealer.connect("notify::child-revealed", self._on_reveal_finished)
 
         self.children = Box(
-            style="min-height: 1px;",
-            orientation='v',
+            orientation="v",
             children=[
-                Notification(),
-                self.volume_revealer,
-                self.volume_overflow_revealer,
-                self.brightness_revealer,
+                *self.revealers,
             ],
         )
+
+    # reveal before revealer animation
+    def _on_reveal_intent(self, revealer, _):
+        if revealer.get_reveal_child():
+            self.set_visible(True)
+
+    # hide after revealer animation
+    def _on_reveal_finished(self, revealer, _):
+        if any(r.get_reveal_child() for r in self.revealers):
+            return  # someone still wants to be visible
+
+        if not any(r.get_child_revealed() for r in self.revealers):
+            self.set_visible(False)
+

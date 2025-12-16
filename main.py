@@ -5,14 +5,14 @@ Window.toggle_visibility = lambda self: self.set_visible(not self.is_visible())
 
 from fabric.utils import get_relative_path, monitor_file
 
-from modules.core.bottom.pill import Pill
 from modules.corners import Corners
-from modules.core.bottom.dock.bar import DockBar
-from modules.notifications import NotificationPopup
-from modules.core.bottom.shell_window_manager import ShellWindowManager
 from modules.core.top.bar import TopBar
-from modules.core.top.shell_window_manager import ShellTopWindowManager
 from modules.core.top.pill import TopPill
+from modules.core.bottom.pill import Pill
+from modules.core.bottom.dock.bar import DockBar
+from modules.transient_window import TransientWindow
+from modules.core.bottom.shell_window_manager import ShellWindowManager
+from modules.core.top.shell_window_manager import ShellTopWindowManager
 
 from config.info import SHELL_NAME
 from config.i3_config import i3_border_setter
@@ -24,15 +24,19 @@ import setproctitle
 if __name__ == "__main__":
     setproctitle.setproctitle(SHELL_NAME)
     GLib.set_prgname(SHELL_NAME)
+
     pill = Pill()
     dockBar = DockBar(pill=pill)
     pill.set_role("pill")
     dockBar.set_title("fabric-dock")
     window_manager = ShellWindowManager(pill = pill, dockBar = dockBar)
-    controls_notification = NotificationPopup()
+
+    controls_notification = TransientWindow()
+
     top_pill = TopPill()
     top_bar = TopBar(pill=top_pill)
     top_window_manager = ShellTopWindowManager(pill=top_pill, dockBar=top_bar)
+
     corners = Corners()
 
     app_kwargs = {
