@@ -631,13 +631,15 @@ class Network(Tile):
                     name="subsection-heading-container",
                     children=[
                         Label(label="Available", h_align="start", h_expand=True),
-                        Button(
-                            h_align="end",
-                            on_clicked=lambda *_: self.nm.scan(),
-                            child=Label(
-                                style_classes=["menu-icon"], markup=icons.refresh
-                            ),
-                            tooltip_markup="Rescan",
+                        add_hover_cursor(
+                            Button(
+                                h_align="end",
+                                on_clicked=lambda *_: self.nm.scan(),
+                                child=Label(
+                                    style_classes=["menu-icon"], markup=icons.refresh
+                                ),
+                                tooltip_markup="Rescan",
+                            )
                         ),
                     ],
                 ),

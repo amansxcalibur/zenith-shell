@@ -243,9 +243,9 @@ class TopBar(Window):
             visible = not visible
         # else:
         #     return
-        
+
         geometry = self.get_geometry()
-        
+
         if geometry == X11WindowGeometry.TOP_LEFT:
             self.left_edge.set_visible(False)
             self.start_children.set_visible(False)
@@ -384,8 +384,8 @@ class TopBar(Window):
             if self._detach_edge_timeout_id is not None:
                 GLib.source_remove(self._detach_edge_timeout_id)
             self._detach_edge_timeout_id = GLib.timeout_add(
-                DETACH_ANIMATION_DELAY + DETACH_TOGGLE_DELAY, 
-                lambda: self.detach_edge(False) or False
+                DETACH_ANIMATION_DELAY + DETACH_TOGGLE_DELAY,
+                lambda: self.detach_edge(False) or False,
             )
 
     def detach_edge(self, detach=False):

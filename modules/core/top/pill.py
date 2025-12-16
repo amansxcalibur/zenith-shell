@@ -42,12 +42,14 @@ class TopPill(Window, Service):
         self._current_compact_mode = None
         self._dock_is_visible = True
         # for custom geometry handle in ShellWindowManager
-        self._pos = config.top_pill.POSITION # changes the config
+        self._pos = config.top_pill.POSITION  # changes the config
         self.is_lift_enable = False
 
         self.notification_manager = NotificationManager()
         self.notification = self.notification_manager.get_notifications_box()
-        self.active_notifications = self.notification_manager.get_active_notifications_box()
+        self.active_notifications = (
+            self.notification_manager.get_active_notifications_box()
+        )
 
         # pill-compact
         self.dot_placeholder = Box(style="min-width:1px; min-height:1px;")
@@ -58,7 +60,7 @@ class TopPill(Window, Service):
             style_classes="" if not config.VERTICAL else "vertical",
             children=(
                 [
-                self.active_notifications,
+                    self.active_notifications,
                 ]
             ),
         )
@@ -88,7 +90,7 @@ class TopPill(Window, Service):
 
         self.pill_close_btn = Button(
             child=Label(name="close-control-label", markup=icons.close),
-            tooltip_text="Exit",
+            tooltip_text="Close",
             on_clicked=lambda *_: self.close(),
         )
 
@@ -128,17 +130,20 @@ class TopPill(Window, Service):
 
     def toggle_notification(self):
         if self.stack.get_visible_child() != self.notification:
-            self._open_view(self.notification, focus_callback=self.notification_manager.open_notification_stack())
+            self._open_view(
+                self.notification,
+                focus_callback=self.notification_manager.open_notification_stack(),
+            )
         else:
-            self._close_view(unfocus_callback=self.notification_manager.close_notification_stack())
-    
+            self._close_view(
+                unfocus_callback=self.notification_manager.close_notification_stack()
+            )
+
     def open(self):
         # opens notifications
         self._open_view(
             self.notification,
-            lambda: (
-                self.notification_manager.open_notification_stack(),
-            ),
+            lambda: (self.notification_manager.open_notification_stack(),),
         )
 
     def close(self, *_):
@@ -151,10 +156,10 @@ class TopPill(Window, Service):
         self.stack.set_visible_child(view)
 
         controls = []
-        
-        if hasattr(view, 'get_controls'):
+
+        if hasattr(view, "get_controls"):
             controls = view.get_controls()
-        
+
         controls.append(self.pill_close_btn)
 
         self.child_changed(controls)
@@ -162,7 +167,7 @@ class TopPill(Window, Service):
         if focus_callback:
             focus_callback()
 
-    def _close_view(self, unfocus_callback = None):
+    def _close_view(self, unfocus_callback=None):
         if unfocus_callback:
             unfocus_callback()
 
@@ -222,6 +227,6 @@ class TopPill(Window, Service):
 
     def get_drag_state(self):
         return self._drag_state
-    
+
     def update_controls_positions(self):
         self.open()

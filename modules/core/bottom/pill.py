@@ -37,7 +37,7 @@ class Pill(Window, Service):
         self._current_compact_mode = None
         self._dock_is_visible = True
         # for custom geometry handle in ShellWindowManager
-        self._pos = config.pill.POSITION # changes the config
+        self._pos = config.pill.POSITION  # changes the config
 
         # pill-compact
         self.active_window = ActiveWindow()

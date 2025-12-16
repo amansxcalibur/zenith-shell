@@ -5,7 +5,7 @@ from services.animator import Animator
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GLib
 
 
 class ShellWindowManager:
@@ -19,6 +19,7 @@ class ShellWindowManager:
 
         self.pill = pill
         self.dockBar = dockBar
+        self.is_dock_overflowing = False
 
         self.pill_start_x, self.pill_start_y = self.pill.get_position()
         self.pill_target_x = self.pill_start_x
@@ -41,6 +42,9 @@ class ShellWindowManager:
         self.pill.connect("on-drag-end", lambda w, state: self._snap_pill())
         self.pill.connect("size-allocate", self._on_pill_resized)
         self.dockBar.connect("notify::visible", self._on_dock_visibility_toggle)
+        self.dockBar.connect(
+            "size-allocate", lambda *_: self._check_horizontal_overflow()
+        )
 
         self._disconnect_geometry_enforcement(self.pill)
 
@@ -62,7 +66,10 @@ class ShellWindowManager:
 
     def _get_monitor_geometry(self, widget):
         display = Gdk.Display.get_default()
-        monitor = display.get_monitor_at_window(widget.get_window())
+        win = widget.get_window()
+        if not win:
+            return Gdk.Rectangle()
+        monitor = display.get_monitor_at_window(win)
         return monitor.get_geometry()
 
     def _is_dock_visible(self):
@@ -79,7 +86,7 @@ class ShellWindowManager:
 
         if self.animator.playing:
             return
-        
+
         self._snap_pill(animate=False, fixed=True)
 
     def _set_dock_state(self, source, drag_state, x: int, y: int):
@@ -121,21 +128,29 @@ class ShellWindowManager:
             target_y_name = min(y_targets, key=lambda k: abs(win_y - y_targets[k]))
 
             # CHANGES THE CONFIG!!
-            self.pill._pos['x'] = target_x_name
-            self.pill._pos['y'] = target_y_name
+            self.pill._pos["x"] = target_x_name
+            self.pill._pos["y"] = target_y_name
 
             target_x = x_targets[target_x_name]
             target_y = y_targets[target_y_name]
-        
+
         else:
-            target_x_name = self.pill._pos['x']
-            target_y_name = self.pill._pos['y']
+            target_x_name = self.pill._pos["x"]
+            target_y_name = self.pill._pos["y"]
 
             target_x = x_targets[target_x_name]
             target_y = y_targets[target_y_name]
 
-        # If snapping to bottom and dock is open, push it down into the dock
-        if target_y_name == "bottom" and target_x_name == "center":
+        # If snapping to bottom center:
+        # 1. If NOT overflowing: Push pill down INTO the dock (y += offset).
+        # 2. If overflowing: Do NOT push down. Pill sits ON TOP of dock bar.
+        should_sit_inside_dock = (
+            target_y_name == "bottom"
+            and target_x_name == "center"
+            and not self.is_dock_overflowing
+        )
+
+        if should_sit_inside_dock:
             target_y += dock_offset
 
         if animate:
@@ -194,3 +209,41 @@ class ShellWindowManager:
                     logger.debug(f"Could not disconnect {attr}: {e}")
 
     def _connect_geometry_enforcement(self, widget): ...
+
+    def _get_min_width(self, widget: Gtk.Widget) -> int:
+        min_w, nat_w = widget.get_preferred_width()
+        return min_w
+
+    def _check_horizontal_overflow(self):
+        if not self.dockBar.get_window():
+            return
+
+        display = Gdk.Display.get_default()
+        monitor = display.get_monitor_at_window(self.dockBar.get_window())
+        geo = monitor.get_geometry()
+
+        screen_width = geo.width
+
+        start_w = self._get_min_width(self.dockBar.start_children)
+        dock_w = self._get_min_width(self.dockBar.pill_dock)
+        end_w = self._get_min_width(self.dockBar.end_children)
+
+        total_needed = start_w + dock_w + end_w
+
+        is_now_overflowing = total_needed > screen_width
+
+        if self.is_dock_overflowing != is_now_overflowing:
+            self.is_dock_overflowing = is_now_overflowing
+
+            if self.is_dock_overflowing:
+                logger.debug(
+                    f"[DockBar] OVERFLOW DETECTED: needed={total_needed}, screen={screen_width}"
+                )
+            else:
+                logger.debug(
+                    f"[DockBar] FITS: needed={total_needed}, screen={screen_width}"
+                )
+
+            # Defer snapping to the next idle cycle to avoid a recursive layout loop
+            # (size-allocate -> move -> size-allocate) which causes crashes.
+            GLib.idle_add(lambda: self._snap_pill(animate=False, fixed=True))

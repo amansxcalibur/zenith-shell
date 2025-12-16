@@ -30,10 +30,6 @@ class WallpaperSelector(Box):
 
     def __init__(self, pill, **kwargs):
         self._pill = pill
-        # Delete the old cache directory if it exists
-        old_cache_dir = os.path.expanduser("~/.cache/zenith-shell/wallpapers")
-        if os.path.exists(old_cache_dir):
-            shutil.rmtree(old_cache_dir)
 
         super().__init__(
             name="wallpapers",

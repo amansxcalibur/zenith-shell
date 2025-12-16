@@ -29,9 +29,9 @@ if __name__ == "__main__":
     dockBar = DockBar(pill=pill)
     pill.set_role("pill")
     dockBar.set_title("fabric-dock")
-    window_manager = ShellWindowManager(pill = pill, dockBar = dockBar)
+    bottom_window_manager = ShellWindowManager(pill = pill, dockBar = dockBar)
 
-    controls_notification = TransientWindow()
+    controls_transient_window = TransientWindow()
 
     top_pill = TopPill()
     top_bar = TopBar(pill=top_pill)
@@ -43,7 +43,7 @@ if __name__ == "__main__":
         "pill": pill,
         "dockBar": dockBar,
         "corners": corners,
-        "controls_notification": controls_notification,
+        "controls_notification": controls_transient_window,
         "open_inspector": False,
     }
 

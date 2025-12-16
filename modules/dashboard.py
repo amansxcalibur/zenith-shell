@@ -127,7 +127,7 @@ class Dashboard(Box):
                 ),
             ],
         )
-        self.low_bat_msg_2 = Label(label="Notification ctl test")
+        self.low_bat_msg_2 = Label(label="Happy farming :)")
 
         self.content_box_2 = Box(
             orientation="v",

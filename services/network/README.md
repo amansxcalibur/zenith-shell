@@ -165,7 +165,7 @@
    ├─ Create PendingConnection object
    │  ├─ ssid
    │  ├─ active_conn
-   │  ├─ is_new = True ⭐ (important for cleanup)
+   │  ├─ is_new = True (important for cleanup)
    │  └─ timestamp
    ├─ Store in pending dict
    └─ GLib.timeout_add_seconds(30, _check_timeout, ssid)
@@ -184,7 +184,7 @@
    └─ _update_connection_state(new_state=FAILED)
       └─ connection_state.check_failed_state()
          └─ connection_state.mark_failed(ssid, INVALID_PASSWORD or CONNECTION_FAILED)
-            ├─ If is_new=True → _schedule_cleanup(ssid) ⭐
+            ├─ If is_new=True → _schedule_cleanup(ssid)
             │  └─ GLib.timeout_add(500ms, _cleanup_connection_profile, ssid)
             └─ Emit connection_result(ssid, INVALID_PASSWORD)
                └─ UI shows password dialog again with error

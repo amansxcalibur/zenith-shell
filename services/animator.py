@@ -1,4 +1,3 @@
-import fabric
 from typing import cast
 from fabric import Service, Signal, Property
 from gi.repository import GLib, Gtk

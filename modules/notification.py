@@ -71,11 +71,11 @@ class NotificationTile(Tile):
         else:
             self.remove_style_class("on")
             self.add_style_class("off")
-            self.props.set_label("Off") 
+            self.props.set_label("Off")
 
     def handle_state_toggle(self, *_):
         # CHANGES CONFIG
-        config.SILENT =  not config.SILENT
+        config.SILENT = not config.SILENT
         self.update_visual()
         return super().handle_state_toggle(*_)
 
@@ -154,7 +154,7 @@ class NotificationWidget(EventBox):
                                     .build()
                                     .add_style_class("timestamp")
                                     .unwrap(),
-                                ]
+                                ],
                             ),
                             Label(
                                 label=self._notification.summary,
@@ -192,7 +192,7 @@ class NotificationWidget(EventBox):
                             Button(
                                 name="close-button",
                                 child=Label(name="close-label", markup=icons.cancel),
-                                tooltip_text="Exit",
+                                tooltip_text="Close",
                                 on_clicked=lambda *_: self._notification.close(),
                             ),
                             Box(),
@@ -285,10 +285,12 @@ class NotificationWidget(EventBox):
         logger.debug("NotificationWidget cleaned up")
 
 
-class NotificationManager():
+class NotificationManager:
     def __init__(self, **kwargs):
-        super().__init__(**kwargs,)
-        
+        super().__init__(
+            **kwargs,
+        )
+
         self.last_hover_time = 0
         self._notification_service = None
         self._active_notifications = []
@@ -342,7 +344,7 @@ class NotificationManager():
         self.clear_btn = Button(
             # name="notification-reveal-btn",
             child=Label(name="notification-clear-label", markup=icons.trash),
-            tooltip_text="Show/Hide notifications",
+            tooltip_text="Clear notifications",
             on_clicked=lambda *_: self.close_all_notifications(),
             # visible=False,
         )
@@ -372,17 +374,17 @@ class NotificationManager():
 
     def get_notifications_box(self):
         return self.notification_history
-    
+
     def get_active_notifications_box(self):
         return self.active_notifications_box
-    
+
     # TODO: sync system
     def handle_silent_state_toggle(self, *_):
         return
         # CHANGES CONFIG
-        config.SILENT =  not config.SILENT
+        config.SILENT = not config.SILENT
         if self.silent_btn is not None:
-            self.silent_btn.add_style_class('active')
+            self.silent_btn.add_style_class("active")
 
     def _handle_notification_added(self, source, notification_id: int):
         if not self._notification_service:
@@ -410,11 +412,11 @@ class NotificationManager():
                     >= NotificationConfig.MAX_ACTIVE_NOTIFS
                 ):
                     active_children = self.active_notifications_box.get_children()
-                    self._move_to_revealer(
-                        active_children[len(active_children)-1]
-                    )
+                    self._move_to_revealer(active_children[len(active_children) - 1])
                 self._active_notifications.append(notification_widget)
-                self.active_notifications_box.pack_end(notification_widget, True, None, 0)
+                self.active_notifications_box.pack_end(
+                    notification_widget, True, None, 0
+                )
 
             self._update_ui_state()
 
@@ -523,7 +525,9 @@ class NotificationManager():
                     notification_widget.cleanup()
                     notification_widget.destroy()
                 except Exception as cleanup_error:
-                    logger.error(f"Failed to cleanup revealed notification: {cleanup_error}")        
+                    logger.error(
+                        f"Failed to cleanup revealed notification: {cleanup_error}"
+                    )
 
         self._active_notifications.clear()
 
@@ -544,6 +548,6 @@ class NotificationManager():
 
     def get_drag_state(self):
         return self._drag_state
-    
+
     def get_controls(self):
         return [self.clear_btn]
