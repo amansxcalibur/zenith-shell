@@ -28,3 +28,24 @@ def toggle_config_vertical_flag():
 
     with open(CONFIG_PATH, "w") as f:
         f.writelines(new_lines)
+
+
+_settings_process = None
+
+def open_settings():
+    global _settings_process
+
+    if _settings_process and not _settings_process.get_if_exited():
+        return
+    
+    from fabric.utils.helpers import exec_shell_command_async
+    import sys, os
+
+    FONT_RESOLVER = os.path.expanduser("~/fabric/font_variation_resolver.py")
+
+    print("hello evrone", FONT_RESOLVER)
+
+    _settings_process, _ = exec_shell_command_async([
+        sys.executable,
+        str(FONT_RESOLVER),
+    ])

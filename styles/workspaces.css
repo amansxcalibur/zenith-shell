@@ -6,7 +6,8 @@
 }
 
 #workspaces > button {
-  padding: 5px;
+  min-width: 10px;
+  min-height: 10px;
   transition: all 0.15s steps(8);
   background-color: var(--foreground);
   border-radius: 10px;

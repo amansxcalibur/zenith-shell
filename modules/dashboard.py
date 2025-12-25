@@ -16,6 +16,7 @@ from modules.weather import WeatherPill
 import icons
 from config.info import config
 from utils.cursor import add_hover_cursor
+from utils.helpers import open_settings
 
 from loguru import logger
 
@@ -189,9 +190,14 @@ class Dashboard(Box):
                                         markup=icons.edit,
                                         style="font-size:25px; margin-right:15px; color:var(--foreground)",
                                     ),
-                                    Label(
-                                        markup=icons.settings,
-                                        style="font-size:25px; color:var(--foreground);",
+                                    add_hover_cursor(
+                                        Button(
+                                            child=Label(
+                                                markup=icons.settings,
+                                                style="font-size:25px; color:var(--foreground);",
+                                            ),
+                                            on_clicked=open_settings,
+                                        )
                                     ),
                                 ],
                             ),

@@ -1,3 +1,5 @@
+from typing import Iterable
+
 from fabric import Application
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
@@ -7,7 +9,10 @@ from fabric.widgets.stack import Stack
 from fabric.widgets.x11 import X11Window as Window
 from fabric.utils import get_relative_path, monitor_file
 
+from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
+
+from config.i3_config import i3_keybinds_setter
 
 import gi
 
@@ -42,7 +47,6 @@ class DragHandler:
 
         new_x = int(event.x_root - self.offset_x)
         new_y = int(event.y_root - self.offset_y)
-        print(new_x, new_y)
 
         self.window.get_window().move(new_x, new_y)
 
@@ -98,11 +102,7 @@ class IconDemoTab:
             spacing=5,
             children=[
                 MaterialIconLabel(
-                    icon_text="\ue88a",
-                    font_size=48,
-                    fill=fill,
-                    wght=wght,
-                    grad=grad
+                    icon_text="\ue88a", font_size=48, fill=fill, wght=wght, grad=grad
                 ),
                 Label(label=f"FILL={fill}\nwght={wght}\nGRAD={grad}"),
             ],
@@ -116,10 +116,7 @@ class IconDemoTab:
 
         # main icon - using named parameter
         self.icon_widget = MaterialIconLabel(
-            icon_text="\ue88a",
-            font_size=64,
-            fill=1,
-            wght=400
+            icon_text="\ue88a", font_size=64, fill=1, wght=400
         )
         box.pack_start(self.icon_widget, False, False, 10)
 
@@ -314,6 +311,111 @@ class FontDemoTab:
         return int(min_val + master_val * (max_val - min_val) / 100)
 
 
+class KeyBindingsTab:
+    """Displays i3 and module keybindings"""
+
+    def __init__(self):
+        self.container = Box(orientation="v", spacing=10)
+        self.font_label = None
+        self.locked = False
+        self.scales = {}
+        self.master_scale = None
+        self._updating = False
+
+        self._build_ui()
+
+    def _build_ui(self):
+        from config.i3_config import (
+            I3_KEYBINDINGS,
+            PLAYER_KEYBINDINGS,
+            WIFI_KEYBINDINGS,
+        )
+
+        # === i3 bindings ===
+        self.container.add(
+            self._section(
+                heading="i3 Bindings",
+                body=self._bindings_section(bindings=I3_KEYBINDINGS),
+            )
+        )
+
+        # === module bindings ==
+        self.container.add(
+            self._section(
+                heading="Module Bindings",
+                body=[
+                    self._bindings_section("Player", PLAYER_KEYBINDINGS),
+                    self._bindings_section("Wifi", WIFI_KEYBINDINGS),
+                ],
+            )
+        )
+
+    def _section(self, heading: str, body):
+        box = Box(orientation="v", spacing=5)
+        box.add(
+            MaterialFontLabel(
+                text=heading,
+                style_classes="section-heading",
+                h_align="start",
+                slnt=-10.0,
+                font_size=18,
+            )
+        )
+
+        if isinstance(body, list):
+            for child in body:
+                box.add(child)
+        else:
+            box.add(body)
+
+        return box
+
+    def _bindings_section(self, title: str | None = None, bindings: Iterable = ()):
+        section_box = Box(
+            style_classes="settings-section-container",
+            orientation="v",
+            spacing=6,
+        )
+
+        if title is not None:
+            section_label = Label(
+                label=title,
+                style_classes="section-subheading",
+                h_align="start",
+            )
+            section_box.add(section_label)
+
+        if not bindings:
+            return section_box
+
+        binding_container = ClippingBox(
+            style_classes="settings-list-container",
+            orientation="v",
+            spacing=3,
+        )
+
+        for binding in bindings:
+            binding_container.add(self._binding_row(binding))
+
+        section_box.add(binding_container)
+        return section_box
+
+    def _binding_row(self, binding):
+        return Box(
+            style_classes="settings-item",
+            spacing=10,
+            children=[
+                MaterialIconLabel(
+                    icon_text=binding.icon or "\ue11f",
+                    font_size=17,
+                    h_expand=False,
+                ),
+                Label(label=binding.title, h_expand=True, h_align="start"),
+                Label(label=binding.key, style_classes="settings-value"),
+            ],
+        )
+
+
 class TabConfig:
     """Configuration for a settings tab"""
 
@@ -338,8 +440,8 @@ class IconResolverWindow(Window):
         super().__init__(
             layer="top",
             geometry="center",  # This prevents the window from snapping back to its init pos
-                                # when it loses focus. You can also remove the size-reallocate 
-                                # hook in the source to prevent snap back. See PopupWindow.
+            # when it loses focus. You can also remove the size-reallocate
+            # hook in the source to prevent snap back. See PopupWindow.
             type_hint="dialog",
             visible=True,
             all_visible=True,
@@ -352,6 +454,9 @@ class IconResolverWindow(Window):
 
         self._build_ui()
         self._setup_drag_events()
+
+        # close handler
+        self.connect("delete-event", self.on_close)
 
     def _register_tabs(self):
         return [
@@ -369,25 +474,80 @@ class IconResolverWindow(Window):
                 widget_factory=lambda: FontDemoTab().container,
                 category="Appearance",
             ),
+            TabConfig(
+                id="key_bindings",
+                label="Key Bindings",
+                icon="\uf539",
+                widget_factory=lambda: KeyBindingsTab().container,
+                category="Appearance",
+            ),
             # ...
         ]
 
     def _build_ui(self):
-        main_box = Box(
-            name="settings", orientation="h", spacing=20, h_expand=True, v_expand=True
+        main_box = Box(name="settings", orientation="v", spacing=0)
+
+        # header
+        header = Box(name="window-header", orientation="h")
+        header.set_size_request(-1, 40)
+
+        # Spacer to push close button to the right
+        header.pack_start(Box(h_expand=True), True, True, 0)
+
+        # close button
+        close_icon = MaterialIconLabel(icon_text="\ue5cd", font_size=18)  # close icon
+
+        close_button = Button(
+            style_classes=["window-close-btn"],
+            child=close_icon,
+            on_clicked=lambda b: self.on_close(None),
         )
+        header.pack_end(close_button, False, False, 10)
+
+        main_box.pack_start(header, False, False, 0)
+
+        # Main content
+        content_box = Box(orientation="h", spacing=20, h_expand=True, v_expand=True)
 
         # create stack and switcher
         switch_box = self._create_tab_switcher()
+        from fabric.widgets.scrolledwindow import ScrolledWindow
 
-        main_box.add(switch_box)
-        main_box.add(self.stack)
+        self.scrollable_window = ScrolledWindow(
+            child=self.stack,
+            h_expand=True,
+            min_content_size=(
+                500,
+                650,
+            ),
+            max_content_size=(
+                500,
+                650,
+            ),
+        )
+
+        content_box.add(switch_box)
+        content_box.add(self.scrollable_window)
+
+        main_box.pack_start(content_box, True, True, 0)
+        save_btn = Button(
+            label="Save",
+            style_classes=["settings-btn", "bright"],
+            on_clicked=i3_keybinds_setter,
+        )
+        cancel_btn = Button(
+            label="Cancel", style_classes=["settings-btn"], on_clicked=lambda: ...
+        )
+        save_changes_box = Box(children=[cancel_btn, save_btn], h_align="end")
+        main_box.pack_end(save_changes_box, True, True, 0)
 
         self.children = main_box
 
     def _create_tab_switcher(self):
         switch_box = Box(name="stack-switcher", orientation="v", spacing=2)
         self.stack = Stack(name="settings-stack")
+        self.stack.set_interpolate_size(True)
+        self.stack.set_homogeneous(False)
 
         # group tabs by category if needed
         current_category = None
@@ -413,7 +573,11 @@ class IconResolverWindow(Window):
         box = Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
 
         icon = MaterialIconLabel(icon_text=tab_config.icon, font_size=17)
-        label = Label(style_classes=["settings-option-label"], markup=tab_config.label)
+        label = Label(
+            style_classes=["settings-option-label"],
+            markup=tab_config.label,
+            h_expand=True,
+        )
 
         box.pack_start(icon, False, False, 0)
         box.pack_start(label, False, False, 0)
@@ -440,12 +604,20 @@ class IconResolverWindow(Window):
         self.connect("motion-notify-event", self.drag_handler.on_motion)
         self.connect("button-release-event", self.drag_handler.on_button_release)
 
+    def on_close(self, widget):
+        if self.application:
+            self.application.quit()
+        else:
+            self.destroy()
+
 
 def main():
+    app = Application("material-icon-test", open_inspector=False)
+
     win = IconResolverWindow()
     win.show_all()
 
-    app = Application("material-icon-test", test_window=win, open_inspector=False)
+    app.add_window(win)
 
     def load_css(*args):
         app.set_stylesheet_from_file(get_relative_path("./main.css"))
@@ -457,5 +629,11 @@ def main():
     app.run()
 
 
+import setproctitle
+from gi.repository import GLib
+from config.info import SHELL_NAME
+
 if __name__ == "__main__":
+    setproctitle.setproctitle("-settings")
+    GLib.set_prgname("-settings")
     main()

@@ -22,7 +22,8 @@
 
 #settings {
   background-color: var(--shadow);
-  border-radius: 40px;
+  border-radius: 25px;
+  min-width: 800px;
   padding: 20px;
 }
 
@@ -65,4 +66,43 @@
 #settings-tab {
   all: unset;
   background-color: black;
+}
+
+.settings-btn{
+  background-color: var(--surface-bright);
+  padding: 15px;
+  border-radius: 15px;
+  min-width: 50px;
+}
+
+.settings-btn.bright{
+  background-color: var(--primary);
+}
+
+.settings-section-container{
+  /* margin-bottom: 10px; */
+}
+
+.settings-list-container{
+  border-radius: 20px;
+}
+
+.settings-item{
+  background-color: var(--surface-semi-bright);
+  border-radius: 5px;
+  padding: 10px;
+}
+
+.settings-value{
+  background-color: var(--surface-bright);
+  padding: 10px 15px;
+  border-radius: 20px;
+}
+
+.section-heading{
+  font-size: 18px;
+}
+
+.section-subheading{
+  color: var(--outline);
 }

@@ -99,7 +99,6 @@ class Player(Box):
         self.wiggly.connect("on-seek", self.on_seek)
         # self.wiggly.connect("notify::dragging", self.on_dragging_changed)
 
-    
         self.wiggly_bar = Box(
             orientation="v",
             h_expand=True,
@@ -369,7 +368,9 @@ class Player(Box):
         )
         # service cleanup is handled by PlayerManager
 
+
 from widgets.material_label import MaterialIconLabel
+
 
 class Placeholder(Box):
     def __init__(self, **kwargs):
@@ -383,13 +384,16 @@ class Placeholder(Box):
 
         self.children = [
             Label(label="Nothing Playing", h_expand=True),
-            Box(v_align='end',children=MaterialIconLabel(
-                name="placeholder-icon",
-                icon_text='\ue019',
-                h_align="end",
+            Box(
                 v_align="end",
-                font_size=40,
-            ),)
+                children=MaterialIconLabel(
+                    name="placeholder-icon",
+                    icon_text=icons.disc,
+                    h_align="end",
+                    v_align="end",
+                    font_size=40,
+                ),
+            ),
         ]
 
 
@@ -467,6 +471,7 @@ class PlayerContainer(Box):
 
     def switch_player(self, player_name, button):
         """Switch to a specific player"""
+
         def _switch():
             self.stack.set_visible_child_name(player_name)
 
@@ -474,7 +479,7 @@ class PlayerContainer(Box):
                 btn.remove_style_class("active")
             button.add_style_class("active")
             return False
-        
+
         GLib.idle_add(_switch)
 
     def on_player_vanish(self, manager, player_name: str):
@@ -519,7 +524,7 @@ class PlayerContainer(Box):
             return
 
         curr_name = curr.get_name()
-        
+
         def _update_buttons():
             for btn in self.player_switch_container.center_children:
                 if btn.get_name() == curr_name:
@@ -527,7 +532,7 @@ class PlayerContainer(Box):
                 else:
                     btn.remove_style_class("active")
             return False
-        
+
         GLib.idle_add(_update_buttons)
 
     def register_keybindings(self):

@@ -2,6 +2,7 @@ from pathlib import Path
 from loguru import logger
 
 from config.info import HOME_DIR
+import icons.icons_material as icons
 from utils.colors import get_css_variable, hex_to_rgb01
 
 from fabric.i3.widgets import get_i3_connection
@@ -33,7 +34,8 @@ def i3_border_setter(hex_color: str = None):
         raw_color = get_css_variable(
             f"{HOME_DIR}/fabric/styles/colors.css", "--primary"
         )
-        hex_color = ensure_vibrancy(raw_color)
+        # hex_color = ensure_vibrancy(raw_color)
+        hex_color = raw_color
 
     logger.debug("Setting i3 focused border color to {}", hex_color)
 
@@ -57,3 +59,171 @@ def i3_border_setter(hex_color: str = None):
             logger.error("i3 config failed to reload: {}", i3_resp.reply)
     except Exception as e:
         logger.error("Error reloading i3 config: {}", e)
+
+
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class KeyBinding:
+    action: str
+    key: str
+    command: str | None = None   # None → handled internally
+    title: str | None = None     # for settings UI
+    scope: str = "global"        # global | player | wifi | etc
+    icon: str = '\ue11f'
+
+
+I3_KEYBINDINGS = [
+    KeyBinding(
+        action="pill.open",
+        key="$mod+d",
+        command='fabric-cli exec zenith "pill.open()"',
+        title="Open Pill",
+        icon=icons.pill,
+    ),
+    KeyBinding(
+        action="pill.toggle_power_menu",
+        key="$mod+p",
+        command='fabric-cli exec zenith "pill.toggle_power_menu()"',
+        title="Toggle Power Menu",
+        icon=icons.power,
+    ),
+    KeyBinding(
+        action="pill.cycle_modes",
+        key="Shift+$mod+m",
+        command='fabric-cli exec zenith "pill.cycle_modes()"',
+        title="Cycle Pill Modes",
+        icon=icons.pill,
+    ),
+    KeyBinding(
+        action="notifications.toggle",
+        key="$mod+n",
+        command='fabric-cli exec zenith "top_pill.toggle_notification()"',
+        title="Toggle Notifications",
+        icon = icons.notifications,
+    ),
+    KeyBinding(
+        action="dock.toggle",
+        key="$mod+Escape",
+        command='fabric-cli exec zenith "dockBar.toggle_visibility()"',
+        title="Toggle Dock Visibility",
+        icon=icons.dock_bottom
+    ),
+    KeyBinding(
+        action="pill.toggle_player",
+        key="$mod+u",
+        command='fabric-cli exec zenith "pill.toggle_player()"',
+        title="Toggle Player",
+        icon=icons.disc,
+    ),
+]
+
+PLAYER_KEYBINDINGS = [
+    KeyBinding(
+        action="player.play_pause",
+        key="p",
+        command=None,
+        title="Play / Pause",
+        scope="player",
+        icon=icons.play_pause,
+    ),
+    KeyBinding(
+        action="player.prev",
+        key="j",
+        command=None,
+        title="Previous Track",
+        scope="player",
+        icon=icons.prev,
+    ),
+    KeyBinding(
+        action="player.skip_backward",
+        key="k",
+        command=None,
+        title="Seek Backward",
+        scope="player",
+        icon=icons.fast_rewind,
+    ),
+    KeyBinding(
+        action="player.skip_forward",
+        key="l",
+        command=None,
+        title="Seek Forward",
+        scope="player",
+        icon=icons.fast_forward,
+    ),
+    KeyBinding(
+        action="player.next",
+        key="semicolon",
+        command=None,
+        title="Next Track",
+        scope="player",
+        icon=icons.next,
+    ),
+    KeyBinding(
+        action="player.switch_next",
+        key="Tab",
+        command=None,
+        title="Next Player",
+        scope="player",
+        icon=icons.transition_push,
+    ),
+    KeyBinding(
+        action="player.switch_prev",
+        key="Shift+ISO_Left_Tab",
+        command=None,
+        title="Previous Player",
+        scope="player",
+        icon=icons.transition_push
+    ),
+]
+
+WIFI_KEYBINDINGS = [
+    KeyBinding(
+        action="wifi.rescan",
+        key="r",
+        command=None,
+        title="Rescan Wi-Fi Networks",
+        scope="wifi",
+        icon=icons.wifi,
+    ),
+]
+
+
+def validate_keybindings(bindings: list[KeyBinding]) -> None:
+    seen_keys = set()
+
+    for b in bindings:
+        if not b.key:
+            raise ValueError(f"Missing key for action {b.action}")
+
+        if b.key in seen_keys:
+            raise ValueError(f"Duplicate keybinding: {b.key}")
+
+        seen_keys.add(b.key)
+
+def generate_i3_keybinds(bindings: list[KeyBinding]) -> str:
+    lines = []
+
+    for b in bindings:
+        lines.append(f"bindsym {b.key} exec {b.command}")
+
+    return "\n".join(lines)
+
+def i3_keybinds_setter():
+    logger.debug("Setting i3 keybinds")
+
+    CONFIG_GLOB_PATH.mkdir(parents=True, exist_ok=True)
+
+    try:
+        validate_keybindings(I3_KEYBINDINGS)
+        config = generate_i3_keybinds(I3_KEYBINDINGS)
+
+        with open(CONFIG_GLOB_PATH / "keybinds.conf", "w") as f:
+            f.write(config)
+
+        resp = get_i3_connection().send_command("reload")
+        if not all(r.get("success", False) for r in resp.reply):
+            logger.error("i3 reload failed: {}", resp.reply)
+
+    except Exception as e:
+        logger.error("Failed to apply keybindings: {}", e)

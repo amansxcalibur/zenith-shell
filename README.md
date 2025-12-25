@@ -22,7 +22,7 @@ A SOSS shell for <b>X11</b> and <b>i3wm</b>, crafted using [fabric](https://gith
 </table>
 <table>
 
-### LockScreen (Beta)
+### LockScreen (WIP)
 
 <img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/screenshots/lockscreen.png">
 

@@ -6,8 +6,19 @@ wifi_off: str = "&#xecfa;"
 bluetooth_off: str = "&#xeceb;"
 night_off: str = "&#xf162;"
 notifications_off: str = "&#xece9;"
-
+notifications: str = '\ue7f4'
 notifications_clear: str = "&#xf814;"
+
+pill: str = '\ue11f'
+dock_bottom: str = '\uf7e6'
+power: str = '\ue63c'
+
+play_pause: str = '\uf137'
+prev: str = '\ue045'
+next: str = '\ue044'
+fast_rewind: str = '\ue020'
+fast_forward: str = '\ue01f'
+transition_push: str = '\uf50b'
 
 close: str = "\ue5cd"
 
