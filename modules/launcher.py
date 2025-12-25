@@ -68,7 +68,7 @@ class AppLauncher(Box):
                 self.search_entry,
                 Button(
                     name="close-button",
-                    child=Label(name="close-label", markup=icons.cancel),
+                    child=Label(name="close-label", markup=icons.cancel.markup()),
                     tooltip_text="Exit",
                     on_clicked=lambda *_: self.close_launcher()
                 ),

@@ -14,27 +14,27 @@ class PowerMenu(Box):
         self.btn_lock = Button(
             style_classes="menu-item",
             on_clicked=self.lock,
-            child=Label(style_classes="menu-label", markup=icons.lock),
+            child=Label(style_classes="menu-label", markup=icons.lock.markup()),
         )
         self.btn_suspend = Button(
             style_classes="menu-item",
             on_clicked=self.suspend,
-            child=Label(style_classes="menu-label", markup=icons.suspend),
+            child=Label(style_classes="menu-label", markup=icons.suspend.markup()),
         )
         self.btn_logout = Button(
             style_classes="menu-item",
             on_clicked=self.logout,
-            child=Label(style_classes="menu-label", markup=icons.logout),
+            child=Label(style_classes="menu-label", markup=icons.logout.markup()),
         )
         self.btn_reboot = Button(
             style_classes="menu-item",
             on_clicked=self.reboot,
-            child=Label(style_classes="menu-label", markup=icons.reboot),
+            child=Label(style_classes="menu-label", markup=icons.reboot.markup()),
         )
         self.btn_shutdown = Button(
             style_classes="menu-item",
             on_clicked=self.shutdown,
-            child=Label(style_classes="menu-label", markup=icons.shutdown),
+            child=Label(style_classes="menu-label", markup=icons.shutdown.markup()),
         )
 
         self.children = [

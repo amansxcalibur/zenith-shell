@@ -79,42 +79,42 @@ I3_KEYBINDINGS = [
         key="$mod+d",
         command='fabric-cli exec zenith "pill.open()"',
         title="Open Pill",
-        icon=icons.pill,
+        icon=icons.pill.symbol(),
     ),
     KeyBinding(
         action="pill.toggle_power_menu",
         key="$mod+p",
         command='fabric-cli exec zenith "pill.toggle_power_menu()"',
         title="Toggle Power Menu",
-        icon=icons.power,
+        icon=icons.power.symbol(),
     ),
     KeyBinding(
         action="pill.cycle_modes",
         key="Shift+$mod+m",
         command='fabric-cli exec zenith "pill.cycle_modes()"',
         title="Cycle Pill Modes",
-        icon=icons.pill,
+        icon=icons.pill.symbol(),
     ),
     KeyBinding(
         action="notifications.toggle",
         key="$mod+n",
         command='fabric-cli exec zenith "top_pill.toggle_notification()"',
         title="Toggle Notifications",
-        icon = icons.notifications,
+        icon = icons.notifications.symbol(),
     ),
     KeyBinding(
         action="dock.toggle",
         key="$mod+Escape",
         command='fabric-cli exec zenith "dockBar.toggle_visibility()"',
         title="Toggle Dock Visibility",
-        icon=icons.dock_bottom
+        icon=icons.dock_bottom.symbol()
     ),
     KeyBinding(
         action="pill.toggle_player",
         key="$mod+u",
         command='fabric-cli exec zenith "pill.toggle_player()"',
         title="Toggle Player",
-        icon=icons.disc,
+        icon=icons.disc.symbol(),
     ),
 ]
 
@@ -125,7 +125,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Play / Pause",
         scope="player",
-        icon=icons.play_pause,
+        icon=icons.play_pause.symbol(),
     ),
     KeyBinding(
         action="player.prev",
@@ -133,7 +133,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Previous Track",
         scope="player",
-        icon=icons.prev,
+        icon=icons.prev.symbol(),
     ),
     KeyBinding(
         action="player.skip_backward",
@@ -141,7 +141,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Seek Backward",
         scope="player",
-        icon=icons.fast_rewind,
+        icon=icons.fast_rewind.symbol(),
     ),
     KeyBinding(
         action="player.skip_forward",
@@ -149,7 +149,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Seek Forward",
         scope="player",
-        icon=icons.fast_forward,
+        icon=icons.fast_forward.symbol(),
     ),
     KeyBinding(
         action="player.next",
@@ -157,7 +157,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Next Track",
         scope="player",
-        icon=icons.next,
+        icon=icons.next.symbol(),
     ),
     KeyBinding(
         action="player.switch_next",
@@ -165,7 +165,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Next Player",
         scope="player",
-        icon=icons.transition_push,
+        icon=icons.transition_push.symbol(),
     ),
     KeyBinding(
         action="player.switch_prev",
@@ -173,7 +173,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Previous Player",
         scope="player",
-        icon=icons.transition_push
+        icon=icons.transition_push.symbol()
     ),
 ]
 
@@ -184,7 +184,7 @@ WIFI_KEYBINDINGS = [
         command=None,
         title="Rescan Wi-Fi Networks",
         scope="wifi",
-        icon=icons.wifi,
+        icon=icons.wifi.symbol(),
     ),
 ]
 

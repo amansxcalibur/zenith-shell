@@ -106,7 +106,7 @@ class BrightnessSmall(Box):
 
         self.brightness_label = Label(
             name="brightness-label",
-            markup=icons.brightness,
+            markup=icons.brightness.markup(),
         )
         self.progress_bar = AnimatedCircularProgressBar(
             name="button-brightness",

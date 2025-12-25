@@ -87,7 +87,7 @@ class DockBar(Window):
                 name="orientation-btn",
                 child=Label(
                     name="orientation-label",
-                    markup=(icons.toggle_orientation),
+                    markup=(icons.toggle_orientation.markup()),
                 ),
                 on_clicked=lambda b, *_: self.toggle_vertical(),
             )

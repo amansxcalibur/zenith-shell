@@ -1,3 +1,20 @@
+from icons.icon import Icon
+
+class MaterialIcon(Icon):
+    __slots__ = ("family", "weight")
+
+    def __init__(self, symbol: str, *, family="Material Symbols Rounded", weight=400):
+        super().__init__(symbol)
+        self.family = family
+        self.weight = weight
+
+    def markup(self) -> str:
+        return (
+            f"<span font-family='{self.family}' "
+            f"font-weight='{self.weight}'>"
+            f"{self._symbol}</span>"
+        )
+
 # dashboard
 arrow_forward: str = "\ue5e1"
 bluetooth: str = "\ue1a7"
@@ -59,10 +76,12 @@ span: str = f"<span font-family='{font_family}' font-weight='{font_weight}'>"
 
 exceptions: list[str] = ['font_family', 'font_weight', 'span']
 
-def apply_span() -> None:
-    global_dict = globals()
-    for key in global_dict:
-        if key not in exceptions and not key.startswith('__'):
-            global_dict[key] = f"{span}{global_dict[key]}</span>"
+def materialize_icons() -> None:
+    g = globals()
+    for name, value in list(g.items()):
+        if name.startswith("__"):
+            continue
+        if isinstance(value, str):
+            g[name] = MaterialIcon(value)
 
-apply_span()
+materialize_icons()

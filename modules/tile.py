@@ -17,7 +17,7 @@ class Tile(ClippingBox):
         self,
         title: str = "",
         menu: bool = False,
-        markup: str = icons.blur,
+        markup: str = icons.blur.markup(),
         label: str = "__",
         menu_children=None,
         props: Label = Label(style_classes="tile-label", label="N/A", h_align="start"),
@@ -60,7 +60,7 @@ class Tile(ClippingBox):
         self.menu_button = Button(
             style_classes="tile-button",
             child=Label(
-                name="menu-btn", style_classes="tile-icon", markup=icons.arrow_forward
+                name="menu-btn", style_classes="tile-icon", markup=icons.arrow_forward.markup()
             ),
             on_clicked=self.handle_menu_click,
         )
@@ -93,7 +93,7 @@ class Tile(ClippingBox):
 
         self.menu_close_btn = Button(
             name="menu-close-button",
-            child=Label(name="close-label", markup=icons.cancel),
+            child=Label(name="close-label", markup=icons.cancel.markup()),
             tooltip_text="Exit",
             on_clicked=self.handle_menu_click,
         )

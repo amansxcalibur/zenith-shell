@@ -8,7 +8,7 @@ from fabric.widgets.eventbox import EventBox
 from widgets.animated_scale import AnimatedScale
 from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
 from services.volume_service import VolumeService
-import icons
+import svg
 from config.info import config, HOME_DIR
 from utils.colors import get_css_variable
 
@@ -141,7 +141,7 @@ class VolumeSmall(Box):
         )
 
         # self.vol_label = Label(name="vol-label", markup=icons.vol_high)
-        self.vol_label = Svg(name="vol-label", svg_string=icons.volume_modern, style="color:antiquewhite")
+        self.vol_label = Svg(name="vol-label", svg_string=svg.volume_modern, style="color:antiquewhite")
         self.vol_button = Button(
             name="vol-button", on_clicked=self.toggle_mute, child=self.vol_label
         )
@@ -188,12 +188,12 @@ class VolumeSmall(Box):
             # self.vol_label.add_style_class("muted")
             color = get_css_variable(file_path=f"{HOME_DIR}/fabric/styles/colors.css", var_name='outline')
             self.vol_label.set_style(f"color: {color}")
-            self.vol_button.get_child().set_from_string(icons.volume_mute_modern)
+            self.vol_label.set_from_string(svg.volume_mute_modern)
         else:
             self.progress_bar.remove_style_class("muted")
             # self.vol_label.remove_style_class("muted")
             self.vol_label.set_style('color:antiquewhite;')
-            self.vol_button.get_child().set_from_string(icons.volume_modern)
+            self.vol_label.set_from_string(svg.volume_modern)
 
             # if volume > 74:
             #     self.vol_button.get_child().set_markup(icons.vol_high)

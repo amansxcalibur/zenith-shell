@@ -230,13 +230,13 @@ class WeatherCard(Box):
                                 orientation="v",
                                 children=[
                                     self._create_metric_row(
-                                        self.humidity_label, icons.humidity
+                                        self.humidity_label, icons.humidity.markup()
                                     ),
                                     self._create_metric_row(
-                                        self.wind_label, icons.wind
+                                        self.wind_label, icons.wind.markup()
                                     ),
                                     self._create_metric_row(
-                                        self.pressure_label, icons.pressure
+                                        self.pressure_label, icons.pressure.markup()
                                     ),
                                 ],
                             ),

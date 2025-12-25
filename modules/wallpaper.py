@@ -129,7 +129,7 @@ class WallpaperSelector(Box):
         # self.matugen_switcher.set_halign(Gtk.Align.CENTER)
         # self.matugen_switcher.set_active(True)
 
-        self.mat_icon = Label(name="mat-label", markup=icons.palette)
+        self.mat_icon = Label(name="mat-label", markup=icons.palette.markup())
 
         # Add the switcher to the header_box's start_children
         self.header_box = Box(
@@ -142,7 +142,7 @@ class WallpaperSelector(Box):
                 self.scheme_dropdown,
                 Button(
                     name="close-button",
-                    child=Label(name="close-label", markup=icons.cancel),
+                    child=Label(name="close-label", markup=icons.cancel.markup()),
                     tooltip_text="Exit",
                     on_clicked=lambda *_: self._pill.close(),
                 ),

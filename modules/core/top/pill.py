@@ -89,7 +89,7 @@ class TopPill(Window, Service):
         self.children = self.pill_container
 
         self.pill_close_btn = Button(
-            child=Label(name="close-control-label", markup=icons.close),
+            child=Label(name="close-control-label", markup=icons.close.markup()),
             tooltip_text="Close",
             on_clicked=lambda *_: self.close(),
         )

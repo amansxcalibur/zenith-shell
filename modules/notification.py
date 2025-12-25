@@ -54,7 +54,7 @@ class NotificationTile(Tile):
         )
         self.state = None
         super().__init__(
-            markup=icons.silent,
+            markup=icons.silent.markup(),
             label="Silent",
             props=self.label,
             style_classes=["off"],
@@ -117,12 +117,12 @@ class NotificationWidget(EventBox):
                 )
             else:
                 content_box.add(
-                    Label(name="notification-icon", v_align="start", markup=icons.blur)
+                    Label(name="notification-icon", v_align="start", markup=icons.blur.markup())
                 )
         except Exception as e:
             logger.error(f"Failed to resolve image_pixbuff: {e}")
             content_box.add(
-                Label(name="notification-icon", v_align="start", markup=icons.blur)
+                Label(name="notification-icon", v_align="start", markup=icons.blur.markup())
             )
 
         content_box.add(
@@ -191,7 +191,7 @@ class NotificationWidget(EventBox):
                         children=[
                             Button(
                                 name="close-button",
-                                child=Label(name="close-label", markup=icons.cancel),
+                                child=Label(name="close-label", markup=icons.cancel.markup()),
                                 tooltip_text="Close",
                                 on_clicked=lambda *_: self._notification.close(),
                             ),
@@ -336,14 +336,14 @@ class NotificationManager:
         # TODO
         self.silent_btn = Button(
             # name="notification-reveal-btn",
-            child=Label(name="notification-reveal-label", markup=icons.notifications),
+            child=Label(name="notification-reveal-label", markup=icons.notifications.markup()),
             tooltip_text="Show/Hide notifications",
             on_clicked=lambda *_: self.handle_silent_state_toggle(),
             # visible=False,
         )
         self.clear_btn = Button(
             # name="notification-reveal-btn",
-            child=Label(name="notification-clear-label", markup=icons.trash),
+            child=Label(name="notification-clear-label", markup=icons.trash.markup()),
             tooltip_text="Clear notifications",
             on_clicked=lambda *_: self.close_all_notifications(),
             # visible=False,
@@ -451,11 +451,11 @@ class NotificationManager:
 
         if has_revealed_notifications:
             widget = self.clear_btn.get_children()[0]
-            widget.set_markup(icons.trash)
+            widget.set_markup(icons.trash.markup())
             toggle_class(widget, "trash-up-icon-adjust", "trash-icon-adjust")
         else:
             widget = self.clear_btn.get_children()[0]
-            widget.set_markup(icons.trash_up)
+            widget.set_markup(icons.trash_up.markup())
             toggle_class(widget, "trash-icon-adjust", "trash-up-icon-adjust")
 
         # should_show_button = has_active_notifications or has_revealed_notifications

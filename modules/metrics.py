@@ -104,7 +104,7 @@ class Metrics(Box):
 
         self.cpu_label = Label(
             name="cpu-label",
-            markup=icons.cpu,
+            markup=icons.cpu.markup(),
         )
 
         self.cpu = Box(
@@ -130,7 +130,7 @@ class Metrics(Box):
 
         self.ram_label = Label(
             name="ram-label",
-            markup=icons.memory,
+            markup=icons.memory.markup(),
         )
 
         self.ram = Box(
@@ -155,7 +155,7 @@ class Metrics(Box):
 
         self.disk_label = Label(
             name="disk-label",
-            markup=icons.disk,
+            markup=icons.disk.markup(),
         )
 
         self.disk = Box(
@@ -216,7 +216,7 @@ class MetricsSmall(Button):
             self.add_style_class("vertical")
 
         # ------------------ CPU ------------------
-        self.cpu_icon = Label(name="cpu-icon", markup=icons.cpu)
+        self.cpu_icon = Label(name="cpu-icon", markup=icons.cpu.markup())
         self.cpu_circle = AnimatedCircularProgressBar(
             name="metrics-circle",
             value=0,
@@ -247,7 +247,7 @@ class MetricsSmall(Button):
         )
 
         # ------------------ RAM ------------------
-        self.ram_icon = Label(name="ram-icon", markup=icons.memory)
+        self.ram_icon = Label(name="ram-icon", markup=icons.memory.markup())
         self.ram_circle = AnimatedCircularProgressBar(
             name="metrics-circle",
             value=0,
@@ -276,7 +276,7 @@ class MetricsSmall(Button):
         )
 
         # ------------------ Disk ------------------
-        self.disk_icon = Label(name="disk-icon", markup=icons.disk)
+        self.disk_icon = Label(name="disk-icon", markup=icons.disk.markup())
         self.disk_circle = AnimatedCircularProgressBar(
             name="metrics-circle",
             value=0,
@@ -396,7 +396,7 @@ class MetricsSmall(Button):
         self.ram_level.set_label(self._format_percentage(int(mem)))
         self.disk_level.set_label(self._format_percentage(int(disk)))
         # self.set_tooltip_markup(
-        #     f"{icons.disk} DISK - {icons.memory} RAM - {icons.cpu} CPU"
+        #     f"{icons.disk.markup()} DISK - {icons.memory.markup()} RAM - {icons.cpu.markup()} CPU"
         # )
         return True
 
@@ -427,7 +427,7 @@ class Battery(Button):
             angle=90,
             name="bat-icon",
             style_classes="metrics-icon",
-            markup=icons.battery,
+            markup=icons.battery.markup(),
         )
         self.bat_circle = CircularProgressBar(
             name="metrics-circle",
@@ -537,20 +537,20 @@ class Battery(Button):
 
         # Choose the icon based on charging state first, then battery level
         if percentage == 100:
-            self.bat_icon.set_markup(icons.battery)
+            self.bat_icon.set_markup(icons.battery.markup())
             self.bat_circle.add_style_class("full-bat")
-            charging_status = f"{icons.bat_full} Fully Charged"
+            charging_status = f"{icons.bat_full.markup()} Fully Charged"
         elif charging:
-            self.bat_icon.set_markup(icons.battery_charging)
-            charging_status = f"{icons.bat_charging} Charging"
+            self.bat_icon.set_markup(icons.battery_charging.markup())
+            charging_status = f"{icons.bat_charging.markup()} Charging"
         elif percentage <= 15 and not charging:
-            # self.bat_icon.set_markup(icons.alert)
-            charging_status = f"{icons.bat_low} Low Battery"
+            # self.bat_icon.set_markup(icons.alert.markup())
+            charging_status = f"{icons.bat_low.markup()} Low Battery"
         elif not charging:
-            # self.bat_icon.set_markup(icons.discharging)
-            charging_status = f"{icons.discharging} Discharging"
+            # self.bat_icon.set_markup(icons.discharging.markup())
+            charging_status = f"{icons.discharging.markup()} Discharging"
         else:
-            self.bat_icon.set_markup(icons.battery)
+            self.bat_icon.set_markup(icons.battery.markup())
             charging_status = "Battery"
 
         # tooltip with battery percentage

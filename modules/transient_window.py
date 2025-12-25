@@ -41,7 +41,7 @@ class LowBatteryBanner(Revealer):
 
         close_btn = Button(
             name="close-button",
-            child=Label(name="close-label", markup=icons.cancel),
+            child=Label(name="close-label", markup=icons.cancel.markup()),
             tooltip_text="Exit",
             on_clicked=lambda *_: self.close_notification(),
         )
@@ -50,7 +50,7 @@ class LowBatteryBanner(Revealer):
             name="notification-box",
             style_classes="vertical" if config.VERTICAL else "horizontal",
             children=[
-                Label(name="notification-icon", h_align=True, markup=icons.blur),
+                Label(name="notification-icon", h_align=True, markup=icons.blur.markup()),
                 Box(h_expand=True, children=self.content_box),
                 Box(children=close_btn),
             ],

@@ -308,13 +308,13 @@ class WifiButton(EventBox):
 
         if self.is_saved and not self.active:
             children.append(
-                Label(markup=icons.sync_saved_locally, tooltip_text="Saved")
+                Label(markup=icons.sync_saved_locally.markup(), tooltip_text="Saved")
             )
 
         if self.secured:
             children.append(
                 Label(
-                    markup=icons.lock,
+                    markup=icons.lock.markup(),
                     style_classes=["ap-secure-icon"],
                     tooltip_text="Secured network",
                 )
@@ -324,7 +324,7 @@ class WifiButton(EventBox):
             children.append(
                 Button(
                     child=Label(
-                        markup=icons.settings,
+                        markup=icons.settings.markup(),
                         style_classes=["ap-secure-icon"],
                         tooltip_text="Edit profile",
                     ),
@@ -337,13 +337,13 @@ class WifiButton(EventBox):
 
     def _get_wifi_icon(self) -> str:
         if self.strength > 80:
-            return icons.wifi_4
+            return icons.wifi_4.markup()
         elif self.strength > 50:
-            return icons.wifi_3
+            return icons.wifi_3.markup()
         elif self.strength > 20:
-            return icons.wifi_2
+            return icons.wifi_2.markup()
         else:
-            return icons.wifi_1
+            return icons.wifi_1.markup()
 
     def _on_button_press(self, source: EventBox, event: Gdk.EventButton) -> bool:
         if event.button == 1:  # left click
@@ -596,7 +596,7 @@ class Network(Tile):
             title="Internet",
             label="Wi-Fi",
             props=self.label,
-            markup=icons.wifi,
+            markup=icons.wifi.markup(),
             menu=True,
             menu_children=self.menu,
             style_classes=["off"],
@@ -636,7 +636,7 @@ class Network(Tile):
                                 h_align="end",
                                 on_clicked=lambda *_: self.nm.scan(),
                                 child=Label(
-                                    style_classes=["menu-icon"], markup=icons.refresh
+                                    style_classes=["menu-icon"], markup=icons.refresh.markup()
                                 ),
                                 tooltip_markup="Rescan",
                             )

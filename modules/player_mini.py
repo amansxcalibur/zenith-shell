@@ -32,7 +32,7 @@ class PlayerMini(Box):
         self.player_name = Label(
             name=player.props.player_name,
             style_classes=["player-icon", "mini"],
-            markup=getattr(icons, player.props.player_name, icons.disc),
+            markup=getattr(icons, player.props.player_name, icons.disc.markup()),
         )
 
         self.set_style(
@@ -65,7 +65,7 @@ class PlayerMini(Box):
         self.play_pause_button = Button(
             name="play-pause-button",
             child=Label(
-                name="play-pause-label", style_classes="mini", markup=icons.play
+                name="play-pause-label", style_classes="mini", markup=icons.play.markup()
             ),
             style_classes="mini",
             tooltip_text="Play/Pause",
@@ -74,7 +74,7 @@ class PlayerMini(Box):
 
         self.shuffle_button = Button(
             name="shuffle-button",
-            child=Label(name="shuffle", markup=icons.shuffle),
+            child=Label(name="shuffle", markup=icons.shuffle.markup()),
             on_clicked=lambda b, *_: self.handle_shuffle(b),
         )
 
@@ -127,7 +127,7 @@ class PlayerMini(Box):
                                         child=Label(
                                             name="play-previous",
                                             style_classes="mini",
-                                            markup=icons.previous_fill,
+                                            markup=icons.previous_fill.markup(),
                                         ),
                                         on_clicked=lambda b, *_: self.handle_prev(),
                                     ),
@@ -137,7 +137,7 @@ class PlayerMini(Box):
                                         child=Label(
                                             name="play-next",
                                             style_classes="mini",
-                                            markup=icons.next_fill,
+                                            markup=icons.next_fill.markup(),
                                         ),
                                         on_clicked=lambda b, *_: self.handle_next(),
                                     ),
@@ -225,7 +225,7 @@ class PlayerMini(Box):
 
     def on_pause(self, sender):
         def _set_pause_markup():
-            self.play_pause_button.get_child().set_markup(icons.play)
+            self.play_pause_button.get_child().set_markup(icons.play.markup())
 
         GLib.idle_add(_set_pause_markup)
 
@@ -235,7 +235,7 @@ class PlayerMini(Box):
 
     def on_play(self, sender):
         def _set_play_markup():
-            self.play_pause_button.get_child().set_markup(icons.pause)
+            self.play_pause_button.get_child().set_markup(icons.pause.markup())
 
         GLib.idle_add(_set_play_markup)
 
@@ -248,10 +248,10 @@ class PlayerMini(Box):
 
         def _update_shuffle_status():
             if not status:
-                self.shuffle_button.get_child().set_markup(icons.shuffle)
+                self.shuffle_button.get_child().set_markup(icons.shuffle.markup())
                 self.shuffle_button.get_child().set_name("shuffle")
             else:
-                self.shuffle_button.get_child().set_markup(icons.disable_shuffle)
+                self.shuffle_button.get_child().set_markup(icons.disable_shuffle.markup())
                 self.shuffle_button.get_child().set_name("disable-shuffle")
 
         # self.shuffle_button.get_child().set_style("color: white")
@@ -270,10 +270,10 @@ class PlayerMini(Box):
         )
 
         def _set_play_ui():
-            self.play_pause_button.get_child().set_markup(icons.pause)
+            self.play_pause_button.get_child().set_markup(icons.pause.markup())
 
         def _set_pause_ui():
-            self.play_pause_button.get_child().set_markup(icons.play)
+            self.play_pause_button.get_child().set_markup(icons.play.markup())
 
         if is_playing:
             GLib.idle_add(_set_pause_ui)
@@ -321,7 +321,7 @@ class PlaceholderMini(Box):
             f"background-image:url('{HOME_DIR}/.cache/walls/low_rez.png')"
         )
         self.player_name = Label(
-            style_classes=["player-icon", "mini"], markup=icons.disc
+            style_classes=["player-icon", "mini"], markup=icons.disc.markup()
         )
 
         self.children = [
@@ -386,7 +386,7 @@ class PlayerContainerMini(Box):
         self.mini_tile_icon = Label(
             name="disc",
             style_classes=["tile-icon", "special"],
-            markup=icons.disc,
+            markup=icons.disc.markup(),
             justification="center",
         )
 
@@ -563,7 +563,7 @@ class PlayerContainerMini(Box):
 
         def _update_mini_tile_icon():
             self.mini_tile_icon.set_name(curr_player)
-            self.mini_tile_icon.set_markup(getattr(icons, curr_player, icons.disc))
+            self.mini_tile_icon.set_markup(getattr(icons, curr_player, icons.disc.markup()))
 
         GLib.idle_add(_update_mini_tile_icon)
 

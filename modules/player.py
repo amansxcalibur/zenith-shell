@@ -41,7 +41,7 @@ class Player(Box):
         self.player_icon = Label(
             name=player.props.player_name,
             style_classes="player-icon",
-            markup=getattr(icons, player.props.player_name, icons.disc),
+            markup=getattr(icons, player.props.player_name, icons.disc.markup()),
         )
         self.player_name = Label(
             label="stereo zenith", style="color: black; font-size: 13px;"
@@ -51,7 +51,7 @@ class Player(Box):
             spacing=13,
             name="source-name",
             children=[
-                Label(markup=icons.headphones, style="color: black;"),
+                Label(markup=icons.headphones.markup(), style="color: black;"),
                 self.player_name,
             ],
         )
@@ -83,7 +83,7 @@ class Player(Box):
 
         self.play_pause_button = Button(
             name="pause-button",
-            child=Label(name="pause-label", markup=icons.play),
+            child=Label(name="pause-label", markup=icons.play.markup()),
             style_classes="pause-track",
             tooltip_text="Play/Pause",
             on_clicked=lambda b, *_: self.handle_play_pause(),
@@ -91,7 +91,7 @@ class Player(Box):
 
         self.shuffle_button = Button(
             name="shuffle-button",
-            child=Label(name="shuffle", markup=icons.shuffle),
+            child=Label(name="shuffle", markup=icons.shuffle.markup()),
             on_clicked=lambda b, *_: self.handle_shuffle(b),
         )
 
@@ -128,7 +128,7 @@ class Player(Box):
                     [
                         Button(
                             name="prev-button",
-                            child=Label(name="play-previous", markup=icons.previous),
+                            child=Label(name="play-previous", markup=icons.previous.markup()),
                             on_clicked=lambda b, *_: self.handle_prev(),
                         ),
                         CenterBox(
@@ -140,7 +140,7 @@ class Player(Box):
                         ),
                         Button(
                             name="next-button",
-                            child=Label(name="play-next", markup=icons.next),
+                            child=Label(name="play-next", markup=icons.next.markup()),
                             on_clicked=lambda b, *_: self.handle_next(),
                         ),
                         self.shuffle_button,
@@ -160,14 +160,14 @@ class Player(Box):
                                             name="prev-button",
                                             child=Label(
                                                 name="play-previous",
-                                                markup=icons.previous,
+                                                markup=icons.previous.markup(),
                                             ),
                                             on_clicked=lambda b, *_: self.handle_prev(),
                                         ),
                                         Button(
                                             name="next-button",
                                             child=Label(
-                                                name="play-next", markup=icons.next
+                                                name="play-next", markup=icons.next.markup()
                                             ),
                                             on_clicked=lambda b, *_: self.handle_next(),
                                         ),
@@ -264,10 +264,10 @@ class Player(Box):
         def _update():
             child = self.shuffle_button.get_child()
             if status:
-                child.set_markup(icons.disable_shuffle)
+                child.set_markup(icons.disable_shuffle.markup())
                 child.set_name("disable-shuffle")
             else:
-                child.set_markup(icons.shuffle)
+                child.set_markup(icons.shuffle.markup())
                 child.set_name("shuffle")
             return False
 
@@ -282,7 +282,7 @@ class Player(Box):
     def on_pause(self, sender):
         def _set_pause_ui():
             child = self.play_pause_button.get_child()
-            child.set_markup(icons.play)
+            child.set_markup(icons.play.markup())
             child.set_name("pause-label")
             self.play_pause_button.add_style_class("pause-track")
             return False
@@ -296,7 +296,7 @@ class Player(Box):
     def on_play(self, sender):
         def _set_play_ui():
             child = self.play_pause_button.get_child()
-            child.set_markup(icons.pause)
+            child.set_markup(icons.pause.markup())
             child.set_name("play-label")
             self.play_pause_button.remove_style_class("pause-track")
             return False
@@ -325,13 +325,13 @@ class Player(Box):
         )
 
         def _set_pause_ui():
-            self.play_pause_button.get_child().set_markup(icons.pause)
+            self.play_pause_button.get_child().set_markup(icons.pause.markup())
             self.play_pause_button.remove_style_class("pause-track")
             self.play_pause_button.get_child().set_name("pause-label")
             return False
 
         def _set_play_ui():
-            self.play_pause_button.get_child().set_markup(icons.play)
+            self.play_pause_button.get_child().set_markup(icons.play.markup())
             self.play_pause_button.add_style_class("pause-track")
             self.play_pause_button.get_child().set_name("play-label")
             return False
@@ -388,7 +388,7 @@ class Placeholder(Box):
                 v_align="end",
                 children=MaterialIconLabel(
                     name="placeholder-icon",
-                    icon_text=icons.disc,
+                    icon_text=icons.disc.markup(),
                     h_align="end",
                     v_align="end",
                     font_size=40,

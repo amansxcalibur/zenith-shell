@@ -83,7 +83,7 @@ class Dashboard(Box):
 
         close_btn = Button(
             name="close-button",
-            child=Label(name="close-label", markup=icons.cancel),
+            child=Label(name="close-label", markup=icons.cancel.markup()),
             tooltip_text="Exit",
             on_clicked=lambda *_: print("clicked close"),
         )
@@ -92,7 +92,7 @@ class Dashboard(Box):
             name="notification-box",
             style_classes="vertical" if config.VERTICAL else "horizontal",
             children=[
-                Label(name="notification-icon", h_align=True, markup=icons.blur),
+                Label(name="notification-icon", h_align=True, markup=icons.blur.markup()),
                 Box(h_expand=True, children=self.content_box),
                 Box(children=close_btn),
             ],
@@ -140,7 +140,7 @@ class Dashboard(Box):
 
         close_btn_2 = Button(
             name="close-button",
-            child=Label(name="close-label", markup=icons.cancel),
+            child=Label(name="close-label", markup=icons.cancel.markup()),
             tooltip_text="Exit",
             on_clicked=lambda *_: print("clicked close"),
         )
@@ -149,7 +149,7 @@ class Dashboard(Box):
             name="notification-box",
             style_classes="vertical" if config.VERTICAL else "horizontal",
             children=[
-                Label(name="notification-icon", h_align=True, markup=icons.blur),
+                Label(name="notification-icon", h_align=True, markup=icons.blur.markup()),
                 Box(h_expand=True, children=self.content_box_2),
                 Box(children=close_btn_2),
             ],
@@ -187,13 +187,13 @@ class Dashboard(Box):
                                 h_align="end",
                                 children=[
                                     Label(
-                                        markup=icons.edit,
+                                        markup=icons.edit.markup(),
                                         style="font-size:25px; margin-right:15px; color:var(--foreground)",
                                     ),
                                     add_hover_cursor(
                                         Button(
                                             child=Label(
-                                                markup=icons.settings,
+                                                markup=icons.settings.markup(),
                                                 style="font-size:25px; color:var(--foreground);",
                                             ),
                                             on_clicked=open_settings,
@@ -223,7 +223,7 @@ class Dashboard(Box):
                     CenterBox(
                         style_classes="scale-icon-container",
                         center_children=Label(
-                            style_classes="scale-icon", markup=icons.brightness
+                            style_classes="scale-icon", markup=icons.brightness.markup()
                         ),
                     ),
                     self.brightness_revealer_mui,
