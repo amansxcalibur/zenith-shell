@@ -5,7 +5,7 @@ from fabric.widgets.button import Button
 from fabric.widgets.stack import Stack
 
 from services.player_service import PlayerManager, PlayerService
-from modules.wiggle_bar import WigglyWidget
+from modules.wiggle_bar import WigglyScale
 
 import icons
 from config.info import config, HOME_DIR
@@ -41,7 +41,9 @@ class Player(Box):
         self.player_icon = Label(
             name=player.props.player_name,
             style_classes="player-icon",
-            markup=getattr(icons, player.props.player_name, icons.disc.markup()),
+            markup=getattr(
+                icons, player.props.player_name, lambda: icons.disc
+            ).markup(),
         )
         self.player_name = Label(
             label="stereo zenith", style="color: black; font-size: 13px;"
@@ -95,7 +97,7 @@ class Player(Box):
             on_clicked=lambda b, *_: self.handle_shuffle(b),
         )
 
-        self.wiggly = WigglyWidget()
+        self.wiggly = WigglyScale()
         self.wiggly.connect("on-seek", self.on_seek)
         # self.wiggly.connect("notify::dragging", self.on_dragging_changed)
 
@@ -128,7 +130,9 @@ class Player(Box):
                     [
                         Button(
                             name="prev-button",
-                            child=Label(name="play-previous", markup=icons.previous.markup()),
+                            child=Label(
+                                name="play-previous", markup=icons.previous.markup()
+                            ),
                             on_clicked=lambda b, *_: self.handle_prev(),
                         ),
                         CenterBox(
@@ -167,7 +171,8 @@ class Player(Box):
                                         Button(
                                             name="next-button",
                                             child=Label(
-                                                name="play-next", markup=icons.next.markup()
+                                                name="play-next",
+                                                markup=icons.next.markup(),
                                             ),
                                             on_clicked=lambda b, *_: self.handle_next(),
                                         ),
@@ -388,7 +393,7 @@ class Placeholder(Box):
                 v_align="end",
                 children=MaterialIconLabel(
                     name="placeholder-icon",
-                    icon_text=icons.disc.markup(),
+                    icon_text=icons.disc.symbol(),
                     h_align="end",
                     v_align="end",
                     font_size=40,

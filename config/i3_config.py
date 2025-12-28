@@ -103,6 +103,13 @@ I3_KEYBINDINGS = [
         icon = icons.notifications.symbol(),
     ),
     KeyBinding(
+        action="top_bar.toggle_detach",
+        key="$mod+Shift+n",
+        command='fabric-cli exec zenith "top_bar.toggle_detach()"',
+        title="Toggle Controls Mode",
+        icon = icons.arrows_up_down_circle.symbol(),
+    ),
+    KeyBinding(
         action="dock.toggle",
         key="$mod+Escape",
         command='fabric-cli exec zenith "dockBar.toggle_visibility()"',
@@ -133,7 +140,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Previous Track",
         scope="player",
-        icon=icons.prev.symbol(),
+        icon=icons.skip_prev.symbol(),
     ),
     KeyBinding(
         action="player.skip_backward",
@@ -157,7 +164,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Next Track",
         scope="player",
-        icon=icons.next.symbol(),
+        icon=icons.skip_next.symbol(),
     ),
     KeyBinding(
         action="player.switch_next",

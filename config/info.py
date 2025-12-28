@@ -1,5 +1,6 @@
 import os
 import json
+from pathlib import Path
 
 from fabric.core.service import Service, Signal
 
@@ -43,6 +44,7 @@ USERNAME = os.getlogin()
 HOSTNAME = os.uname().nodename
 HOME_DIR = os.path.expanduser("~")
 CACHE_DIR = "/tmp"
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 screen = Gdk.Display().get_default().get_default_screen()
 SCREEN_WIDTH = screen.get_width()

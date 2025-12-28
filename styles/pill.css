@@ -94,6 +94,10 @@
     background-color: black;
 }
 
+#pill-border-clipper{
+    border-radius: 23px;
+}
+
 #pill-container{
     all: unset;
     padding: 2px;

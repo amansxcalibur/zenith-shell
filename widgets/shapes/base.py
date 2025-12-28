@@ -11,11 +11,11 @@ from gi.repository import Gtk
 class Shape(Gtk.DrawingArea):
     """Base class for all shape widgets (provides color and sizing utilities)."""
 
-    def __init__(self, size: Tuple[int, int] = (140, 140), dark: bool = False):
+    def __init__(self, size: Tuple[int, int] = (140, 140), dark: bool = False, override_color: Tuple[float, float, float] | None = None):
         super().__init__()
         self.set_size_request(*size)
         self.dark = dark
-        self._override_color: Tuple[float, float, float] | None = None
+        self._override_color: Tuple[float, float, float] | None = override_color
         self.connect("draw", self.on_draw)
         self.show()
 

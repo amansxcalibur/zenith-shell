@@ -6,7 +6,7 @@ from fabric.widgets.stack import Stack
 from fabric.widgets.eventbox import EventBox
 
 from services.player_service import PlayerManager, PlayerService
-from modules.wiggle_bar import WigglyWidget
+from modules.wiggle_bar import WigglyScale
 
 import icons
 from config.info import config, HOME_DIR
@@ -32,7 +32,9 @@ class PlayerMini(Box):
         self.player_name = Label(
             name=player.props.player_name,
             style_classes=["player-icon", "mini"],
-            markup=getattr(icons, player.props.player_name, icons.disc.markup()),
+            markup=getattr(
+                icons, player.props.player_name, lambda: icons.disc
+            ).markup(),
         )
 
         self.set_style(
@@ -78,7 +80,7 @@ class PlayerMini(Box):
             on_clicked=lambda b, *_: self.handle_shuffle(b),
         )
 
-        self.wiggly = WigglyWidget()
+        self.wiggly = WigglyScale()
         self.wiggly.connect("on-seek", self.on_seek)
         self.wiggly_bar = Box(
             orientation="v",

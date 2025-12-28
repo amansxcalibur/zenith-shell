@@ -22,8 +22,8 @@ from gi.repository import GLib
 import setproctitle
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(SHELL_NAME)
-    GLib.set_prgname(SHELL_NAME)
+    setproctitle.setproctitle(SHELL_NAME+'-core')
+    GLib.set_prgname(SHELL_NAME+'-core')
 
     pill = Pill()
     dockBar = DockBar(pill=pill)
