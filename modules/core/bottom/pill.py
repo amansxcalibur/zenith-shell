@@ -90,8 +90,15 @@ class Pill(Window, Service):
         self.stack.set_interpolate_size(True)
         self.stack.set_homogeneous(False)
 
+        from widgets.clipping_box import ClippingBox
+
         self.pill_container = Box(
-            name="pill-container", orientation="v", children=[self.stack, self.lift_box]
+            name="pill-container",
+            orientation="v",
+            children=[
+                ClippingBox(name="pill-border-clipper", children=self.stack),
+                self.lift_box,
+            ],
         )
         self.children = self.pill_container
 

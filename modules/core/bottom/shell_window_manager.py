@@ -225,7 +225,7 @@ class ShellWindowManager:
         screen_width = geo.width
 
         start_w = self._get_min_width(self.dockBar.start_children)
-        dock_w = self._get_min_width(self.dockBar.pill_dock)
+        dock_w = self._get_min_width(self.dockBar.pill_dock_container)
         end_w = self._get_min_width(self.dockBar.end_children)
 
         total_needed = start_w + dock_w + end_w

@@ -12,6 +12,12 @@ class ClippingBox(Box):
 
     @staticmethod
     def render_shape(cr: cairo.Context, width: int, height: int, radius: int = 0):
+        radius = max(0, min(radius, width / 2, height / 2))
+
+        if radius == 0:
+            cr.rectangle(0, 0, width, height)
+            return
+
         cr.move_to(radius, 0)
         cr.line_to(width - radius, 0)
         cr.arc(width - radius, radius, radius, -(math.pi / 2), 0)
