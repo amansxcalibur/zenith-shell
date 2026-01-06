@@ -18,9 +18,6 @@ class IconVariationsTab(BaseWidget, SliderControlMixin):
 
     def _build_ui(self):
         self.container = Box(name="resolver-container", orientation="v", spacing=20)
-        self.container.pack_start(
-            Label(markup="<b>Material Icon Label Test</b>"), False, False, 0
-        )
 
         self._add_static_examples()
         self._add_interactive_demo()

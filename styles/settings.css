@@ -191,7 +191,6 @@
   background-color: var(--primary);
   border-radius: 22px;
   color: var(--surface);
-  margin-top: 4px;
 }
 
 .module-pill.active.ranking{
@@ -210,4 +209,9 @@
   border: dashed 3px var(--surface-bright);
   margin: 4px;
   border-radius: 25px;
+}
+
+#module-pill-close-button{
+  padding: 0;
+  margin-left: -2px;
 }

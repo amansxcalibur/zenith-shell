@@ -57,13 +57,12 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
         pill_key = f"{pill_pos['y']}-{pill_pos['x']}"
 
         for item in pill_positions:
-            item["selected"] = (item["text"] == pill_key)
+            item["selected"] = item["text"] == pill_key
 
         bar_pos = config.bar.POSITION
 
         for item in dock_positions:
-            item["selected"] = (item["text"] == bar_pos)
-
+            item["selected"] = item["text"] == bar_pos
 
         dock_modules = {
             "left": [
@@ -137,6 +136,10 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
         dock_row.pack_start(left_dropbox, True, True, 0)
         dock_row.pack_start(right_dropbox, True, True, 0)
 
+        drop_box_size_grp = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
+        drop_box_size_grp.add_widget(left_dropbox)
+        drop_box_size_grp.add_widget(right_dropbox)
+
         dock_modules_section.pack_start(dock_row, True, True, 0)
 
         self.container.add(
@@ -150,7 +153,6 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
         )
 
     def _create_position_selector(self, group_id: str, positions: list):
-
         section_box = Box(
             style_classes="settings-section-container", orientation="v", spacing=6
         )
@@ -238,10 +240,10 @@ class ModulePill(EventBox):
         # Returning True here prevents the Window's DragHandler
         # from ever seeing this specific click.
         return True
-    
+
     def on_drag_begin(self, widget, drag_context) -> None:
         self.set_opacity(0.5)
-        
+
         # set the module pill as drag icon
         surface = self.create_cairo_surface()
         Gtk.drag_set_icon_surface(drag_context, surface)
@@ -252,16 +254,15 @@ class ModulePill(EventBox):
     def create_cairo_surface(self):
         """Create a cairo surface for the drag icon."""
         import cairo
+
         allocation = self.get_allocation()
         surface = cairo.ImageSurface(
-            cairo.FORMAT_ARGB32,
-            allocation.width,
-            allocation.height
+            cairo.FORMAT_ARGB32, allocation.width, allocation.height
         )
         context = cairo.Context(surface)
-        
+
         self.draw(context)
-        
+
         return surface
 
     def on_drag_data_get(self, widget, drag_context, data, info, time):
@@ -354,7 +355,7 @@ class ModuleDropBox(Gtk.ListBox):
 
         source_side = None
         old_index = None
-        
+
         # update model
         for side in ("left", "right"):
             if name in self.model[side]:
@@ -376,26 +377,77 @@ class ModuleDropBox(Gtk.ListBox):
     def refresh(self):
         for row in self.get_children():
             self.remove(row)
+        
         for index, name in enumerate(self.model[self.side]):
-            row = Gtk.ListBoxRow()
-            mod_pill = ModulePill(name)
-            mod_pill.label.add_style_class("active")
-            elem = Box(
+            row = self._create_module_row(index, name)
+            self.add(row)
+            row.show()
+
+    def _create_module_row(self, index, name):
+        row = Gtk.ListBoxRow()
+        
+        mod_pill = ModulePill(name)
+        mod_pill.label.add_style_class("active")
+        
+        close_button = Button(
+            name="module-pill-close-button",
+            child=Label(name="close-label", markup=icons.cancel.markup()),
+            on_clicked=self.on_close,
+            visible=False
+        )
+        
+        elem = EventBox(
+            events="all",
+            child=Box(
                 h_align="center",
                 spacing=4,
+                style="margin-top:4px;",
                 children=[
                     MaterialFontLabel(
                         style_classes=["module-pill", "active", "ranking"],
-                        text="#" + str(index + 1),
+                        text=f"#{index + 1}",
                         wght=100,
                         font_size=15,
                     ),
                     mod_pill,
+                    Box(v_align="start", children=close_button),
                 ],
-            )
-            row.add(elem)
-            self.add(row)
-        self.show_all()
+            ),
+        )
+        
+        elem.close_button = close_button
+        
+        def on_enter(widget, _event):
+            widget.close_button.show()
+        
+        def on_leave(widget, event):
+            if event.detail == Gdk.NotifyType.INFERIOR:
+                return
+            widget.close_button.hide()
+        
+        elem.connect("enter-notify-event", on_enter)
+        elem.connect("leave-notify-event", on_leave)
+        
+        row.add(elem)
+        return row
+
+    def on_close(self, button):
+        widget = button
+        while widget and not isinstance(widget, Gtk.ListBoxRow):
+            widget = widget.get_parent()
+
+        print("par", widget)
+
+        if not widget:
+            return
+
+        index = widget.get_index()
+
+        # remove module
+        if 0 <= index < len(self.model[self.side]):
+            self.model[self.side].pop(index)
+
+        GLib.idle_add(self.refresh_all)
 
 
 class ModulePalette(WrapBox):

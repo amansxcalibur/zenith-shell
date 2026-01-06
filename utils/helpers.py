@@ -31,74 +31,6 @@ def toggle_config_vertical_flag():
         f.writelines(new_lines)
 
 
-# _settings_process = None
-
-
-# def handle_output(line: str):
-#     print(f"Got line: {line}")
-
-
-# def open_settings():
-#     global _settings_process
-
-#     print("calling settings")
-
-#     if _settings_process and not _settings_process.get_if_exited():
-#         return
-
-#     from fabric.utils.helpers import exec_shell_command_async
-#     import sys
-
-#     _settings_process, _ = exec_shell_command_async(
-#         callback=handle_output,
-#         cmd=[
-#             'python3', 'runner.py'
-#             # 'python3', '-m', 'settings'
-#             # sys.executable,
-#             # "-m",
-#             # "settings",  # settings/__main__.py
-#         ],
-#     )
-
-# import sys
-# import os
-# from fabric.utils.helpers import exec_shell_command_async
-
-# _settings_process = None
-
-# def handle_output(line: str):
-#     print(f"[Settings]: {line}")
-
-# def open_settings():
-#     global _settings_process
-
-#     if _settings_process and not _settings_process.get_if_exited():
-#         return
-
-#     # 1. Get the directory of THIS file (which is in /utils)
-#     current_file_dir = os.path.dirname(os.path.abspath(__file__))
-
-#     # 2. Go up one level to get to the actual project root (/home/aman/fabric)
-#     # If this code is in main.py, use: project_root = current_file_dir
-#     # If this code is in utils/something.py, use:
-#     project_root = os.path.abspath(os.path.join(current_file_dir, ".."))
-
-#     print(f"Corrected Project Root: {project_root}")
-
-#     # 3. Prepare the environment
-#     # This is CRITICAL. It tells the new Python process where to find
-#     # your 'utils', 'styles', and 'widgets' folders.
-#     # env = os.environ.copy()
-#     # env["PYTHONPATH"] = project_root + os.pathsep + env.get("PYTHONPATH", "")
-
-#     # 4. Execute as a module
-#     _settings_process, _ = exec_shell_command_async(
-#         cmd=["python3", "runner.py"],
-#         # Note: Depending on your 'exec_shell_command_async' implementation,
-#         # you might need to ensure it runs with the modified 'env'.
-#         # If the helper doesn't support env, we can use a workaround:
-#     )
-
 _settings_process = None
 
 
@@ -129,17 +61,13 @@ import os
 def exec_shell_command_async(
     cmd: str | list[str],
     callback: callable = None,
-    cwd: str = None, # Add a CWD parameter
+    cwd: str = None,
 ) -> tuple[Gio.Subprocess | None, Gio.DataInputStream]:
-    
-    # Initialize the launcher
     launcher = Gio.SubprocessLauncher.new(Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE)
     
-    # Set the working directory if provided
     if cwd:
         launcher.set_cwd(os.fspath(cwd))
 
-    # Launch the process
     process = launcher.spawnv(
         shlex.split(cmd) if isinstance(cmd, str) else cmd
     )
