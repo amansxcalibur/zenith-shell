@@ -55,8 +55,9 @@ class SettingsWindow(Window):
         super().__init__(
             layer="top",
             geometry="center",
-            type_hint="dialog",
+            type_hint="normal",
             visible=True,
+            sticky=False,
             all_visible=True,
         )
 

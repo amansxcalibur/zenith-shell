@@ -230,12 +230,39 @@ class ModulePill(EventBox):
         )
 
         self.connect("drag-data-get", self.on_drag_data_get)
+        self.connect("drag-begin", self.on_drag_begin)
+        self.connect("drag-end", self.on_drag_end)
         self.connect("button-press-event", self.on_button_press)
 
     def on_button_press(self, widget, event):
         # Returning True here prevents the Window's DragHandler
         # from ever seeing this specific click.
         return True
+    
+    def on_drag_begin(self, widget, drag_context) -> None:
+        self.set_opacity(0.5)
+        
+        # set the module pill as drag icon
+        surface = self.create_cairo_surface()
+        Gtk.drag_set_icon_surface(drag_context, surface)
+
+    def on_drag_end(self, widget, drag_context) -> None:
+        self.set_opacity(1.0)
+
+    def create_cairo_surface(self):
+        """Create a cairo surface for the drag icon."""
+        import cairo
+        allocation = self.get_allocation()
+        surface = cairo.ImageSurface(
+            cairo.FORMAT_ARGB32,
+            allocation.width,
+            allocation.height
+        )
+        context = cairo.Context(surface)
+        
+        self.draw(context)
+        
+        return surface
 
     def on_drag_data_get(self, widget, drag_context, data, info, time):
         # Explicitly set the selection data as text
@@ -251,6 +278,7 @@ class ModuleDropBox(Gtk.ListBox):
         self.placeholder = None
         self.set_selection_mode(Gtk.SelectionMode.NONE)
         self.set_vexpand(True)
+        self._pending_drop_index = None
 
         targets = [Gtk.TargetEntry.new("text/plain", Gtk.TargetFlags.SAME_APP, 0)]
         self.drag_dest_set(Gtk.DestDefaults.ALL, targets, Gdk.DragAction.MOVE)
@@ -268,6 +296,7 @@ class ModuleDropBox(Gtk.ListBox):
         box.add_style_class("placeholder-row")
 
         row.add(Box(children=box, h_align="center"))
+
         return row
 
     def on_drag_motion(self, widget, context, x, y, time):
@@ -277,7 +306,9 @@ class ModuleDropBox(Gtk.ListBox):
             new_index = target_row.get_index()
         else:
             # If mouse is in the empty space at the bottom
-            new_index = len(self.get_children())
+            new_index = len(self.model[self.side])
+
+        self._pending_drop_index = new_index
 
         # placeholder positioning
         if not self.placeholder:
@@ -300,14 +331,15 @@ class ModuleDropBox(Gtk.ListBox):
         # Remove placeholder when mouse exits the box
         if self.placeholder:
             self.remove(self.placeholder)
+            self.placeholder.destroy()
             self.placeholder = None
 
     def on_drop(self, widget, drag_context, x, y, data, info, time):
         name = data.get_text()
 
         drop_index = (
-            self.placeholder.get_index()
-            if self.placeholder
+            self._pending_drop_index
+            if self._pending_drop_index is not None
             else len(self.model[self.side])
         )
 
@@ -320,17 +352,25 @@ class ModuleDropBox(Gtk.ListBox):
             drag_context.finish(False, False, time)
             return
 
+        source_side = None
+        old_index = None
+        
         # update model
         for side in ("left", "right"):
             if name in self.model[side]:
+                source_side = side
+                old_index = self.model[side].index(name)
                 self.model[side].remove(name)
+                break
+
+        if source_side == self.side and old_index is not None:
+            if drop_index > old_index:
+                drop_index -= 1
+
         self.model[self.side].insert(drop_index, name)
 
-        # Gtk.drag_finish(drag_context, True, False, time)
         drag_context.finish(True, False, time)
-
         GLib.idle_add(self.refresh_all)
-
         return True
 
     def refresh(self):
