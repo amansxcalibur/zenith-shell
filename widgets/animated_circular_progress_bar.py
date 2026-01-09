@@ -1,9 +1,11 @@
-from fabric.widgets.circularprogressbar import CircularProgressBar
 from services.animator import Animator
+
+from fabric.widgets.circularprogressbar import CircularProgressBar
+
 
 class AnimatedCircularProgressBar(CircularProgressBar):
     def __init__(self, **kwargs):
-        super().__init__(line_style='round',**kwargs)
+        super().__init__(line_style="round", **kwargs)
         self.animator = (
             Animator(
                 bezier_curve=(0.15, 0.88, 0.68, 0.95),

@@ -565,7 +565,7 @@ class PlayerContainerMini(Box):
 
         def _update_mini_tile_icon():
             self.mini_tile_icon.set_name(curr_player)
-            self.mini_tile_icon.set_markup(getattr(icons, curr_player, icons.disc.markup()))
+            self.mini_tile_icon.set_markup((getattr(icons, curr_player, icons.disc)).markup())
 
         GLib.idle_add(_update_mini_tile_icon)
 

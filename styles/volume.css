@@ -83,6 +83,25 @@
   border: 3px solid var(--outline);
 }
 
+#button-volume slider, #button-brightness slider{
+  background-color: var(--primary);
+  margin-left: 3px;
+  margin-right: 3px;
+  min-height: 4px;
+  min-width: 4px;
+  border-radius: 10px;
+}
+
+#button-volume highlight, #button-brightness highlight{
+  background-color: var(--primary);
+  border: 3px solid;
+}
+
+#button-volume trough, #button-brightness trough{
+  background-color: var(--surface-bright);
+  border: 3px solid;
+}
+
 #vol-label,
 #mic-label,
 #brightness-label {

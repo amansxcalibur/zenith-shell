@@ -5,8 +5,7 @@ from fabric.widgets.button import Button
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 
-from widgets.animated_scale import AnimatedScale
-from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
+from widgets.animated_scale import AnimatedScale, AnimatedCircularScale, WigglyCircularScale
 from services.volume_service import VolumeService
 import svg
 from config.info import config, HOME_DIR
@@ -132,7 +131,7 @@ class VolumeMaterial3(AnimatedScale):
 class VolumeSmall(Box):
     def __init__(self, **kwargs):
         super().__init__(name="button-bar-vol", **kwargs)
-        self.progress_bar = AnimatedCircularProgressBar(
+        self.progress_bar = AnimatedCircularScale(
             name="button-volume",
             size=28,
             line_width=2,

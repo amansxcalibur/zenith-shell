@@ -6,8 +6,7 @@ from fabric.widgets.eventbox import EventBox
 from fabric.utils.helpers import exec_shell_command_async
 
 from config.info import config
-from widgets.animated_scale import AnimatedScale
-from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
+from widgets.animated_scale import AnimatedScale, AnimatedCircularScale
 
 import re
 import icons
@@ -108,7 +107,7 @@ class BrightnessSmall(Box):
             name="brightness-label",
             markup=icons.brightness.markup(),
         )
-        self.progress_bar = AnimatedCircularProgressBar(
+        self.progress_bar = AnimatedCircularScale(
             name="button-brightness",
             size=28,
             line_width=2,

@@ -46,7 +46,7 @@ def open_settings():
 
     print(f"Opening settings module from root: {ROOT_DIR}")
 
-    shell_command = f"cd {ROOT_DIR} && {sys.executable} -m settings"
+    # shell_command = f"cd {ROOT_DIR} && {sys.executable} -m settings"
 
     # _settings_process, _ = exec_shell_command_async(
     #     cmd=["sh", "-c", shell_command], cwd=ROOT_DIR
@@ -84,7 +84,7 @@ def exec_shell_command_async(
                 if output is not None:
                     if callback:
                         callback(output)
-                    reader_loop(stream) # Continue reading
+                    reader_loop(stream)
             except Exception as e:
                 print(f"Error reading stream: {e}")
 
