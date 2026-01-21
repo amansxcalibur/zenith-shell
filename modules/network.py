@@ -1,24 +1,22 @@
+from typing import Any
+from loguru import logger
+from typing import Optional, Callable, List
+
 from fabric.widgets.box import Box
 from fabric.widgets.entry import Entry
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.scrolledwindow import ScrolledWindow
-
 from fabric.utils.helpers import exec_shell_command_async
 
 from modules.tile import Tile
 from widgets.clipping_box import ClippingBox
+
+import icons
 from config.info import config
 from utils.cursor import add_hover_cursor
 from services.network.network_service import NetworkService, ConnectionResult
-
-from typing import Any
-
-import icons
-
-from loguru import logger
-from typing import Optional, Callable, List
 
 import gi
 

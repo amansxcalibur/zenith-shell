@@ -1,10 +1,7 @@
 from fabric.widgets.box import Box
 from fabric.widgets.x11 import X11Window as Window
 from fabric.widgets.shapes import Corner
-from fabric.widgets.centerbox import CenterBox
-from fabric.widgets.label import Label
 
-from gi.repository import GLib
 
 class MyCorner(Box):
     def __init__(self, corner):
@@ -17,21 +14,20 @@ class MyCorner(Box):
             ),
         )
 
+
 class Corners(Window):
     def __init__(self):
         super().__init__(
             name="notch",
             layer="top",
             geometry="top",
-            # margin="-8px -4px -8px -4px",
-            # keyboard_mode="auto",
             type_hint="normal",
-            # focusable=False
+            focusable=False,
             margin="-8px -4px -8px -4px",
             visible=True,
-            pass_through = True,
+            pass_through=True,
             all_visible=True,
-            opacity=0.5
+            opacity=0.5,
         )
 
         self.all_corners = Box(
@@ -67,7 +63,6 @@ class Corners(Window):
                 ),
             ],
         )
-
 
         self.add(self.all_corners)
 

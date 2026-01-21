@@ -13,6 +13,7 @@ from config.info import config, SHELL_NAME
 
 
 class TopPill(Window, Service):
+    WIN_ROLE = 'top-pill'
 
     @Signal
     def on_drag(self, drag_state: object, new_x: int, new_y: int): ...
@@ -33,6 +34,8 @@ class TopPill(Window, Service):
             visible=True,
             all_visible=True,
         )
+        self.set_role(self.WIN_ROLE)
+
         self._drag_state = {
             "dragging": False,
             "offset_x": 0,
@@ -102,10 +105,10 @@ class TopPill(Window, Service):
         self.connect("button-release-event", self.on_button_release)
 
     def focus_pill(self):
-        exec_shell_command_async('i3-msg [window_role="pill"] focus')
+        exec_shell_command_async(f'i3-msg [window_role="^{self.WIN_ROLE}$"] focus')
 
     def unfocus_pill(self):
-        exec_shell_command_async(f"i3-msg focus mode_toggle")
+        exec_shell_command_async("i3-msg focus mode_toggle")
 
     def lift_pill(self):
         if not self.is_lift_enable:
@@ -150,13 +153,22 @@ class TopPill(Window, Service):
         self._close_view()
 
     def _open_view(self, view, focus_callback=None):
+        # unregister current view's keybindings
+        curr_child = self.stack.get_visible_child()
+        if hasattr(curr_child, 'unregister_keybindings'):
+            curr_child.unregister_keybindings()
+
         self.focus_pill()
         self.lower_pill()
         self.open_dock()
+
         self.stack.set_visible_child(view)
 
         controls = []
 
+        if hasattr(view, 'register_keybindings'):
+            view.register_keybindings()
+        
         if hasattr(view, "get_controls"):
             controls = view.get_controls()
 
@@ -168,6 +180,11 @@ class TopPill(Window, Service):
             focus_callback()
 
     def _close_view(self, unfocus_callback=None):
+        # unregister current view's keybindings
+        curr_child = self.stack.get_visible_child()
+        if hasattr(curr_child, 'unregister_keybindings'):
+            curr_child.unregister_keybindings()
+
         if unfocus_callback:
             unfocus_callback()
 

@@ -11,6 +11,7 @@ from fabric.widgets.eventbox import EventBox
 from widgets.rounded_image import RoundedImage
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.notifications import Notifications, Notification
+from fabric.widgets.window import Window
 from fabric.utils import invoke_repeater
 
 from modules.tile import Tile
@@ -58,7 +59,6 @@ class NotificationTile(Tile):
             label="Silent",
             props=self.label,
             style_classes=["off"],
-            markup_style="margin-right:18px; margin-right:18px;",
             **kwargs,
         )
         self.update_visual()
@@ -117,12 +117,20 @@ class NotificationWidget(EventBox):
                 )
             else:
                 content_box.add(
-                    Label(name="notification-icon", v_align="start", markup=icons.blur.markup())
+                    Label(
+                        name="notification-icon",
+                        v_align="start",
+                        markup=icons.blur.markup(),
+                    )
                 )
         except Exception as e:
             logger.error(f"Failed to resolve image_pixbuff: {e}")
             content_box.add(
-                Label(name="notification-icon", v_align="start", markup=icons.blur.markup())
+                Label(
+                    name="notification-icon",
+                    v_align="start",
+                    markup=icons.blur.markup(),
+                )
             )
 
         content_box.add(
@@ -191,7 +199,9 @@ class NotificationWidget(EventBox):
                         children=[
                             Button(
                                 name="close-button",
-                                child=Label(name="close-label", markup=icons.cancel.markup()),
+                                child=Label(
+                                    name="close-label", markup=icons.cancel.markup()
+                                ),
                                 tooltip_text="Close",
                                 on_clicked=lambda *_: self._notification.close(),
                             ),
@@ -321,8 +331,10 @@ class NotificationManager:
             child=self.viewport,
         )
 
+        from widgets.clipping_box import ClippingBox
+
         self.revealer = Revealer(
-            child=Box(
+            child=ClippingBox(
                 name="notification-window-container", children=self.scrolled_window
             ),
             transition_duration=NotificationConfig.TRANSITION_DURATION,
@@ -336,7 +348,9 @@ class NotificationManager:
         # TODO
         self.silent_btn = Button(
             # name="notification-reveal-btn",
-            child=Label(name="notification-reveal-label", markup=icons.notifications.markup()),
+            child=Label(
+                name="notification-reveal-label", markup=icons.notifications.markup()
+            ),
             tooltip_text="Show/Hide notifications",
             on_clicked=lambda *_: self.handle_silent_state_toggle(),
             # visible=False,
@@ -370,6 +384,8 @@ class NotificationManager:
         )
 
         self.notification_history.get_controls = self.get_controls
+        self.notification_history.register_keybindings = self.register_keybindings
+        self.notification_history.unregister_keybindings = self.unregister_keybindings
         self.active_notifications_box.get_controls = self.get_controls
 
     def get_notifications_box(self):
@@ -500,6 +516,7 @@ class NotificationManager:
         self._update_ui_state()
 
     def close_all_notifications(self, *_):
+        print("????????????????????? works????????????????????/")
         # iterate over a COPY!!
         for notification_widget in self._active_notifications[:]:
             try:
@@ -551,3 +568,23 @@ class NotificationManager:
 
     def get_controls(self):
         return [self.clear_btn]
+
+    def register_keybindings(self):
+        print("yeeaaahhhhhh registering")
+        # window = self.notification_history.get_parent_window()
+        window = self.notification_history.get_toplevel()
+        if isinstance(window, Window):
+            print("yeah now i can bind")
+            keybindings = {
+                # "d": self.handle_play_pause, # kill last
+                "Shift d": self.close_all_notifications,
+            }
+
+            for key, handler in keybindings.items():
+                window.add_keybinding(key, lambda *_, h=handler: h())
+
+    def unregister_keybindings(self):
+        print("yeeaaahhhhhh unregistering")
+        window = self.notification_history.get_parent_window()
+        if window:
+            print("yeah now i can unbind")

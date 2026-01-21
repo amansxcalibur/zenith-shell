@@ -12,7 +12,12 @@ class VolumeService(Service):
     _instance = None
 
     @Signal
-    def value_changed(self, new_value: float, max_value: float, is_muted: bool) -> None: ...
+    def device_changed(self, device_name: str) -> None: ...
+
+    @Signal
+    def value_changed(
+        self, new_value: float, max_value: float, is_muted: bool
+    ) -> None: ...
 
     def __new__(cls):
         if cls._instance is None:
@@ -26,6 +31,7 @@ class VolumeService(Service):
         self._monitor_thread = None
         self._current_volume = 0
         self._is_muted = False
+        self._current_device_name = "__"
         self._stop_monitoring = threading.Event()
 
         self._start_monitoring()
@@ -68,8 +74,8 @@ class VolumeService(Service):
         ):
             raise pulsectl.PulseLoopStop()  # this makes event_listen() return
 
+    # update volume - called outside event loop, so blocking calls are safe
     def _update_current_volume(self):
-        """Update volume - called outside event loop, so blocking calls are safe"""
         try:
             if not self._pulse:
                 logger.warning("No pulse connection")
@@ -84,6 +90,7 @@ class VolumeService(Service):
                 volume_raw = 0
 
             is_muted = bool(sink_info.mute)
+            new_name = sink_info.description
 
             if volume_raw != self._current_volume or is_muted != self._is_muted:
                 self._current_volume = volume_raw
@@ -92,19 +99,55 @@ class VolumeService(Service):
                 # emit signal
                 GLib.idle_add(self._emit_volume_changed, volume_raw, is_muted)
                 # logger.info(f"Volume changed: {volume_raw}%, Muted: {is_muted}")
+            if new_name != self._current_device_name:
+                self._current_device_name = new_name
+                logger.info(f"Audio device switched to: {new_name}")
+                GLib.idle_add(self._emit_device_changed, new_name)
 
         except Exception as e:
             logger.error(f"Failed to update volume: {e}")
 
     def increment(self, diff):
-        self.set_volume(self._current_volume+diff)
+        self.set_volume(self._current_volume + diff)
 
     def _emit_volume_changed(self, volume, is_muted):
         self.value_changed.emit(volume, 1, is_muted)
         return False
 
+    def _emit_device_changed(self, new_name):
+        self.device_changed(new_name)
+        return False
+
+    def get_current_device_name(self) -> str:
+        return self._current_device_name
+
     def get_current_volume(self):
         return self._current_volume, self._is_muted
+
+    def get_current_volume_via_subprocess(self):
+        try:
+            output = subprocess.run(
+                "pactl get-sink-volume @DEFAULT_SINK@ | awk '{print $5}' | tr -d '%'",
+                shell=True,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            volume_percent = (
+                int(output.stdout.strip()) if output.stdout.strip().isdigit() else None
+            )
+
+            output_mute = subprocess.run(
+                "pactl get-sink-mute @DEFAULT_SINK@",
+                shell=True,
+                text=True,
+                capture_output=True,
+            )
+            is_muted = "yes" in output_mute.stdout.lower()
+
+            return volume_percent, is_muted
+        except subprocess.CalledProcessError:
+            return None, None
 
     def set_volume(self, volume: float):
         def _set_volume_thread():
@@ -146,28 +189,3 @@ class VolumeService(Service):
         self._stop_monitoring.set()
         if self._monitor_thread and self._monitor_thread.is_alive():
             self._monitor_thread.join(timeout=1.0)
-
-    def get_current_volume_via_subprocess(self):
-        try:
-            output = subprocess.run(
-                "pactl get-sink-volume @DEFAULT_SINK@ | awk '{print $5}' | tr -d '%'",
-                shell=True,
-                text=True,
-                capture_output=True,
-                check=True,
-            )
-            volume_percent = (
-                int(output.stdout.strip()) if output.stdout.strip().isdigit() else None
-            )
-
-            output_mute = subprocess.run(
-                "pactl get-sink-mute @DEFAULT_SINK@",
-                shell=True,
-                text=True,
-                capture_output=True,
-            )
-            is_muted = "yes" in output_mute.stdout.lower()
-
-            return volume_percent, is_muted
-        except subprocess.CalledProcessError:
-            return None, None

@@ -666,7 +666,6 @@ class NetworkService(Service):
 
     def toggle_wifi_radio(self, enabled: Optional[bool] = None) -> bool:
         # enabled: True(enable), False(disable), None(toggle)
-        print("I was toggled in the service")
         if not self.client:
             logger.error("Cannot toggle WiFi: no client")
             return False

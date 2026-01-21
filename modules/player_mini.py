@@ -1,15 +1,16 @@
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
-from fabric.widgets.centerbox import CenterBox
-from fabric.widgets.button import Button
 from fabric.widgets.stack import Stack
+from fabric.widgets.button import Button
+from fabric.widgets.centerbox import CenterBox
 from fabric.widgets.eventbox import EventBox
 
-from services.player_service import PlayerManager, PlayerService
 from modules.wiggle_bar import WigglyScale
+from modules.wallpaper import WallpaperService
+from services.player_service import PlayerManager, PlayerService
 
 import icons
-from config.info import config, HOME_DIR
+from config.info import config, CACHE_DIR
 
 from loguru import logger
 
@@ -23,8 +24,28 @@ class PlayerMini(Box):
     def __init__(self, player_service: PlayerService, **kwargs):
         super().__init__(style_classes="player-mini", **kwargs)
 
+        self._wallpaper_service = WallpaperService()
+
         self._player_service = player_service
         player = self._player_service._player
+        self._wallpaper_signal_id = None
+
+        def _set_initial_bg(
+            service: WallpaperService, full_path: str, preview_path: str
+        ):
+            self.set_style(f"background-image:url('{preview_path}')")
+            return False
+
+        self._wallpaper_signal_id = self._wallpaper_service.connect(
+            "wallpaper-changed", _set_initial_bg
+        )
+
+        GLib.idle_add(
+            _set_initial_bg,
+            self._wallpaper_service,
+            self._wallpaper_service.get_wallpaper_path(),
+            self._wallpaper_service.get_preview_path(),
+        )
 
         if not config.VERTICAL:
             self.remove_style_class("vertical")
@@ -35,10 +56,6 @@ class PlayerMini(Box):
             markup=getattr(
                 icons, player.props.player_name, lambda: icons.disc
             ).markup(),
-        )
-
-        self.set_style(
-            f"background-image:url('{HOME_DIR}/.cache/walls/low_rez.png')"
         )
 
         self.song = Label(
@@ -67,7 +84,9 @@ class PlayerMini(Box):
         self.play_pause_button = Button(
             name="play-pause-button",
             child=Label(
-                name="play-pause-label", style_classes="mini", markup=icons.play.markup()
+                name="play-pause-label",
+                style_classes="mini",
+                markup=icons.play.markup(),
             ),
             style_classes="mini",
             tooltip_text="Play/Pause",
@@ -93,7 +112,7 @@ class PlayerMini(Box):
 
         self.album_cover = Box(style_classes="album-image")
         self.album_cover.set_style(
-            f"background-image:url('{HOME_DIR}/.cache/walls/low_rez.png')"
+            f"background-image:url('{CACHE_DIR}/walls/low_rez.png')"
         )
 
         self.children = [
@@ -109,6 +128,7 @@ class PlayerMini(Box):
                 v_expand=True,
                 h_expand=True,
                 style="padding-left:10px;",
+                spacing=5,
                 children=[
                     CenterBox(
                         name="details",
@@ -116,7 +136,7 @@ class PlayerMini(Box):
                     ),
                     Box(
                         name="controls",
-                        style_classes="horizontal" if not config.VERTICAL else "vertical",
+                        style_classes=["mini"],
                         spacing=5,
                         h_expand=True,
                         children=[
@@ -192,6 +212,11 @@ class PlayerMini(Box):
         self._player_service._player.seek(-1 * seconds * 1000000)
 
     def _apply_artwork(self, source, art_path):
+        # remove wallpaper connection
+        if self._wallpaper_signal_id:
+            self._wallpaper_service.disconnect(self._wallpaper_signal_id)
+            self._wallpaper_signal_id = None
+
         def _apply():
             self.album_cover.set_style(f"background-image:url('{art_path}')")
             self.set_style(f"background-image:url('{art_path}')")
@@ -253,7 +278,9 @@ class PlayerMini(Box):
                 self.shuffle_button.get_child().set_markup(icons.shuffle.markup())
                 self.shuffle_button.get_child().set_name("shuffle")
             else:
-                self.shuffle_button.get_child().set_markup(icons.disable_shuffle.markup())
+                self.shuffle_button.get_child().set_markup(
+                    icons.disable_shuffle.markup()
+                )
                 self.shuffle_button.get_child().set_name("disable-shuffle")
 
         # self.shuffle_button.get_child().set_style("color: white")
@@ -315,13 +342,28 @@ class PlaceholderMini(Box):
     def __init__(self, **kwargs):
         super().__init__(style_classes="player-mini", **kwargs)
 
-        self.set_style(
-            f"background-image:url('{HOME_DIR}/.cache/walls/low_rez.png')"
-        )
+        self._wallpaper_service = WallpaperService()
+
         self.album_cover = Box(style_classes="album-image")
-        self.album_cover.set_style(
-            f"background-image:url('{HOME_DIR}/.cache/walls/low_rez.png')"
+
+        def _set_initial_bg(
+            service: WallpaperService, full_path: str, preview_path: str
+        ):
+            self.set_style(f"background-image:url('{preview_path}')")
+            self.album_cover.set_style(f"background-image:url('{preview_path}')")
+            return False
+
+        self._wallpaper_signal_id = self._wallpaper_service.connect(
+            "wallpaper-changed", _set_initial_bg
         )
+
+        GLib.idle_add(
+            _set_initial_bg,
+            self._wallpaper_service,
+            self._wallpaper_service.get_wallpaper_path(),
+            self._wallpaper_service.get_preview_path(),
+        )
+
         self.player_name = Label(
             style_classes=["player-icon", "mini"], markup=icons.disc.markup()
         )
@@ -565,7 +607,9 @@ class PlayerContainerMini(Box):
 
         def _update_mini_tile_icon():
             self.mini_tile_icon.set_name(curr_player)
-            self.mini_tile_icon.set_markup((getattr(icons, curr_player, icons.disc)).markup())
+            self.mini_tile_icon.set_markup(
+                (getattr(icons, curr_player, icons.disc)).markup()
+            )
 
         GLib.idle_add(_update_mini_tile_icon)
 

@@ -6,17 +6,19 @@ from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
 from modules.dashboard import Dashboard
-from modules.launcher import AppLauncher
 from modules.power_menu import PowerMenu
 from modules.player import PlayerContainer
 from modules.workspaces import ActiveWindow
 from modules.controls import ControlsManager
 from modules.wallpaper import WallpaperSelector
+from modules.launcher import AppLauncher, AppCommands
 
 from config.info import config, SHELL_NAME, USERNAME, HOSTNAME
+from utils.helpers import open_settings
 
 
 class Pill(Window, Service):
+    WIN_ROLE = 'bottom-pill'
 
     @Signal
     def on_drag(self, drag_state: object, new_x: int, new_y: int): ...
@@ -34,6 +36,8 @@ class Pill(Window, Service):
             visible=True,
             all_visible=True,
         )
+        self.set_role(self.WIN_ROLE)
+
         self._current_compact_mode = None
         self._dock_is_visible = True
         # for custom geometry handle in ShellWindowManager
@@ -117,10 +121,10 @@ class Pill(Window, Service):
         self.connect("button-release-event", self.on_button_release)
 
     def focus_pill(self):
-        exec_shell_command_async('i3-msg [window_role="pill"] focus')
+        exec_shell_command_async(f'i3-msg [window_role="^{self.WIN_ROLE}$"] focus')
 
     def unfocus_pill(self):
-        exec_shell_command_async(f"i3-msg focus mode_toggle")
+        exec_shell_command_async("i3-msg focus mode_toggle")
 
     def lift_pill(self):
         if self._dock_is_visible and (
@@ -196,10 +200,17 @@ class Pill(Window, Service):
     def open_pill(self, mode):
         # called from the launcher
         match mode:
-            case "wallpapers":
+            case AppCommands.WALLPAPERS:
                 self.stack.set_visible_child(self.wallpaper)
-            case "dashboard":
+            case AppCommands.DASHBOARD:
                 self.stack.set_visible_child(self.dashboard)
+            case AppCommands.POWER:
+                self.toggle_power_menu()
+            case AppCommands.PLAYER:
+                self.toggle_player()
+            case AppCommands.SETTINGS:
+                open_settings()
+                self._close_view()
 
     def cycle_modes(self, forward=True):
         _modes = self.pill_compact.get_children()

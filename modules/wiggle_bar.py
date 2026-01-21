@@ -1,4 +1,5 @@
-import math, cairo
+import math
+import cairo
 from typing import Tuple
 
 from fabric.core.service import Service, Signal, Property
@@ -13,7 +14,6 @@ from gi.repository import Gtk, Gdk
 
 
 class WigglyScale(Gtk.DrawingArea, Service):
-
     @Signal
     def on_seek(self, ratio: float) -> None: ...
 
@@ -185,7 +185,11 @@ class WigglyArrow(Gtk.DrawingArea, Service):
         self._dragging = dragging
         return
 
-    def __init__(self, dark: bool = False, override_color: Tuple[float, float, float] | None = None):
+    def __init__(
+        self,
+        dark: bool = False,
+        override_color: Tuple[float, float, float] | None = None,
+    ):
         super().__init__()
         self.phase = 0
         self.value = 1.0
@@ -331,13 +335,12 @@ class WigglyArrow(Gtk.DrawingArea, Service):
         cr.stroke()
 
         # ---- trailing flat line ----
-        cr.set_source_rgba(1, 1, 1, 0.5)
-        cr.set_line_width(stroke_width)
+        # cr.set_source_rgba(1, 1, 1, 0.5)
+        # cr.set_line_width(stroke_width)
 
-        cr.move_to(last_x + 2 * arc_radius, center_y)
-        cr.line_to(alloc_width, center_y)
-        cr.stroke()
-        
+        # cr.move_to(last_x + 2 * arc_radius, center_y)
+        # cr.line_to(alloc_width, center_y)
+        # cr.stroke()
 
     def draw_arrow_head(self, cr, x, y, width, height, radius):
         x = x - y / 4

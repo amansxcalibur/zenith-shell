@@ -1,12 +1,15 @@
+astor==0.8.1
 certifi==2025.10.5
 cffi==2.0.0
 charset-normalizer==3.4.3
 click==8.1.8
-fabric @ git+https://github.com/Fabric-Development/fabric.git@c24c19c74bd66cd353741b32fe303dd62fe86d9f
+fabric @ git+https://github.com/Fabric-Development/fabric.git
+gengir==1.0.2
 i3ipc==2.2.1
 idna==3.10
 line_profiler==5.0.0
 loguru==0.7.3
+lxml==4.9.4
 pillow==11.1.0
 psutil==7.0.0
 pulsectl==24.11.0
@@ -17,5 +20,7 @@ PyOpenGL==3.1.9
 python-pam==2.0.2
 python-xlib==0.33
 requests==2.32.5
+setproctitle==1.3.7
 six==1.17.0
+typer==0.4.2
 urllib3==2.5.0

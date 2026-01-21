@@ -3,13 +3,12 @@ from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
+from fabric.utils.helpers import exec_shell_command_async
 
 import icons
 from config.info import SHELL_NAME
 from utils.cursor import add_hover_cursor
 from widgets.clipping_box import ClippingBox
-
-from fabric.utils.helpers import exec_shell_command_async
 
 
 class Tile(ClippingBox):
@@ -108,7 +107,7 @@ class Tile(ClippingBox):
                         children=[
                             Label(
                                 name="menu-title",
-                                label=title if title is not "" else label,
+                                label=title if title != "" else label,
                                 h_expand=True,
                             ),
                             self.menu_close_btn,
@@ -168,16 +167,16 @@ class Tile(ClippingBox):
         self.icon_wrapper.set_h_expand(True)
         self.content_button.set_h_expand(False)
         self.add_style_class("mini")
-        self.icon.add_style_class("mini")
-        self.icon.remove_style_class("maxi")
+        # self.icon.add_style_class("mini")
+        # self.icon.remove_style_class("maxi")
 
     def maxi_view(self):
         self.content_button.set_reveal_child(True)
         self.icon_wrapper.set_h_expand(False)
         self.content_button.set_h_expand(True)
         self.remove_style_class("mini")
-        self.icon.add_style_class("maxi")
-        self.icon.remove_style_class("mini")
+        # self.icon.add_style_class("maxi")
+        # self.icon.remove_style_class("mini")
 
 
 class TileSpecial(Box):

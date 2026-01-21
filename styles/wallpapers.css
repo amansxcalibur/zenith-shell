@@ -3,12 +3,24 @@
   background-color: black;
   border-radius: 25px;
   min-height: 680px;
-  min-width: 726px;
+  min-width: 637px; /* image-widths (96*6) + scrollbar-width (22+8+6) + image-spacing(5*5) */
 }
 
-#wallpaper-icons:selected {
-  background-color: var(--outline);
-  border-radius: 0px;
+#wallpaper-thumbnail-clipper {
+  border-radius: 10px;
+}
+
+#wallpaper-thumbnail-container {
+  border-radius: 16px;
+}
+
+#wallpaper-thumbnail-container:selected {
+  background-color: var(--primary);
+  padding: 6px;
+}
+
+#wallpaper-thumbnail-container:selected > * {
+  margin: -6px;
 }
 
 #scheme-dropdown {
@@ -30,7 +42,7 @@
   color: whitesmoke;
 }
 
-#scheme-dropdown cellview:selected{
+#scheme-dropdown cellview:selected {
   background-color: var(--surface-bright);
 }
 
@@ -52,7 +64,6 @@
   min-width: 490px;
 }
 
-/* Customize the overall switch appearance */
 #matugen-switcher {
   min-width: 40px;
   min-height: 20px;
@@ -62,22 +73,20 @@
   transition: background-color 0.3s ease;
 }
 
-/* Style the switch's slider */
 #matugen-switcher slider {
   background-color: var(--primary);
   border-radius: 16px;
   min-width: 20px;
   min-height: 20px;
-  transition: background-color 0.1s cubic-bezier(0.5, 0.25, 0, 1.25),
+  transition:
+    background-color 0.1s cubic-bezier(0.5, 0.25, 0, 1.25),
     transform 0.25s cubic-bezier(0.5, 0.25, 0, 1.25);
 }
 
-/* When the switch is active (checked) */
 #matugen-switcher:checked {
   background-color: var(--primary);
 }
 
-/* Optional: additional styling for the slider when active */
 #matugen-switcher:checked slider {
   background-color: var(--shadow);
 }
@@ -87,24 +96,10 @@
   margin-left: 4px;
 }
 
-*:not(entry) {
-  background-image: none;
-}
-#wallpaper-icons {
-  border-bottom-left-radius: 20px;
-  border-bottom-right-radius: 20px;
-  background-image: none;
-  background-color: black;
-}
 #scrolled-window.launcher.horizontal {
   border-bottom-left-radius: 20px;
   border-bottom-right-radius: 20px;
   padding: 8px;
-}
-
-* {
-  background-image: none;
-  border-image: none;
 }
 
 #scheme-dropdown {

@@ -1,6 +1,3 @@
-# Author: Yousef EL-Darsh
-# License (SPDX): AGPL-3.0-or-later
-
 import math
 import cairo
 from typing import cast

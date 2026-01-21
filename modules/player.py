@@ -1,16 +1,20 @@
+from loguru import logger
+
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
-from fabric.widgets.centerbox import CenterBox
-from fabric.widgets.button import Button
 from fabric.widgets.stack import Stack
+from fabric.widgets.button import Button
+from fabric.widgets.centerbox import CenterBox
 
-from services.player_service import PlayerManager, PlayerService
 from modules.wiggle_bar import WigglyScale
+from modules.wallpaper import WallpaperService
+from services.volume_service import VolumeService
+from widgets.material_label import MaterialIconLabel
+from services.player_service import PlayerManager, PlayerService
 
 import icons
-from config.info import config, HOME_DIR
+from config.info import config
 
-from loguru import logger
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -19,24 +23,38 @@ from gi.repository import GLib
 
 class Player(Box):
     def __init__(self, player_service: PlayerService, **kwargs):
-        super().__init__(style_classes="player", orientation="v", **kwargs)
+        super().__init__(style_classes="player", orientation="v", spacing=15, **kwargs)
 
         # vertical class binding from unknown source
         if not config.VERTICAL:
             self.remove_style_class("vertical")
 
+        self._volume_service = VolumeService()
+        self._wallpaper_service = WallpaperService()
+
+        MAX_CHARS = 30
+        MAX_AUDIO_DEVICE_NAME_CHARS = 15
         self.duration = 0.0
         self._player_service = player_service
         player = self._player_service._player
-        MAX_CHARS = 30
+        self._device_name = self._volume_service.get_current_device_name()
 
-        def _set_initial_bg():
-            self.set_style(
-                f"background-image:url('{HOME_DIR}/.cache/walls/low_rez.png')"
-            )
+        def _set_initial_bg(
+            service: WallpaperService, full_path: str, preview_path: str
+        ):
+            self.set_style(f"background-image:url('{preview_path}')")
             return False
 
-        GLib.idle_add(_set_initial_bg)
+        self._wallpaper_signal_id = self._wallpaper_service.connect(
+            "wallpaper-changed", _set_initial_bg
+        )
+
+        GLib.idle_add(
+            _set_initial_bg,
+            self._wallpaper_service,
+            self._wallpaper_service.get_wallpaper_path(),
+            self._wallpaper_service.get_preview_path(),
+        )
 
         self.player_icon = Label(
             name=player.props.player_name,
@@ -45,16 +63,18 @@ class Player(Box):
                 icons, player.props.player_name, lambda: icons.disc
             ).markup(),
         )
-        self.player_name = Label(
-            label="stereo zenith", style="color: black; font-size: 13px;"
+        self.audo_device_label = Label(
+            label=self._device_name,
+            style="color: black; font-size: 13px;",
+            max_chars_width=MAX_AUDIO_DEVICE_NAME_CHARS,
+            ellipsization="end",
         )
-        self.player_name.set_max_width_chars(MAX_CHARS)
-        self.player_source = Box(
-            spacing=13,
+        self.audio_source = Box(
+            spacing=5,
             name="source-name",
             children=[
                 Label(markup=icons.headphones.markup(), style="color: black;"),
-                self.player_name,
+                self.audo_device_label,
             ],
         )
 
@@ -93,7 +113,11 @@ class Player(Box):
 
         self.shuffle_button = Button(
             name="shuffle-button",
-            child=Label(name="shuffle", markup=icons.shuffle.markup()),
+            child=Label(
+                name="shuffle",
+                style_classes=["material-icon"],
+                markup=icons.shuffle.markup(),
+            ),
             on_clicked=lambda b, *_: self.handle_shuffle(b),
         )
 
@@ -115,7 +139,7 @@ class Player(Box):
                 name="source",
                 children=[
                     Box(h_expand=True, v_expand=True, children=self.player_icon),
-                    self.player_source,
+                    self.audio_source,
                 ],
             ),
             Box(
@@ -131,7 +155,9 @@ class Player(Box):
                         Button(
                             name="prev-button",
                             child=Label(
-                                name="play-previous", markup=icons.previous.markup()
+                                name="play-previous",
+                                style_classes=["material-icon"],
+                                markup=icons.previous.markup(),
                             ),
                             on_clicked=lambda b, *_: self.handle_prev(),
                         ),
@@ -144,7 +170,11 @@ class Player(Box):
                         ),
                         Button(
                             name="next-button",
-                            child=Label(name="play-next", markup=icons.next.markup()),
+                            child=Label(
+                                name="play-next",
+                                style_classes=["material-icon"],
+                                markup=icons.next.markup(),
+                            ),
                             on_clicked=lambda b, *_: self.handle_next(),
                         ),
                         self.shuffle_button,
@@ -203,6 +233,8 @@ class Player(Box):
         self._player_service.connect("theme-change", self._apply_theme)
         self._player_service.connect("artwork-change", self._apply_artwork)
 
+        self._volume_service.connect("device-changed", self.on_audio_device_changed)
+
         self.connect("destroy", self.on_destroy)
 
         # init metadata
@@ -210,10 +242,13 @@ class Player(Box):
             self._player_service, metadata=player.props.metadata, player=player
         )
 
-        # init artwork
+        # init artwork & theme
         current_artwork = self._player_service.get_artwork()
         if current_artwork:
             self._apply_artwork(self._player_service, current_artwork)
+        current_theme = self._player_service.get_theme()
+        if current_theme:
+            self._apply_theme(self._player_service, current_theme)
 
     def on_update_track_position(self, sender, pos, dur):
         if dur == 0:
@@ -246,15 +281,19 @@ class Player(Box):
             GLib.idle_add(_update_metadata_label)
 
     def _apply_artwork(self, source, art_path):
+        # remove wallpaper connection
+        if self._wallpaper_signal_id:
+            self._wallpaper_service.disconnect(self._wallpaper_signal_id)
+            self._wallpaper_signal_id = None
         GLib.idle_add(lambda: self.set_style(f"background-image:url('{art_path}')"))
 
     def _apply_theme(self, source, theme_json):
-        primary_color = theme_json["colors"]["dark"]["primary"]
+        primary_color = theme_json["colors"]["primary"]["dark"]
 
         def _apply():
             self.play_pause_button.set_style(f"background-color: {primary_color}")
             self.player_icon.set_style(f"color: {primary_color}")
-            self.player_source.set_style(f"background-color: {primary_color}")
+            self.audio_source.set_style(f"background-color: {primary_color}")
 
         GLib.idle_add(_apply)
 
@@ -277,6 +316,9 @@ class Player(Box):
             return False
 
         GLib.idle_add(_update)
+
+    def on_audio_device_changed(self, source: VolumeService, device_name: str):
+        self.audo_device_label.set_label(device_name)
 
     def on_metadata(self, sender, metadata, player):
         keys = metadata.keys()
@@ -374,17 +416,27 @@ class Player(Box):
         # service cleanup is handled by PlayerManager
 
 
-from widgets.material_label import MaterialIconLabel
-
-
 class Placeholder(Box):
     def __init__(self, **kwargs):
         super().__init__(style_classes="player", **kwargs)
 
+        self._wallpaper_service = WallpaperService()
+
+        def _set_initial_bg(
+            service: WallpaperService, full_path: str, preview_path: str | None
+        ):
+            self.set_style(f"background-image:url('{preview_path}')")
+            return False
+
+        self._wallpaper_signal_id = self._wallpaper_service.connect(
+            "wallpaper-changed", _set_initial_bg
+        )
+
         GLib.idle_add(
-            lambda: self.set_style(
-                f"background-image:url('{HOME_DIR}/.cache/walls/low_rez.png')"
-            )
+            _set_initial_bg,
+            self._wallpaper_service,
+            self._wallpaper_service.get_wallpaper_path(),
+            self._wallpaper_service.get_preview_path(),
         )
 
         self.children = [
@@ -396,7 +448,7 @@ class Placeholder(Box):
                     icon_text=icons.disc.symbol(),
                     h_align="end",
                     v_align="end",
-                    font_size=40,
+                    fill=1,
                 ),
             ),
         ]

@@ -1,5 +1,4 @@
 import psutil
-from gi.repository import GLib
 
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
@@ -17,6 +16,8 @@ from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
 
 import icons as icons
 from config.info import config
+
+from gi.repository import GLib
 
 
 class MetricsProvider(Service):
@@ -300,7 +301,6 @@ class MetricsSmall(Button):
             orientation="h",
             h_expand=True,
             v_expand=True,
-            spacing=0,
             child=self.disk_circle,
         )
 

@@ -25,9 +25,8 @@
 #notification-window-container{
     background-color: rgba(49, 49, 49, 0.801);
     border-radius: 30px;
-    padding: 10px;
-    margin-bottom: 3px;
-    min-height: 40px;
+    /* margin-bottom: 3px; */
+    min-height: 60px;
 }
 
 #notification-reveal-btn{
@@ -70,8 +69,9 @@
     border-radius: 25px;
 }
 
-#notification-scrolled-window viewport{
+#notification-scrolled-window viewport >*{
     border-radius: 25px;
+    padding: 8px;
 }
 
 .action-button{

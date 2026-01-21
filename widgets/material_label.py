@@ -7,6 +7,9 @@ from gi.repository import Gtk, Pango, PangoCairo
 from fabric.widgets.label import Label
 
 
+# TODO: fix style inconsistencies when stylesheets are re-applied
+
+
 class VariableFontMixin:
     """Mixin for handling variable font variations"""
 
@@ -94,7 +97,9 @@ class BaseMaterialLabel(Label, VariableFontMixin):
 
     def _create_font_description(self):
         """Create a Pango font description with variations"""
-        font_desc = Pango.FontDescription.from_string(f"{self.FONT_FAMILY} {self.font_size}")
+        font_desc = Pango.FontDescription.from_string(
+            f"{self.FONT_FAMILY} {self.font_size}"
+        )
         variation_string = self._build_variation_string()
         if variation_string:
             font_desc.set_variations(variation_string)
@@ -130,7 +135,9 @@ class MaterialIconLabel(BaseMaterialLabel):
     }
     VARIATION_KEYS = {"FILL", "wght", "GRAD", "opsz"}
 
-    def __init__(self, icon_text, font_size=48, fill=1, wght=400, grad=0, opsz=48, **kwargs):
+    def __init__(
+        self, icon_text, font_size=48, fill=1, wght=400, grad=0, opsz=48, **kwargs
+    ):
         super().__init__(
             text=icon_text,
             font_size=font_size,
@@ -235,10 +242,18 @@ class MaterialIconLabelRaw(Gtk.DrawingArea, VariableFontMixin):
         "opsz": 48,
     }
 
-    def __init__(self, icon_text, font_size=48, fill=1, wght=400, grad=0, opsz=48, **kwargs):
+    def __init__(
+        self, icon_text, font_size=48, fill=1, wght=400, grad=0, opsz=48, **kwargs
+    ):
         Gtk.DrawingArea.__init__(self)
         VariableFontMixin.__init__(
-            self, font_size=font_size, FILL=fill, wght=wght, GRAD=grad, opsz=opsz, **kwargs
+            self,
+            font_size=font_size,
+            FILL=fill,
+            wght=wght,
+            GRAD=grad,
+            opsz=opsz,
+            **kwargs,
         )
 
         self.icon_text = icon_text
@@ -249,7 +264,9 @@ class MaterialIconLabelRaw(Gtk.DrawingArea, VariableFontMixin):
         layout = PangoCairo.create_layout(cr)
 
         # create font description with variations
-        font_desc = Pango.FontDescription.from_string(f"{self.FONT_FAMILY} {self.font_size}")
+        font_desc = Pango.FontDescription.from_string(
+            f"{self.FONT_FAMILY} {self.font_size}"
+        )
         variation_string = self._build_variation_string()
         if variation_string:
             font_desc.set_variations(variation_string)

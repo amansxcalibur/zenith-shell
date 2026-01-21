@@ -29,7 +29,8 @@
 }
 
 #control-slider.muted-slider slider {
-  background-image: url("/home/aman/fabric/icons/mute.png");
+  background-image: url("resource:///zenith/icons/mute.png");
+  @apply mute_slider_img();
   background-size: contain;
 }
 
@@ -50,7 +51,8 @@
 }
 
 #control-slider.vol slider {
-  background-image: url("/home/aman/fabric/icons/volume.png");
+  /* background-image: url("resource:///zenith/icons/volume.png"); */
+  @apply volume_slider_img();
   background-size: contain;
 }
 
@@ -59,7 +61,8 @@
 }
 
 #control-slider.brightness slider {
-  background-image: url("/home/aman/fabric/icons/brightness.png");
+  /* background-image: url("resource:///zenith/icons/brightness.png"); */
+  @apply brightness_slider_img();
   background-size: contain;
 }
 
@@ -77,10 +80,11 @@
   border: 3px solid var(--primary);
 }
 
-#button-volume.muted,
+#button-volume.muted highlight,
+#button-volume.muted slider,
 #button-mic.muted {
-  color: var(--surface-bright);
-  border: 3px solid var(--outline);
+  background-color: var(--outline);
+  border: 3px solid;
 }
 
 #button-volume slider, #button-brightness slider{

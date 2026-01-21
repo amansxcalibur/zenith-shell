@@ -1,21 +1,23 @@
 import os
 import shutil
-import asyncio
 import hashlib
 from PIL import Image
-import concurrent.futures
+from pathlib import Path
+from loguru import logger
 from concurrent.futures import ThreadPoolExecutor
 
 from fabric.widgets.box import Box
 from fabric.widgets.entry import Entry
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
-from fabric.widgets.centerbox import CenterBox
 from fabric.widgets.scrolledwindow import ScrolledWindow
-from fabric.utils.helpers import exec_shell_command_async, exec_shell_command
+from fabric.core.service import Service, Signal
+from fabric.utils.helpers import exec_shell_command_async
+
+from widgets.clipping_box import ClippingBox
 
 import icons
-from config.info import config, HOME_DIR
+from config.info import config, CONFIG_DIR, CACHE_DIR
 
 import gi
 
@@ -23,10 +25,125 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import GdkPixbuf, Gtk, GLib, Gio, Gdk
 
 
+# paths
+WP_CACHE = Path(CACHE_DIR) / "wallpapers"
+WP_THUMBS = WP_CACHE / "thumbs"
+WP_PREVIEW_DIR = WP_CACHE / "previews"
+WP_HISTORY = Path(CACHE_DIR) / "current_wallpaper.txt"
+WP_PREVIEW_FILE = WP_PREVIEW_DIR / "low_rez.png"
+WP_PREVIEW_TEMP = WP_PREVIEW_DIR / "low_rez.tmp.png"
+
+
+def ensure_wallpaper_dirs():
+    WP_THUMBS.mkdir(parents=True, exist_ok=True)
+    WP_PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def get_thumbnail_cache_path(file_name: str) -> Path:
+    file_hash = hashlib.md5(file_name.encode("utf-8")).hexdigest()
+    return WP_THUMBS / f"{file_hash}.png"
+
+
+def generate_wallpaper_preview(image_path: str | Path) -> Path | None:
+    """Generate low-res preview for wallpaper. Less memory when loading onto widgets"""
+    try:
+        WP_PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
+
+        with Image.open(image_path) as img:
+            img.thumbnail((400, 200))
+            # stomic save - write to temp first to prevent half-baked images
+            img.save(WP_PREVIEW_TEMP, "PNG")
+
+        # replace temp
+        WP_PREVIEW_TEMP.replace(WP_PREVIEW_FILE)
+        return WP_PREVIEW_FILE
+    except Exception as e:
+        logger.error(f"Preview generation failed for {image_path}: {e}")
+        return None
+
+
+class WallpaperService(Service):
+    _instance = None
+
+    @Signal
+    def wallpaper_changed(self, full_path: str, preview_path: str) -> None: ...
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._wallpaper_path = None
+            cls._instance._preview_path = None
+            cls._instance._initialized = False
+            cls._instance._executor = ThreadPoolExecutor(max_workers=1)
+        return cls._instance
+
+    def initialize(self):
+        if self._initialized:
+            return
+
+        self._initialized = True
+        ensure_wallpaper_dirs()
+
+        self._executor.submit(self._restore_state)
+
+    def _restore_state(self):
+        if not WP_HISTORY.exists():
+            logger.warning("No wallpaper history found")
+            return
+
+        try:
+            full_path = WP_HISTORY.read_text().strip()
+
+            if not full_path or not Path(full_path).exists():
+                logger.warning(f"Wallpaper not found: {full_path}")
+                return
+
+            # generate preview if it doesn't exist
+            preview_path = (
+                WP_PREVIEW_FILE
+                if WP_PREVIEW_FILE.exists()
+                else generate_wallpaper_preview(full_path)
+            )
+
+            self._apply_wallpaper(full_path)
+
+            # update path refs
+            self._wallpaper_path = full_path
+            self._preview_path = str(preview_path) if preview_path else None
+
+            if preview_path:
+                # emit
+                self.wallpaper_changed(full_path, str(preview_path))
+
+            logger.info(f"Restored wallpaper: {full_path}")
+
+        except Exception as e:
+            logger.error(f"Failed to initialize wallpaper: {e}")
+
+    def _apply_wallpaper(self, full_path: str):
+        feh_bin = shutil.which("feh")
+        if not feh_bin:
+            logger.error("'feh' binary not found")
+            return
+
+        exec_shell_command_async(f"{feh_bin} --zoom fill --bg-fill '{full_path}'")
+
+    def set_wallpaper_path(self, full_path: str, preview_path: str | None):
+        self._wallpaper_path = full_path
+        if preview_path:
+            self._preview_path = preview_path
+        self.wallpaper_changed(full_path, preview_path)
+
+    def get_wallpaper_path(self) -> str | None:
+        return self._wallpaper_path
+
+    def get_preview_path(self) -> str | None:
+        return self._preview_path
+
+
 class WallpaperSelector(Box):
-    CACHE_DIR = os.path.expanduser(
-        "~/.cache/zenith-shell/thumbs"
-    )  # Changed from wallpapers to thumbs
+    COLUMNS: int = 7
+    IMG_THUMB_SIZE: int = 96
 
     def __init__(self, pill, **kwargs):
         self._pill = pill
@@ -39,46 +156,28 @@ class WallpaperSelector(Box):
             v_expand=False,
             **kwargs,
         )
-        os.makedirs(self.CACHE_DIR, exist_ok=True)
+        self.wallpaper_service = WallpaperService()
 
-        # Process old wallpapers: use os.scandir for efficiency and only loop
-        # over image files that actually need renaming (they're not already lowercase
-        # and with hyphens instead of spaces)
-        with os.scandir(config.WALLPAPERS_DIR) as entries:
-            for entry in entries:
-                if entry.is_file() and self._is_image(entry.name):
-                    # Check if the file needs renaming: file should be lowercase and have hyphens instead of spaces
-                    if entry.name != entry.name.lower() or " " in entry.name:
-                        new_name = entry.name.lower().replace(" ", "-")
-                        full_path = os.path.join(config.WALLPAPERS_DIR, entry.name)
-                        new_full_path = os.path.join(config.WALLPAPERS_DIR, new_name)
-                        try:
-                            os.rename(full_path, new_full_path)
-                            print(
-                                f"Renamed old wallpaper '{full_path}' to '{new_full_path}'"
-                            )
-                        except Exception as e:
-                            print(f"Error renaming file {full_path}: {e}")
+        self.files = []
+        self.thumbnails_map = {}
+        self.executor = ThreadPoolExecutor(max_workers=4)
+        self.scan_executor = ThreadPoolExecutor(max_workers=1)
 
-        # Refresh the file list after potential renaming
-        self.files = sorted(
-            [f for f in os.listdir(config.WALLPAPERS_DIR) if self._is_image(f)]
-        )
-        self.thumbnails = []
-        self.thumbnail_queue = []
-        self.executor = ThreadPoolExecutor(max_workers=4)  # Shared executor
+        self.scan_executor.submit(self._perform_scan_and_clean)
 
-        # Variable to control the selection (similar to AppLauncher)
-        self.selected_index = -1
+        self.viewport = Gtk.FlowBox()
+        self.viewport.set_name("wallpaper-flowbox")
+        self.viewport.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        self.viewport.set_activate_on_single_click(True)
+        self.viewport.set_column_spacing(5)
+        self.viewport.set_row_spacing(5)
+        self.viewport.set_homogeneous(True)
+        self.viewport.set_max_children_per_line(self.COLUMNS)
+        self.viewport.set_min_children_per_line(self.COLUMNS)
+        self.viewport.set_vexpand(False)
+        self.viewport.set_valign(Gtk.Align.START)
 
-        # Initialize UI components
-        self.viewport = Gtk.IconView(name="wallpaper-icons")
-        self.viewport.set_model(Gtk.ListStore(GdkPixbuf.Pixbuf, str))
-        self.viewport.set_pixbuf_column(0)
-        # Hide text column so only the image is shown
-        self.viewport.set_text_column(0)
-        self.viewport.set_item_width(0)
-        self.viewport.connect("item-activated", self.on_wallpaper_selected)
+        self.viewport.connect("child-activated", self.on_wallpaper_selected)
 
         self.scrolled_window = ScrolledWindow(
             name="scrolled-window",
@@ -89,6 +188,7 @@ class WallpaperSelector(Box):
             min_content_size=(5, 5),
             max_content_size=(5, 5),
             child=self.viewport,
+            h_scrollbar_policy="never",
         )
 
         self.search_entry = Entry(
@@ -121,21 +221,11 @@ class WallpaperSelector(Box):
         self.scheme_dropdown.set_active_id("scheme-fidelity")
         self.scheme_dropdown.connect("changed", self.on_scheme_changed)
 
-        # Create a switcher to enable/disable Matugen (enabled by default)
-        # self.matugen_switcher = Gtk.Switch(name="matugen-switcher")
-        # self.matugen_switcher.set_vexpand(False)
-        # self.matugen_switcher.set_hexpand(False)
-        # self.matugen_switcher.set_valign(Gtk.Align.CENTER)
-        # self.matugen_switcher.set_halign(Gtk.Align.CENTER)
-        # self.matugen_switcher.set_active(True)
-
         self.mat_icon = Label(name="mat-label", markup=icons.palette.markup())
 
-        # Add the switcher to the header_box's start_children
         self.header_box = Box(
             name="header-box",
             orientation="h",
-            # spacing=8,
             h_expand=True,
             children=[
                 self.search_entry,
@@ -151,11 +241,84 @@ class WallpaperSelector(Box):
 
         self.add(self.scrolled_window)
         self.add(self.header_box)
-        self._start_thumbnail_thread()
-        self.setup_file_monitor()  # Initialize file monitoring
+
+        self.setup_file_monitor()
         self.show_all()
-        # Ensure the search entry gets focus when starting
         self.search_entry.grab_focus()
+
+    def _perform_scan_and_clean(self):
+        ensure_wallpaper_dirs()
+        Path(config.WALLPAPERS_DIR).mkdir(parents=True, exist_ok=True)
+
+        # process and rename old wallpapers
+        with os.scandir(config.WALLPAPERS_DIR) as entries:
+            for entry in entries:
+                if entry.is_file() and self._is_image(entry.name):
+                    if entry.name != entry.name.lower() or " " in entry.name:
+                        new_name = entry.name.lower().replace(" ", "-")
+                        full_path = os.path.join(config.WALLPAPERS_DIR, entry.name)
+                        new_full_path = os.path.join(config.WALLPAPERS_DIR, new_name)
+                        try:
+                            os.rename(full_path, new_full_path)
+                        except Exception as e:
+                            logger.error(f"Error renaming {entry.name}: {e}")
+
+        # refresh the file list after potential renaming
+        all_files = sorted(
+            [f for f in os.listdir(config.WALLPAPERS_DIR) if self._is_image(f)]
+        )
+
+        self.files = all_files
+
+        # start thumbnail generation jobs
+        for file_name in self.files:
+            self.executor.submit(self._process_thumbnail_task, file_name)
+
+    def _process_thumbnail_task(self, file_name):
+        try:
+            full_path = os.path.join(config.WALLPAPERS_DIR, file_name)
+            cache_path = get_thumbnail_cache_path(file_name)
+
+            # generate thumbs if missing
+            if not cache_path.exists():
+                with Image.open(full_path) as img:
+                    width, height = img.size
+                    side = min(width, height)
+                    left = (width - side) // 2
+                    top = (height - side) // 2
+                    img_cropped = img.crop((left, top, left + side, top + side))
+                    img_cropped.thumbnail(
+                        (self.IMG_THUMB_SIZE, self.IMG_THUMB_SIZE),
+                        Image.Resampling.LANCZOS,
+                    )
+                    img_cropped.save(cache_path, "PNG")
+
+            # READ BYTES here, so UI thread doesn't have to touch disk
+            with open(cache_path, "rb") as f:
+                image_bytes = f.read()
+
+            GLib.idle_add(self._add_thumbnail_to_ui, file_name, image_bytes)
+
+        except Exception as e:
+            logger.error(f"Thumbnail task failed for {file_name}: {e}")
+
+    def _add_thumbnail_to_ui(self, file_name, image_bytes):
+        try:
+            # create stream from bytes (Memory operation, very fast)
+            stream = Gio.MemoryInputStream.new_from_bytes(GLib.Bytes.new(image_bytes))
+            pixbuf = GdkPixbuf.Pixbuf.new_from_stream(stream, None)
+
+            self.thumbnails_map[file_name] = pixbuf
+
+            # pass through current filter and adding
+            current_filter = self.search_entry.get_text().lower()
+            if current_filter in file_name.lower():
+                child = self._create_flowbox_child(pixbuf, file_name)
+                self.viewport.add(child)
+                child.show_all()
+
+        except Exception as e:
+            logger.error(f"Error creating pixbuf for {file_name}: {e}")
 
     def setup_file_monitor(self):
         gfile = Gio.File.new_for_path(config.WALLPAPERS_DIR)
@@ -163,105 +326,105 @@ class WallpaperSelector(Box):
         self.file_monitor.connect("changed", self.on_directory_changed)
 
     def on_directory_changed(self, monitor, file, other_file, event_type):
+        self.scan_executor.submit(self._handle_file_change, file, event_type)
+
+    def _handle_file_change(self, file, event_type):
         file_name = file.get_basename()
+        if not file_name or not self._is_image(file_name):
+            return
+
         if event_type == Gio.FileMonitorEvent.DELETED:
-            if file_name in self.files:
-                self.files.remove(file_name)
-                cache_path = self._get_cache_path(file_name)
-                if os.path.exists(cache_path):
-                    try:
-                        os.remove(cache_path)
-                    except Exception as e:
-                        print(f"Error deleting cache {cache_path}: {e}")
-                self.thumbnails = [(p, n) for p, n in self.thumbnails if n != file_name]
-                GLib.idle_add(self.arrange_viewport, self.search_entry.get_text())
-        elif event_type == Gio.FileMonitorEvent.CREATED:
-            if self._is_image(file_name):
-                # Convert filename to lowercase and replace spaces with "-"
-                new_name = file_name.lower().replace(" ", "-")
-                full_path = os.path.join(config.WALLPAPERS_DIR, file_name)
-                new_full_path = os.path.join(config.WALLPAPERS_DIR, new_name)
-                if new_name != file_name:
-                    try:
-                        os.rename(full_path, new_full_path)
-                        file_name = new_name
-                        print(f"Renamed file '{full_path}' to '{new_full_path}'")
-                    except Exception as e:
-                        print(f"Error renaming file {full_path}: {e}")
-                if file_name not in self.files:
-                    self.files.append(file_name)
-                    self.files.sort()
-                    self.executor.submit(self._process_file, file_name)
-        elif event_type == Gio.FileMonitorEvent.CHANGED:
-            if self._is_image(file_name) and file_name in self.files:
-                cache_path = self._get_cache_path(file_name)
-                if os.path.exists(cache_path):
-                    try:
-                        os.remove(cache_path)
-                    except Exception as e:
-                        print(f"Error deleting cache for changed file {file_name}: {e}")
-                self.executor.submit(self._process_file, file_name)
+            if file_name in self.thumbnails_map:
+                del self.thumbnails_map[file_name]
+                GLib.idle_add(self._remove_child_by_name, file_name)
 
-    def arrange_viewport(self, query: str = ""):
-        model = self.viewport.get_model()
-        model.clear()
-        filtered_thumbnails = [
-            (thumb, name)
-            for thumb, name in self.thumbnails
-            if query.casefold() in name.casefold()
-        ]
-        filtered_thumbnails.sort(key=lambda x: x[1].lower())
-        for pixbuf, file_name in filtered_thumbnails:
-            model.append([pixbuf, file_name])
-        # If the search entry is empty, no icon is selected; otherwise, select the first one.
-        if query.strip() == "":
-            self.viewport.unselect_all()
-            self.selected_index = -1
-        elif len(model) > 0:
-            self.update_selection(0)
+        # handles creation and change
+        elif event_type == Gio.FileMonitorEvent.CHANGES_DONE_HINT:
+            self._process_thumbnail_task(file_name)
 
-    def on_wallpaper_selected(self, iconview, path):
-        model = iconview.get_model()
-        file_name = model[path][1]
+    def _remove_child_by_name(self, file_name):
+        for child in self.viewport.get_children():
+            if child.file_name == file_name:
+                self.viewport.remove(child)
+                break
+
+    def _create_flowbox_child(self, pixbuf, file_name):
+        image = Gtk.Image.new_from_pixbuf(pixbuf)
+        image.set_name("wallpaper-thumbnail")
+
+        box = ClippingBox(
+            name="wallpaper-thumbnail-clipper",
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=4,
+        )
+        box.pack_start(image, False, False, 0)
+
+        child = Gtk.FlowBoxChild()
+        child.set_name("wallpaper-thumbnail-container")
+        child.add(box)
+        child.file_name = file_name  # store metadata
+        child.set_can_focus(True)
+
+        return child
+
+    def arrange_viewport(self, query: str):
+        query = query.lower()
+        first_visible = None
+
+        # hiding > destroying/recreating widgets
+        for child in self.viewport.get_children():
+            name = child.file_name.lower()
+            visible = query in name
+            child.set_visible(visible)
+            if visible and first_visible is None:
+                first_visible = child
+
+        # select first item
+        if first_visible:
+            self.viewport.select_child(first_visible)
+
+    def on_wallpaper_selected(self, flowbox, child):
+        file_name = child.file_name
         full_path = os.path.join(config.WALLPAPERS_DIR, file_name)
+
         selected_scheme = self.scheme_dropdown.get_active_id()
-        # if self.matugen_switcher.get_active():
-        #     # Matugen is enabled: run the normal command.
-        #     exec_shell_command_async(f'matugen image {full_path} -t {selected_scheme}')
-        # else:
-        #     # Matugen is disabled: run the alternative swww command.
-        #     exec_shell_command_async(
-        #         f'swww img {full_path} -t outer --transition-duration 1.5 --transition-step 255 --transition-fps 60 -f Nearest'
-        #     )
-        exec_shell_command_async(f"feh --zoom fill --bg-fill {full_path}")
-        f = open(f"{HOME_DIR}/.cache/zenith-shell/current_wallpaper.txt", "w")
-        f.write(full_path)
-        f.close()
+        feh_bin = shutil.which("feh")
 
-        async def generate_theme():
-            # the themes are updated when the "changed" signal is emitted by the monitor watching the styles directory.
-            exec_shell_command(
-                f"matugen image {full_path} -t {selected_scheme} -c {HOME_DIR}/fabric/config/matugen/config.toml"
+        if not feh_bin:
+            logger.error("'feh' binary not found.")
+            exec_shell_command_async(
+                "notify-send 'Zenith Error' '\"feh\" not found. Wallpaper not applied.'"
             )
-            print("this is the selected scheme ", selected_scheme)
+            return
 
-        asyncio.run(generate_theme())
+        exec_shell_command_async(f"{feh_bin} --zoom fill --bg-fill '{full_path}'")
 
-        # for player placeholder image
-        try:
-            img = Image.open(full_path)
-            img.thumbnail((400, 200))
-            cache_path = f"{HOME_DIR}/.cache/walls/low_rez.png"
-            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-            img.save(cache_path, format="PNG", quality=100)
-        except Exception as e:
-            print(f"Failed to generate low-res image: {e}")
+        def save_history():
+            WP_HISTORY.parent.mkdir(parents=True, exist_ok=True)
+            WP_HISTORY.write_text(full_path)
+
+        self.executor.submit(save_history)
+        future = self.executor.submit(generate_wallpaper_preview, full_path)
+        self.executor.submit(self._generate_theme, full_path, selected_scheme)
+
+        def _on_preview_ready(fut):
+            preview_path = fut.result()
+            if not preview_path:
+                return
+
+            self.wallpaper_service.set_wallpaper_path(
+                full_path,
+                str(preview_path),
+            )
+
+        future.add_done_callback(_on_preview_ready)
 
     def on_scheme_changed(self, combo):
         selected_scheme = combo.get_active_id()
         print(f"Color scheme selected: {selected_scheme}")
 
     def on_search_entry_key_press(self, widget, event):
+        # scheme dropdown navigation with Shift
         if event.state & Gdk.ModifierType.SHIFT_MASK:
             if event.keyval in (Gdk.KEY_Up, Gdk.KEY_Down):
                 schemes_list = list(self.schemes.keys())
@@ -280,104 +443,54 @@ class WallpaperSelector(Box):
                 self.scheme_dropdown.popup()
                 return True
 
+        # Arrow key navigation in FlowBox
         if event.keyval in (Gdk.KEY_Up, Gdk.KEY_Down, Gdk.KEY_Left, Gdk.KEY_Right):
             self.move_selection_2d(event.keyval)
             return True
+        # Enter key to activate selection
         elif event.keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
-            if self.selected_index != -1:
-                path = Gtk.TreePath.new_from_indices([self.selected_index])
-                self.on_wallpaper_selected(self.viewport, path)
+            selected = self.viewport.get_selected_children()
+            if selected:
+                self.on_wallpaper_selected(self.viewport, selected[0])
             return True
         return False
 
     def move_selection_2d(self, keyval):
-        model = self.viewport.get_model()
-        total_items = len(model)
-        if total_items == 0:
+        children = self.viewport.get_children()
+        if not children:
             return
 
-        if self.selected_index == -1:
-            new_index = (
-                0 if keyval in (Gdk.KEY_Down, Gdk.KEY_Right) else total_items - 1
+        selected = self.viewport.get_selected_children()
+        if not selected:
+            # no selection, select first or last
+            new_child = (
+                children[0] if keyval in (Gdk.KEY_Down, Gdk.KEY_Right) else children[-1]
             )
+            self.viewport.select_child(new_child)
+            return
+
+        current_child = selected[0]
+        current_index = children.index(current_child)
+
+        if keyval == Gdk.KEY_Right:
+            new_index = current_index + 1
+        elif keyval == Gdk.KEY_Left:
+            new_index = current_index - 1
+        elif keyval == Gdk.KEY_Down:
+            new_index = current_index + self.COLUMNS
+        elif keyval == Gdk.KEY_Up:
+            new_index = current_index - self.COLUMNS
         else:
-            current_index = self.selected_index
-            allocation = self.viewport.get_allocation()
-            item_width = 108  # Approximate item width including margins
-            columns = max(1, allocation.width // item_width)
-            if keyval == Gdk.KEY_Right:
-                new_index = current_index + 1
-            elif keyval == Gdk.KEY_Left:
-                new_index = current_index - 1
-            elif keyval == Gdk.KEY_Down:
-                new_index = current_index + columns
-            elif keyval == Gdk.KEY_Up:
-                new_index = current_index - columns
-            if new_index < 0:
-                new_index = 0
-            if new_index >= total_items:
-                new_index = total_items - 1
+            return
 
-        self.update_selection(new_index)
+        # clamp to valid range
+        new_index = max(0, min(new_index, len(children) - 1))
 
-    def update_selection(self, new_index: int):
-        self.viewport.unselect_all()
-        path = Gtk.TreePath.new_from_indices([new_index])
-        self.viewport.select_path(path)
-        self.viewport.scroll_to_path(
-            path, False, 0.5, 0.5
-        )  # Ensure the selected icon is visible
-        self.selected_index = new_index
-
-    def _start_thumbnail_thread(self):
-        thread = GLib.Thread.new("thumbnail-loader", self._preload_thumbnails, None)
-
-    def _preload_thumbnails(self, _data):
-        futures = [
-            self.executor.submit(self._process_file, file_name)
-            for file_name in self.files
-        ]
-        concurrent.futures.wait(futures)
-        GLib.idle_add(self._process_batch)
-
-    def _process_file(self, file_name):
-        full_path = os.path.join(config.WALLPAPERS_DIR, file_name)
-        cache_path = self._get_cache_path(file_name)
-        if not os.path.exists(cache_path):
-            try:
-                with Image.open(full_path) as img:
-                    width, height = img.size
-                    side = min(width, height)
-                    left = (width - side) // 2
-                    top = (height - side) // 2
-                    right = left + side
-                    bottom = top + side
-                    img_cropped = img.crop((left, top, right, bottom))
-                    img_cropped.thumbnail((96, 96), Image.Resampling.LANCZOS)
-                    img_cropped.save(cache_path, "PNG")
-            except Exception as e:
-                print(f"Error processing {file_name}: {e}")
-                return
-        self.thumbnail_queue.append((cache_path, file_name))
-        GLib.idle_add(self._process_batch)
-
-    def _process_batch(self):
-        batch = self.thumbnail_queue[:10]
-        del self.thumbnail_queue[:10]
-        for cache_path, file_name in batch:
-            try:
-                pixbuf = GdkPixbuf.Pixbuf.new_from_file(cache_path)
-                self.thumbnails.append((pixbuf, file_name))
-                self.viewport.get_model().append([pixbuf, file_name])
-            except Exception as e:
-                print(f"Error loading thumbnail {cache_path}: {e}")
-        if self.thumbnail_queue:
-            GLib.idle_add(self._process_batch)
-        return False
-
-    def _get_cache_path(self, file_name: str) -> str:
-        file_hash = hashlib.md5(file_name.encode("utf-8")).hexdigest()
-        return os.path.join(self.CACHE_DIR, f"{file_hash}.png")
+        if new_index != current_index:
+            new_child = children[new_index]
+            self.viewport.select_child(new_child)
+            # scrolls to view
+            new_child.grab_focus()
 
     @staticmethod
     def _is_image(file_name: str) -> bool:
@@ -389,3 +502,26 @@ class WallpaperSelector(Box):
         if self.get_mapped():
             widget.grab_focus()
         return False
+
+    def _generate_theme(self, image_path, scheme):
+        matugen_bin = shutil.which("matugen")
+        if not matugen_bin:
+            logger.error("'matugen' not found.")
+            exec_shell_command_async(
+                "notify-send 'Zenith Shell' '\"matugen\" not found. Theme not updated.'"
+            )
+            return
+
+        config_path = f"{CONFIG_DIR}/matugen/config.toml"
+        command = f"{matugen_bin} image '{image_path}' -t {scheme} -c '{config_path}'"
+
+        try:
+            process, _ = exec_shell_command_async(command)
+            process.wait_check_async(
+                None,
+                lambda p, r: logger.info("Theme updated")
+                if p.wait_check_finish(r)
+                else logger.error("Theme failed"),
+            )
+        except Exception as e:
+            logger.exception(f"Matugen error: {e}")

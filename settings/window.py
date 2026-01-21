@@ -12,7 +12,7 @@ from widgets.material_label import MaterialIconLabel, MaterialFontLabel
 import icons
 from config.info import CONFIG_FILE
 from utils.cursor import add_hover_cursor
-from config.i3_config import i3_keybinds_setter
+from config.i3.utils import i3_keybinds_setter
 
 import gi
 

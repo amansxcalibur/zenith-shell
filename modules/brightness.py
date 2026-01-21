@@ -3,12 +3,10 @@ from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
-from fabric.utils.helpers import exec_shell_command_async
 
 from config.info import config
 from widgets.animated_scale import AnimatedScale, AnimatedCircularScale
 
-import re
 import icons
 import subprocess
 
@@ -60,33 +58,28 @@ class BrightnessSlider(AnimatedScale):
 
     def init_brightness(self):
         if self.exist:
-            init = (
-                subprocess.check_output(["brightnessctl", "-d", self.device])
-                .decode("utf-8")
-                .lower()
-            )
-            self.current = int(re.search(r"current brightness:\s+(\d+)", init).group(1))
-            self.max = int(re.search(r"max brightness:\s+(\d+)", init).group(1))
-            self.percentage = int(re.search(r"\((\d+)%\)", init).group(1))
-            self.update_brightness_slider(None, self.percentage, 100)
+            self.current = self.service_instance.get_brightness()
+            self.max = self.service_instance.get_max_brightness()
+            self.percentage = self.current / self.max
+            self.update_brightness_slider(None, self.current, self.max)
 
     def update_brightness_slider(self, source, new_value, max_value):
-        if not self.ui_updating:
-            self.ui_updating = True
-            brightness = new_value / max_value
-            if self.update_from_user:
-                self.set_value(brightness)
-            else:
-                self.animate_value(brightness)
-            self.update_from_user = False
-            self.ui_updating = False
-        else:
+        if max_value <= 0 or self.ui_updating:
             return
+
+        self.ui_updating = True
+        brightness = new_value / max_value
+        if self.update_from_user:
+            self.set_value(brightness)
+        else:
+            self.animate_value(brightness)
+        self.update_from_user = False
+        self.ui_updating = False
 
     def set_brightness(self, source, scroll_type, value):
         self.update_from_user = True
         new_value = int(value * 100)
-        exec_shell_command_async(f"brightnessctl set {new_value}%")
+        self.service_instance.set_brightness(new_value)
 
 
 class BrightnessSmall(Box):
@@ -133,23 +126,17 @@ class BrightnessSmall(Box):
 
     def init_brightness(self):
         if self.exist:
-            init = (
-                subprocess.check_output(["brightnessctl", "-d", self.device])
-                .decode("utf-8")
-                .lower()
-            )
-            self.current = int(re.search(r"current brightness:\s+(\d+)", init).group(1))
-            self.max = int(re.search(r"max brightness:\s+(\d+)", init).group(1))
-            self.percentage = int(re.search(r"\((\d+)%\)", init).group(1))
+            self.current = self.service_instance.get_brightness()
+            self.max = self.service_instance.get_max_brightness()
+            self.percentage = self.current / self.max
             self.on_brightness_changed(self, self.current, self.max)
 
     def on_scroll(self, widget, event):
         match event.direction:
             case 0:
-                subprocess.run(["brightnessctl", "set", "5%-"])
+                self.service_instance.decrement_brightness()
             case 1:
-                subprocess.run(["brightnessctl", "set", "+5%"])
-        self.init_brightness()
+                self.service_instance.increment_brightness()
 
     def on_brightness_changed(self, source, new_value, max_value):
         self.percentage = 100 * new_value / max_value
@@ -182,36 +169,33 @@ class BrightnessMaterial3(AnimatedScale):
         self.add_style_class("brightness")
         self.update_from_user = False
         self.ui_updating = False
-        self.init_brightness()
         self.service_instance.connect("value-changed", self.update_brightness_slider)
         self.connect("change-value", self.set_brightness)
 
+        # init
+        self.init_brightness()
+
     def init_brightness(self):
         if self.exist:
-            init = (
-                subprocess.check_output(["brightnessctl", "-d", self.device])
-                .decode("utf-8")
-                .lower()
-            )
-            self.current = int(re.search(r"current brightness:\s+(\d+)", init).group(1))
-            self.max = int(re.search(r"max brightness:\s+(\d+)", init).group(1))
-            self.percentage = int(re.search(r"\((\d+)%\)", init).group(1))
-            self.update_brightness_slider(None, self.percentage, 100)
+            self.current = self.service_instance.get_brightness()
+            self.max = self.service_instance.get_max_brightness()
+            self.percentage = self.current / self.max
+            self.update_brightness_slider(None, self.current, self.max)
 
     def update_brightness_slider(self, source, new_value, max_value):
-        if not self.ui_updating:
-            self.ui_updating = True
-            brightness = new_value / max_value
-            if self.update_from_user:
-                self.set_value(brightness)
-            else:
-                self.animate_value(brightness)
-            self.update_from_user = False
-            self.ui_updating = False
-        else:
+        if max_value <= 0 or self.ui_updating:
             return
+
+        self.ui_updating = True
+        brightness = new_value / max_value
+        if self.update_from_user:
+            self.set_value(brightness)
+        else:
+            self.animate_value(brightness)
+        self.update_from_user = False
+        self.ui_updating = False
 
     def set_brightness(self, source, scroll_type, value):
         self.update_from_user = True
         new_value = int(value * 100)
-        exec_shell_command_async(f"brightnessctl set {new_value}%")
+        self.service_instance.set_brightness(new_value)

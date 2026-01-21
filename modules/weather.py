@@ -148,12 +148,17 @@ class WeatherMini(EventBox):
 
 class WeatherCard(Box):
     def __init__(self, **kwargs):
-        super().__init__(spacing=5, orientation='v', **kwargs)
+        super().__init__(spacing=5, orientation="v", **kwargs)
 
         self.service = WeatherService()
         initial_data = self.service.current_data
 
-        self.last_updated_label = Label(name="weather-tile", style_classes=["updated-time-label"], label=f"Last updated: __", h_align="start")
+        self.last_updated_label = Label(
+            name="weather-tile",
+            style_classes=["updated-time-label"],
+            label=f"Last updated: __",
+            h_align="start",
+        )
 
         # temperature
         self.temperature_label = Label(
@@ -266,7 +271,7 @@ class WeatherCard(Box):
         self.wind_label.set_label(data.wind)
         self.pressure_label.set_label(data.pressure)
         self.description.set_label(data.description)
-        self.last_updated_label.set_label(f"Last updated: {time.strftime("%I:%M %p")}")
+        self.last_updated_label.set_label(f"Last updated: {time.strftime('%I:%M %p')}")
 
 
 class WeatherPill(Gtk.DrawingArea):
@@ -289,9 +294,7 @@ class WeatherPill(Gtk.DrawingArea):
 
     def _get_color(self, css_var: str) -> Tuple[float, float, float]:
         """Get RGB color from CSS variable."""
-        hex_color = get_css_variable(
-            f"{HOME_DIR}/fabric/styles/colors.css", css_var
-        )
+        hex_color = get_css_variable(f"{HOME_DIR}/fabric/styles/colors.css", css_var)
         return hex_to_rgb01(hex_color)
 
     def _draw_circle(self, ctx: cairo.Context, cx: float, cy: float, radius: float):
@@ -351,7 +354,7 @@ class WeatherPill(Gtk.DrawingArea):
 
         layout = PangoCairo.create_layout(ctx)
         layout.set_text(self._current_data.emoji, -1)
-        layout.set_font_description(Pango.FontDescription(f"Sans Bold {width/4}"))
+        layout.set_font_description(Pango.FontDescription(f"Sans Bold {width / 4}"))
 
         ink_rect, logical_rect = layout.get_pixel_extents()
         ctx.move_to(

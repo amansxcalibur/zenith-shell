@@ -55,18 +55,18 @@
   }
 
   #disk-icon{
-    font-size: 20px;
-    margin-left: -2px;
+    font-size: 22px;
+    /* margin-left: -2px; */
   }
 
   #ram-icon{
-    font-size: 20px;
-    margin-left: -4px;
+    font-size: 22px;
+    margin-left: 2px;
   }
 
   #cpu-icon {
     font-size: 20px;
-    margin-left: -9px;
+    margin-left: 1px;
   }
   
   #metrics-icon.alert {

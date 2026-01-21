@@ -10,7 +10,7 @@ from fabric.utils.helpers import get_relative_path, monitor_file
 from widgets.shapes import Pill, Circle, WavyCircle, Ellipse, Pentagon
 from modules.weather import WeatherPill
 from modules.wavy_clock import WavyClock
-from config.info import USERNAME
+from config.info import USERNAME, ROOT_DIR
 
 import pam
 from loguru import logger
@@ -34,7 +34,8 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk
 
-# TODO: 
+# TODO:
+# - re-raise worker via xcb
 # - handle runtime keymap changes.
 # - multi monitor setups
 # - handle screen configuration change
@@ -42,6 +43,7 @@ from gi.repository import Gtk, GLib, Gdk
 # - dpms handle
 
 # WARNING: THIS SETUP IS NOT SECURE
+
 
 class InputGrabber:
     """Handles X11 keyboard and pointer grabbing."""
@@ -94,11 +96,10 @@ class InputGrabber:
         xid = gdk_window.get_xid()
         self.display = Display()
         self.xwin = self.display.create_resource_object("window", xid)
+        # self.xwin = self.display.screen().root
 
         self.xwin.change_attributes(
-            override_redirect=True,
-            event_mask=X.KeyPressMask
-            | X.KeyReleaseMask
+            override_redirect=True, event_mask=X.KeyPressMask | X.KeyReleaseMask
         )
 
         # grab inputs
@@ -303,7 +304,9 @@ class LockScreen(Window):
                 spacing=10,
                 style="margin:20px;",
                 children=[
-                    EventBox(child=self.shapes), # event box stops whole window redraw for some reason
+                    EventBox(
+                        child=self.shapes
+                    ),  # event box stops whole window redraw for some reason
                     # self.status_label,
                 ],
             ),
@@ -312,11 +315,13 @@ class LockScreen(Window):
     def _on_mapped(self, *_):
         GLib.idle_add(self._try_grab_input_with_retry)
 
-    def _try_grab_input_with_retry(self, attempts:int = 100):
+    def _try_grab_input_with_retry(self, attempts: int = 100):
         if not self.grabber.try_grab():
-            logger.warning(f"Grab failed (Attempts left:{attempts}), retrying in 100ms...")
-            if attempts>0:
-                GLib.timeout_add(10, self._try_grab_input_with_retry, attempts-1)
+            logger.warning(
+                f"Grab failed (Attempts left:{attempts}), retrying in 100ms..."
+            )
+            if attempts > 0:
+                GLib.timeout_add(10, self._try_grab_input_with_retry, attempts - 1)
             else:
                 logger.error("Could not successfully grab inputs")
                 self._unlock()
@@ -428,13 +433,20 @@ class LockScreen(Window):
         if app:
             app.quit()
 
-
 if __name__ == "__main__":
     lock_win = LockScreen()
     app = Application("lockscreen", lock_win)
 
     def set_css(*args):
-        app.set_stylesheet_from_file(get_relative_path("./main.css"))
+        app.set_stylesheet_from_file(
+            get_relative_path("./main.css"),
+            # feast on juggad
+            exposed_functions={
+                "mute_slider_img": lambda: f"background-image: url('{ROOT_DIR}/icons/mute.png');",
+                "volume_slider_img": lambda: f"background-image: url('{ROOT_DIR}/icons/volume.png');",
+                "brightness_slider_img": lambda: f"background-image: url('{ROOT_DIR}/icons/brightness.png');",
+            },
+        )
 
     app.style_monitor = monitor_file(get_relative_path("./styles"))
     app.style_monitor.connect("changed", set_css)

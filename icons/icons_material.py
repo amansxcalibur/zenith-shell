@@ -54,7 +54,17 @@ north_west: str = "\uf1e2"
 south_west: str = "\uf1e5"
 center: str = "\ue3b4"
 
+select_check_box: str = "\uf1fe"
+rocket_launch: str = "\ueb9b"
+
 arrows_up_down_circle: str = "\ue600"
+
+arrow_drop_down_circle: str = "\ue5c6"
+
+arrow_circle_up: str = "\uf182"
+arrow_circle_down: str = "\uf181"
+arrow_circle_right: str = "\ueaaa"
+arrow_circle_left: str = "\ueaa7"
 
 play_pause: str = "\uf137"
 skip_prev: str = "\ue045"
@@ -64,6 +74,7 @@ fast_forward: str = "\ue01f"
 transition_push: str = "\uf50b"
 
 close: str = "\ue5cd"
+trash_material: str = "\ue872"
 
 # player
 disc: str = "\ue019"

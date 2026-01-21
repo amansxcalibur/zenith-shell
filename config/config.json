@@ -46,14 +46,7 @@
             "ON": true
         }
     },
-    "top_bar": {},
-    "top_pill": {
-        "POSITION": {
-            "x": "right",
-            "y": "top"
-        }
-    },
-    "top-bar": {
+    "top_bar": {
         "POSITION": "bottom",
         "HEIGHT": 32,
         "SPACING": 8,
@@ -63,5 +56,11 @@
             "systray",
             "clock"
         ]
+    },
+    "top_pill": {
+        "POSITION": {
+            "x": "center",
+            "y": "top"
+        }
     }
 }

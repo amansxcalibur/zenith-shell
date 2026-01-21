@@ -92,7 +92,9 @@ class Dashboard(Box):
             name="notification-box",
             style_classes="vertical" if config.VERTICAL else "horizontal",
             children=[
-                Label(name="notification-icon", h_align=True, markup=icons.blur.markup()),
+                Label(
+                    name="notification-icon", h_align=True, markup=icons.blur.markup()
+                ),
                 Box(h_expand=True, children=self.content_box),
                 Box(children=close_btn),
             ],
@@ -149,7 +151,9 @@ class Dashboard(Box):
             name="notification-box",
             style_classes="vertical" if config.VERTICAL else "horizontal",
             children=[
-                Label(name="notification-icon", h_align=True, markup=icons.blur.markup()),
+                Label(
+                    name="notification-icon", h_align=True, markup=icons.blur.markup()
+                ),
                 Box(h_expand=True, children=self.content_box_2),
                 Box(children=close_btn_2),
             ],

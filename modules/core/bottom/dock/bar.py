@@ -9,7 +9,6 @@ from fabric.widgets.x11 import X11Window as Window
 from modules.systray import SystemTray
 from modules.weather import WeatherMini
 from modules.workspaces import Workspaces
-from modules.workspaces import Workspaces
 from modules.controls import ControlsManager
 from modules.metrics import MetricsSmall, Battery
 from modules.core.bottom.dock.layout_manager import LayoutManager
@@ -25,12 +24,14 @@ import subprocess
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk  # noqa: E402
 
 SPACING = 0
 
 
 class DockBar(Window):
+    WIN_ROLE = 'zenith-dock'
+
     def __init__(self, pill, **kwargs):
         super().__init__(
             name="dock-bar",
@@ -44,6 +45,8 @@ class DockBar(Window):
             v_expand=True,
             **kwargs,
         )
+        self.set_title(self.WIN_ROLE)
+
         self._pill_ref = pill
 
         self.is_open = False

@@ -42,14 +42,19 @@ DEFAULTS = {
 SHELL_NAME = "zenith"
 USERNAME = os.getlogin()
 HOSTNAME = os.uname().nodename
+
+TEMP_DIR = "/tmp/zenith"
 HOME_DIR = os.path.expanduser("~")
-CACHE_DIR = "/tmp"
+CACHE_DIR = os.path.expanduser("~/.cache/zenith-shell")
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
 screen = Gdk.Display().get_default().get_default_screen()
 SCREEN_WIDTH = screen.get_width()
 SCREEN_HEIGHT = screen.get_height()
 
+
+# TODO: Config shouldn't really create the 'paths'. It should point to the expected path.
+#       Something like that should be done during install. Perhaps a better architecture...
 
 class _ConfigNode:
     """Represents any node in the config tree (can be a dict, list, or leaf value)"""
@@ -109,7 +114,7 @@ class _ConfigNode:
             if self._root:
                 self._root._on_change(self._key_path + [key], value)
         else:
-            raise AttributeError(f"Cannot set attribute on non-dict config node")
+            raise AttributeError("Cannot set attribute on non-dict config node")
 
     def __getitem__(self, key):
         """Support dict-like access: config['system']['SILENT']"""
@@ -136,6 +141,7 @@ class ConfigManager(Service):
         self._root_node = None
         self._modules = {}  # Store module nodes here
         self._load()
+        self._ensure_directories()
 
     def _load(self):
         """Load config from file, merge with defaults"""
@@ -218,7 +224,28 @@ class ConfigManager(Service):
         """Get all config data as a dict"""
         return self._data.copy()
 
-    # --- Convenience Properties (Optional Facade Layer) ---
+    def _ensure_directories(self):
+        """Creates necessary system and configured directories if they don't exist."""
+        # System/Cache Directories
+        for directory in [TEMP_DIR, CACHE_DIR, CONFIG_DIR]:
+            path = Path(directory).expanduser()
+            if not path.exists():
+                path.mkdir(parents=True, exist_ok=True)
+                print(f"Created system directory: {path}")
+
+        # Config Directories
+        user_paths = self._data.get("paths", {})
+        for key, folder_path in user_paths.items():
+            if isinstance(folder_path, str):
+                path = Path(folder_path).expanduser()
+                if not path.exists():
+                    try:
+                        path.mkdir(parents=True, exist_ok=True)
+                        print(f"Created configured directory: {path}")
+                    except Exception as e:
+                        print(f"Warning: Could not create {path}: {e}")
+
+    # --- Convenience Properties ---
 
     @property
     def SILENT(self):

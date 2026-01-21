@@ -10,10 +10,13 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
     """Display i3 and module keybindings"""
 
     def _build_ui(self):
-        from config.i3_config import (
+        from config.bindings import (
             I3_KEYBINDINGS,
             PLAYER_KEYBINDINGS,
             WIFI_KEYBINDINGS,
+            WALLPAPER_KEYBINDINGS,
+            LAUNCHER_KEYBINDINGS,
+            NOTIFICATIONS_KEYBINDINGS,
         )
 
         self.container = Box(orientation="v", spacing=25)
@@ -34,6 +37,17 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
                     ),
                     self.build_section(
                         "Wifi", WIFI_KEYBINDINGS, self._create_binding_row
+                    ),
+                    self.build_section(
+                        "Wallpaper", WALLPAPER_KEYBINDINGS, self._create_binding_row
+                    ),
+                    self.build_section(
+                        "Launcher", LAUNCHER_KEYBINDINGS, self._create_binding_row
+                    ),
+                    self.build_section(
+                        "Notifications",
+                        NOTIFICATIONS_KEYBINDINGS,
+                        self._create_binding_row,
                     ),
                 ],
             )
@@ -62,6 +76,13 @@ class LauncherTab(BaseWidget, SectionBuilderMixin):
         modules = [
             {"module": "Dashboard", "text": ":d", "icon": icons.dashboard.symbol()},
             {"module": "Wallpaper", "text": ":w", "icon": icons.wallpaper.symbol()},
+            {"module": "Player", "text": ":u", "icon": icons.disc.symbol()},
+            {"module": "Power", "text": ":p", "icon": icons.power.symbol()},
+            {
+                "module": "Zenith Settings",
+                "text": ":s",
+                "icon": icons.settings_material.symbol(),
+            },
         ]
 
         self.container.add(
