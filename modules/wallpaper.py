@@ -160,10 +160,10 @@ class WallpaperSelector(Box):
 
         self.files = []
         self.thumbnails_map = {}
-        self.executor = ThreadPoolExecutor(max_workers=4)
-        self.scan_executor = ThreadPoolExecutor(max_workers=1)
+        self._visible_children = []
+        self.executor = ThreadPoolExecutor(max_workers=5)
 
-        self.scan_executor.submit(self._perform_scan_and_clean)
+        self.executor.submit(self._perform_scan_and_clean)
 
         self.viewport = Gtk.FlowBox()
         self.viewport.set_name("wallpaper-flowbox")
@@ -244,7 +244,12 @@ class WallpaperSelector(Box):
 
         self.setup_file_monitor()
         self.show_all()
-        self.search_entry.grab_focus()
+
+        def grab_initial_focus(widget):
+            widget.grab_focus()
+            return False
+
+        self.search_entry.connect("map", grab_initial_focus)
 
     def _perform_scan_and_clean(self):
         ensure_wallpaper_dirs()
@@ -316,6 +321,7 @@ class WallpaperSelector(Box):
                 child = self._create_flowbox_child(pixbuf, file_name)
                 self.viewport.add(child)
                 child.show_all()
+                GLib.idle_add(self.arrange_viewport, self.search_entry.get_text())
 
         except Exception as e:
             logger.error(f"Error creating pixbuf for {file_name}: {e}")
@@ -326,7 +332,7 @@ class WallpaperSelector(Box):
         self.file_monitor.connect("changed", self.on_directory_changed)
 
     def on_directory_changed(self, monitor, file, other_file, event_type):
-        self.scan_executor.submit(self._handle_file_change, file, event_type)
+        self.executor.submit(self._handle_file_change, file, event_type)
 
     def _handle_file_change(self, file, event_type):
         file_name = file.get_basename()
@@ -370,18 +376,22 @@ class WallpaperSelector(Box):
     def arrange_viewport(self, query: str):
         query = query.lower()
         first_visible = None
+        self._visible_children = []
 
         # hiding > destroying/recreating widgets
         for child in self.viewport.get_children():
-            name = child.file_name.lower()
-            visible = query in name
+            visible = query in child.file_name.lower()
             child.set_visible(visible)
-            if visible and first_visible is None:
-                first_visible = child
+
+            if visible:
+                self._visible_children.append(child)
+                if first_visible is None:
+                    first_visible = child
 
         # select first item
         if first_visible:
             self.viewport.select_child(first_visible)
+            # first_visible.grab_focus()
 
     def on_wallpaper_selected(self, flowbox, child):
         file_name = child.file_name
@@ -456,38 +466,40 @@ class WallpaperSelector(Box):
         return False
 
     def move_selection_2d(self, keyval):
-        children = self.viewport.get_children()
-        if not children:
+        if not self._visible_children:
             return
 
         selected = self.viewport.get_selected_children()
-        if not selected:
+        if not selected or selected[0] not in self._visible_children:
             # no selection, select first or last
             new_child = (
-                children[0] if keyval in (Gdk.KEY_Down, Gdk.KEY_Right) else children[-1]
+                self._visible_children[0]
+                if keyval in (Gdk.KEY_Down, Gdk.KEY_Right)
+                else self._visible_children[-1]
             )
             self.viewport.select_child(new_child)
+            # new_child.grab_focus()
             return
 
         current_child = selected[0]
-        current_index = children.index(current_child)
+        current_visible_index = self._visible_children.index(current_child)
 
         if keyval == Gdk.KEY_Right:
-            new_index = current_index + 1
+            new_index = current_visible_index + 1
         elif keyval == Gdk.KEY_Left:
-            new_index = current_index - 1
+            new_index = current_visible_index - 1
         elif keyval == Gdk.KEY_Down:
-            new_index = current_index + self.COLUMNS
+            new_index = current_visible_index + self.COLUMNS
         elif keyval == Gdk.KEY_Up:
-            new_index = current_index - self.COLUMNS
+            new_index = current_visible_index - self.COLUMNS
         else:
             return
 
         # clamp to valid range
-        new_index = max(0, min(new_index, len(children) - 1))
+        new_index = max(0, min(new_index, len(self._visible_children) - 1))
 
-        if new_index != current_index:
-            new_child = children[new_index]
+        if new_index != current_visible_index:
+            new_child = self._visible_children[new_index]
             self.viewport.select_child(new_child)
             # scrolls to view
             new_child.grab_focus()
