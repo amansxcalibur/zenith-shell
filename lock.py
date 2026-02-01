@@ -35,7 +35,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk
 
 # TODO:
-# - re-raise worker via xcb
+# - re-raise worker (needs testing and improvement)
 # - handle runtime keymap changes.
 # - multi monitor setups
 # - handle screen configuration change
@@ -96,20 +96,20 @@ class InputGrabber:
         xid = gdk_window.get_xid()
         self.display = Display()
         self.xwin = self.display.create_resource_object("window", xid)
-        # self.xwin = self.display.screen().root
+        self.root_win = self.display.screen().root
 
         self.xwin.change_attributes(
             override_redirect=True, event_mask=X.KeyPressMask | X.KeyReleaseMask
         )
 
         # grab inputs
-        keyboard_result = self.xwin.grab_keyboard(
+        keyboard_result = self.root_win.grab_keyboard(
             owner_events=False,
             pointer_mode=X.GrabModeAsync,
             keyboard_mode=X.GrabModeAsync,
             time=X.CurrentTime,
         )
-        pointer_result = self.xwin.grab_pointer(
+        pointer_result = self.root_win.grab_pointer(
             owner_events=False,
             event_mask=X.ButtonPressMask | X.ButtonReleaseMask | X.PointerMotionMask,
             pointer_mode=X.GrabModeAsync,
@@ -254,10 +254,28 @@ class LockScreen(Window):
     def __init__(self):
         super().__init__(title="Lock Screen", layer="top", type_hint="splashscreen")
 
-        self.fullscreen()
-        # self.set_keep_above(True)
+        # self.fullscreen()
         # self.set_app_paintable(True)
 
+        # to get the virtual screen size (multi monitor)
+        tmp_display = Display()
+        screen = tmp_display.screen()
+        root = screen.root
+
+        root_geom = root.get_geometry()
+        self.root_width = root_geom.width
+        self.root_height = root_geom.height
+
+        self.set_size_request(self.root_width, self.root_height)
+        self.move(0, 0)
+
+        self.set_decorated(False)
+        self.set_resizable(False)
+        self.set_keep_above(True)
+
+        tmp_display.close()
+
+        self.monitor_thread = None
         self.grabber = InputGrabber(self, self.handle_keypress)
         self.authenticator = Authenticator(USERNAME)
 
@@ -313,7 +331,81 @@ class LockScreen(Window):
         )
 
     def _on_mapped(self, *_):
-        GLib.idle_add(self._try_grab_input_with_retry)
+        self.xid = self.get_window().get_xid()
+
+        if self.monitor_thread is None or not self.monitor_thread.is_alive():
+            logger.info("Starting fresh monitor thread.")
+            self.monitor_thread = threading.Thread(target=self.raise_loop, daemon=True)
+            self.monitor_thread.start()
+        else:
+            logger.debug("Monitor thread already active; skipping spawn.")
+
+        GLib.idle_add(lambda: self.present())
+
+    def raise_loop(self):
+        if not XLIB_AVAILABLE:
+            logger.error("python-xlib not available;")
+            return
+
+        try:
+            local_display = Display()
+            x_win = local_display.create_resource_object("window", self.xid)
+            root = local_display.screen().root
+
+            x_win.change_attributes(override_redirect=True)
+
+            # hear about every other window's movement/mapping
+            root.change_attributes(event_mask=X.SubstructureNotifyMask)
+
+            # changing override_redirect attribute usually requires a unmap/map cycle
+            # to take effect properly in X11, otherwise the visual state
+            # might desync.
+            x_win.unmap()
+            x_win.map()
+
+            # raise window
+            x_win.configure(stack_mode=X.Above)
+            local_display.flush()
+            self.present()
+
+            logger.info(
+                f"Monitor thread active. Watching Root {hex(root.id)} for intruders."
+            )
+
+            GLib.idle_add(self._try_grab_input_with_retry)
+
+            while True:
+                # blocking
+                event = local_display.next_event()
+
+                # # Obscured
+                # if event.type == X.VisibilityNotify and event.window.id == self.xid:
+                #     if event.state != X.VisibilityUnobscured:
+                #         logger.debug("Lock screen obscured.")
+                #         should_raise = True
+
+                if event.type in [
+                    X.MapNotify,  # ANY window maps
+                    X.ConfigureNotify,  # Something else moved/resized/restacked
+                    X.CirculateNotify,  # We were obscured
+                ]:
+                    # skip if the event is about our own window to avoid infinite loops
+                    if hasattr(event, "window") and event.window.id == self.xid:
+                        continue
+
+                    # not waiting to be obscured.
+                    # raise the moment another window even tries to move.
+                    x_win.configure(stack_mode=X.Above)
+                    local_display.flush()
+
+                elif event.type == X.DestroyNotify and event.window.id == self.xid:
+                    logger.info("Lock screen unmapped/destroyed. Exiting thread.")
+                    break
+
+        except Exception as e:
+            logger.error(f"Error in raise_loop: {e}")
+
+        return False 
 
     def _try_grab_input_with_retry(self, attempts: int = 100):
         if not self.grabber.try_grab():
@@ -432,6 +524,7 @@ class LockScreen(Window):
         app = self.get_application()
         if app:
             app.quit()
+
 
 if __name__ == "__main__":
     lock_win = LockScreen()
