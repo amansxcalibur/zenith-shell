@@ -20,7 +20,7 @@ from modules.core.bottom.shell_window_manager import ShellWindowManager
 from modules.core.top.shell_window_manager import ShellTopWindowManager
 
 from config.info import config, SHELL_NAME, HOME_DIR, ROOT_DIR
-from config.i3.utils import i3_border_setter
+from config.i3.utils import i3_border_setter, i3_keybinds_setter
 
 
 def normalize_path():
@@ -69,6 +69,9 @@ if __name__ == "__main__":
 
     # set wallpaper and init service
     WallpaperService().initialize()
+    
+    # set i3 keybinds
+    i3_keybinds_setter()
 
     pill = Pill()
     dockBar = DockBar(pill=pill)
