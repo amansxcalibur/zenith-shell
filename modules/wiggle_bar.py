@@ -4,7 +4,7 @@ from typing import Tuple
 
 from fabric.core.service import Service, Signal, Property
 
-from config.info import HOME_DIR
+from config.info import ROOT_DIR
 from utils.colors import get_css_variable, hex_to_rgb01
 
 import gi
@@ -140,7 +140,7 @@ class WigglyScale(Gtk.DrawingArea, Service):
 
         cr.stroke()
 
-        # hex_color = get_css_variable(f'{info.HOME_DIR}/fabric/styles/colors_player.css', '--foreground-player')
+        # hex_color = get_css_variable(f'{info.ROOT_DIR}/styles/colors_player.css', '--foreground-player')
         # r, g, b = hex_to_rgb01(hex_color)
         # cr.set_source_rgb(r, g, b)
 
@@ -357,7 +357,7 @@ class WigglyArrow(Gtk.DrawingArea, Service):
             return self._override_color
 
         hex_color = get_css_variable(
-            f"{HOME_DIR}/fabric/styles/colors.css",
+            f"{ROOT_DIR}/styles/colors.css",
             "--on-primary" if self.dark else "--primary",
         )
         return hex_to_rgb01(hex_color)

@@ -20,15 +20,15 @@ test = "aaaa"
 
 # [templates.fabric_player_runtime]
 # # Relative paths will be resolved from the path `config.toml` is in.
-# input_path = "~/fabric/config/matugen/colors_runtime_player.json"
-# output_path = '~/fabric/styles/stash/color.json'
+# input_path = "./colors_runtime_player.json"
+# output_path = '../../styles/stash/color.json'
 
 [templates.gtk3]
-input_path = '~/fabric/config/matugen/gtk3.css'
+input_path = './gtk3.css'
 output_path = '~/.config/gtk-3.0/colors.css'
 
 [templates.gtk4]
-input_path = '~/fabric/config/matugen/gtk3.css'
+input_path = './gtk3.css'
 output_path = '~/.config/gtk-4.0/colors.css'
 
 # This will use a different input path depending on what mode you use.

@@ -9,9 +9,6 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk
 
-CONFIG_DIR = os.path.expanduser("~/fabric/config/")
-CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
-
 DEFAULTS = {
     "system": {
         "SILENT": False,
@@ -47,6 +44,8 @@ TEMP_DIR = "/tmp/zenith"
 HOME_DIR = os.path.expanduser("~")
 CACHE_DIR = os.path.expanduser("~/.cache/zenith-shell")
 ROOT_DIR = Path(__file__).resolve().parent.parent
+CONFIG_DIR = os.path.expanduser(f"{ROOT_DIR}/config/")
+CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 
 screen = Gdk.Display().get_default().get_default_screen()
 SCREEN_WIDTH = screen.get_width()

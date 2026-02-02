@@ -3,7 +3,7 @@ import math
 import cairo
 import datetime
 
-from config.info import HOME_DIR
+from config.info import ROOT_DIR
 from utils.colors import get_css_variable, hex_to_rgb01
 
 import gi
@@ -52,7 +52,7 @@ class WavyClock(Gtk.DrawingArea):
             angle += angle_step
 
         hex_color = get_css_variable(
-            f"{HOME_DIR}/fabric/styles/colors.css", "--primary"
+            f"{ROOT_DIR}/styles/colors.css", "--primary"
         )
         r, g, b = hex_to_rgb01(hex_color)
         ctx.set_source_rgb(r, g, b)
@@ -82,7 +82,7 @@ class WavyClock(Gtk.DrawingArea):
         # hour hand
         hr_r, hr_g, hr_b = hex_to_rgb01(
             get_css_variable(
-                f"{HOME_DIR}/fabric/styles/colors.css", "--on-primary"
+                f"{ROOT_DIR}/styles/colors.css", "--on-primary"
             )
         )
         ctx.set_line_width(dot_radius*2)
@@ -111,7 +111,7 @@ class WavyClock(Gtk.DrawingArea):
 
         ctx.arc(x, y, dot_radius, 0, math.tau)
         hex_color = get_css_variable(
-            f"{HOME_DIR}/fabric/styles/colors.css", "--tertiary"
+            f"{ROOT_DIR}/styles/colors.css", "--tertiary"
         )
         r, g, b = hex_to_rgb01(hex_color)
         ctx.set_source_rgba(r, g, b)

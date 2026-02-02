@@ -14,7 +14,7 @@ from fabric.core.service import Service, Signal, Property
 
 from widgets.popup_window import SharedPopupWindow
 import icons
-from config.info import HOME_DIR
+from config.info import ROOT_DIR
 from utils.cursor import add_hover_cursor
 from utils.colors import get_css_variable, hex_to_rgb01
 
@@ -294,7 +294,7 @@ class WeatherPill(Gtk.DrawingArea):
 
     def _get_color(self, css_var: str) -> Tuple[float, float, float]:
         """Get RGB color from CSS variable."""
-        hex_color = get_css_variable(f"{HOME_DIR}/fabric/styles/colors.css", css_var)
+        hex_color = get_css_variable(f"{ROOT_DIR}/styles/colors.css", css_var)
         return hex_to_rgb01(hex_color)
 
     def _draw_circle(self, ctx: cairo.Context, cx: float, cy: float, radius: float):

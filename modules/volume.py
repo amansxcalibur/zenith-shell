@@ -5,10 +5,10 @@ from fabric.widgets.button import Button
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 
-from widgets.animated_scale import AnimatedScale, AnimatedCircularScale, WigglyCircularScale
+from widgets.animated_scale import AnimatedScale, AnimatedCircularScale
 from services.volume_service import VolumeService
 import svg
-from config.info import config, HOME_DIR
+from config.info import config, ROOT_DIR
 from utils.colors import get_css_variable
 
 
@@ -111,9 +111,9 @@ class VolumeMaterial3(AnimatedScale):
     def update_volume(self, volume, is_muted):
         if volume is not None:
             if volume > 1 and not is_muted:
-                self.add_style_class('vol-overflow-slider')
+                self.add_style_class("vol-overflow-slider")
             else:
-                self.remove_style_class('vol-overflow-slider')
+                self.remove_style_class("vol-overflow-slider")
             if not self.ui_updating:
                 self.ui_updating = True
                 if self.update_from_user or self.is_dragging:
@@ -140,7 +140,9 @@ class VolumeSmall(Box):
         )
 
         # self.vol_label = Label(name="vol-label", markup=icons.vol_high)
-        self.vol_label = Svg(name="vol-label", svg_string=svg.volume_modern, style="color:antiquewhite")
+        self.vol_label = Svg(
+            name="vol-label", svg_string=svg.volume_modern, style="color:antiquewhite"
+        )
         self.vol_button = Button(
             name="vol-button", on_clicked=self.toggle_mute, child=self.vol_label
         )
@@ -154,7 +156,7 @@ class VolumeSmall(Box):
         self.hide_timer = None
         self.hover_counter = 0
         self.vol_popup_label = Label(name="control-slider-label", label="--")
-        
+
         self.event_box.connect("scroll-event", self.on_scroll)
 
         self.add(self.event_box)
@@ -185,13 +187,15 @@ class VolumeSmall(Box):
         if muted:
             self.progress_bar.add_style_class("muted")
             # self.vol_label.add_style_class("muted")
-            color = get_css_variable(file_path=f"{HOME_DIR}/fabric/styles/colors.css", var_name='outline')
+            color = get_css_variable(
+                file_path=f"{ROOT_DIR}/styles/colors.css", var_name="outline"
+            )
             self.vol_label.set_style(f"color: {color}")
             self.vol_label.set_from_string(svg.volume_mute_modern)
         else:
             self.progress_bar.remove_style_class("muted")
             # self.vol_label.remove_style_class("muted")
-            self.vol_label.set_style('color:antiquewhite;')
+            self.vol_label.set_style("color:antiquewhite;")
             self.vol_label.set_from_string(svg.volume_modern)
 
             # if volume > 74:

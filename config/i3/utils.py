@@ -2,7 +2,7 @@ import colorsys
 from pathlib import Path
 from loguru import logger
 
-from config.info import HOME_DIR
+from config.info import ROOT_DIR
 from config.bindings import KeyBinding, I3_KEYBINDINGS
 from utils.colors import get_css_variable, hex_to_rgb01
 
@@ -34,7 +34,7 @@ def ensure_vibrancy(hex_color: str, min_brightness=0.8, min_saturation=0.5) -> s
 def i3_border_setter(hex_color: str = None):
     if hex_color is None:
         raw_color = get_css_variable(
-            f"{HOME_DIR}/fabric/styles/colors.css", "--primary"
+            f"{ROOT_DIR}/styles/colors.css", "--primary"
         )
         # hex_color = ensure_vibrancy(raw_color)
         hex_color = raw_color

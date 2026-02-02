@@ -271,7 +271,7 @@ class PlayerService(Service):
 
             # legacy reference
             # exec_shell_command_async(
-            #     f"matugen image {local_arturl} -c {info.HOME_DIR}/fabric/config/matugen/player_config.toml"
+            #     f"matugen image {local_arturl} -c {info.ROOT_DIR}/config/matugen/player_config.toml"
             # )
 
         except Exception as e:

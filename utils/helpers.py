@@ -1,3 +1,5 @@
+from config.info import ROOT_DIR
+
 def toggle_class(widget, remove, add):
     widget.remove_style_class(remove)
     widget.add_style_class(add)
@@ -14,7 +16,7 @@ def toggle_class(widget, remove, add):
 def toggle_config_vertical_flag():
     import os
 
-    CONFIG_PATH = os.path.expanduser("~/fabric/config/info.py")
+    CONFIG_PATH = os.path.expanduser(f"{ROOT_DIR}/config/info.py")
     with open(CONFIG_PATH, "r") as f:
         lines = f.readlines()
 
