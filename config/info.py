@@ -9,7 +9,21 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk
 
+
 DEFAULTS = {
+    "i3": {
+        "gaps": {
+            "enable": True,
+            "props": {
+                "outer": 3,
+                "inner": 0
+            },
+        },
+        "borders": {
+            "enable": True,
+            "props": {"border_width": 2, "smart_borders": True},
+        },
+    },
     "system": {
         "SILENT": False,
         "VERTICAL": False,
@@ -54,6 +68,7 @@ SCREEN_HEIGHT = screen.get_height()
 
 # TODO: Config shouldn't really create the 'paths'. It should point to the expected path.
 #       Something like that should be done during install. Perhaps a better architecture...
+
 
 class _ConfigNode:
     """Represents any node in the config tree (can be a dict, list, or leaf value)"""
