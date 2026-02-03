@@ -219,9 +219,9 @@ class ShellWindowManager:
 
     def _connect_geometry_enforcement(self, widget): ...
 
-    def _get_min_width(self, widget: Gtk.Widget) -> int:
+    def _get_nat_width(self, widget: Gtk.Widget) -> int:
         min_w, nat_w = widget.get_preferred_width()
-        return min_w
+        return nat_w
 
     def _check_horizontal_overflow(self) -> bool:
         if not self.dockBar.get_window():
@@ -233,28 +233,28 @@ class ShellWindowManager:
 
         screen_width = geo.width
 
-        start_w = self._get_min_width(self.dockBar.start_children)
-        dock_w = self._get_min_width(self.dockBar.pill_dock_container)
-        end_w = self._get_min_width(self.dockBar.end_children)
+        start_w = 0
+        for i in self.dockBar.layout_manager_left.hover_overlay_row:
+            start_w += self._get_nat_width(i)
 
-        total_needed = start_w + dock_w + end_w
+        end_w = 0
+        for i in self.dockBar.layout_manager_left.hover_overlay_row:
+            end_w += self._get_nat_width(i)
 
-        is_now_overflowing = total_needed > screen_width
+        dock_w = self._get_nat_width(self.dockBar.pill_dock_container)
 
-        # if self.is_dock_overflowing != is_now_overflowing:
-        #     self.is_dock_overflowing = is_now_overflowing
+        BUFFER = 20 # pill start/end curved edge width
+        is_overflowing = (start_w + dock_w/2 + BUFFER > screen_width/2) or \
+                            (end_w + dock_w/2 + BUFFER > screen_width/2)
 
-        #     if self.is_dock_overflowing:
-        #         logger.debug(
-        #             f"[DockBar] OVERFLOW DETECTED: needed={total_needed}, screen={screen_width}"
-        #         )
-        #     else:
-        #         logger.debug(
-        #             f"[DockBar] FITS: needed={total_needed}, screen={screen_width}"
-        #         )
+        # total_needed =  dock_w + start_w + end_w
+        # if is_overflowing:
+        #     logger.debug(
+        #         f"[DockBar] OVERFLOW DETECTED: needed={total_needed} ({start_w}, {dock_w}, {end_w}), screen={screen_width}"
+        #     )
+        # else:
+        #     logger.debug(
+        #         f"[DockBar] FITS: needed={total_needed} ({start_w}, {dock_w}, {end_w}), screen={screen_width}"
+        #     )
 
-        # Defer snapping to the next idle cycle to avoid a recursive layout loop
-        # (size-allocate -> move -> size-allocate) which causes crashes.
-        # GLib.idle_add(lambda: self._snap_pill(animate=False, fixed=True))
-
-        return is_now_overflowing
+        return is_overflowing
