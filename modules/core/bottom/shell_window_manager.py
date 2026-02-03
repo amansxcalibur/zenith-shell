@@ -43,7 +43,10 @@ class ShellWindowManager:
         self.pill.connect("size-allocate", self._on_pill_resized)
         self.dockBar.connect("notify::visible", self._on_dock_visibility_toggle)
         self.dockBar.connect(
-            "size-allocate", lambda *_: self._check_horizontal_overflow()
+            "size-allocate",
+            # Defer snapping to the next idle cycle to avoid a recursive layout loop
+            # (size-allocate -> move -> size-allocate) which causes crashes.
+            lambda *_: GLib.idle_add(self._snap_pill, False, True),
         )
 
         self._disconnect_geometry_enforcement(self.pill)
@@ -103,6 +106,12 @@ class ShellWindowManager:
             self.dockBar.override_close()
 
     def _snap_pill(self, animate: bool = True, fixed: bool = False):
+        is_now_overflowing = self._check_horizontal_overflow()
+        if self.is_dock_overflowing != is_now_overflowing:
+            self.is_dock_overflowing = is_now_overflowing
+            animate = False
+            fixed = True
+
         geo = self._get_monitor_geometry(self.pill)
         win_x, win_y = self.pill.get_position()
         win_w, win_h = self.pill.get_size()
@@ -214,7 +223,7 @@ class ShellWindowManager:
         min_w, nat_w = widget.get_preferred_width()
         return min_w
 
-    def _check_horizontal_overflow(self):
+    def _check_horizontal_overflow(self) -> bool:
         if not self.dockBar.get_window():
             return
 
@@ -232,18 +241,20 @@ class ShellWindowManager:
 
         is_now_overflowing = total_needed > screen_width
 
-        if self.is_dock_overflowing != is_now_overflowing:
-            self.is_dock_overflowing = is_now_overflowing
+        # if self.is_dock_overflowing != is_now_overflowing:
+        #     self.is_dock_overflowing = is_now_overflowing
 
-            if self.is_dock_overflowing:
-                logger.debug(
-                    f"[DockBar] OVERFLOW DETECTED: needed={total_needed}, screen={screen_width}"
-                )
-            else:
-                logger.debug(
-                    f"[DockBar] FITS: needed={total_needed}, screen={screen_width}"
-                )
+        #     if self.is_dock_overflowing:
+        #         logger.debug(
+        #             f"[DockBar] OVERFLOW DETECTED: needed={total_needed}, screen={screen_width}"
+        #         )
+        #     else:
+        #         logger.debug(
+        #             f"[DockBar] FITS: needed={total_needed}, screen={screen_width}"
+        #         )
 
-            # Defer snapping to the next idle cycle to avoid a recursive layout loop
-            # (size-allocate -> move -> size-allocate) which causes crashes.
-            GLib.idle_add(lambda: self._snap_pill(animate=False, fixed=True))
+        # Defer snapping to the next idle cycle to avoid a recursive layout loop
+        # (size-allocate -> move -> size-allocate) which causes crashes.
+        # GLib.idle_add(lambda: self._snap_pill(animate=False, fixed=True))
+
+        return is_now_overflowing
