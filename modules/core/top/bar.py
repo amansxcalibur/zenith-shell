@@ -165,8 +165,8 @@ class TopBar(Window):
         now = time.time()
         if now - self.last_hover_time < 0.3:
             return  # ignore rapid flickers
-        self.last_hover_time = now
 
+        self.last_hover_time = now
         self._pill_ref.toggle_notification()
 
     def get_is_open(self):

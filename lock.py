@@ -36,6 +36,7 @@ from gi.repository import Gtk, GLib, Gdk
 
 # TODO:
 # - re-raise worker (needs testing and improvement)
+# - compositor handle
 # - handle runtime keymap changes.
 # - multi monitor setups
 # - handle screen configuration change

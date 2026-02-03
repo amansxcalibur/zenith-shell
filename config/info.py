@@ -17,6 +17,7 @@ DEFAULTS = {
             "enable": True,
             "props": {"border_width": 2, "smart_borders": True},
         },
+        "smart_borders": {"enable": True},
     },
     "system": {
         "SILENT": False,
@@ -176,9 +177,10 @@ class ConfigManager(Service):
         self._modules = {}
         for key in self._data.keys():
             if isinstance(self._data[key], dict):
-                self._modules[key] = _ConfigNode(
-                    self._data[key], self._root_node, [key], self
-                )
+                # self._modules[key] = _ConfigNode(
+                #     self._data[key], self._root_node, [key], self
+                # )
+                self._modules[key] = getattr(self._root_node, key)
 
     def _deep_merge(self, base, updates):
         """Recursively merge updates into base"""

@@ -21,9 +21,9 @@ from modules.core.top.shell_window_manager import ShellTopWindowManager
 
 from config.info import config, SHELL_NAME, HOME_DIR, ROOT_DIR
 from config.i3.utils import (
-    i3_border_setter,
-    i3_keybinds_setter,
-    i3_borders_and_gaps_setter,
+    generate_i3_general_config,
+    generate_i3_keybinds_config,
+    generate_i3_border_theme_config,
 )
 
 
@@ -75,8 +75,8 @@ if __name__ == "__main__":
     WallpaperService().initialize()
 
     # set i3 keybinds. Don't reload yet
-    i3_keybinds_setter()
-    i3_borders_and_gaps_setter()
+    generate_i3_keybinds_config()
+    generate_i3_general_config()
 
     pill = Pill()
     dockBar = DockBar(pill=pill)
@@ -113,7 +113,7 @@ if __name__ == "__main__":
             },
         )
         # relaods i3wm
-        i3_border_setter(reload=True)
+        generate_i3_border_theme_config(reload=True)
 
     app.style_monitor = monitor_file(get_relative_path("./styles"))
     app.style_monitor.connect("changed", set_css)

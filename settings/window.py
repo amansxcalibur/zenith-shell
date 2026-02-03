@@ -12,7 +12,7 @@ from widgets.material_label import MaterialIconLabel, MaterialFontLabel
 import icons
 from config.info import CONFIG_FILE
 from utils.cursor import add_hover_cursor
-from config.i3.utils import i3_keybinds_setter
+from config.i3.utils import generate_i3_keybinds_config
 
 import gi
 
@@ -258,7 +258,7 @@ class SettingsWindow(Window):
             Button(
                 label="Save",
                 style_classes=["settings-btn", "bright"],
-                on_clicked=i3_keybinds_setter,
+                on_clicked=generate_i3_keybinds_config,
             )
         )
         cancel_btn = add_hover_cursor(
