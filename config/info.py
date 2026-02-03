@@ -12,13 +12,7 @@ from gi.repository import Gdk
 
 DEFAULTS = {
     "i3": {
-        "gaps": {
-            "enable": True,
-            "props": {
-                "outer": 3,
-                "inner": 0
-            },
-        },
+        "gaps": {"enable": True, "props": {"outer": 3, "inner": 0}},
         "borders": {
             "enable": True,
             "props": {"border_width": 2, "smart_borders": True},
@@ -30,12 +24,16 @@ DEFAULTS = {
         "BRIGHTNESS_DEV": "intel_backlight",
         "ALLOWED_PLAYERS": ["vlc", "cmus", "firefox", "spotify", "chromium"],
     },
-    "paths": {"WALLPAPERS_DIR": "~/Pictures/Wallpapers/", "SCRIPTS_DIR": "~/i3scripts"},
+    "paths": {
+        "WALLPAPERS_DIR": "~/Pictures/Wallpapers/",
+        "SCRIPTS_DIR": "~/i3scripts",
+    },
     "dashboard": {
-        "WIDGETS_ENABLED": ["clock", "weather", "system"],
+        "WIDGETS_ENABLED": ["clock", "weather"],
         "REFRESH_INTERVAL": 5000,
         "SHOW_NOTIFICATIONS": True,
     },
+    "corners": {"enable": False, "props": {"radisu": 20}},
     "bar": {
         "POSITION": "bottom",
         "HEIGHT": 32,
@@ -44,7 +42,7 @@ DEFAULTS = {
     },
     "pill": {"POSITION": {"x": "center", "y": "bottom"}},
     "network": {"wifi": {"ON": True}},
-    "top_bar": {},
+    "top_bar": {"POSITION": "top", "HEIGHT": 32, "SPACING": 8},
     "top_pill": {"POSITION": {"x": "center", "y": "top"}},
 }
 

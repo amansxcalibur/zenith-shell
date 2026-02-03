@@ -4,19 +4,19 @@ from fabric.widgets.shapes import Corner
 
 
 class MyCorner(Box):
-    def __init__(self, corner):
+    def __init__(self, corner, radius: int):
         super().__init__(
             name="corner-container",
             children=Corner(
                 name="corner",
                 orientation=corner,
-                size=20,
+                size=radius,
             ),
         )
 
 
 class Corners(Window):
-    def __init__(self):
+    def __init__(self, radius: int):
         super().__init__(
             name="notch",
             layer="top",
@@ -45,9 +45,9 @@ class Corners(Window):
                     orientation="h",
                     h_align="fill",
                     children=[
-                        MyCorner("top-left"),
+                        MyCorner("top-left", radius),
                         Box(h_expand=True),
-                        MyCorner("top-right"),
+                        MyCorner("top-right", radius),
                     ],
                 ),
                 Box(v_expand=True),
@@ -56,9 +56,9 @@ class Corners(Window):
                     orientation="h",
                     h_align="fill",
                     children=[
-                        MyCorner("bottom-left"),
+                        MyCorner("bottom-left", radius),
                         Box(h_expand=True),
-                        MyCorner("bottom-right"),
+                        MyCorner("bottom-right", radius),
                     ],
                 ),
             ],
