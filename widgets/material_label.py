@@ -2,50 +2,38 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("PangoCairo", "1.0")
-from gi.repository import Gtk, Pango, PangoCairo
+from gi.repository import Gtk, Pango
 
 from fabric.widgets.label import Label
 
 
-# TODO: fix style inconsistencies when stylesheets are re-applied
-
-
 class VariableFontMixin:
-    """Mixin for handling variable font variations"""
-
-    # default variation ranges - can be overridden by subclasses
     VARIATION_DEFAULTS = {}
 
-    def __init__(self, font_size=48, **variations):
-        self.font_size = font_size
+    def __init__(self, **variations):
         self.variations = {**self.VARIATION_DEFAULTS, **variations}
-        self._font_applied = False
 
-    def _build_variation_string(self):
-        """Build the OpenType variation string from current values"""
+    def _get_variation_string(self):
         return ",".join(f"{k}={v}" for k, v in self.variations.items())
 
     def set_variations(self, **kwargs):
-        """Update font variations with any provided keyword arguments"""
-        self.variations.update({k: v for k, v in kwargs.items() if v is not None})
-        self._update_font()
+        changed = False
+        for k, v in kwargs.items():
+            if v is not None and self.variations.get(k) != v:
+                self.variations[k] = v
+                changed = True
 
-    def get_variation(self, key):
-        """Get a specific variation value"""
-        return self.variations.get(key)
+        if changed and hasattr(self, "_update_attributes"):
+            self._update_attributes()
 
 
 class BaseMaterialLabel(Label, VariableFontMixin):
-    """Base class for labels with variable font support"""
-
-    # override in subclasses
     FONT_FAMILY = "sans-serif"
-    VARIATION_KEYS = set()
 
     def __init__(
         self,
-        text,
-        font_size=48,
+        text="",
+        font_size=None,  # Default to None to allow CSS styling
         style_classes=None,
         h_expand=True,
         v_expand=True,
@@ -54,118 +42,89 @@ class BaseMaterialLabel(Label, VariableFontMixin):
         variation_kwargs = {}
         label_kwargs = {}
 
+        known_variations = getattr(self, "VARIATION_KEYS", set())
+
         for key, value in kwargs.items():
-            if key in self.VARIATION_KEYS:
+            if key in known_variations:
                 variation_kwargs[key] = value
             else:
                 label_kwargs[key] = value
 
+        VariableFontMixin.__init__(self, **variation_kwargs)
+
         Label.__init__(
             self,
+            label=text,
             style_classes=style_classes or [],
             h_expand=h_expand,
             v_expand=v_expand,
             **label_kwargs,
         )
-        VariableFontMixin.__init__(self, font_size=font_size, **variation_kwargs)
 
-        self.text = text
-        self.set_text(text)
+        self._font_size = font_size
+        self._update_attributes()
 
-        self._update_font()
-        self.connect("draw", self._on_first_draw)
+    def set_font_size(self, size):
+        """Set the font size. Pass None to revert to CSS styling."""
+        self._font_size = size
+        self._update_attributes()
 
-    def _on_first_draw(self, widget, cr):
-        """Apply font on first draw when layout is guaranteed to exist"""
-        if not self._font_applied:
-            self._update_font()
-            self._font_applied = True
-        return False
+    def _update_attributes(self):
+        font_desc_str = f"{self.FONT_FAMILY}"
 
-    def _update_font(self):
-        self.set_text(self.text)
-        layout = self.get_layout()
-        if not layout:
-            return
+        if self._font_size is not None:
+            font_desc_str += f" {self._font_size}"
 
-        font_desc = self._create_font_description()
-        layout.set_font_description(font_desc)
-        self.queue_draw()
+        font_desc = Pango.FontDescription.from_string(font_desc_str)
 
-        if self._should_debug():
-            self._debug_font_info(font_desc)
+        # apply variations
+        vars_str = self._get_variation_string()
+        if vars_str:
+            font_desc.set_variations(vars_str)
 
-    def _create_font_description(self):
-        """Create a Pango font description with variations"""
-        font_desc = Pango.FontDescription.from_string(
-            f"{self.FONT_FAMILY} {self.font_size}"
-        )
-        variation_string = self._build_variation_string()
-        if variation_string:
-            font_desc.set_variations(variation_string)
-        return font_desc
+        # create Attribute List
+        attr_list = Pango.AttrList()
+        attr = Pango.AttrFontDesc.new(font_desc)
 
-    def _should_debug(self):
-        return False
+        attr.start_index = 0
+        attr.end_index = 0xFFFFFFFF
 
-    def _debug_font_info(self, font_desc):
-        context = self.get_pango_context()
-        print(f"=== {self.__class__.__name__} Debug ===")
-        print(f"Text: {self.text}")
-        print(f"Family: {context.get_font_description().get_family()}")
-        print(f"Font Description: {font_desc.to_string()}")
-        print(f"Variations: {font_desc.get_variations()}")
-
-    def set_text_content(self, text):
-        """Update the text content and refresh the font"""
-        self.text = text
-        Label.set_text(self, text)
-        self._update_font()
+        attr_list.insert(attr)
+        self.set_attributes(attr_list)
 
 
 class MaterialIconLabel(BaseMaterialLabel):
-    """Label for Material Symbols with variable font features"""
+    """Label for Material Symbols."""
 
     FONT_FAMILY = "Material Symbols Rounded"
+
     VARIATION_DEFAULTS = {
         "FILL": 1,
         "wght": 400,
         "GRAD": 0,
         "opsz": 48,
     }
-    VARIATION_KEYS = {"FILL", "wght", "GRAD", "opsz"}
+    VARIATION_KEYS = set(VARIATION_DEFAULTS.keys())
 
-    def __init__(
-        self, icon_text, font_size=48, fill=1, wght=400, grad=0, opsz=48, **kwargs
-    ):
+    def __init__(self, icon_text, **kwargs):
+        for k, v in self.VARIATION_DEFAULTS.items():
+            kwargs.setdefault(k, v)
+
         super().__init__(
             text=icon_text,
-            font_size=font_size,
             style_classes=["material-label"],
-            FILL=fill,
-            wght=wght,
-            GRAD=grad,
-            opsz=opsz,
             **kwargs,
         )
 
-    def set_variations(
-        self,
-        FILL: float | None = None,
-        wght: int | None = None,
-        opsz: int | None = None,
-        GRAD: int | None = None,
-    ) -> None:
-        super().set_variations(FILL=FILL, wght=wght, opsz=opsz, GRAD=GRAD)
-
     def set_icon(self, icon_text):
-        self.set_text_content(icon_text)
+        self.set_text(icon_text)
 
 
 class MaterialFontLabel(BaseMaterialLabel):
-    """Label for Roboto Flex with extensive variable font features"""
+    """Label for Variable Font (Roboto Flex)."""
 
     FONT_FAMILY = "Roboto Flex"
+
     VARIATION_DEFAULTS = {
         "wght": 400,
         "GRAD": 0,
@@ -175,134 +134,10 @@ class MaterialFontLabel(BaseMaterialLabel):
         "slnt": 0,
         "XTRA": 468,
     }
-    VARIATION_KEYS = {"wght", "GRAD", "opsz", "wdth", "ital", "slnt", "XTRA"}
+    VARIATION_KEYS = set(VARIATION_DEFAULTS.keys())
 
-    def __init__(
-        self,
-        text,
-        font_size=48,
-        wght=400,
-        grad=0,
-        opsz=48,
-        wdth=100,
-        ital=0,
-        slnt=0,
-        xtra=468,
-        **kwargs,
-    ):
-        super().__init__(
-            text=text,
-            font_size=font_size,
-            wght=wght,
-            GRAD=grad,
-            opsz=opsz,
-            wdth=wdth,
-            ital=ital,
-            slnt=slnt,
-            XTRA=xtra,
-            **kwargs,
-        )
+    def __init__(self, text, **kwargs):
+        for k, v in self.VARIATION_DEFAULTS.items():
+            kwargs.setdefault(k, v)
 
-    def set_variations(
-        self,
-        wght: int | None = None,
-        GRAD: int | None = None,
-        opsz: int | None = None,
-        wdth: int | None = None,
-        ital: int | None = None,
-        slnt: int | None = None,
-        XTRA: int | None = None,
-    ) -> None:
-        super().set_variations(
-            wght=wght,
-            opsz=opsz,
-            GRAD=GRAD,
-            wdth=wdth,
-            ital=ital,
-            slnt=slnt,
-            XTRA=XTRA,
-        )
-
-    def update_text(self, text):
-        self.set_text_content(text)
-
-
-# I'll just put this implementation here for now
-class MaterialIconLabelRaw(Gtk.DrawingArea, VariableFontMixin):
-    """
-    A drawing-area-based widget for Material Icons with variable font support.
-    Uses direct Cairo rendering for more control over font rendering.
-    """
-
-    FONT_FAMILY = "Material Symbols Rounded"
-    VARIATION_DEFAULTS = {
-        "FILL": 1,
-        "wght": 400,
-        "GRAD": 0,
-        "opsz": 48,
-    }
-
-    def __init__(
-        self, icon_text, font_size=48, fill=1, wght=400, grad=0, opsz=48, **kwargs
-    ):
-        Gtk.DrawingArea.__init__(self)
-        VariableFontMixin.__init__(
-            self,
-            font_size=font_size,
-            FILL=fill,
-            wght=wght,
-            GRAD=grad,
-            opsz=opsz,
-            **kwargs,
-        )
-
-        self.icon_text = icon_text
-        self.set_size_request(font_size + 10, font_size + 10)
-        self.connect("draw", self._on_draw)
-
-    def _on_draw(self, widget, cr):
-        layout = PangoCairo.create_layout(cr)
-
-        # create font description with variations
-        font_desc = Pango.FontDescription.from_string(
-            f"{self.FONT_FAMILY} {self.font_size}"
-        )
-        variation_string = self._build_variation_string()
-        if variation_string:
-            font_desc.set_variations(variation_string)
-
-        # configure layout
-        layout.set_font_description(font_desc)
-        layout.set_text(self.icon_text)
-
-        # center the icon
-        ink_rect, logical_rect = layout.get_pixel_extents()
-        width = self.get_allocated_width()
-        height = self.get_allocated_height()
-
-        x = (width - logical_rect.width) // 2
-        y = (height - logical_rect.height) // 2
-
-        cr.move_to(x, y)
-        PangoCairo.show_layout(cr, layout)
-
-        if self._should_debug():
-            self._debug_font_info(font_desc)
-
-        return False
-
-    def _should_debug(self):
-        return False
-
-    def _debug_font_info(self, font_desc):
-        print(f"=== {self.__class__.__name__} Debug ===")
-        print(f"Text: {self.icon_text}")
-        print(f"Family: {font_desc.get_family()}")
-        print(f"Variations: {font_desc.get_variations()}")
-
-    def set_icon(self, icon_text):
-        self.icon_text = icon_text
-        self.queue_draw()
-
-    def _update_font(self):
-        self.queue_draw()
+        super().__init__(text=text, **kwargs)

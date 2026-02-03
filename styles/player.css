@@ -243,15 +243,15 @@
 #shuffle {
   font-size: 18px;
 }
-
+  
 #disable-shuffle {
   font-size: 27px;
   margin: 0px -5px;
 }
 
 #placeholder-icon {
-  font-size: 50px;
-  margin-left: -60px;
+  font-size: 70px;
+  margin-left: -70px;
   margin-bottom: -20px;
   margin-right: -20px;
 }

@@ -44,7 +44,7 @@ class IconVariationsTab(BaseWidget, SliderControlMixin):
             spacing=5,
             children=[
                 MaterialIconLabel(
-                    icon_text=icons.home.symbol(), font_size=48, fill=fill, wght=wght, grad=grad
+                    icon_text=icons.home.symbol(), font_size=48, FILL=fill, wght=wght, GRAD=grad
                 ),
                 Label(label=f"FILL={fill}\nwght={wght}\nGRAD={grad}"),
             ],

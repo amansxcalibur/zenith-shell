@@ -158,6 +158,7 @@ class Dashboard(Box):
                 Box(children=close_btn_2),
             ],
         )
+        from widgets.material_label import MaterialIconLabel
 
         self.notification_container = Revealer(
             transition_duration=250,
@@ -196,8 +197,8 @@ class Dashboard(Box):
                                     ),
                                     add_hover_cursor(
                                         Button(
-                                            child=Label(
-                                                markup=icons.settings.markup(),
+                                            child=MaterialIconLabel(
+                                                icon_text=icons.settings_material.symbol(),
                                                 style="font-size:25px; color:var(--foreground);",
                                             ),
                                             on_clicked=open_settings,
