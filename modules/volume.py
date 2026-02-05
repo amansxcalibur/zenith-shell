@@ -1,5 +1,5 @@
 from fabric.widgets.box import Box
-from fabric.widgets.svg import Svg
+from widgets.overrides import Svg
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.overlay import Overlay
@@ -8,8 +8,7 @@ from fabric.widgets.eventbox import EventBox
 from widgets.animated_scale import AnimatedScale, AnimatedCircularScale
 from services.volume_service import VolumeService
 import svg
-from config.info import config, ROOT_DIR
-from utils.colors import get_css_variable
+from config.info import config
 
 
 class VolumeSlider(AnimatedScale):
@@ -139,10 +138,7 @@ class VolumeSmall(Box):
             end_angle=270,
         )
 
-        # self.vol_label = Label(name="vol-label", markup=icons.vol_high)
-        self.vol_label = Svg(
-            name="vol-label", svg_string=svg.volume_modern, style="color:antiquewhite"
-        )
+        self.vol_label = Svg(name="vol-label", svg_string=svg.volume_modern)
         self.vol_button = Button(
             name="vol-button", on_clicked=self.toggle_mute, child=self.vol_label
         )
@@ -187,15 +183,10 @@ class VolumeSmall(Box):
         if muted:
             self.progress_bar.add_style_class("muted")
             self.vol_label.add_style_class("muted")
-            # color = get_css_variable(
-            #     file_path=f"{ROOT_DIR}/styles/colors.css", var_name="outline"
-            # )
-            # self.vol_label.set_style(f"color: {color}")
             self.vol_label.set_from_string(svg.volume_mute_modern)
         else:
             self.progress_bar.remove_style_class("muted")
             self.vol_label.remove_style_class("muted")
-            self.vol_label.set_style("color:antiquewhite;")
             self.vol_label.set_from_string(svg.volume_modern)
 
             # if volume > 74:
