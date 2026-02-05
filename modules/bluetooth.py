@@ -16,7 +16,7 @@ class Bluetooth(Tile):
         super().__init__(
             label="Bluetooth",
             props=self.label,
-            markup=icons.bluetooth.markup(),
+            markup=icons.bluetooth.symbol(),
             menu=True,
             **kwargs,
         )

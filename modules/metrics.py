@@ -10,8 +10,9 @@ from fabric.core.fabricator import Fabricator
 from fabric.core.service import Service, Signal
 from fabric.widgets.circularprogressbar import CircularProgressBar
 
-from widgets.popup_window import SharedPopupWindow
 from widgets.animated_scale import AnimatedScale
+from widgets.popup_window import SharedPopupWindow
+from widgets.material_label import MaterialIconLabel
 from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
 
 import icons as icons
@@ -217,7 +218,7 @@ class MetricsSmall(Button):
             self.add_style_class("vertical")
 
         # ------------------ CPU ------------------
-        self.cpu_icon = Label(name="cpu-icon", markup=icons.cpu.markup())
+        self.cpu_icon = MaterialIconLabel(name="cpu-icon", icon_text=icons.cpu.symbol())
         self.cpu_circle = AnimatedCircularProgressBar(
             name="metrics-circle",
             value=0,
@@ -248,7 +249,7 @@ class MetricsSmall(Button):
         )
 
         # ------------------ RAM ------------------
-        self.ram_icon = Label(name="ram-icon", markup=icons.memory.markup())
+        self.ram_icon = MaterialIconLabel(name="ram-icon", icon_text=icons.memory.symbol())
         self.ram_circle = AnimatedCircularProgressBar(
             name="metrics-circle",
             value=0,
@@ -277,7 +278,7 @@ class MetricsSmall(Button):
         )
 
         # ------------------ Disk ------------------
-        self.disk_icon = Label(name="disk-icon", markup=icons.disk.markup())
+        self.disk_icon = MaterialIconLabel(name="disk-icon", icon_text=icons.disk.symbol())
         self.disk_circle = AnimatedCircularProgressBar(
             name="metrics-circle",
             value=0,
@@ -423,11 +424,11 @@ class Battery(Button):
             self.add_style_class("vertical")
 
         # ------------------ Battery ------------------
-        self.bat_icon = Label(
+        self.bat_icon = MaterialIconLabel(
             angle=90,
             name="bat-icon",
             style_classes="metrics-icon",
-            markup=icons.battery.markup(),
+            icon_text=icons.battery.symbol(),
         )
         self.bat_circle = CircularProgressBar(
             name="metrics-circle",
@@ -537,20 +538,20 @@ class Battery(Button):
 
         # Choose the icon based on charging state first, then battery level
         if percentage == 100:
-            self.bat_icon.set_markup(icons.battery.markup())
+            self.bat_icon.set_icon(icons.battery.symbol())
             self.bat_circle.add_style_class("full-bat")
-            charging_status = f"{icons.bat_full.markup()} Fully Charged"
+            charging_status = f"{icons.bat_full.symbol()} Fully Charged"
         elif charging:
-            self.bat_icon.set_markup(icons.battery_charging.markup())
-            charging_status = f"{icons.bat_charging.markup()} Charging"
+            self.bat_icon.set_icon(icons.battery_charging.symbol())
+            charging_status = f"{icons.bat_charging.symbol()} Charging"
         elif percentage <= 15 and not charging:
             # self.bat_icon.set_markup(icons.alert.markup())
-            charging_status = f"{icons.bat_low.markup()} Low Battery"
+            charging_status = f"{icons.bat_low.symbol()} Low Battery"
         elif not charging:
             # self.bat_icon.set_markup(icons.discharging.markup())
-            charging_status = f"{icons.discharging.markup()} Discharging"
+            charging_status = f"{icons.discharging.symbol()} Discharging"
         else:
-            self.bat_icon.set_markup(icons.battery.markup())
+            self.bat_icon.set_icon(icons.battery.symbol())
             charging_status = "Battery"
 
         # tooltip with battery percentage

@@ -391,7 +391,7 @@ class ModuleDropBox(Gtk.ListBox):
         
         close_button = Button(
             name="module-pill-close-button",
-            child=Label(name="close-label", markup=icons.cancel.markup()),
+            child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
             on_clicked=self.on_close,
             visible=False
         )

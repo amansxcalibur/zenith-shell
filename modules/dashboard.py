@@ -6,12 +6,13 @@ from fabric.widgets.revealer import Revealer
 from fabric.widgets.centerbox import CenterBox
 
 from modules.network import Network
-from modules.tile import TileSpecial, Tile
+from modules.weather import WeatherPill
 from modules.bluetooth import Bluetooth
 from modules.wavy_clock import WavyClock
+from modules.tile import TileSpecial, Tile
 from modules.notification import NotificationTile
 from modules.player_mini import PlayerContainerMini
-from modules.weather import WeatherPill
+from widgets.material_label import MaterialIconLabel
 
 import icons
 from config.info import config
@@ -83,7 +84,7 @@ class Dashboard(Box):
 
         close_btn = Button(
             name="close-button",
-            child=Label(name="close-label", markup=icons.cancel.markup()),
+            child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
             tooltip_text="Exit",
             on_clicked=lambda *_: print("clicked close"),
         )
@@ -142,7 +143,7 @@ class Dashboard(Box):
 
         close_btn_2 = Button(
             name="close-button",
-            child=Label(name="close-label", markup=icons.cancel.markup()),
+            child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
             tooltip_text="Exit",
             on_clicked=lambda *_: print("clicked close"),
         )
@@ -158,7 +159,6 @@ class Dashboard(Box):
                 Box(children=close_btn_2),
             ],
         )
-        from widgets.material_label import MaterialIconLabel
 
         self.notification_container = Revealer(
             transition_duration=250,
@@ -190,16 +190,17 @@ class Dashboard(Box):
                         children=[
                             Box(
                                 h_align="end",
+                                spacing=2,
                                 children=[
-                                    Label(
-                                        markup=icons.edit.markup(),
-                                        style="font-size:25px; margin-right:15px; color:var(--foreground)",
+                                    MaterialIconLabel(
+                                        icon_text=icons.edit_material.symbol(),
+                                        style="font-size:28px; color:var(--foreground)",
                                     ),
                                     add_hover_cursor(
                                         Button(
                                             child=MaterialIconLabel(
                                                 icon_text=icons.settings_material.symbol(),
-                                                style="font-size:25px; color:var(--foreground);",
+                                                style="font-size:28px; color:var(--foreground);",
                                             ),
                                             on_clicked=open_settings,
                                         )

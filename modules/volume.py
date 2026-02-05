@@ -186,15 +186,15 @@ class VolumeSmall(Box):
 
         if muted:
             self.progress_bar.add_style_class("muted")
-            # self.vol_label.add_style_class("muted")
-            color = get_css_variable(
-                file_path=f"{ROOT_DIR}/styles/colors.css", var_name="outline"
-            )
-            self.vol_label.set_style(f"color: {color}")
+            self.vol_label.add_style_class("muted")
+            # color = get_css_variable(
+            #     file_path=f"{ROOT_DIR}/styles/colors.css", var_name="outline"
+            # )
+            # self.vol_label.set_style(f"color: {color}")
             self.vol_label.set_from_string(svg.volume_mute_modern)
         else:
             self.progress_bar.remove_style_class("muted")
-            # self.vol_label.remove_style_class("muted")
+            self.vol_label.remove_style_class("muted")
             self.vol_label.set_style("color:antiquewhite;")
             self.vol_label.set_from_string(svg.volume_modern)
 

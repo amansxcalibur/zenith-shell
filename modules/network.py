@@ -12,6 +12,7 @@ from fabric.utils.helpers import exec_shell_command_async
 
 from modules.tile import Tile
 from widgets.clipping_box import ClippingBox
+from widgets.material_label import MaterialIconLabel
 
 import icons
 from config.info import config
@@ -302,17 +303,17 @@ class WifiButton(EventBox):
             name="ap-label", label="Connecting...", h_align="start"
         )
 
-        children = [Label(markup=self._get_wifi_icon()), self.label_box]
+        children = [MaterialIconLabel(icon_text=self._get_wifi_icon(), h_expand = False), self.label_box]
 
         if self.is_saved and not self.active:
             children.append(
-                Label(markup=icons.sync_saved_locally.markup(), tooltip_text="Saved")
+                MaterialIconLabel(icon_text=icons.sync_saved_locally.symbol(), tooltip_text="Saved")
             )
 
         if self.secured:
             children.append(
-                Label(
-                    markup=icons.lock.markup(),
+                MaterialIconLabel(
+                    icon_text=icons.lock_material.symbol(),
                     style_classes=["ap-secure-icon"],
                     tooltip_text="Secured network",
                 )
@@ -321,8 +322,8 @@ class WifiButton(EventBox):
         if self.is_saved and not self.active:
             children.append(
                 Button(
-                    child=Label(
-                        markup=icons.settings.markup(),
+                    child=MaterialIconLabel(
+                        icon_text=icons.settings_material.symbol(),
                         style_classes=["ap-secure-icon"],
                         tooltip_text="Edit profile",
                     ),
@@ -335,13 +336,13 @@ class WifiButton(EventBox):
 
     def _get_wifi_icon(self) -> str:
         if self.strength > 80:
-            return icons.wifi_4.markup()
+            return icons.wifi_4.symbol()
         elif self.strength > 50:
-            return icons.wifi_3.markup()
+            return icons.wifi_3.symbol()
         elif self.strength > 20:
-            return icons.wifi_2.markup()
+            return icons.wifi_2.symbol()
         else:
-            return icons.wifi_1.markup()
+            return icons.wifi_1.symbol()
 
     def _on_button_press(self, source: EventBox, event: Gdk.EventButton) -> bool:
         if event.button == 1:  # left click
@@ -594,7 +595,7 @@ class Network(Tile):
             title="Internet",
             label="Wi-Fi",
             props=self.label,
-            markup=icons.wifi.markup(),
+            markup=icons.wifi.symbol(),
             menu=True,
             menu_children=self.menu,
             style_classes=["off"],
@@ -633,8 +634,8 @@ class Network(Tile):
                             Button(
                                 h_align="end",
                                 on_clicked=lambda *_: self.nm.scan(),
-                                child=Label(
-                                    style_classes=["menu-icon"], markup=icons.refresh.markup()
+                                child=MaterialIconLabel(
+                                    style_classes=["menu-icon"], icon_text=icons.refresh.symbol()
                                 ),
                                 tooltip_markup="Rescan",
                             )

@@ -35,8 +35,8 @@ class BaseMaterialLabel(Label, VariableFontMixin):
         text="",
         font_size=None,  # Default to None to allow CSS styling
         style_classes=None,
-        h_expand=True,
-        v_expand=True,
+        h_expand=False,
+        v_expand=False,
         **kwargs,
     ):
         variation_kwargs = {}
@@ -112,7 +112,7 @@ class MaterialIconLabel(BaseMaterialLabel):
 
         super().__init__(
             text=icon_text,
-            style_classes=["material-label"],
+            # style_classes=["material-label"],
             **kwargs,
         )
 

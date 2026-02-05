@@ -7,6 +7,8 @@ from fabric.widgets.x11 import X11Window as Window
 from modules.metrics import MetricsProvider
 from modules.controls import ControlsManager
 
+from widgets.material_label import MaterialIconLabel
+
 from config.info import config
 import icons
 
@@ -41,7 +43,7 @@ class LowBatteryBanner(Revealer):
 
         close_btn = Button(
             name="close-button",
-            child=Label(name="close-label", markup=icons.cancel.markup()),
+            child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
             tooltip_text="Exit",
             on_clicked=lambda *_: self.close_notification(),
         )

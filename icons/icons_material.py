@@ -28,6 +28,8 @@ notifications_off: str = "&#xece9;"
 notifications: str = "\ue7f4"
 notifications_clear: str = "&#xf814;"
 
+do_not_disturb_on: str = '\ue644'
+
 pill: str = "\ue11f"
 dock_bottom: str = "\uf7e6"
 power: str = "\ue63c"
@@ -78,6 +80,9 @@ trash_material: str = "\ue872"
 
 # player
 disc: str = "\ue019"
+play_material: str = '\ue037'
+pause_material: str = '\ue034'
+shuffle_material: str = '\ue043'
 
 # spotify : str = "\uf2d5"
 
@@ -88,6 +93,7 @@ brightness: str = "&#xe3ab;"
 # metrics
 battery: str = "\uf304"
 battery_charging: str = "\uf250"
+cpu: str = '\ue322'
 
 blur: str = "\ue3a5"
 refresh: str = "\ue5d5"
@@ -103,6 +109,7 @@ wifi_4: str = "\uef10"
 # Vertical
 toggle_orientation: str = "\uf2d5"
 
+lock_material: str = '\ue897'
 
 # Parameters
 font_family: str = "Material Symbols Rounded"

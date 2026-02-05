@@ -9,6 +9,7 @@ import icons
 from config.info import SHELL_NAME
 from utils.cursor import add_hover_cursor
 from widgets.clipping_box import ClippingBox
+from widgets.material_label import MaterialIconLabel
 
 
 class Tile(ClippingBox):
@@ -16,7 +17,7 @@ class Tile(ClippingBox):
         self,
         title: str = "",
         menu: bool = False,
-        markup: str = icons.blur.markup(),
+        markup: str = icons.blur.symbol(),
         label: str = "__",
         menu_children=None,
         props: Label = Label(style_classes="tile-label", label="N/A", h_align="start"),
@@ -31,7 +32,7 @@ class Tile(ClippingBox):
         self.state = False
         self.props = props
 
-        self.icon = Label(style_classes="tile-icon", markup=markup, style=markup_styles)
+        self.icon = MaterialIconLabel(style_classes="tile-icon", icon_text=markup, style=markup_styles)
         self.icon_wrapper = Button(
             style="all:unset;",
             on_clicked=self.handle_state_toggle,
@@ -58,8 +59,8 @@ class Tile(ClippingBox):
 
         self.menu_button = Button(
             style_classes="tile-button",
-            child=Label(
-                name="menu-btn", style_classes="tile-icon", markup=icons.arrow_forward.markup()
+            child=MaterialIconLabel(
+                name="menu-btn", style_classes="tile-icon", icon_text=icons.arrow_forward.symbol()
             ),
             on_clicked=self.handle_menu_click,
         )
@@ -92,7 +93,7 @@ class Tile(ClippingBox):
 
         self.menu_close_btn = Button(
             name="menu-close-button",
-            child=Label(name="close-label", markup=icons.cancel.markup()),
+            child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
             tooltip_text="Exit",
             on_clicked=self.handle_menu_click,
         )

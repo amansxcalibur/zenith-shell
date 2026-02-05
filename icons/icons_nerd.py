@@ -130,7 +130,7 @@ paperclip: str = "&#xeb02;"
 # Confirm
 accept: str = "&#xea5e;"
 # cancel: str = "&#xeb55;"
-cancel: str = chr(0xEA76)
+# cancel: str = chr(0xEA76)
 
 # Config
 config: str = "&#xeb20;"

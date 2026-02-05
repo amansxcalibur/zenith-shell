@@ -15,6 +15,7 @@ from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
 from widgets.clipping_box import ClippingBox
+from widgets.material_label import MaterialIconLabel
 
 import icons
 from config.info import config, CONFIG_DIR, CACHE_DIR
@@ -232,7 +233,7 @@ class WallpaperSelector(Box):
                 self.scheme_dropdown,
                 Button(
                     name="close-button",
-                    child=Label(name="close-label", markup=icons.cancel.markup()),
+                    child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
                     tooltip_text="Exit",
                     on_clicked=lambda *_: self._pill.close(),
                 ),

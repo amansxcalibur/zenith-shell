@@ -45,11 +45,6 @@
     /* min-width: 27px; */
     font-size: 18px;
     color: var(--outline);
-    /* temp */
-    margin-bottom: -3px;
-    margin-top: -2px;
-    margin-left: -1px;
-    margin-right: 1px;
 }
 .trash-icon-adjust{
     /* font-size: 25px; */

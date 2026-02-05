@@ -10,6 +10,8 @@ from fabric.widgets.eventbox import EventBox
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.utils import DesktopApp, get_desktop_applications, idle_add, remove_handler
 
+from widgets.material_label import MaterialIconLabel
+
 import icons
 from config.info import config
 
@@ -135,7 +137,7 @@ class AppLauncher(Box):
                 self.search_entry,
                 Button(
                     name="close-button",
-                    child=Label(name="close-label", markup=icons.cancel.markup()),
+                    child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
                     tooltip_text="Exit",
                     on_clicked=lambda *_: self.close_launcher(),
                 ),

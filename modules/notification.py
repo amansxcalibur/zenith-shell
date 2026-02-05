@@ -8,13 +8,15 @@ from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
 from fabric.widgets.eventbox import EventBox
-from widgets.rounded_image import RoundedImage
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.notifications import Notifications, Notification
 from fabric.widgets.window import Window
 from fabric.utils import invoke_repeater
 
 from modules.tile import Tile
+
+from widgets.rounded_image import RoundedImage
+from widgets.material_label import MaterialIconLabel
 
 import icons
 from config.info import config
@@ -55,7 +57,7 @@ class NotificationTile(Tile):
         )
         self.state = None
         super().__init__(
-            markup=icons.silent.markup(),
+            markup=icons.do_not_disturb_on.symbol(),
             label="Silent",
             props=self.label,
             style_classes=["off"],
@@ -199,8 +201,8 @@ class NotificationWidget(EventBox):
                         children=[
                             Button(
                                 name="close-button",
-                                child=Label(
-                                    name="close-label", markup=icons.cancel.markup()
+                                child=MaterialIconLabel(
+                                    name="close-label", icon_text=icons.close.symbol()
                                 ),
                                 tooltip_text="Close",
                                 on_clicked=lambda *_: self._notification.close(),
@@ -348,8 +350,8 @@ class NotificationManager:
         # TODO
         self.silent_btn = Button(
             # name="notification-reveal-btn",
-            child=Label(
-                name="notification-reveal-label", markup=icons.notifications.markup()
+            child=MaterialIconLabel(
+                name="notification-reveal-label", icon_text=icons.notifications.symbol()
             ),
             tooltip_text="Show/Hide notifications",
             on_clicked=lambda *_: self.handle_silent_state_toggle(),
@@ -357,7 +359,9 @@ class NotificationManager:
         )
         self.clear_btn = Button(
             # name="notification-reveal-btn",
-            child=Label(name="notification-clear-label", markup=icons.trash.markup()),
+            child=MaterialIconLabel(
+                name="notification-clear-label", icon_text=icons.trash_material.symbol()
+            ),
             tooltip_text="Clear notifications",
             on_clicked=lambda *_: self.close_all_notifications(),
             # visible=False,
@@ -467,12 +471,12 @@ class NotificationManager:
 
         if has_revealed_notifications:
             widget = self.clear_btn.get_children()[0]
-            widget.set_markup(icons.trash.markup())
-            toggle_class(widget, "trash-up-icon-adjust", "trash-icon-adjust")
+            widget.set_icon(icons.trash_material.symbol())
+            # toggle_class(widget, "trash-up-icon-adjust", "trash-icon-adjust")
         else:
             widget = self.clear_btn.get_children()[0]
-            widget.set_markup(icons.trash_up.markup())
-            toggle_class(widget, "trash-icon-adjust", "trash-up-icon-adjust")
+            widget.set_icon(icons.trash_up.symbol())
+            # toggle_class(widget, "trash-icon-adjust", "trash-up-icon-adjust")
 
         # should_show_button = has_active_notifications or has_revealed_notifications
         # self.reveal_btn.set_visible(should_show_button)
