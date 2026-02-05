@@ -40,14 +40,9 @@ class ShellWindowManager:
         # Connect signals
         self.pill.connect("on-drag", self._set_dock_state)
         self.pill.connect("on-drag-end", lambda w, state: self._snap_pill())
-        self.pill.connect("size-allocate", self._on_pill_resized)
+        self.pill.connect("size-allocate", self._handle_geometry_change)
+        self.dockBar.connect("size-allocate", self._handle_geometry_change)
         self.dockBar.connect("notify::visible", self._on_dock_visibility_toggle)
-        self.dockBar.connect(
-            "size-allocate",
-            # Defer snapping to the next idle cycle to avoid a recursive layout loop
-            # (size-allocate -> move -> size-allocate) which causes crashes.
-            lambda *_: GLib.idle_add(self._snap_pill, False, True),
-        )
 
         self._disconnect_geometry_enforcement(self.pill)
 
@@ -106,7 +101,12 @@ class ShellWindowManager:
             self.dockBar.override_close()
 
     def _snap_pill(self, animate: bool = True, fixed: bool = False):
+        drag_state = self.pill.get_drag_state()
+        if drag_state and drag_state.get("dragging"):
+            return
+
         is_now_overflowing = self._check_horizontal_overflow()
+
         if self.is_dock_overflowing != is_now_overflowing:
             self.is_dock_overflowing = is_now_overflowing
             animate = False
@@ -163,14 +163,14 @@ class ShellWindowManager:
             target_y += dock_offset
 
         if animate:
-            self._update_target_position(target_x, target_y)
+            self._animate_to_position(target_x, target_y)
         else:
             self.animator.pause()
             self.pill.move(target_x, target_y)
 
         self._set_dock_state(None, None, target_x, target_y)
 
-    def _update_target_position(self, target_x, target_y):
+    def _animate_to_position(self, target_x, target_y):
         drag_state = self.pill.get_drag_state()
         if drag_state and drag_state.get("dragging"):
             return
@@ -238,14 +238,15 @@ class ShellWindowManager:
             start_w += self._get_nat_width(i)
 
         end_w = 0
-        for i in self.dockBar.layout_manager_left.hover_overlay_row:
+        for i in self.dockBar.layout_manager_right.hover_overlay_row:
             end_w += self._get_nat_width(i)
 
         dock_w = self._get_nat_width(self.dockBar.pill_dock_container)
 
-        BUFFER = 20 # pill start/end curved edge width
-        is_overflowing = (start_w + dock_w/2 + BUFFER > screen_width/2) or \
-                            (end_w + dock_w/2 + BUFFER > screen_width/2)
+        BUFFER = 20  # pill start/end curved edge width
+        is_overflowing = (start_w + dock_w / 2 + BUFFER > screen_width / 2) or (
+            end_w + dock_w / 2 + BUFFER > screen_width / 2
+        )
 
         # total_needed =  dock_w + start_w + end_w
         # if is_overflowing:
@@ -258,3 +259,18 @@ class ShellWindowManager:
         #     )
 
         return is_overflowing
+
+    def _handle_geometry_change(self, widget, allocation):
+        drag_state = self.pill.get_drag_state()
+        if drag_state and drag_state.get("dragging") or self.animator.playing:
+            return
+
+        is_now_overflowing = self._check_horizontal_overflow()
+
+        if is_now_overflowing != self.is_dock_overflowing:
+            self.is_dock_overflowing = is_now_overflowing
+            logger.debug(f"[Manager] Overflow state changed: {is_now_overflowing}")
+            GLib.idle_add(lambda: self._snap_pill(animate=False, fixed=True))
+
+        elif widget == self.pill:
+            self._snap_pill(animate=False, fixed=True)
