@@ -4,7 +4,8 @@ from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.datetime import DateTime
-from fabric.widgets.x11 import X11Window as Window
+
+from widgets.overrides import PatchedX11Window as Window
 
 from modules.systray import SystemTray
 from modules.weather import WeatherMini

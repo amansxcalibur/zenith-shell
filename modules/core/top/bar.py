@@ -7,7 +7,9 @@ from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
-from fabric.widgets.x11 import X11WindowGeometry, X11Window as Window
+from fabric.widgets.x11 import X11WindowGeometry
+
+from widgets.overrides import PatchedX11Window as Window
 
 from widgets.clipping_box import ClippingBox
 from utils.helpers import toggle_class

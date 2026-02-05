@@ -2,7 +2,8 @@ from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
-from fabric.widgets.x11 import X11Window as Window
+
+from widgets.overrides import PatchedX11Window as Window
 
 from modules.metrics import MetricsProvider
 from modules.controls import ControlsManager

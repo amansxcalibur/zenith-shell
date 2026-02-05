@@ -2,9 +2,10 @@ from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
-from fabric.widgets.x11 import X11Window as Window
 from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
+
+from widgets.overrides import PatchedX11Window as Window
 
 from modules.notification import NotificationManager
 

@@ -1,6 +1,7 @@
 from fabric.widgets.box import Box
-from fabric.widgets.x11 import X11Window as Window
 from fabric.widgets.shapes import Corner
+
+from widgets.overrides import PatchedX11Window as Window
 
 
 class MyCorner(Box):
