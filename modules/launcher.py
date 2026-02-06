@@ -376,7 +376,7 @@ class AppLauncher(Box):
         )
 
     def _create_command_slot(self, cmd_data: dict) -> Button:
-        icon_markup = cmd_data["icon"]
+        icon = cmd_data["icon"]
         return Button(
             name="app-slot-button",
             child=Box(
@@ -384,12 +384,12 @@ class AppLauncher(Box):
                 orientation="h",
                 spacing=12,
                 children=[
-                    Label(
+                    MaterialIconLabel(
                         name="app-icon",
                         style_classes="command",
-                        markup=icon_markup.markup()
-                        if hasattr(icon_markup, "markup")
-                        else icon_markup,
+                        icon_text=icon.symbol()
+                        if hasattr(icon, "symbol")
+                        else icon,
                         v_align="center",
                     ),
                     Box(

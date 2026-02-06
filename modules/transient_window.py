@@ -53,7 +53,7 @@ class LowBatteryBanner(Revealer):
             name="notification-box",
             style_classes="vertical" if config.VERTICAL else "horizontal",
             children=[
-                Label(name="notification-icon", h_align=True, markup=icons.blur.markup()),
+                MaterialIconLabel(name="notification-icon", h_align=True, icon_text=icons.blur.symbol()),
                 Box(h_expand=True, children=self.content_box),
                 Box(children=close_btn),
             ],

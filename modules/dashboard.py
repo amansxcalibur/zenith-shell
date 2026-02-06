@@ -93,8 +93,10 @@ class Dashboard(Box):
             name="notification-box",
             style_classes="vertical" if config.VERTICAL else "horizontal",
             children=[
-                Label(
-                    name="notification-icon", h_align=True, markup=icons.blur.markup()
+                MaterialIconLabel(
+                    name="notification-icon",
+                    h_align=True,
+                    icon_text=icons.blur.symbol(),
                 ),
                 Box(h_expand=True, children=self.content_box),
                 Box(children=close_btn),
@@ -152,8 +154,10 @@ class Dashboard(Box):
             name="notification-box",
             style_classes="vertical" if config.VERTICAL else "horizontal",
             children=[
-                Label(
-                    name="notification-icon", h_align=True, markup=icons.blur.markup()
+                MaterialIconLabel(
+                    name="notification-icon",
+                    h_align=True,
+                    icon_text=icons.blur.symbol(),
                 ),
                 Box(h_expand=True, children=self.content_box_2),
                 Box(children=close_btn_2),
@@ -199,7 +203,7 @@ class Dashboard(Box):
                                     add_hover_cursor(
                                         Button(
                                             child=MaterialIconLabel(
-                                                icon_text=icons.settings_material.symbol(),
+                                                icon_text=icons.settings.symbol(),
                                                 style="font-size:28px; color:var(--foreground);",
                                             ),
                                             on_clicked=open_settings,
@@ -228,8 +232,10 @@ class Dashboard(Box):
                 children=[
                     CenterBox(
                         style_classes="scale-icon-container",
-                        center_children=Label(
-                            style_classes="scale-icon", markup=icons.brightness.markup()
+                        center_children=MaterialIconLabel(
+                            style_classes="scale-icon",
+                            FILL=0,
+                            icon_text=icons.brightness.symbol(),
                         ),
                     ),
                     self.brightness_revealer_mui,

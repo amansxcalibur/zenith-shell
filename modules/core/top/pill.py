@@ -5,6 +5,7 @@ from fabric.widgets.button import Button
 from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
+from widgets.material_label import MaterialIconLabel
 from widgets.overrides import PatchedX11Window as Window
 
 from modules.notification import NotificationManager
@@ -93,7 +94,7 @@ class TopPill(Window, Service):
         self.children = self.pill_container
 
         self.pill_close_btn = Button(
-            child=Label(name="close-control-label", markup=icons.close.markup()),
+            child=MaterialIconLabel(name="close-control-label", icon_text=icons.close.symbol()),
             tooltip_text="Close",
             on_clicked=lambda *_: self.close(),
         )

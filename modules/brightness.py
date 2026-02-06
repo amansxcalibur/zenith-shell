@@ -5,6 +5,7 @@ from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 
 from config.info import config
+from widgets.material_label import MaterialIconLabel
 from widgets.animated_scale import AnimatedScale, AnimatedCircularScale
 
 import icons
@@ -96,9 +97,11 @@ class BrightnessSmall(Box):
         self.percentage = 0
         self.exist = BACKLIGHT_SUPPORTED
 
-        self.brightness_label = Label(
+        self.brightness_label = MaterialIconLabel(
             name="brightness-label",
-            markup=icons.brightness.markup(),
+            FILL=0,
+            wght=600,
+            icon_text=icons.brightness.symbol(),
         )
         self.progress_bar = AnimatedCircularScale(
             name="button-brightness",

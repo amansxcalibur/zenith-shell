@@ -119,19 +119,19 @@ class NotificationWidget(EventBox):
                 )
             else:
                 content_box.add(
-                    Label(
+                    MaterialIconLabel(
                         name="notification-icon",
                         v_align="start",
-                        markup=icons.blur.markup(),
+                        icon_text=icons.blur.symbol(),
                     )
                 )
         except Exception as e:
             logger.error(f"Failed to resolve image_pixbuff: {e}")
             content_box.add(
-                Label(
+                MaterialIconLabel(
                     name="notification-icon",
                     v_align="start",
-                    markup=icons.blur.markup(),
+                    icon_text=icons.blur.symbol(),
                 )
             )
 

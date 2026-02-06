@@ -8,8 +8,14 @@ from ..base import BaseWidget, SliderConfig, SliderControlMixin, LayoutBuilder
 
 
 class IconVariationsTab(BaseWidget, SliderControlMixin):
-
-    DEMO_ICONS = [icons.home.symbol(), icons.search.symbol(), icons.settings_material.symbol(), icons.arrow_forward.symbol(), icons.edit_material.symbol(), icons.brightness_material.symbol()]
+    DEMO_ICONS = [
+        icons.home.symbol(),
+        icons.search.symbol(),
+        icons.settings.symbol(),
+        icons.arrow_forward.symbol(),
+        icons.edit_material.symbol(),
+        icons.brightness_material.symbol(),
+    ]
 
     def __init__(self):
         SliderControlMixin.__init__(self)
@@ -44,7 +50,11 @@ class IconVariationsTab(BaseWidget, SliderControlMixin):
             spacing=5,
             children=[
                 MaterialIconLabel(
-                    icon_text=icons.home.symbol(), font_size=48, FILL=fill, wght=wght, GRAD=grad
+                    icon_text=icons.home.symbol(),
+                    font_size=48,
+                    FILL=fill,
+                    wght=wght,
+                    GRAD=grad,
                 ),
                 Label(label=f"FILL={fill}\nwght={wght}\nGRAD={grad}"),
             ],
@@ -54,7 +64,9 @@ class IconVariationsTab(BaseWidget, SliderControlMixin):
         self.icon_widget = MaterialIconLabel(
             icon_text=icons.home.symbol(), font_size=64, fill=1, wght=400
         )
-        icon_box = Box(orientation="v", style='min-width: 200px', children=self.icon_widget)
+        icon_box = Box(
+            orientation="v", style="min-width: 200px", children=self.icon_widget
+        )
 
         # Create sliders using mixin
         slider_configs = [
@@ -83,8 +95,8 @@ class IconVariationsTab(BaseWidget, SliderControlMixin):
         )
 
     def _create_icon_selector(self):
-        icon_box = Box(name='config-path-box', h_align='start')
-        icon_box.add(Label(label="Icons:", style='margin-right: 10px'))
+        icon_box = Box(name="config-path-box", h_align="start")
+        icon_box.add(Label(label="Icons:", style="margin-right: 10px"))
 
         for icon_char in self.DEMO_ICONS:
             btn = Button(
@@ -108,7 +120,6 @@ class IconVariationsTab(BaseWidget, SliderControlMixin):
 
 
 class FontVariationsTab(BaseWidget, SliderControlMixin):
-
     SLIDER_CONFIGS = [
         SliderConfig("wght", 100, 1000, 50),
         SliderConfig("GRAD", -200, 150, 1),

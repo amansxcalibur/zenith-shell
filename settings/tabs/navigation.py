@@ -81,7 +81,7 @@ class LauncherTab(BaseWidget, SectionBuilderMixin):
             {
                 "module": "Zenith Settings",
                 "text": ":s",
-                "icon": icons.settings_material.symbol(),
+                "icon": icons.settings.symbol(),
             },
         ]
 

@@ -1,4 +1,4 @@
-from fabric.core.service import Service, Signal
+from fabric.core.service import Service, Signal, Property
 from fabric import Fabricator
 
 from config.info import config, TEMP_DIR, ROOT_DIR
@@ -14,7 +14,33 @@ from loguru import logger
 import gi
 
 gi.require_version("Playerctl", "2.0")
-from gi.repository import Playerctl, GLib
+from gi.repository import Playerctl, GLib, Gio
+
+
+def check_shuffle_strictly(bus_name):
+    # setup D-Bus proxy
+    connection = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+
+    # We call 'Get' on the standard Properties interface
+    # Param 1: interface name ('org.mpris.MediaPlayer2.Player')
+    # Param 2: property name ('Shuffle')
+    params = GLib.Variant("(ss)", ("org.mpris.MediaPlayer2.Player", "Shuffle"))
+
+    try:
+        result = connection.call_sync(
+            bus_name,
+            "/org/mpris/MediaPlayer2",
+            "org.freedesktop.DBus.Properties",
+            "Get",
+            params,
+            None,
+            Gio.DBusCallFlags.NONE,
+            -1,
+            None,
+        )
+        return True
+    except Exception:
+        return False
 
 
 class PlayerService(Service):
@@ -38,6 +64,34 @@ class PlayerService(Service):
 
     @Signal
     def track_position(self, pos: float, dur: float) -> None: ...
+
+    @Property(bool, "readable", default_value=False)
+    def can_go_previous(self) -> bool:
+        return self._player.get_property("can_go_previous")
+
+    @Property(bool, "readable", default_value=False)
+    def can_go_next(self) -> bool:
+        return self._player.get_property("can_go_next")
+
+    @Property(bool, "readable", default_value=False)
+    def can_pause(self) -> bool:
+        return self._player.get_property("can_pause")
+
+    @Property(bool, "readable", default_value=False)
+    def can_play(self) -> bool:
+        return self._player.get_property("can_play")
+
+    @Property(bool, "readable", default_value=False)
+    def can_seek(self) -> bool:
+        return self._player.get_property("can_seek")
+
+    @Property(bool, "readable", default_value=False)
+    def can_control(self) -> bool:
+        return self._player.get_property("can_control")
+
+    @Property(bool, "readable", default_value=False)
+    def can_shuffle(self) -> bool:
+        return check_shuffle_strictly(self._player.get_property("player_instance"))
 
     def __init__(self, player: Playerctl.Player, **kwargs):
         super().__init__(**kwargs)

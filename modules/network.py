@@ -313,7 +313,7 @@ class WifiButton(EventBox):
         if self.secured:
             children.append(
                 MaterialIconLabel(
-                    icon_text=icons.lock_material.symbol(),
+                    icon_text=icons.lock.symbol(),
                     style_classes=["ap-secure-icon"],
                     tooltip_text="Secured network",
                 )
@@ -323,7 +323,7 @@ class WifiButton(EventBox):
             children.append(
                 Button(
                     child=MaterialIconLabel(
-                        icon_text=icons.settings_material.symbol(),
+                        icon_text=icons.settings.symbol(),
                         style_classes=["ap-secure-icon"],
                         tooltip_text="Edit profile",
                     ),

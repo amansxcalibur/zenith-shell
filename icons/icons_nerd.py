@@ -33,9 +33,9 @@ ocr: str = "&#xfcc3;"  # text-recognition
 
 # Circles
 temp: str = "&#xeb38;"
-disk: str = chr(0xF1632)
-memory: str = chr(0xF01A7)
-cpu: str = chr(0xF4BC)
+# disk: str = chr(0xF1632)
+# memory: str = chr(0xF01A7)
+# cpu: str = chr(0xF4BC)
 
 # battery
 bat_low: str = chr(0xF007A)
@@ -57,12 +57,12 @@ chevron_down: str = "&#xea5f;"
 chevron_left: str = "&#xea60;"
 chevron_right: str = "&#xea61;"
 
-# Power
-lock: str = chr(0xF023)
-suspend: str = chr(0xF0904)
-logout: str = chr(0xF0343)
-reboot: str = chr(0xEAD2)
-shutdown: str = chr(0xF011)
+# # Power
+# lock: str = chr(0xF023)
+# suspend: str = chr(0xF0904)
+# logout: str = chr(0xF0343)
+# reboot: str = chr(0xEAD2)
+# shutdown: str = chr(0xF011)
 
 # Power Manager
 power_saving: str = "&#xed4f;"
@@ -168,15 +168,15 @@ pause: str = chr(0xF04C)
 play: str = chr(0xF04B)
 shuffle: str = chr(0xF074)
 disable_shuffle: str = chr(0xF049E)
-headphones: str = chr(0xEE58)
+# headphones: str = chr(0xEE58)
 
 # Weather
-humidity: str = chr(0xE275)
-wind: str = chr(0xE27E)
-pressure: str = chr(0xF084D)
+# humidity: str = chr(0xE275)
+# wind: str = chr(0xE27E)
+# pressure: str = chr(0xF084D)
 
 # Settings
-settings: str = chr(0xF013)
+# settings: str = chr(0xF013)
 # blur: str = chr(0xf00b5)
 edit: str = chr(0xF01F)
 

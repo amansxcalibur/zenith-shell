@@ -5,6 +5,7 @@ from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.datetime import DateTime
 
+from widgets.material_label import MaterialIconLabel
 from widgets.overrides import PatchedX11Window as Window
 
 from modules.systray import SystemTray
@@ -31,13 +32,13 @@ SPACING = 0
 
 
 class DockBar(Window):
-    WIN_ROLE = 'zenith-dock'
+    WIN_ROLE = "zenith-dock"
 
     def __init__(self, pill, **kwargs):
         super().__init__(
             name="dock-bar",
             layer="bottom",
-            geometry=config.bar['POSITION'],
+            geometry=config.bar["POSITION"],
             type_hint="dock",
             margin="0px",
             visible=True,
@@ -89,9 +90,10 @@ class DockBar(Window):
         self.vertical_toggle_btn = add_hover_cursor(
             Button(
                 name="orientation-btn",
-                child=Label(
+                child=MaterialIconLabel(
                     name="orientation-label",
-                    markup=(icons.toggle_orientation.markup()),
+                    FILL=0,
+                    icon_text=(icons.toggle_orientation.symbol()),
                 ),
                 on_clicked=lambda b, *_: self.toggle_vertical(),
             )
@@ -229,7 +231,9 @@ class DockBar(Window):
                 self.right_pill_curve,
             ]
         )
-        self.compact = Box(style="min-width:1px; min-height:1px; background-color:black")
+        self.compact = Box(
+            style="min-width:1px; min-height:1px; background-color:black"
+        )
         self.stack = Stack(
             transition_duration=300,
             transition_type="over-up",

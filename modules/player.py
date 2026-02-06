@@ -6,19 +6,22 @@ from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
 from fabric.widgets.centerbox import CenterBox
 
+from widgets.overrides import Svg
+
 from modules.wiggle_bar import WigglyScale
 from modules.wallpaper import WallpaperService
 from services.volume_service import VolumeService
 from widgets.material_label import MaterialIconLabel
 from services.player_service import PlayerManager, PlayerService
 
+import svg
 import icons
 from config.info import config
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib
+from gi.repository import GLib, GObject
 
 
 class Player(Box):
@@ -56,12 +59,11 @@ class Player(Box):
             self._wallpaper_service.get_preview_path(),
         )
 
-        self.player_icon = Label(
+        self.player_icon = Svg(
             name=player.props.player_name,
+            h_expand=True,
             style_classes="player-icon",
-            markup=getattr(
-                icons, player.props.player_name, lambda: icons.disc
-            ).markup(),
+            svg_string=getattr(svg, player.props.player_name, svg.disc),
         )
         self.audo_device_label = Label(
             label=self._device_name,
@@ -73,7 +75,7 @@ class Player(Box):
             spacing=5,
             name="source-name",
             children=[
-                Label(markup=icons.headphones.markup(), style="color: black;"),
+                MaterialIconLabel(icon_text=icons.headphones.symbol(), wght=600, style="color: black;"),
                 self.audo_device_label,
             ],
         )
@@ -103,9 +105,12 @@ class Player(Box):
             children=[self.song, self.artist],
         )
 
+        # controls
         self.play_pause_button = Button(
             name="pause-button",
-            child=Label(name="pause-label", markup=icons.play.markup()),
+            child=MaterialIconLabel(
+                name="pause-label", icon_text=icons.play_material.symbol()
+            ),
             style_classes="pause-track",
             tooltip_text="Play/Pause",
             on_clicked=lambda b, *_: self.handle_play_pause(),
@@ -113,12 +118,34 @@ class Player(Box):
 
         self.shuffle_button = Button(
             name="shuffle-button",
-            child=Label(
+            child=Svg(
                 name="shuffle",
                 style_classes=["material-icon"],
-                markup=icons.shuffle.markup(),
+                v_expand=True,
+                svg_string=svg.shuffle,
             ),
             on_clicked=lambda b, *_: self.handle_shuffle(b),
+        )
+
+        self.prev_button = Button(
+            name="prev-button",
+            child=MaterialIconLabel(
+                name="play-previous",
+                style_classes=["material-icon"],
+                FILL=0,
+                icon_text=icons.skip_prev.symbol(),
+            ),
+            on_clicked=lambda b, *_: self.handle_prev(),
+        )
+        self.next_button = Button(
+            name="next-button",
+            child=MaterialIconLabel(
+                name="play-next",
+                style_classes=["material-icon"],
+                FILL=0,
+                icon_text=icons.skip_next.symbol(),
+            ),
+            on_clicked=lambda b, *_: self.handle_next(),
         )
 
         self.wiggly = WigglyScale()
@@ -138,7 +165,12 @@ class Player(Box):
             Box(
                 name="source",
                 children=[
-                    Box(h_expand=True, v_expand=True, children=self.player_icon),
+                    Box(
+                        name="source-icon-container",
+                        v_expand=True,
+                        children=self.player_icon,
+                    ),
+                    Box(h_expand=True),
                     self.audio_source,
                 ],
             ),
@@ -152,15 +184,7 @@ class Player(Box):
                 spacing=5,
                 children=(
                     [
-                        Button(
-                            name="prev-button",
-                            child=Label(
-                                name="play-previous",
-                                style_classes=["material-icon"],
-                                markup=icons.previous.markup(),
-                            ),
-                            on_clicked=lambda b, *_: self.handle_prev(),
-                        ),
+                        self.prev_button,
                         CenterBox(
                             name="progress-container",
                             h_expand=True,
@@ -168,15 +192,7 @@ class Player(Box):
                             orientation="v",
                             center_children=[self.wiggly_bar],
                         ),
-                        Button(
-                            name="next-button",
-                            child=Label(
-                                name="play-next",
-                                style_classes=["material-icon"],
-                                markup=icons.next.markup(),
-                            ),
-                            on_clicked=lambda b, *_: self.handle_next(),
-                        ),
+                        self.next_button,
                         self.shuffle_button,
                     ]
                     if not config.VERTICAL
@@ -262,10 +278,12 @@ class Player(Box):
         self._player_service.set_position(int(pos))
 
     def skip_forward(self, seconds=10):
-        self._player_service._player.seek(seconds * 1000000)
+        if self._player_service.can_seek:
+            self._player_service._player.seek(seconds * 1000000)
 
     def skip_backward(self, seconds=10):
-        self._player_service._player.seek(-1 * seconds * 1000000)
+        if self._player_service.can_seek:
+            self._player_service._player.seek(-1 * seconds * 1000000)
 
     def _update_track_info(self, metadata, keys):
         if "xesam:artist" in keys and "xesam:title" in keys:
@@ -308,10 +326,10 @@ class Player(Box):
         def _update():
             child = self.shuffle_button.get_child()
             if status:
-                child.set_markup(icons.disable_shuffle.markup())
+                child.set_from_string(svg.disable_shuffle)
                 child.set_name("disable-shuffle")
             else:
-                child.set_markup(icons.shuffle.markup())
+                child.set_from_string(svg.shuffle)
                 child.set_name("shuffle")
             return False
 
@@ -325,30 +343,50 @@ class Player(Box):
         self._update_track_info(metadata, keys)
         self._update_playback_status()
         self._update_shuffle_status(player.props.shuffle)
+        self._update_controls()
+
+    def _update_controls(self):
+        self.wiggly.set_sensitive(self._player_service.can_seek)
+        self.next_button.set_visible(self._player_service.can_go_next)
+        self.next_button.set_sensitive(self._player_service.can_go_next)
+        self.next_button.set_no_show_all(True)
+        self.play_pause_button.set_visible(
+            self._player_service.can_play or self._player_service.can_pause
+        )
+        self.play_pause_button.set_sensitive(
+            self._player_service.can_play or self._player_service.can_pause
+        )
+        self.prev_button.set_no_show_all(True)
+        self.prev_button.set_visible(self._player_service.can_go_previous)
+        self.prev_button.set_sensitive(self._player_service.can_go_previous)
+        self.play_pause_button.set_no_show_all(True)
+        self.shuffle_button.set_visible(self._player_service.can_shuffle)
+        self.shuffle_button.set_sensitive(self._player_service.can_shuffle)
+        self.shuffle_button.set_no_show_all(True)
+
+    def _set_pause_ui(self):
+        child = self.play_pause_button.get_child()
+        child.set_icon(icons.play_material.symbol())
+        child.set_name("pause-label")
+        self.play_pause_button.add_style_class("pause-track")
+        return False
 
     def on_pause(self, sender):
-        def _set_pause_ui():
-            child = self.play_pause_button.get_child()
-            child.set_markup(icons.play.markup())
-            child.set_name("pause-label")
-            self.play_pause_button.add_style_class("pause-track")
-            return False
-
-        GLib.idle_add(_set_pause_ui)
+        GLib.idle_add(self._set_pause_ui)
 
         self.wiggly._dragging = True
         self.wiggly.update_amplitude(True)
         self.wiggly.pause = True
 
-    def on_play(self, sender):
-        def _set_play_ui():
-            child = self.play_pause_button.get_child()
-            child.set_markup(icons.pause.markup())
-            child.set_name("play-label")
-            self.play_pause_button.remove_style_class("pause-track")
-            return False
+    def _set_play_ui(self):
+        child = self.play_pause_button.get_child()
+        child.set_icon(icons.pause_material.symbol())
+        child.set_name("play-label")
+        self.play_pause_button.remove_style_class("pause-track")
+        return False
 
-        GLib.idle_add(_set_play_ui)
+    def on_play(self, sender):
+        GLib.idle_add(self._set_play_ui)
 
         self.wiggly.pause = False
         self.wiggly._dragging = False
@@ -357,57 +395,50 @@ class Player(Box):
     def on_shuffle(self, sender, player, status):
         logger.debug(f"Shuffle callback status: {status}")
         self._update_shuffle_status(status)
-        # child.set_style("color: white")
 
     def handle_next(self):
-        self._player_service._player.next()
+        if self._player_service.can_go_next:
+            self._player_service._player.next()
 
     def handle_prev(self):
-        self._player_service._player.previous()
+        if self._player_service.can_go_previous:
+            self._player_service._player.previous()
 
     def handle_play_pause(self):
+        if not (self._player_service.can_play or self._player_service.can_play):
+            return
+
         is_playing = (
             self._player_service._player.props.playback_status.value_name
             == "PLAYERCTL_PLAYBACK_STATUS_PLAYING"
         )
 
-        def _set_pause_ui():
-            self.play_pause_button.get_child().set_markup(icons.pause.markup())
-            self.play_pause_button.remove_style_class("pause-track")
-            self.play_pause_button.get_child().set_name("pause-label")
-            return False
-
-        def _set_play_ui():
-            self.play_pause_button.get_child().set_markup(icons.play.markup())
-            self.play_pause_button.add_style_class("pause-track")
-            self.play_pause_button.get_child().set_name("play-label")
-            return False
-
         if is_playing:
-            GLib.idle_add(_set_play_ui)
+            GLib.idle_add(self._set_pause_ui)
         else:
-            GLib.idle_add(_set_pause_ui)
+            GLib.idle_add(self._set_play_ui)
 
         try:
             self._player_service._player.play_pause()
         except Exception as e:
             # revert if signal failed
             if is_playing:
-                GLib.idle_add(_set_play_ui)
+                GLib.idle_add(self._set_pause_ui)
             else:
-                GLib.idle_add(_set_pause_ui)
+                GLib.idle_add(self._set_play_ui)
             logger.warning(f"Failed to toggle playback: {e}")
 
     def handle_shuffle(self, shuffle_button):
-        logger.debug(f"Shuffle: {self._player_service._player.props.shuffle}")
-        if self._player_service._player.props.shuffle == False:
+        if not self._player_service.can_shuffle:
+            return
+
+        if not self._player_service._player.props.shuffle:
             self._player_service._player.set_shuffle(True)
             logger.debug(
                 f"Setting to true: {self._player_service._player.props.player_name}"
             )
         else:
             self._player_service._player.set_shuffle(False)
-        # shuffle_button.get_child().set_style("color: var(--outline)")
 
     def on_destroy(self, *_):
         logger.debug(

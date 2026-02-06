@@ -1,8 +1,8 @@
 import cairo
 from loguru import logger
 
-from fabric.widgets.svg import Svg
 from fabric.widgets.x11 import X11Window
+from fabric.widgets.svg import Svg as FabricSvg
 
 import gi
 
@@ -27,7 +27,7 @@ class PatchedX11Window(X11Window):
         return self.set_pass_through(self._pass_through)
 
 
-class Svg(Svg):
+class Svg(FabricSvg):
     """
     Adds dynamic `color` support sourced from `Gtk.StyleContext`.
     """
@@ -47,7 +47,7 @@ class Svg(Svg):
         """
 
         if self._style_compiled:
-            final_style = self._style_compiled + bridge_css
+            final_style = bridge_css + self._style_compiled
         else:
             final_style = bridge_css
 

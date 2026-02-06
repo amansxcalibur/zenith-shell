@@ -28,7 +28,7 @@ notifications_off: str = "&#xece9;"
 notifications: str = "\ue7f4"
 notifications_clear: str = "&#xf814;"
 
-do_not_disturb_on: str = '\ue644'
+do_not_disturb_on: str = "\ue644"
 
 pill: str = "\ue11f"
 dock_bottom: str = "\uf7e6"
@@ -42,7 +42,7 @@ font: str = "\ue167"
 monitor: str = "\uef5b"
 home: str = "\ue88a"
 search: str = "\ue8b6"
-settings_material: str = "\ue8b8"
+settings: str = "\ue8b8"
 edit_material: str = "\ue3c9"
 
 
@@ -74,26 +74,41 @@ skip_next: str = "\ue044"
 fast_rewind: str = "\ue020"
 fast_forward: str = "\ue01f"
 transition_push: str = "\uf50b"
+headphones: str = "\uf01f"
 
 close: str = "\ue5cd"
 trash_material: str = "\ue872"
 
 # player
 disc: str = "\ue019"
-play_material: str = '\ue037'
-pause_material: str = '\ue034'
-shuffle_material: str = '\ue043'
+play_material: str = "\ue037"
+pause_material: str = "\ue034"
+shuffle_material: str = "\ue043"
+
+# Weather
+humidity: str = "\uf163"
+wind: str = "\uefd8"
+pressure: str = "\ue94d"
+
+# Power
+lock: str = "\ue897"
+suspend: str = "\uef44"
+logout: str = "\ue9ba"
+reboot: str = "\uf053"
+shutdown: str = "\ue8ac"
 
 # spotify : str = "\uf2d5"
 
 # controls
-brightness: str = "&#xe3ab;"
+brightness: str = "\ue3ab"
 # vol_medium: str = "\ue04d"
 
 # metrics
 battery: str = "\uf304"
 battery_charging: str = "\uf250"
-cpu: str = '\ue322'
+cpu: str = "\ue322"
+disk: str = "\uf20e"
+memory: str = "\uf720"
 
 blur: str = "\ue3a5"
 refresh: str = "\ue5d5"
@@ -108,8 +123,6 @@ wifi_4: str = "\uef10"
 
 # Vertical
 toggle_orientation: str = "\uf2d5"
-
-lock_material: str = '\ue897'
 
 # Parameters
 font_family: str = "Material Symbols Rounded"

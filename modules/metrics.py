@@ -218,8 +218,8 @@ class MetricsSmall(Button):
             self.add_style_class("vertical")
 
         # ------------------ CPU ------------------
-        self.cpu_icon = MaterialIconLabel(name="cpu-icon", icon_text=icons.cpu.symbol())
-        self.cpu_circle = AnimatedCircularProgressBar(
+        self.cpu_icon = MaterialIconLabel(name="cpu-icon", FILL=0, wght=600, icon_text=icons.cpu.symbol())
+        self.cpu_circle = CircularProgressBar(
             name="metrics-circle",
             value=0,
             size=28,
@@ -249,8 +249,10 @@ class MetricsSmall(Button):
         )
 
         # ------------------ RAM ------------------
-        self.ram_icon = MaterialIconLabel(name="ram-icon", icon_text=icons.memory.symbol())
-        self.ram_circle = AnimatedCircularProgressBar(
+        self.ram_icon = MaterialIconLabel(
+            name="ram-icon", FILL=0, wght=600, icon_text=icons.memory.symbol()
+        )
+        self.ram_circle = CircularProgressBar(
             name="metrics-circle",
             value=0,
             size=28,
@@ -278,8 +280,10 @@ class MetricsSmall(Button):
         )
 
         # ------------------ Disk ------------------
-        self.disk_icon = MaterialIconLabel(name="disk-icon", icon_text=icons.disk.symbol())
-        self.disk_circle = AnimatedCircularProgressBar(
+        self.disk_icon = MaterialIconLabel(
+            name="disk-icon", FILL=0, wght=600, icon_text=icons.disk.symbol()
+        )
+        self.disk_circle = CircularProgressBar(
             name="metrics-circle",
             value=0,
             size=28,
@@ -385,9 +389,9 @@ class MetricsSmall(Button):
     def update_metrics(self):
         # Recover centralized data
         cpu, mem, disk = shared_provider.get_metrics()
-        self.cpu_circle.animate_value(cpu / 100.0)
-        self.ram_circle.animate_value(mem / 100.0)
-        self.disk_circle.animate_value(disk / 100.0)
+        self.cpu_circle.set_value(cpu / 100.0)
+        self.ram_circle.set_value(mem / 100.0)
+        self.disk_circle.set_value(disk / 100.0)
 
         self.cpu_slider.animate_value(cpu / 100.0)
         self.ram_slider.animate_value(mem / 100.0)

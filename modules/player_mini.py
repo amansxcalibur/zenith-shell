@@ -2,13 +2,16 @@ from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
-from fabric.widgets.centerbox import CenterBox
 from fabric.widgets.eventbox import EventBox
+from fabric.widgets.centerbox import CenterBox
 
-from modules.wiggle_bar import WigglyScale
+from widgets.overrides import Svg
+from widgets.material_label import MaterialIconLabel
+
 from modules.wallpaper import WallpaperService
 from services.player_service import PlayerManager, PlayerService
 
+import svg
 import icons
 from config.info import config, CACHE_DIR
 
@@ -50,12 +53,11 @@ class PlayerMini(Box):
         if not config.VERTICAL:
             self.remove_style_class("vertical")
 
-        self.player_name = Label(
+        self.player_name = Svg(
             name=player.props.player_name,
+            h_expand=True,
             style_classes=["player-icon", "mini"],
-            markup=getattr(
-                icons, player.props.player_name, lambda: icons.disc
-            ).markup(),
+            svg_string=getattr(svg, player.props.player_name, svg.disc),
         )
 
         self.song = Label(
@@ -83,32 +85,52 @@ class PlayerMini(Box):
 
         self.play_pause_button = Button(
             name="play-pause-button",
-            child=Label(
+            child=MaterialIconLabel(
                 name="play-pause-label",
                 style_classes="mini",
-                markup=icons.play.markup(),
+                icon_text=icons.play_material.symbol(),
             ),
             style_classes="mini",
             tooltip_text="Play/Pause",
             on_clicked=lambda b, *_: self.handle_play_pause(),
         )
 
-        self.shuffle_button = Button(
-            name="shuffle-button",
-            child=Label(name="shuffle", markup=icons.shuffle.markup()),
-            on_clicked=lambda b, *_: self.handle_shuffle(b),
+        self.prev_button = Button(
+            name="prev-button",
+            child=MaterialIconLabel(
+                name="play-previous",
+                style_classes="mini",
+                icon_text=icons.skip_prev.symbol(),
+            ),
+            on_clicked=lambda b, *_: self.handle_prev(),
         )
 
-        self.wiggly = WigglyScale()
-        self.wiggly.connect("on-seek", self.on_seek)
-        self.wiggly_bar = Box(
-            orientation="v",
-            h_expand=True,
-            v_expand=True,
-            h_align="fill",
-            v_align="fill",
-            children=self.wiggly,
+        self.next_button = Button(
+            name="next-button",
+            child=MaterialIconLabel(
+                name="play-next",
+                style_classes="mini",
+                icon_text=icons.skip_next.symbol(),
+            ),
+            on_clicked=lambda b, *_: self.handle_next(),
         )
+
+        # self.shuffle_button = Button(
+        #     name="shuffle-button",
+        #     child=Label(name="shuffle", markup=icons.shuffle.markup()),
+        #     on_clicked=lambda b, *_: self.handle_shuffle(b),
+        # )
+
+        # self.wiggly = WigglyScale()
+        # self.wiggly.connect("on-seek", self.on_seek)
+        # self.wiggly_bar = Box(
+        #     orientation="v",
+        #     h_expand=True,
+        #     v_expand=True,
+        #     h_align="fill",
+        #     v_align="fill",
+        #     children=self.wiggly,
+        # )
 
         self.album_cover = Box(style_classes="album-image")
         self.album_cover.set_style(
@@ -121,7 +143,11 @@ class PlayerMini(Box):
                 name="source",
                 style_classes="mini",
                 v_align="end",
-                children=self.player_name,
+                children=Box(
+                    name="source-icon-container",
+                    style_classes="mini",
+                    children=self.player_name,
+                ),
             ),
             Box(
                 orientation="v",
@@ -144,25 +170,9 @@ class PlayerMini(Box):
                                 h_expand=True,
                                 v_expand=True,
                                 center_children=[
-                                    Button(
-                                        name="prev-button",
-                                        child=Label(
-                                            name="play-previous",
-                                            style_classes="mini",
-                                            markup=icons.previous_fill.markup(),
-                                        ),
-                                        on_clicked=lambda b, *_: self.handle_prev(),
-                                    ),
+                                    self.prev_button,
                                     self.play_pause_button,
-                                    Button(
-                                        name="next-button",
-                                        child=Label(
-                                            name="play-next",
-                                            style_classes="mini",
-                                            markup=icons.next_fill.markup(),
-                                        ),
-                                        on_clicked=lambda b, *_: self.handle_next(),
-                                    ),
+                                    self.next_button,
                                 ],
                             )
                         ],
@@ -177,8 +187,8 @@ class PlayerMini(Box):
         self._player_service.connect("pause", self.on_pause)
         self._player_service.connect("play", self.on_play)
         self._player_service.connect("meta-change", self.on_metadata)
-        self._player_service.connect("shuffle-toggle", self.on_shuffle)
-        self._player_service.connect("track-position", self.on_update_track_position)
+        # self._player_service.connect("shuffle-toggle", self.on_shuffle)
+        # self._player_service.connect("track-position", self.on_update_track_position)
         self._player_service.connect("artwork-change", self._apply_artwork)
 
         # connect cleanup
@@ -194,11 +204,11 @@ class PlayerMini(Box):
         if current_artwork:
             self._apply_artwork(self._player_service, current_artwork)
 
-    def on_update_track_position(self, sender, pos, dur):
-        if dur == 0:
-            return
-        self.duration = dur
-        self.wiggly.update_value_from_signal(pos / dur)
+    # def on_update_track_position(self, sender, pos, dur):
+    #     if dur == 0:
+    #         return
+    #     self.duration = dur
+    #     self.wiggly.update_value_from_signal(pos / dur)
 
     def on_seek(self, sender, ratio):
         pos = ratio * self.duration  # duration in seconds
@@ -238,7 +248,7 @@ class PlayerMini(Box):
 
             GLib.idle_add(_update_metadata_labels)
 
-        self.on_shuffle(sender, player, player.props.shuffle)
+        # self.on_shuffle(sender, player, player.props.shuffle)
 
         def _update_playback_status():
             if (
@@ -249,60 +259,76 @@ class PlayerMini(Box):
             return False
 
         GLib.idle_add(_update_playback_status)
+        GLib.idle_add(self._update_controls)
+
+    def _update_controls(self):
+        # self.wiggly.set_sensitive(self._player_service.can_seek)
+        self.next_button.set_sensitive(self._player_service.can_go_next)
+        self.play_pause_button.set_sensitive(
+            self._player_service.can_play or self._player_service.can_pause
+        )
+        self.prev_button.set_sensitive(self._player_service.can_go_previous)
+        # self.shuffle_button.set_visible(self._player_service.can_shuffle)
+        # self.shuffle_button.set_sensitive(self._player_service.can_shuffle)
 
     def on_pause(self, sender):
         def _set_pause_markup():
-            self.play_pause_button.get_child().set_markup(icons.play.markup())
+            self.play_pause_button.get_child().set_icon(icons.play_material.symbol())
 
         GLib.idle_add(_set_pause_markup)
 
-        self.wiggly._dragging = True
-        self.wiggly.update_amplitude(True)
-        self.wiggly.pause = True
+        # self.wiggly._dragging = True
+        # self.wiggly.update_amplitude(True)
+        # self.wiggly.pause = True
 
     def on_play(self, sender):
         def _set_play_markup():
-            self.play_pause_button.get_child().set_markup(icons.pause.markup())
+            self.play_pause_button.get_child().set_icon(icons.pause_material.symbol())
 
         GLib.idle_add(_set_play_markup)
 
-        self.wiggly.pause = False
-        self.wiggly._dragging = False
-        self.wiggly.update_amplitude(False)
+        # self.wiggly.pause = False
+        # self.wiggly._dragging = False
+        # self.wiggly.update_amplitude(False)
 
-    def on_shuffle(self, sender, player, status):
-        logger.debug(f"Shuffle callback status: {status}")
+    # def on_shuffle(self, sender, player, status):
+    #     logger.debug(f"Shuffle callback status: {status}")
 
-        def _update_shuffle_status():
-            if not status:
-                self.shuffle_button.get_child().set_markup(icons.shuffle.markup())
-                self.shuffle_button.get_child().set_name("shuffle")
-            else:
-                self.shuffle_button.get_child().set_markup(
-                    icons.disable_shuffle.markup()
-                )
-                self.shuffle_button.get_child().set_name("disable-shuffle")
+    #     def _update_shuffle_status():
+    #         if not status:
+    #             self.shuffle_button.get_child().set_markup(icons.shuffle.markup())
+    #             self.shuffle_button.get_child().set_name("shuffle")
+    #         else:
+    #             self.shuffle_button.get_child().set_markup(
+    #                 icons.disable_shuffle.markup()
+    #             )
+    #             self.shuffle_button.get_child().set_name("disable-shuffle")
 
-        # self.shuffle_button.get_child().set_style("color: white")
-        GLib.idle_add(_update_shuffle_status)
+    #     # self.shuffle_button.get_child().set_style("color: white")
+    #     GLib.idle_add(_update_shuffle_status)
 
     def handle_next(self):
-        self._player_service._player.next()
+        if self._player_service.can_go_next:
+            self._player_service._player.next()
 
     def handle_prev(self):
-        self._player_service._player.previous()
+        if self._player_service.can_go_previous:
+            self._player_service._player.previous()
 
     def handle_play_pause(self):
+        if not (self._player_service.can_play or self._player_service.can_pause):
+            return
+
         is_playing = (
             self._player_service._player.props.playback_status.value_name
             == "PLAYERCTL_PLAYBACK_STATUS_PLAYING"
         )
 
         def _set_play_ui():
-            self.play_pause_button.get_child().set_markup(icons.pause.markup())
+            self.play_pause_button.get_child().set_icon(icons.pause_material.symbol())
 
         def _set_pause_ui():
-            self.play_pause_button.get_child().set_markup(icons.play.markup())
+            self.play_pause_button.get_child().set_icon(icons.play_material.symbol())
 
         if is_playing:
             GLib.idle_add(_set_pause_ui)
@@ -319,16 +345,15 @@ class PlayerMini(Box):
                 GLib.idle_add(_set_play_ui)
             logger.warning(f"Failed to toggle playback: {e}")
 
-    def handle_shuffle(self, shuffle_button):
-        logger.debug(f"Shuffle: {self._player_service._player.props.shuffle}")
-        if not self._player_service._player.props.shuffle:
-            self._player_service._player.set_shuffle(True)
-            logger.debug(
-                f"Setting to true: {self._player_service._player.props.player_name}"
-            )
-        else:
-            self._player_service._player.set_shuffle(False)
-        # shuffle_button.get_child().set_style("color: var(--outline)")
+    # def handle_shuffle(self, shuffle_button):
+    #     logger.debug(f"Shuffle: {self._player_service._player.props.shuffle}")
+    #     if not self._player_service._player.props.shuffle:
+    #         self._player_service._player.set_shuffle(True)
+    #         logger.debug(
+    #             f"Setting to true: {self._player_service._player.props.player_name}"
+    #         )
+    #     else:
+    #         self._player_service._player.set_shuffle(False)
 
     def on_destroy(self, *_):
         """Cleanup widget on destroy"""
@@ -364,8 +389,8 @@ class PlaceholderMini(Box):
             self._wallpaper_service.get_preview_path(),
         )
 
-        self.player_name = Label(
-            style_classes=["player-icon", "mini"], markup=icons.disc.markup()
+        self.player_name = MaterialIconLabel(
+            style_classes=["player-icon", "mini"], icon_text=icons.disc.symbol()
         )
 
         self.children = [
@@ -427,17 +452,18 @@ class PlayerContainerMini(Box):
             center_children=[],
         )
 
-        self.mini_tile_icon = Label(
+        self.mini_tile_icon = Svg(
             name="disc",
             style_classes=["tile-icon", "special"],
-            markup=icons.disc.markup(),
-            justification="center",
+            h_expand=True,
+            svg_string=svg.disc,
         )
 
-        self.mini_tile_view = CenterBox(
+        self.mini_tile_view = Box(
             style_classes=["tile", "mini", "on"],
-            v_expand=False,
-            center_children=self.mini_tile_icon,
+            children=Box(
+                style="padding: 10px", children=self.mini_tile_icon, h_expand=True
+            ),
         )
 
         self.event_box = EventBox(
@@ -472,7 +498,7 @@ class PlayerContainerMini(Box):
 
         # create widget with the service
         player_widget = PlayerMini(player_service=player_service)
-        player_widget.wiggly_bar.queue_draw()
+        # player_widget.wiggly_bar.queue_draw()
         player_widget.set_name(player_name)
 
         # store reference
@@ -607,9 +633,7 @@ class PlayerContainerMini(Box):
 
         def _update_mini_tile_icon():
             self.mini_tile_icon.set_name(curr_player)
-            self.mini_tile_icon.set_markup(
-                (getattr(icons, curr_player, icons.disc)).markup()
-            )
+            self.mini_tile_icon.set_from_string((getattr(svg, curr_player, svg.disc)))
 
         GLib.idle_add(_update_mini_tile_icon)
 

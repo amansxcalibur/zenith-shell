@@ -13,6 +13,8 @@ from fabric.widgets.eventbox import EventBox
 from fabric.core.service import Service, Signal, Property
 
 from widgets.popup_window import SharedPopupWindow
+from widgets.material_label import MaterialIconLabel
+
 import icons
 from config.info import ROOT_DIR
 from utils.cursor import add_hover_cursor
@@ -156,7 +158,7 @@ class WeatherCard(Box):
         self.last_updated_label = Label(
             name="weather-tile",
             style_classes=["updated-time-label"],
-            label=f"Last updated: __",
+            label="Last updated: __",
             h_align="start",
         )
 
@@ -235,13 +237,13 @@ class WeatherCard(Box):
                                 orientation="v",
                                 children=[
                                     self._create_metric_row(
-                                        self.humidity_label, icons.humidity.markup()
+                                        self.humidity_label, icons.humidity.symbol()
                                     ),
                                     self._create_metric_row(
-                                        self.wind_label, icons.wind.markup()
+                                        self.wind_label, icons.wind.symbol()
                                     ),
                                     self._create_metric_row(
-                                        self.pressure_label, icons.pressure.markup()
+                                        self.pressure_label, icons.pressure.symbol()
                                     ),
                                 ],
                             ),
@@ -253,13 +255,13 @@ class WeatherCard(Box):
 
         self.service.connect("value-changed", self.update_weather)
 
-    def _create_metric_row(self, label: Label, icon_markup: str) -> Box:
+    def _create_metric_row(self, label: Label, icon_symbol: str) -> Box:
         return Box(
             h_align="end",
             spacing=5,
             children=[
                 label,
-                Label(style_classes=["weather-icons"], markup=icon_markup),
+                MaterialIconLabel(style_classes=["weather-icons"], icon_text=icon_symbol),
             ],
         )
 

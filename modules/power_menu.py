@@ -1,7 +1,8 @@
 from fabric.widgets.box import Box
-from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.utils.helpers import exec_shell_command_async
+
+from widgets.material_label import MaterialIconLabel
 
 import icons
 from config.info import config, SHELL_NAME
@@ -14,27 +15,27 @@ class PowerMenu(Box):
         self.btn_lock = Button(
             style_classes="menu-item",
             on_clicked=self.lock,
-            child=Label(style_classes="menu-label", markup=icons.lock.markup()),
+            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.lock.symbol()),
         )
         self.btn_suspend = Button(
             style_classes="menu-item",
             on_clicked=self.suspend,
-            child=Label(style_classes="menu-label", markup=icons.suspend.markup()),
+            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.suspend.symbol()),
         )
         self.btn_logout = Button(
             style_classes="menu-item",
             on_clicked=self.logout,
-            child=Label(style_classes="menu-label", markup=icons.logout.markup()),
+            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.logout.symbol()),
         )
         self.btn_reboot = Button(
             style_classes="menu-item",
             on_clicked=self.reboot,
-            child=Label(style_classes="menu-label", markup=icons.reboot.markup()),
+            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.reboot.symbol()),
         )
         self.btn_shutdown = Button(
             style_classes="menu-item",
             on_clicked=self.shutdown,
-            child=Label(style_classes="menu-label", markup=icons.shutdown.markup()),
+            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.shutdown.symbol()),
         )
 
         self.children = [
@@ -44,13 +45,6 @@ class PowerMenu(Box):
             self.btn_reboot,
             self.btn_shutdown,
         ]
-
-        # to adjust certain off-center icons
-        self.adjust_child = {self.btn_reboot}
-
-        for i in self.get_children():
-            if i in self.adjust_child:
-                i.get_child().add_style_class("adjust")
 
     def lock(self, *_):
         print("Locking...")
