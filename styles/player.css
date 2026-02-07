@@ -87,9 +87,9 @@
 #source-icon-container.mini{
   min-height: 20px;
   min-width: 20px;
-  box-shadow: 0 0 5px 3px white;
+  box-shadow: 0 0 5px 3px rgba(255, 255, 255, 0.6);
   border-radius: 10px;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.6);
 }
 
 #source-name {
@@ -248,6 +248,7 @@
 .player-icon.mini {
   font-size: 20px;
   color: black;
+  /* text-shadow: 0 0 5px white */
 }
 
 /* #shuffle {

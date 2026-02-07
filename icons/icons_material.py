@@ -19,10 +19,9 @@ class MaterialIcon(Icon):
 
 # dashboard
 arrow_forward: str = "\ue5e1"
-bluetooth: str = "\ue1a7"
+
 
 wifi_off: str = "&#xecfa;"
-bluetooth_off: str = "&#xeceb;"
 night_off: str = "&#xf162;"
 notifications_off: str = "&#xece9;"
 notifications: str = "\ue7f4"
@@ -75,6 +74,13 @@ fast_rewind: str = "\ue020"
 fast_forward: str = "\ue01f"
 transition_push: str = "\uf50b"
 headphones: str = "\uf01f"
+
+# Bluetooth
+bluetooth: str = "\ue1a7"
+bluetooth_off: str = "&#xeceb;"
+bluetooth_searching: str = '\ue1aa'
+
+radar: str = '\uf04e'
 
 close: str = "\ue5cd"
 trash_material: str = "\ue872"

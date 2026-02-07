@@ -520,7 +520,6 @@ class NotificationManager:
         self._update_ui_state()
 
     def close_all_notifications(self, *_):
-        print("????????????????????? works????????????????????/")
         # iterate over a COPY!!
         for notification_widget in self._active_notifications[:]:
             try:
@@ -573,22 +572,20 @@ class NotificationManager:
     def get_controls(self):
         return [self.clear_btn]
 
+    def _keybindings(self):
+        return {
+            # "d": self.del_last_notif, # kill last
+            "Shift d": self.close_all_notifications,
+        }
+
     def register_keybindings(self):
-        print("yeeaaahhhhhh registering")
-        # window = self.notification_history.get_parent_window()
         window = self.notification_history.get_toplevel()
         if isinstance(window, Window):
-            print("yeah now i can bind")
-            keybindings = {
-                # "d": self.handle_play_pause, # kill last
-                "Shift d": self.close_all_notifications,
-            }
-
-            for key, handler in keybindings.items():
+            for key, handler in self._keybindings().items():
                 window.add_keybinding(key, lambda *_, h=handler: h())
 
     def unregister_keybindings(self):
-        print("yeeaaahhhhhh unregistering")
-        window = self.notification_history.get_parent_window()
+        window = self.notification_history.get_toplevel()
         if window:
-            print("yeah now i can unbind")
+            for key in self._keybindings().keys():
+                window.remove_keybinding(key)

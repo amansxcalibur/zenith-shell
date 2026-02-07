@@ -1,6 +1,8 @@
 import gi
-gi.require_version('Gtk', '3.0')
+
+gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk
+
 
 class WrapBox(Gtk.Container):
     """
@@ -8,16 +10,17 @@ class WrapBox(Gtk.Container):
     Items are packed LTR. When a row runs out of space, it wraps to the next line.
     Rows do NOT align columns vertically (unlike Gtk.FlowBox).
     """
+
     def __init__(self, spacing=6):
         super().__init__()
         self._children = []
         self._spacing = spacing
-        self.set_has_window(False) # We draw directly on the parent window
+        self.set_has_window(False)  # We draw directly on the parent window
 
     def do_add(self, widget):
         self._children.append(widget)
         widget.set_parent(self)
-        self.queue_resize() # Trigger recalculation
+        self.queue_resize()  # Trigger recalculation
 
     def do_remove(self, widget):
         if widget in self._children:
@@ -38,13 +41,15 @@ class WrapBox(Gtk.Container):
         min_w = 0
         nat_w = 0
         for child in self._children:
-            if not child.get_visible(): continue
+            if not child.get_visible():
+                continue
             c_min, c_nat = child.get_preferred_width()
             min_w = max(min_w, c_min)
             nat_w += c_nat + self._spacing
-        
+
         # Remove trailing spacing
-        if nat_w > 0: nat_w -= self._spacing
+        if nat_w > 0:
+            nat_w -= self._spacing
         return (min_w, nat_w)
 
     def do_get_preferred_height_for_width(self, width):
@@ -55,9 +60,16 @@ class WrapBox(Gtk.Container):
 
     def do_size_allocate(self, allocation):
         self.set_allocation(allocation)
-        self._layout_children(allocation.width, apply_allocation=True, start_x=allocation.x, start_y=allocation.y)
+        self._layout_children(
+            allocation.width,
+            apply_allocation=True,
+            start_x=allocation.x,
+            start_y=allocation.y,
+        )
 
-    def _layout_children(self, avail_width, apply_allocation=False, start_x=0, start_y=0):
+    def _layout_children(
+        self, avail_width, apply_allocation=False, start_x=0, start_y=0
+    ):
         if avail_width <= 0:
             return 0
 

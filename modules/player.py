@@ -75,7 +75,9 @@ class Player(Box):
             spacing=5,
             name="source-name",
             children=[
-                MaterialIconLabel(icon_text=icons.headphones.symbol(), wght=600, style="color: black;"),
+                MaterialIconLabel(
+                    icon_text=icons.headphones.symbol(), wght=600, style="color: black;"
+                ),
                 self.audo_device_label,
             ],
         )
@@ -623,9 +625,8 @@ class PlayerContainer(Box):
 
         GLib.idle_add(_update_buttons)
 
-    def register_keybindings(self):
-        """Register keyboard shortcuts"""
-        keybindings = {
+    def _keybindings(self):
+        return {
             "p": self.handle_play_pause,
             "j": self.handle_prev,
             "k": self.handle_skip_backward,
@@ -634,14 +635,15 @@ class PlayerContainer(Box):
             "Tab": lambda: self.switch_relative_player(True),
             "Shift ISO_Left_Tab": lambda: self.switch_relative_player(False),
         }
-
-        for key, handler in keybindings.items():
+    
+    def register_keybindings(self):
+        """Register keyboard shortcuts"""
+        for key, handler in self._keybindings().items():
             self.window.add_keybinding(key, lambda *_, h=handler: h())
 
     def unregister_keybindings(self):
         """Unregister keyboard shortcuts"""
-        keys = ["p", "j", "k", "l", "semicolon", "Tab", "Shift ISO_Left_Tab"]
-        for key in keys:
+        for key in self._keybindings().keys():
             self.window.remove_keybinding(key)
 
     def handle_play_pause(self):

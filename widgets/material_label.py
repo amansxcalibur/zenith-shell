@@ -1,10 +1,10 @@
+from fabric.widgets.label import Label
+
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("PangoCairo", "1.0")
-from gi.repository import Gtk, Pango
-
-from fabric.widgets.label import Label
+from gi.repository import Pango
 
 
 class VariableFontMixin:
@@ -100,7 +100,7 @@ class MaterialIconLabel(BaseMaterialLabel):
 
     VARIATION_DEFAULTS = {
         "FILL": 1,
-        "wght": 400,
+        "wght": 600,
         "GRAD": 0,
         "opsz": 48,
     }

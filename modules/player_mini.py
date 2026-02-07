@@ -389,8 +389,10 @@ class PlaceholderMini(Box):
             self._wallpaper_service.get_preview_path(),
         )
 
-        self.player_name = MaterialIconLabel(
-            style_classes=["player-icon", "mini"], icon_text=icons.disc.symbol()
+        self.player_name = Svg(
+            h_expand=True,
+            style_classes=["player-icon", "mini"],
+            svg_string=svg.disc,
         )
 
         self.children = [
@@ -399,7 +401,11 @@ class PlaceholderMini(Box):
                 name="source",
                 style_classes="mini",
                 v_align="end",
-                children=self.player_name,
+                children=Box(
+                    name="source-icon-container",
+                    style_classes="mini",
+                    children=self.player_name,
+                ),
             ),
             Box(
                 orientation="v",

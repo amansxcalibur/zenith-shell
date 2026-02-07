@@ -1,0 +1,64 @@
+#bluetooth-device-img{
+    border-radius: 999px;
+    padding: 5px;
+    background-color: var(--primary);
+}
+
+#bluetooth-device-img > *{
+    color: var(--on-primary);
+}
+
+#bluetooth-scan-btn{
+    background-color: var(--surface);
+    padding: 4px 4px 4px 0px;
+    border-radius: 30px;
+}
+
+#scan-label{
+    padding: 0 0 0 12px;
+}
+
+#scan-icon{
+    font-size: 28px;
+    padding: 0 3px;
+    border-radius: 50px;
+}
+
+#bluetooth-device-btn{
+    padding: 10px 10px;
+    border-radius: 5px;
+    background-color: var(--surface);
+    min-height: 40px;
+}
+
+#bt-dev-connection-label{
+    font-size: 14px;
+}
+
+#bt-connect-btn{
+    padding: 0px 14px;
+    border-radius: 50px;
+}
+
+#bt-connect-btn:hover{
+    background-color: var(--surface-bright);
+}
+
+.bt-scanning{
+    animation: blink 0.5s ease infinite;
+  }
+  
+  @keyframes blink {
+    0% {
+      background-color: var(--blue-dim);
+      color: white;
+    }
+    50% {
+      background-color: var(--surface);
+      color: white;
+    }
+    100% {
+      background-color: var(--blue-dim);
+      color: white;
+    }
+  }

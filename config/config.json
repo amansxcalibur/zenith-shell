@@ -63,7 +63,7 @@
     },
     "pill": {
         "POSITION": {
-            "x": "center",
+            "x": "right",
             "y": "bottom"
         }
     },
