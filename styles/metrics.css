@@ -47,6 +47,7 @@
   
   .metrics-icon {
     font-size: 20px;
+    /* color: var(--foreground); */
   }
 
   #bat-icon{
@@ -67,6 +68,10 @@
   #cpu-icon {
     font-size: 24px;
     margin-left: 1px;
+  }
+
+  #disk-icon, #cpu-icon, #ram-icon{
+    /* color: var(--foreground); */
   }
   
   #metrics-icon.alert {
