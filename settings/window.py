@@ -9,8 +9,6 @@ from modules.wiggle_bar import WigglyArrow
 from widgets.shapes import Pill, Circle, WavyCircle, Ellipse, Pentagon
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
 
-from .state import SettingsState
-
 import icons
 from config.info import CONFIG_FILE
 from utils.cursor import add_hover_cursor
@@ -337,6 +335,6 @@ class SettingsWindow(Window):
             self.destroy()
 
     def on_save(self, btn):
-        # generate_i3_keybinds_config()
+        generate_i3_keybinds_config()
         state.print_all()
         state.save_to_disk()

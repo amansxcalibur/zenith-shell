@@ -38,7 +38,7 @@ from gi.repository import Gtk, GLib, Gdk
 # - re-raise worker (needs testing and improvement)
 # - compositor handle
 # - handle runtime keymap changes.
-# - multi monitor setups
+# - multi monitor setups (dynamic changes/plug n plays)
 # - handle screen configuration change
 # - mlock for passwords (sweat cpython)
 # - dpms handle
@@ -267,8 +267,18 @@ class LockScreen(Window):
         self.root_width = root_geom.width
         self.root_height = root_geom.height
 
+        display = Gdk.Display.get_default()
+
+        monitor = display.get_primary_monitor()
+        geometry = monitor.get_geometry()
+
+        # geometry of just the main screen
+        self.mon_width = geometry.width
+        self.mon_height = geometry.height
+        self.mon_x = geometry.x
+        self.mon_y = geometry.y
+
         self.set_size_request(self.root_width, self.root_height)
-        self.move(0, 0)
 
         self.set_decorated(False)
         self.set_resizable(False)
@@ -286,6 +296,11 @@ class LockScreen(Window):
         self.connect("destroy", self._on_destroy)
 
     def _build_ui(self):
+        pad_left_width = self.mon_x
+        pad_right_width = self.root_width - (self.mon_x + self.mon_width)
+        pad_top_height = self.mon_y
+        pad_bottom_height = self.root_height - (self.mon_y + self.mon_height)
+
         self.status_label = Label(
             label="Enter password",
             style="color: white; font-size: 14px;",
@@ -305,34 +320,66 @@ class LockScreen(Window):
             ],
         )
 
-        self.children = CenterBox(
-            spacing=10,
-            h_expand=True,
-            v_expand=True,
-            v_align="fill",
-            center_children=[
-                Box(
-                    spacing=10,
-                    v_align="center",
-                    children=[WavyClock(size=(400, 400)), WeatherPill(size=(400, 400))],
-                ),
-            ],
-            end_children=Box(
-                orientation="v",
-                v_align="end",
+        middle_row = Box()
+
+        # left
+        if pad_left_width > 0:
+            middle_row.add(
+                Box(size=(pad_left_width, -1))
+            )
+
+        middle_row.add(
+            CenterBox(
                 spacing=10,
-                style="margin:20px;",
-                children=[
-                    EventBox(
-                        child=self.shapes
-                    ),  # event box stops whole window redraw for some reason
-                    # self.status_label,
+                size=(self.mon_width, self.mon_height),
+                center_children=[
+                    Box(
+                        spacing=10,
+                        v_align="center",
+                        children=[
+                            WavyClock(size=(400, 400)),
+                            WeatherPill(size=(400, 400)),
+                        ],
+                    ),
                 ],
-            ),
+                end_children=Box(
+                    orientation="v",
+                    v_align="end",
+                    spacing=10,
+                    style="margin:20px;",
+                    children=[EventBox(child=self.shapes)],
+                ),
+            )
         )
+
+        # right
+        if pad_right_width > 0:
+            middle_row.add(
+                Box(size=(pad_right_width, -1))
+            )
+
+        main = Box(orientation='v')
+
+        # top
+        if pad_top_height > 0:
+            main.add(
+                Box(size=(-1, pad_top_height))
+            )
+
+        main.add(middle_row)
+
+        # bottom
+        if pad_bottom_height > 0:
+            main.add(
+                Box(size=(-1, pad_bottom_height))
+            )
+
+        self.children = main
 
     def _on_mapped(self, *_):
         self.xid = self.get_window().get_xid()
+
+        self.move(0, 0)
 
         if self.monitor_thread is None or not self.monitor_thread.is_alive():
             logger.info("Starting fresh monitor thread.")
@@ -406,7 +453,7 @@ class LockScreen(Window):
         except Exception as e:
             logger.error(f"Error in raise_loop: {e}")
 
-        return False 
+        return False
 
     def _try_grab_input_with_retry(self, attempts: int = 100):
         if not self.grabber.try_grab():
@@ -536,9 +583,15 @@ if __name__ == "__main__":
             get_relative_path("./main.css"),
             # feast on juggad
             exposed_functions={
-                "mute_slider_img": lambda: f"background-image: url('{ROOT_DIR}/icons/mute.png');",
-                "volume_slider_img": lambda: f"background-image: url('{ROOT_DIR}/icons/volume.png');",
-                "brightness_slider_img": lambda: f"background-image: url('{ROOT_DIR}/icons/brightness.png');",
+                "mute_slider_img": lambda: (
+                    f"background-image: url('{ROOT_DIR}/icons/mute.png');"
+                ),
+                "volume_slider_img": lambda: (
+                    f"background-image: url('{ROOT_DIR}/icons/volume.png');"
+                ),
+                "brightness_slider_img": lambda: (
+                    f"background-image: url('{ROOT_DIR}/icons/brightness.png');"
+                ),
             },
         )
 
