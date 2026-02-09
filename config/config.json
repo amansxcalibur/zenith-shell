@@ -54,16 +54,24 @@
         "POSITION": "bottom",
         "HEIGHT": 32,
         "SPACING": 8,
-        "COMPONENTS": [
-            "workspaces",
-            "title",
-            "systray",
-            "clock"
-        ]
+        "modules": {
+            "left": [
+                "vertical_toggle_btn",
+                "workspaces",
+                "vol_brightness_box",
+                "weather_mini",
+                "metrics"
+            ],
+            "right": [
+                "date_time",
+                "battery",
+                "systray"
+            ]
+        }
     },
     "pill": {
         "POSITION": {
-            "x": "right",
+            "x": "center",
             "y": "bottom"
         }
     },

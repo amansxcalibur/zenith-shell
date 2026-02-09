@@ -16,6 +16,7 @@ DEFAULTS = {
         "borders": {
             "enable": True,
             "props": {"border_width": 2, "smart_borders": True},
+            "matugen_enable": True,
         },
         "smart_borders": {"enable": True},
     },
@@ -25,28 +26,33 @@ DEFAULTS = {
         "BRIGHTNESS_DEV": "intel_backlight",
         "ALLOWED_PLAYERS": ["vlc", "cmus", "firefox", "spotify", "chromium"],
     },
-    "paths": {
-        "WALLPAPERS_DIR": "~/Pictures/Wallpapers/",
-        "SCRIPTS_DIR": "~/i3scripts",
-    },
+    "paths": {"WALLPAPERS_DIR": "~/Pictures/Wallpapers/", "SCRIPTS_DIR": "~/i3scripts"},
     "dashboard": {
         "WIDGETS_ENABLED": ["clock", "weather"],
         "REFRESH_INTERVAL": 5000,
         "SHOW_NOTIFICATIONS": True,
     },
-    "corners": {"enable": False, "props": {"radisu": 20}},
+    "corners": {"enable": True, "props": {"radisu": 20, "radius": 20}},
     "bar": {
         "POSITION": "bottom",
         "HEIGHT": 32,
         "SPACING": 8,
-        "COMPONENTS": ["workspaces", "title", "systray", "clock"],
+        "modules": {
+            "left": [
+                "vertical_toggle_btn",
+                "workspaces",
+                "vol_brightness_box",
+                "weather_mini",
+                "metrics",
+            ],
+            "right": ["date_time", "battery", "systray"],
+        },
     },
-    "pill": {"POSITION": {"x": "center", "y": "bottom"}},
+    "pill": {"POSITION": {"x": "left", "y": "bottom"}},
     "network": {"wifi": {"ON": True}},
     "top_bar": {"POSITION": "top", "HEIGHT": 32, "SPACING": 8},
     "top_pill": {"POSITION": {"x": "center", "y": "top"}},
 }
-
 
 # Non-configurable constants
 SHELL_NAME = "zenith"
@@ -215,15 +221,15 @@ class ConfigManager(Service):
         self._save()
         self.changed(key_path, value)
 
-    def get(self, *path):
-        """Get a value by path: config.get('system', 'SILENT')"""
+    def get(self, path: list):
+        """Get a value by path: config.get(['system', 'SILENT'])"""
         data = self._data
         for key in path:
             data = data[key]
         return data
 
-    def set(self, *path, value):
-        """Set a value by path: config.set('system', 'SILENT', value=True)"""
+    def set(self, path: list, value):
+        """Set a value by path: config.set(path=['system', 'SILENT'], value=True)"""
         data = self._data
         for key in path[:-1]:
             data = data[key]
@@ -234,6 +240,8 @@ class ConfigManager(Service):
         """Reload config from disk"""
         self._load()
 
+    # since this is only a shallow copy, changes to nested children
+    # will affect the live config and not the "copy"
     def get_all(self):
         """Get all config data as a dict"""
         return self._data.copy()

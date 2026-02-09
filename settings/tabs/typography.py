@@ -17,10 +17,10 @@ class IconVariationsTab(BaseWidget, SliderControlMixin):
         icons.brightness_material.symbol(),
     ]
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         SliderControlMixin.__init__(self)
         self.icon_widget = None
-        BaseWidget.__init__(self)
+        BaseWidget.__init__(self, **kwargs)
 
     def _build_ui(self):
         self.container = Box(name="resolver-container", orientation="v", spacing=20)
@@ -130,12 +130,12 @@ class FontVariationsTab(BaseWidget, SliderControlMixin):
         SliderConfig("XTRA", 323, 603, 1),
     ]
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         SliderControlMixin.__init__(self)
         self.font_label = None
         self.locked = False
         self.master_scale = None
-        BaseWidget.__init__(self)
+        BaseWidget.__init__(self, **kwargs)
 
     def _build_ui(self):
         box = Box(name="resolver-container", orientation="v", spacing=10)

@@ -7,8 +7,8 @@ from widgets.wrap_box import WrapBox
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
 
 import icons
-from config.info import config
 from utils.cursor import add_hover_cursor
+from ..state import state
 from ..base import BaseWidget, SectionBuilderMixin, LayoutBuilder
 
 import gi
@@ -16,12 +16,22 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk
 
+ALL_MODULES_MAPPING = {
+    "vertical_toggle_btn": "Vertical Toggle Btn",
+    "workspaces": "Workspaces",
+    "vol_brightness_box": "Controls Box",
+    "weather_mini": "Weather",
+    "metrics": "Metrics",
+    "date_time": "Date-Time",
+    "battery": "Battery",
+    "systray": "System Tray",
+}
+
 
 class PillDockTab(BaseWidget, SectionBuilderMixin):
-
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.binding_groups = {}
-        BaseWidget.__init__(self)
+        BaseWidget.__init__(self, **kwargs)
 
     def _build_ui(self):
         self.container = Box(orientation="v", spacing=25)
@@ -53,37 +63,18 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
             {"selected": False, "icon": icons.east.symbol(), "text": "right"},
         ]
 
-        pill_pos = config.pill.POSITION
+        pill_pos = state.get(["pill", "POSITION"])
         pill_key = f"{pill_pos['y']}-{pill_pos['x']}"
 
         for item in pill_positions:
             item["selected"] = item["text"] == pill_key
 
-        bar_pos = config.bar.POSITION
+        bar_pos = state.get(["bar", "POSITION"])
 
         for item in dock_positions:
             item["selected"] = item["text"] == bar_pos
 
-        dock_modules = {
-            "left": [
-                "Vertical Toggle Btn",
-                "Workspaces",
-                "Controls Box",
-                "Weather",
-                "Metrics",
-            ],
-            "right": ["System Tray", "Battery", "Time"],
-        }
-        all_modules = [
-            "Vertical Toggle Btn",
-            "Workspaces",
-            "Controls Box",
-            "Weather",
-            "Metrics",
-            "System Tray",
-            "Battery",
-            "Time",
-        ]
+        dock_modules = state.get(["bar", "modules"])
 
         self.container.add(
             LayoutBuilder.section(
@@ -91,13 +82,13 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
             )
         )
 
-        palette = ModulePalette(all_modules)
+        palette = ModulePalette(list(ALL_MODULES_MAPPING.keys()))
         dock_modules_section = Box(
             style_classes="settings-section-container", orientation="v", spacing=6
         )
         dock_modules_section.add(
             Label(
-                label=f"Modules",
+                label="Modules",
                 style_classes="section-subheading",
                 h_align="start",
             )
@@ -194,6 +185,7 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
 
         btn._group_id = group_id
         btn._position_data = position
+        btn._value = position["text"]
 
         return add_hover_cursor(btn)
 
@@ -210,21 +202,29 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
         clicked_box.add_style_class("active")
         button._position_data["selected"] = True
 
-        self.on_position_changed(group_id, button._position_data)
+        self.on_position_changed(group_id, button)
 
-    def on_position_changed(self, group_id: str, position: dict):
-        # override
-        pass
+    def on_position_changed(self, group_id: str, button: Button):
+        val = button._value
+
+        if group_id == "Pill":
+            y_val, x_val = val.split("-")
+            state.update(["pill", "POSITION", "x"], x_val)
+            state.update(["pill", "POSITION", "y"], y_val)
+
+        elif group_id == "Dock":
+            state.update(["bar", "POSITION"], val)
 
 
 class ModulePill(EventBox):
     def __init__(self, name):
         super().__init__()
-        self.name = name
+        self.internal_key = name
+        self.name = ALL_MODULES_MAPPING[name]
 
         self.targets = [Gtk.TargetEntry.new("text/plain", Gtk.TargetFlags.SAME_APP, 0)]
 
-        self.label = Label(style_classes=["module-pill"], label=name)
+        self.label = Label(style_classes=["module-pill"], label=self.name)
         self.add(self.label)
 
         self.drag_source_set(
@@ -267,7 +267,7 @@ class ModulePill(EventBox):
 
     def on_drag_data_get(self, widget, drag_context, data, info, time):
         # Explicitly set the selection data as text
-        data.set_text(self.name, -1)
+        data.set_text(self.internal_key, -1)
 
 
 class ModuleDropBox(Gtk.ListBox):
@@ -377,25 +377,30 @@ class ModuleDropBox(Gtk.ListBox):
     def refresh(self):
         for row in self.get_children():
             self.remove(row)
-        
+
+        module_list = []
+
         for index, name in enumerate(self.model[self.side]):
             row = self._create_module_row(index, name)
             self.add(row)
             row.show()
+            module_list.append(name)
+
+        state.update(["bar", "modules", self.side], module_list)
 
     def _create_module_row(self, index, name):
         row = Gtk.ListBoxRow()
-        
+
         mod_pill = ModulePill(name)
         mod_pill.label.add_style_class("active")
-        
+
         close_button = Button(
             name="module-pill-close-button",
             child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
             on_clicked=self.on_close,
-            visible=False
+            visible=False,
         )
-        
+
         elem = EventBox(
             events="all",
             child=Box(
@@ -414,20 +419,20 @@ class ModuleDropBox(Gtk.ListBox):
                 ],
             ),
         )
-        
+
         elem.close_button = close_button
-        
+
         def on_enter(widget, _event):
             widget.close_button.show()
-        
+
         def on_leave(widget, event):
             if event.detail == Gdk.NotifyType.INFERIOR:
                 return
             widget.close_button.hide()
-        
+
         elem.connect("enter-notify-event", on_enter)
         elem.connect("leave-notify-event", on_leave)
-        
+
         row.add(elem)
         return row
 
@@ -435,8 +440,6 @@ class ModuleDropBox(Gtk.ListBox):
         widget = button
         while widget and not isinstance(widget, Gtk.ListBoxRow):
             widget = widget.get_parent()
-
-        print("par", widget)
 
         if not widget:
             return

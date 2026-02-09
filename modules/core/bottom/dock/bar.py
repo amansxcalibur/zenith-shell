@@ -67,49 +67,54 @@ class DockBar(Window):
         self.add_keybinding("Escape", lambda *_: self.close())
 
     def init_modules(self):
-        self.workspaces = Workspaces()
         self.controls = ControlsManager()
-        self.systray = SystemTray()
-        self.metrics = MetricsSmall()
-        self.battery = Battery()
-        self.weather_mini = WeatherMini()
-        self.vol_brightness_box = self.controls.get_controls_box()
-        self.date_time = Box(
-            name="date-time-container",
-            style_classes="" if not config.VERTICAL else "vertical",
-            v_expand=True,
-            children=DateTime(
-                name="date-time",
-                formatters=(
-                    ["%H\n%M"]
-                    if config.VERTICAL
-                    else ["%I:%M %p", "%H:%M", "%A", "%m-%d-%Y"]
+
+        self.module_map = {
+            "workspaces": Workspaces,
+            "systray": SystemTray,
+            "metrics": MetricsSmall,
+            "battery": Battery,
+            "weather_mini": WeatherMini,
+            "vol_brightness_box": self.controls.get_controls_box,
+            "date_time": lambda: Box(
+                name="date-time-container",
+                style_classes="" if not config.VERTICAL else "vertical",
+                v_expand=True,
+                children=DateTime(
+                    name="date-time",
+                    formatters=(
+                        ["%H\n%M"]
+                        if config.VERTICAL
+                        else ["%I:%M %p", "%H:%M", "%A", "%m-%d-%Y"]
+                    ),
                 ),
             ),
-        )
-        self.vertical_toggle_btn = add_hover_cursor(
-            Button(
-                name="orientation-btn",
-                child=MaterialIconLabel(
-                    name="orientation-label",
-                    FILL=0,
-                    icon_text=(icons.toggle_orientation.symbol()),
-                ),
-                on_clicked=lambda b, *_: self.toggle_vertical(),
-            )
-        )
+            "vertical_toggle_btn": lambda: add_hover_cursor(
+                Button(
+                    name="orientation-btn",
+                    child=MaterialIconLabel(
+                        name="orientation-label",
+                        FILL=0,
+                        icon_text=(icons.toggle_orientation.symbol()),
+                    ),
+                    on_clicked=lambda b, *_: self.toggle_vertical(),
+                )
+            ),
+        }
+
         self.user_modules_left = [
-            self.vertical_toggle_btn,
-            self.workspaces,
-            self.vol_brightness_box,
-            self.weather_mini,
-            self.metrics,
+            self.module_map[m]()
+            for m in config.bar.modules.left
+            if m in self.module_map
         ]
-        self.user_modules_right = [
-            self.systray,
-            self.battery,
-            self.date_time,
-        ]
+        self.user_modules_right = reversed(
+            [
+                self.module_map[m]()
+                for m in config.bar.modules.right
+                if m in self.module_map
+            ]
+        )
+
         self.visual_modules_left = [
             Box(
                 name="dock-module",
@@ -141,7 +146,7 @@ class DockBar(Window):
         ]
 
         self.hover_overlay_row_left = Box(
-            style="min-height:41px;",  # (40+1)px cuz 1.5px margins is replaced with 2px
+            # style="min-height:41px;",  # (40+1)px cuz 1.5px margins is replaced with 2px
             spacing=SPACING,
             h_expand=True,
             children=[
@@ -163,7 +168,7 @@ class DockBar(Window):
         )
 
         self.hover_overlay_row_right = Box(
-            style="min-height:41px;",
+            # style="min-height:41px;",
             spacing=SPACING,
             h_expand=True,
             children=[self.edge_fallback_right],  # fallback first

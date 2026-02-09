@@ -45,10 +45,10 @@
 }
 
 .bt-scanning{
-    animation: blink 0.5s ease infinite;
+    animation: blink_blue 0.5s ease infinite;
   }
   
-  @keyframes blink {
+  @keyframes blink_blue {
     0% {
       background-color: var(--blue-dim);
       color: white;

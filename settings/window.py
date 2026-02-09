@@ -9,6 +9,8 @@ from modules.wiggle_bar import WigglyArrow
 from widgets.shapes import Pill, Circle, WavyCircle, Ellipse, Pentagon
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
 
+from .state import SettingsState
+
 import icons
 from config.info import CONFIG_FILE
 from utils.cursor import add_hover_cursor
@@ -19,8 +21,15 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib
 
+from .state import state
 from .base import TabConfig
-from .tabs import IconVariationsTab, FontVariationsTab, KeyBindingsTab, LauncherTab, PillDockTab
+from .tabs import (
+    IconVariationsTab,
+    FontVariationsTab,
+    KeyBindingsTab,
+    LauncherTab,
+    PillDockTab,
+)
 
 
 class DragHandler:
@@ -206,7 +215,14 @@ class SettingsWindow(Window):
 
         for section_name, tabs in self.tabs.items():
             switch_box.pack_start(
-                Label(label=section_name, h_align="start", style_classes="section-subheading"), False, False, 0
+                Label(
+                    label=section_name,
+                    h_align="start",
+                    style_classes="section-subheading",
+                ),
+                False,
+                False,
+                0,
             )
 
             for tab_config in tabs:
@@ -222,7 +238,7 @@ class SettingsWindow(Window):
         GLib.idle_add(lambda: self._sync_checked_state(self.stack, None))
 
         return switch_box
-    
+
     def _sync_checked_state(self, stack, _):
         tab_id = stack.get_visible_child_name()
 
@@ -247,7 +263,11 @@ class SettingsWindow(Window):
             ],
         )
 
-        button = Button(style_classes=["settings-option-btn"], child=box, on_clicked = lambda b: self._on_tab_clicked(tab_config.id))
+        button = Button(
+            style_classes=["settings-option-btn"],
+            child=box,
+            on_clicked=lambda b: self._on_tab_clicked(tab_config.id),
+        )
 
         self.buttons[tab_config.id] = button
 
@@ -258,7 +278,7 @@ class SettingsWindow(Window):
             Button(
                 label="Save",
                 style_classes=["settings-btn", "bright"],
-                on_clicked=generate_i3_keybinds_config,
+                on_clicked=self.on_save,
             )
         )
         cancel_btn = add_hover_cursor(
@@ -315,3 +335,8 @@ class SettingsWindow(Window):
             self.application.quit()
         else:
             self.destroy()
+
+    def on_save(self, btn):
+        # generate_i3_keybinds_config()
+        state.print_all()
+        state.save_to_disk()
