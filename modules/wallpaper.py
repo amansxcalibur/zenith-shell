@@ -18,7 +18,8 @@ from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
 
 import icons
-from config.info import config, CONFIG_DIR, CACHE_DIR
+from config.config import config
+from config.info import CONFIG_DIR, CACHE_DIR
 
 import gi
 

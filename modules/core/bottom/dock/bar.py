@@ -17,7 +17,7 @@ from modules.core.bottom.dock.layout_manager import LayoutManager
 from modules.core.bottom.dock.module_overlay import HoverOverlay, HolePlaceholder
 
 import icons
-from config.info import config
+from config.config import config
 from utils.helpers import toggle_class
 from utils.cursor import add_hover_cursor
 

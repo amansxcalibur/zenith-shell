@@ -5,7 +5,8 @@ from fabric.utils.helpers import exec_shell_command_async
 from widgets.material_label import MaterialIconLabel
 
 import icons
-from config.info import config, SHELL_NAME
+from config.config import config
+from config.info import SHELL_NAME
 
 
 class PowerMenu(Box):

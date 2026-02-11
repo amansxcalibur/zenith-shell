@@ -1,5 +1,5 @@
 import copy
-from config.info import config
+from config.config import config
 import pprint
 
 class SettingsState:
@@ -22,20 +22,15 @@ class SettingsState:
         """
         cursor = self.staged_data
         for key in path[:-1]:
-            # pprint.pprint(cursor)
             cursor = cursor.setdefault(key, {})
 
         cursor[path[-1]] = value
-        # print(f"== updating {path} ==")
-        # pprint.pprint(cursor)
-        # print(value)
-        # print()
 
     def print_all(self):
         pprint.pprint(self.staged_data)
 
     def save_to_disk(self):
-        """Commits only modified changes to config"""
+        """Commits changes to config"""
         self._apply_dict(self.staged_data, [])
 
     def _apply_dict(self, data, path):

@@ -10,7 +10,7 @@ from widgets.popup_window import SharedPopupWindow
 from services.volume_service import VolumeService
 from services.brightness_service import BrightnessService
 
-from  config.info import config
+from config.config import config
 
 import gi
 

@@ -10,8 +10,8 @@ from modules.controls import ControlsManager
 
 from widgets.material_label import MaterialIconLabel
 
-from config.info import config
 import icons
+from config.config import config
 
 
 class LowBatteryBanner(Revealer):

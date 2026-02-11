@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any, List, Callable
 
 from fabric.core.service import Service, Signal, Property
 
-from config.info import config
+from config.config import config
 
 import gi
 

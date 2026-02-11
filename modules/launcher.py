@@ -13,7 +13,7 @@ from fabric.utils import DesktopApp, get_desktop_applications, idle_add, remove_
 from widgets.material_label import MaterialIconLabel
 
 import icons
-from config.info import config
+from config.config import config
 
 from gi.repository import GLib, Gdk
 

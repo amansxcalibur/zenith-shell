@@ -1,7 +1,8 @@
 from fabric.core.service import Service, Signal, Property
 from fabric import Fabricator
 
-from config.info import config, TEMP_DIR, ROOT_DIR
+from config.config import config
+from config.info import TEMP_DIR, ROOT_DIR
 
 import json
 import hashlib

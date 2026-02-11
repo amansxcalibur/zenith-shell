@@ -15,7 +15,7 @@ from modules.player_mini import PlayerContainerMini
 from widgets.material_label import MaterialIconLabel
 
 import icons
-from config.info import config
+from config.config import config
 from utils.cursor import add_hover_cursor
 from utils.helpers import open_settings
 

@@ -1,10 +1,9 @@
 from fabric.widgets.box import Box
-from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 
-from config.info import config
+from config.config import config
 from widgets.material_label import MaterialIconLabel
 from widgets.animated_scale import AnimatedScale, AnimatedCircularScale
 

@@ -19,7 +19,8 @@ from modules.transient_window import TransientWindow
 from modules.core.bottom.shell_window_manager import ShellWindowManager
 from modules.core.top.shell_window_manager import ShellTopWindowManager
 
-from config.info import config, SHELL_NAME, HOME_DIR, ROOT_DIR
+from config.config import config
+from config.info import SHELL_NAME, HOME_DIR, ROOT_DIR
 from config.i3.utils import (
     generate_i3_general_config,
     generate_i3_keybinds_config,

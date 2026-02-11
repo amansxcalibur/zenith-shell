@@ -19,8 +19,7 @@ from widgets.rounded_image import RoundedImage
 from widgets.material_label import MaterialIconLabel
 
 import icons
-from config.info import config
-from utils.helpers import toggle_class
+from config.config import config
 
 import gi
 

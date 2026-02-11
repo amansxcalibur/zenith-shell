@@ -16,7 +16,7 @@ from services.player_service import PlayerManager, PlayerService
 
 import svg
 import icons
-from config.info import config
+from config.config import config
 
 import gi
 

@@ -8,7 +8,7 @@ from fabric.widgets.eventbox import EventBox
 from widgets.animated_scale import AnimatedScale, AnimatedCircularScale
 from services.volume_service import VolumeService
 import svg
-from config.info import config
+from config.config import config
 
 
 class VolumeSlider(AnimatedScale):

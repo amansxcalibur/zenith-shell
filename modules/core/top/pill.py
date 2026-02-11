@@ -11,7 +11,8 @@ from widgets.overrides import PatchedX11Window as Window
 from modules.notification import NotificationManager
 
 import icons
-from config.info import config, SHELL_NAME
+from config.config import config
+from config.info import SHELL_NAME
 
 
 class TopPill(Window, Service):

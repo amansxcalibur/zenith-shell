@@ -9,7 +9,7 @@ from fabric.i3.widgets import (
 import threading
 from i3ipc import Connection, Event
 
-from config.info import config
+from config.config import config
 
 class i3Connector:
     _instance = None

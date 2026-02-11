@@ -14,7 +14,8 @@ from modules.controls import ControlsManager
 from modules.wallpaper import WallpaperSelector
 from modules.launcher import AppLauncher, AppCommands
 
-from config.info import config, SHELL_NAME, USERNAME, HOSTNAME
+from config.config import config
+from config.info import SHELL_NAME, USERNAME, HOSTNAME
 from utils.helpers import open_settings
 
 

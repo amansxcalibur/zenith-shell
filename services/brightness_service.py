@@ -5,7 +5,7 @@ from gi.repository import Gio
 from fabric.core.service import Service, Signal
 from fabric.utils.helpers import monitor_file, exec_shell_command_async
 
-from config.info import config
+from config.config import config
 
 
 class BrightnessService(Service):

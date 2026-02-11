@@ -13,7 +13,8 @@ from services.player_service import PlayerManager, PlayerService
 
 import svg
 import icons
-from config.info import config, CACHE_DIR
+from config.config import config
+from config.info import CACHE_DIR
 
 from loguru import logger
 

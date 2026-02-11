@@ -1,9 +1,9 @@
+from config.config import config
+
 import gi
 
 gi.require_version("Gray", "0.1")
 from gi.repository import Gray, Gtk, Gdk, GdkPixbuf, GLib
-
-from config.info import config
 
 
 class SystemTray(Gtk.Box):

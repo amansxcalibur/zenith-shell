@@ -16,7 +16,7 @@ from widgets.material_label import MaterialIconLabel
 from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
 
 import icons as icons
-from config.info import config
+from config.config import config
 
 from gi.repository import GLib
 

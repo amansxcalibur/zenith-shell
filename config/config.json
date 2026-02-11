@@ -46,7 +46,6 @@
     "corners": {
         "enable": true,
         "props": {
-            "radisu": 20,
             "radius": 20
         }
     },

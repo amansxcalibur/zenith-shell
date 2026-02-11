@@ -15,7 +15,7 @@ from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
 
 import icons
-from config.info import config
+from config.config import config
 from utils.cursor import add_hover_cursor
 from services.network.network_service import NetworkService, ConnectionResult
 
