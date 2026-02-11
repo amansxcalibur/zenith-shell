@@ -13,3 +13,6 @@ gray/
 
 # VSCode settings
 .vscode/*
+
+# Zenith config
+config/config.json
