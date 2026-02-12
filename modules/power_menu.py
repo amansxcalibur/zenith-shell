@@ -3,9 +3,9 @@ from fabric.widgets.button import Button
 from fabric.utils.helpers import exec_shell_command_async
 
 from widgets.material_label import MaterialIconLabel
+from utils.lock import lock_screen
 
 import icons
-from config.config import config
 from config.info import SHELL_NAME
 
 
@@ -50,7 +50,7 @@ class PowerMenu(Box):
     def lock(self, *_):
         print("Locking...")
         self.close_power_menu()
-        exec_shell_command_async(f"bash {config.SCRIPTS_DIR}/lock.sh")
+        lock_screen()
 
     def suspend(self, *_):
         print("Suspending...")

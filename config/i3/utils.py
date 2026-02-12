@@ -2,8 +2,8 @@ import colorsys
 from pathlib import Path
 from loguru import logger
 
-from config.info import ROOT_DIR
 from config.config import config
+from config.info import ROOT_DIR, SHELL_NAME
 from config.bindings import KeyBinding, I3_KEYBINDINGS
 from utils.colors import get_css_variable, hex_to_rgb01
 
@@ -228,7 +228,7 @@ def generate_i3_general_config(reload: bool = False):
         lines.extend(
             [
                 "# kill focused window (except zenith)",
-                'bindsym $mod+Shift+q [con_id="__focused__" instance="^(?!zenith-core).*$"] kill',
+                f'bindsym $mod+Shift+q [con_id="__focused__" instance="^(?!{SHELL_NAME}-core).*$"] kill',
                 "",
             ]
         )
@@ -244,3 +244,24 @@ def generate_i3_general_config(reload: bool = False):
 
     except Exception as e:
         logger.error("Failed to generate i3 general config: {}", e)
+
+def add_zenith_to_i3_config():
+    ensure_i3_paths()
+    include_line = f""
+    config_path = get_i3_config_path()
+
+    if not config_path.exists():
+        logger.warning(f"i3 config not found at {config_path}. Creating new one.")
+        config_path.write_text(f"{include_line}\n")
+        return
+
+    content = config_path.read_text()
+
+    if include_line not in content:
+        logger.info("Adding include line to i3 config")
+        # start on a new line
+        suffix = "\n" if not content.endswith("\n") else ""
+        with open(config_path, "a") as f:
+            f.write(f"{suffix}# globbing - all .conf in /conf.d\n{include_line}\n")
+    else:
+        logger.debug("i3 config already contains include line")

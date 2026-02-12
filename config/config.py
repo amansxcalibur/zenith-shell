@@ -20,6 +20,7 @@ DEFAULTS = {
     "system": {
         "SILENT": False,
         "VERTICAL": False,
+        "LOCKSCREEN": "i3lock",
         "BRIGHTNESS_DEV": "intel_backlight",
         "ALLOWED_PLAYERS": ["vlc", "cmus", "firefox", "spotify", "chromium"],
     },
@@ -45,7 +46,7 @@ DEFAULTS = {
             "right": ["date_time", "battery", "systray"],
         },
     },
-    "pill": {"POSITION": {"x": "left", "y": "bottom"}},
+    "pill": {"POSITION": {"x": "center", "y": "bottom"}},
     "network": {"wifi": {"ON": True}},
     "top_bar": {"POSITION": "top", "HEIGHT": 32, "SPACING": 8},
     "top_pill": {"POSITION": {"x": "center", "y": "top"}},

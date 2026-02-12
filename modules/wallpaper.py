@@ -1,6 +1,5 @@
 import os
 import shutil
-import hashlib
 from PIL import Image
 from pathlib import Path
 from loguru import logger
@@ -20,6 +19,8 @@ from widgets.material_label import MaterialIconLabel
 import icons
 from config.config import config
 from config.info import CONFIG_DIR, CACHE_DIR
+from utils.helpers import hash_file
+from utils.lock import generate_lockscreen_image
 
 import gi
 
@@ -41,8 +42,8 @@ def ensure_wallpaper_dirs():
     WP_PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def get_thumbnail_cache_path(file_name: str) -> Path:
-    file_hash = hashlib.md5(file_name.encode("utf-8")).hexdigest()
+def get_thumbnail_cache_path(file_path: str) -> Path:
+    file_hash = hash_file(Path(file_path))
     return WP_THUMBS / f"{file_hash}.png"
 
 
@@ -284,7 +285,7 @@ class WallpaperSelector(Box):
     def _process_thumbnail_task(self, file_name):
         try:
             full_path = os.path.join(config.WALLPAPERS_DIR, file_name)
-            cache_path = get_thumbnail_cache_path(file_name)
+            cache_path = get_thumbnail_cache_path(full_path)
 
             # generate thumbs if missing
             if not cache_path.exists():
@@ -409,16 +410,20 @@ class WallpaperSelector(Box):
             )
             return
 
+        # apply wallpaper
         exec_shell_command_async(f"{feh_bin} --zoom fill --bg-fill '{full_path}'")
 
         def save_history():
             WP_HISTORY.parent.mkdir(parents=True, exist_ok=True)
             WP_HISTORY.write_text(full_path)
 
+        # generate
         self.executor.submit(save_history)
         future = self.executor.submit(generate_wallpaper_preview, full_path)
         self.executor.submit(self._generate_theme, full_path, selected_scheme)
+        self.executor.submit(generate_lockscreen_image, full_path)
 
+        # callback
         def _on_preview_ready(fut):
             preview_path = fut.result()
             if not preview_path:

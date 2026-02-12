@@ -1,40 +1,21 @@
+import os
+import sys
+import shlex
+import hashlib
+import subprocess
+from pathlib import Path
+from loguru import logger
+
+from gi.repository import Gio, GLib
+
 from config.info import ROOT_DIR
+
 
 def toggle_class(widget, remove, add):
     widget.remove_style_class(remove)
     widget.add_style_class(add)
 
-
-# todo
-# def toggle_style_class(widget, style_class):
-#     if widget.has_style_class(style_class):
-#         widget.remove_style_class(style_class)
-#     else:
-#         widget.add_style_class(style_class)
-
-
-def toggle_config_vertical_flag():
-    import os
-
-    CONFIG_PATH = os.path.expanduser(f"{ROOT_DIR}/config/info.py")
-    with open(CONFIG_PATH, "r") as f:
-        lines = f.readlines()
-
-    new_lines = []
-    for line in lines:
-        if line.strip().startswith("VERTICAL"):
-            current_value = "True" in line
-            new_value = "False" if current_value else "True"
-            new_lines.append(f"VERTICAL = {new_value}\n")
-        else:
-            new_lines.append(line)
-
-    with open(CONFIG_PATH, "w") as f:
-        f.writelines(new_lines)
-
-
-_settings_process = None
-
+_settings_process: Gio.Subprocess | None = None
 
 def open_settings():
     global _settings_process
@@ -42,37 +23,30 @@ def open_settings():
     if _settings_process and not _settings_process.get_if_exited():
         return
 
-    # from fabric.utils.helpers import exec_shell_command_async
-    from config.info import ROOT_DIR
-    import sys
-
-    print(f"Opening settings module from root: {ROOT_DIR}")
+    logger.debug(f"Opening settings module from root: {ROOT_DIR}")
 
     # shell_command = f"cd {ROOT_DIR} && {sys.executable} -m settings"
 
-    # _settings_process, _ = exec_shell_command_async(
+    # _settings_process, _ = exec_shell_command_async_with_cwd(
     #     cmd=["sh", "-c", shell_command], cwd=ROOT_DIR
     # )
-    import subprocess
+
     subprocess.Popen(["python3", "-m", "settings"], cwd=ROOT_DIR)
 
-from gi.repository import Gio, GLib
-import shlex
-import os
 
-def exec_shell_command_async(
+def exec_shell_command_async_with_cwd(
     cmd: str | list[str],
     callback: callable = None,
     cwd: str = None,
 ) -> tuple[Gio.Subprocess | None, Gio.DataInputStream]:
-    launcher = Gio.SubprocessLauncher.new(Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE)
-    
+    launcher = Gio.SubprocessLauncher.new(
+        Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE
+    )
+
     if cwd:
         launcher.set_cwd(os.fspath(cwd))
 
-    process = launcher.spawnv(
-        shlex.split(cmd) if isinstance(cmd, str) else cmd
-    )
+    process = launcher.spawnv(shlex.split(cmd) if isinstance(cmd, str) else cmd)
 
     stdout = Gio.DataInputStream(
         base_stream=process.get_stdout_pipe(),
@@ -94,3 +68,53 @@ def exec_shell_command_async(
 
     reader_loop(stdout)
     return process, stdout
+
+
+def restart_shell():
+    subprocess.Popen([sys.executable] + sys.argv)
+    os._exit(0)
+
+
+def hash_file(file_path: Path) -> str:
+    mtime = file_path.stat().st_mtime
+    identity_string = f"{file_path.absolute()}_{mtime}"
+    file_hash = hashlib.md5(identity_string.encode("utf-8")).hexdigest()
+
+    return file_hash
+
+
+def get_screen_resolution_gdk() -> tuple[int, int]:
+    from gi.repository import Gdk
+
+    display = Gdk.Display.get_default()
+    if not display:
+        raise RuntimeError("No Gdk display")
+
+    monitor = display.get_primary_monitor()
+    if not monitor:
+        raise RuntimeError("No primary monitor")
+
+    geometry = monitor.get_geometry()
+    return geometry.width, geometry.height
+
+
+def get_screen_resolution_i3() -> tuple[int, int]:
+    from fabric.i3.service import I3MessageType
+    from fabric.i3.widgets import get_i3_connection
+
+    i3_conn = get_i3_connection()
+    i3_response = i3_conn.send_command("", I3MessageType.GET_OUTPUTS)
+
+    active = [
+        o
+        for o in i3_response.reply
+        if o.get("active") and not o["name"].startswith("xroot")
+    ]
+
+    if not active:
+        raise RuntimeError("No active i3 outputs")
+
+    max_x = max(o["rect"]["x"] + o["rect"]["width"] for o in active)
+    max_y = max(o["rect"]["y"] + o["rect"]["height"] for o in active)
+
+    return max_x, max_y

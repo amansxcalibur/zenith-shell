@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from .info import SHELL_NAME
 import icons.icons_material as icons
 
 @dataclass(frozen=True)
@@ -16,49 +17,49 @@ I3_KEYBINDINGS = [
     KeyBinding(
         action="pill.open",
         key="$mod+d",
-        command='fabric-cli exec zenith "pill.open()"',
+        command=f'fabric-cli exec {SHELL_NAME} "pill.open()"',
         title="Open Pill",
         icon=icons.pill.symbol(),
     ),
     KeyBinding(
         action="pill.toggle_power_menu",
         key="$mod+p",
-        command='fabric-cli exec zenith "pill.toggle_power_menu()"',
+        command=f'fabric-cli exec {SHELL_NAME} "pill.toggle_power_menu()"',
         title="Toggle Power Menu",
         icon=icons.power.symbol(),
     ),
     KeyBinding(
         action="pill.cycle_modes",
         key="Shift+$mod+m",
-        command='fabric-cli exec zenith "pill.cycle_modes()"',
+        command=f'fabric-cli exec {SHELL_NAME} "pill.cycle_modes()"',
         title="Cycle Pill Modes",
         icon=icons.pill.symbol(),
     ),
     KeyBinding(
         action="notifications.toggle",
         key="$mod+n",
-        command='fabric-cli exec zenith "top_pill.toggle_notification()"',
+        command=f'fabric-cli exec {SHELL_NAME} "top_pill.toggle_notification()"',
         title="Toggle Notifications",
         icon=icons.notifications.symbol(),
     ),
     KeyBinding(
         action="top_bar.toggle_detach",
         key="$mod+Shift+n",
-        command='fabric-cli exec zenith "top_bar.toggle_detach()"',
+        command=f'fabric-cli exec {SHELL_NAME} "top_bar.toggle_detach()"',
         title="Toggle Controls Mode",
         icon=icons.arrows_up_down_circle.symbol(),
     ),
     KeyBinding(
         action="dock.toggle",
         key="$mod+Escape",
-        command='fabric-cli exec zenith "dockBar.toggle_visibility()"',
+        command=f'fabric-cli exec {SHELL_NAME} "dockBar.toggle_visibility()"',
         title="Toggle Dock Visibility",
         icon=icons.dock_bottom.symbol(),
     ),
     KeyBinding(
         action="pill.toggle_player",
         key="$mod+u",
-        command='fabric-cli exec zenith "pill.toggle_player()"',
+        command=f'fabric-cli exec {SHELL_NAME} "pill.toggle_player()"',
         title="Toggle Player",
         icon=icons.disc.symbol(),
     ),

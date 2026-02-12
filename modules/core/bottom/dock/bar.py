@@ -1,5 +1,4 @@
 from fabric.widgets.box import Box
-from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
@@ -18,10 +17,8 @@ from modules.core.bottom.dock.module_overlay import HoverOverlay, HolePlaceholde
 
 import icons
 from config.config import config
-from utils.helpers import toggle_class
 from utils.cursor import add_hover_cursor
-
-import subprocess
+from utils.helpers import toggle_class, restart_shell
 
 import gi
 
@@ -314,7 +311,7 @@ class DockBar(Window):
     def toggle_vertical(self):
         # toggle_config_vertical_flag()
         # restart bar
-        subprocess.run([f"{config.SCRIPTS_DIR}/flaunch.sh"])
+        restart_shell()
 
     def toggle_visibility(self):
         visible = not self.is_visible()
