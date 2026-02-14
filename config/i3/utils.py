@@ -157,11 +157,11 @@ def get_i3_config_path() -> Path:
     #     return Path("~/.config/i3/config").expanduser()
 
     return CONFIG_PATH
-    
+
+
 def ensure_i3_paths():
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     CONFIG_GLOB_PATH.mkdir(parents=True, exist_ok=True)
-
 
 
 def generate_i3_keybinds_config(reload: bool = False):
@@ -245,9 +245,12 @@ def generate_i3_general_config(reload: bool = False):
     except Exception as e:
         logger.error("Failed to generate i3 general config: {}", e)
 
-def add_zenith_to_i3_config():
+
+def add_shell_startup_to_i3_config():
     ensure_i3_paths()
-    include_line = f""
+    include_line = (
+        f"# {SHELL_NAME} startup\nexec --no-startup-id {SHELL_NAME + '-shell'}"
+    )
     config_path = get_i3_config_path()
 
     if not config_path.exists():
@@ -258,10 +261,10 @@ def add_zenith_to_i3_config():
     content = config_path.read_text()
 
     if include_line not in content:
-        logger.info("Adding include line to i3 config")
+        logger.info(f"Adding {SHELL_NAME} startup to i3 config")
         # start on a new line
-        suffix = "\n" if not content.endswith("\n") else ""
+        prefix = "\n" if content and not content.endswith("\n") else ""
         with open(config_path, "a") as f:
-            f.write(f"{suffix}# globbing - all .conf in /conf.d\n{include_line}\n")
+            f.write(f"\n{prefix}{include_line}\n")
     else:
-        logger.debug("i3 config already contains include line")
+        logger.debug(f"i3 config already contains {SHELL_NAME} startup")

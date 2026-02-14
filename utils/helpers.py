@@ -31,7 +31,7 @@ def open_settings():
     #     cmd=["sh", "-c", shell_command], cwd=ROOT_DIR
     # )
 
-    subprocess.Popen(["python3", "-m", "settings"], cwd=ROOT_DIR)
+    subprocess.Popen([sys.executable, "-m", "settings"], cwd=ROOT_DIR)
 
 
 def exec_shell_command_async_with_cwd(

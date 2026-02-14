@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-SHELL_NAME = "zenith-shell"
+SHELL_NAME = "zenith"
 USERNAME = os.getlogin()
 HOSTNAME = os.uname().nodename
 

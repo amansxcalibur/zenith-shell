@@ -64,7 +64,7 @@ def normalize_path():
 
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(SHELL_NAME + "-core")
+    setproctitle.setproctitle(SHELL_NAME + "-shell")
     GLib.set_prgname(SHELL_NAME + "-core")
 
     normalize_path()
