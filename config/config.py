@@ -24,7 +24,7 @@ DEFAULTS = {
         "BRIGHTNESS_DEV": "intel_backlight",
         "ALLOWED_PLAYERS": ["vlc", "cmus", "firefox", "spotify", "chromium"],
     },
-    "paths": {"WALLPAPERS_DIR": "~/Pictures/Wallpapers/", "SCRIPTS_DIR": "~/i3scripts"},
+    "paths": {"WALLPAPERS_DIR": "~/Pictures/Wallpapers/"},
     "dashboard": {
         "WIDGETS_ENABLED": ["clock", "weather"],
         "REFRESH_INTERVAL": 5000,
@@ -275,14 +275,6 @@ class ConfigManager(Service):
     @BRIGHTNESS_DEV.setter
     def BRIGHTNESS_DEV(self, value):
         self.system.BRIGHTNESS_DEV = value
-
-    @property
-    def SCRIPTS_DIR(self):
-        return self.paths.SCRIPTS_DIR
-
-    @SCRIPTS_DIR.setter
-    def SCRIPTS_DIR(self, value):
-        self.paths.SCRIPTS_DIR = value
 
     @property
     def BAR_HEIGHT(self):
