@@ -10,6 +10,7 @@ __pycache__/
 # Build sources
 /fabric-cli
 gray/
+/vendors
 
 # VSCode settings
 .vscode/*
