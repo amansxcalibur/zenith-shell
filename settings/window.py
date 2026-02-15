@@ -27,6 +27,7 @@ from .tabs import (
     KeyBindingsTab,
     LauncherTab,
     PillDockTab,
+    I3Tab,
 )
 
 
@@ -85,6 +86,13 @@ class SettingsWindow(Window):
                     "Pill & Dock",
                     icons.monitor.symbol(),
                     lambda: PillDockTab().get_widget(),
+                    "Appearance",
+                ),
+                TabConfig(
+                    "i3wm",
+                    "I3",
+                    icons.bento.symbol(),
+                    lambda: I3Tab().get_widget(),
                     "Appearance",
                 ),
             ],

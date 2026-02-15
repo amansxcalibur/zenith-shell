@@ -1,6 +1,7 @@
 import gi
 import math
 import cairo
+from typing import Iterable, Literal, Tuple
 
 from fabric.widgets.scale import Scale
 from fabric.widgets.circularprogressbar import CircularProgressBar
@@ -9,7 +10,7 @@ from fabric.utils.helpers import clamp
 from services.animator import Animator
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, Gtk, GObject
+from gi.repository import Gdk, Gtk, GObject, GLib
 
 
 class AnimatedScale(Scale):
@@ -35,28 +36,6 @@ class AnimatedScale(Scale):
         self.animator.max_value = value
         self.animator.play()
         return
-
-
-import gi
-import math
-import cairo
-from typing import Iterable, Literal, Tuple
-from fabric.widgets.circularprogressbar import CircularProgressBar
-from fabric.utils.helpers import clamp
-
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, Gtk, GObject, GLib
-
-
-import gi
-import math
-import cairo
-from typing import Iterable, Literal, Tuple
-from fabric.widgets.circularprogressbar import CircularProgressBar
-from fabric.utils.helpers import clamp
-
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, Gtk, GObject
 
 
 class CircularScale(CircularProgressBar):
@@ -130,18 +109,18 @@ class CircularScale(CircularProgressBar):
         ctx.set_parent(self.get_style_context())
         ctx.set_screen(self.get_screen())
 
-        ctx.connect('changed', lambda *_: self.do_update_gadget_path(ctx, node_name))
-        
+        ctx.connect("changed", lambda *_: self.do_update_gadget_path(ctx, node_name))
+
         self.do_update_gadget_path(ctx, node_name)
         return ctx
-    
+
     def do_update_gadget_path(self, context: Gtk.StyleContext, node_name: str) -> None:
         parent_ctx = self.get_style_context()
         new_path = parent_ctx.get_path().copy()
-        
+
         # GTK's WidgetPath only includes style classes if CSS rules target them.
         # If there are selectors targeting child nodes with parent classes
-        # (e.g., "circle-widget.dark slider {...}") but no rules directly targeting 
+        # (e.g., "circle-widget.dark slider {...}") but no rules directly targeting
         # the parent with that class (e.g., "circle-widget.dark {...}"), the parent's
         # path won't include the class. This solution manually adds these classes to
         # the parent's path so the selectors can match correctly.
@@ -150,8 +129,8 @@ class CircularScale(CircularProgressBar):
                 new_path.iter_add_class(-1, cls)
 
         new_path.append_type(GObject.TYPE_NONE)
-        new_path.iter_set_object_name(-1, node_name) 
-        
+        new_path.iter_set_object_name(-1, node_name)
+
         context.set_path(new_path)
         # TODO: add independent state support for each sub-node
         context.set_state(self.get_state_flags())

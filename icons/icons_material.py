@@ -44,6 +44,9 @@ search: str = "\ue8b6"
 settings: str = "\ue8b8"
 edit_material: str = "\ue3c9"
 
+explosion: str = "\uf685"
+editors_choice: str = "\uf528"
+bento: str = "\uf1f4"
 
 east: str = "\uf1df"
 north_east: str = "\uf1e1"
@@ -78,9 +81,9 @@ headphones: str = "\uf01f"
 # Bluetooth
 bluetooth: str = "\ue1a7"
 bluetooth_off: str = "&#xeceb;"
-bluetooth_searching: str = '\ue1aa'
+bluetooth_searching: str = "\ue1aa"
 
-radar: str = '\uf04e'
+radar: str = "\uf04e"
 
 close: str = "\ue5cd"
 trash_material: str = "\ue872"

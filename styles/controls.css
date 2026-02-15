@@ -1,0 +1,64 @@
+#slider-mui{
+    min-height: 44px;
+}
+
+#slider-mui trough {
+  background-color: var(--surface-bright);
+  min-height: 10px;
+  border-radius: 5px;
+  padding-right: 12px; /* counter slider negative margins */
+}
+
+#slider-mui slider {
+  margin: -20px 0px -20px 12px;
+  background-color: var(--primary);
+  min-width: 4px;
+  min-height: 40px;
+  border-radius: 10px;
+  box-shadow: 0 0 0 4px var(--surface);
+}
+
+#slider-mui highlight {
+  background-color: var(--primary);
+  border-radius: 5px;
+  box-shadow: 4px 0 0 4px var(--surface);
+}
+
+#slider-mui.vertical trough {
+  background-color: var(--surface-bright);
+  min-width: 10px;
+  min-height: 300px;
+}
+
+#slider-mui.vertical slider {
+  margin-left: -3px;
+  margin-right: -3px;
+  margin-bottom: 12px;
+  background-color: var(--primary);
+  min-width: 40px;
+  border-radius: 10px;
+  min-height: 4px;
+  /* box-shadow: 0 0 0 4px black; */
+}
+
+#slider-mui.vertical highlight {
+  background-color: var(--primary);
+  border-radius: 4px 4px 12px 12px;
+  /* box-shadow: 0 4px 0 4px black; */
+}
+
+#slider-mui.vertical trough {
+  border-radius: 12px 12px 12px 12px;
+  padding-right: 0px;
+  padding-top: 10px; /* counter slider negative margins */
+}
+
+#slider-mui.vertical.mute highlight,
+#slider-mui.vertical.mute slider {
+  background-color: var(--outline);
+}
+
+#slider-mui.vertical.vol-overflow-slider highlight,
+#slider-mui.vertical.vol-overflow-slider slider {
+  background-color: rgb(228, 83, 83);
+}

@@ -40,8 +40,9 @@ class LayoutBuilder:
         heading: str,
         body: Gtk.Widget | Iterable[Gtk.Widget],
         heading_size: int = 18,
+        orientation: str = 'v',
     ) -> EventBox:
-        box = Box(orientation="v", spacing=5)
+        box = Box(orientation=orientation, spacing=5)
 
         heading_label = MaterialFontLabel(
             text=heading,

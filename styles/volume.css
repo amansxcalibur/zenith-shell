@@ -29,7 +29,7 @@
 }
 
 #control-slider.muted-slider slider {
-  background-image: url("resource:///zenith/icons/mute.png");
+  /* background-image: url("resource:///zenith/icons/mute.png"); */
   @apply mute_slider_img();
   background-size: contain;
 }

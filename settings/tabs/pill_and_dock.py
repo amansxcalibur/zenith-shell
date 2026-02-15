@@ -37,30 +37,87 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
         self.container = Box(orientation="v", spacing=25)
 
         pill_positions = [
-            {"selected": False, "icon": icons.north_west.symbol(), "text": "top-left"},
-            {"selected": False, "icon": icons.north.symbol(), "text": "top-center"},
-            {"selected": False, "icon": icons.north_east.symbol(), "text": "top-right"},
-            {"selected": False, "icon": icons.west.symbol(), "text": "left"},
-            {"selected": False, "icon": icons.center.symbol(), "text": "center"},
-            {"selected": False, "icon": icons.east.symbol(), "text": "right"},
+            {
+                "selected": False,
+                "icon": icons.north_west.symbol(),
+                "text": "top-left",
+                "value": "top-left",
+            },
+            {
+                "selected": False,
+                "icon": icons.north.symbol(),
+                "text": "top-center",
+                "value": "top-center",
+            },
+            {
+                "selected": False,
+                "icon": icons.north_east.symbol(),
+                "text": "top-right",
+                "value": "top-right",
+            },
+            {
+                "selected": False,
+                "icon": icons.west.symbol(),
+                "text": "left",
+                "value": "center-left",
+            },
+            {
+                "selected": False,
+                "icon": icons.center.symbol(),
+                "text": "center",
+                "value": "center-center",
+            },
+            {
+                "selected": False,
+                "icon": icons.east.symbol(),
+                "text": "right",
+                "value": "center-right",
+            },
             {
                 "selected": False,
                 "icon": icons.south_west.symbol(),
                 "text": "bottom-left",
+                "value": "bottom-left",
             },
-            {"selected": False, "icon": icons.south.symbol(), "text": "bottom-center"},
+            {
+                "selected": False,
+                "icon": icons.south.symbol(),
+                "text": "bottom-center",
+                "value": "bottom-center",
+            },
             {
                 "selected": False,
                 "icon": icons.south_east.symbol(),
                 "text": "bottom-right",
+                "value": "bottom-right",
             },
         ]
 
         dock_positions = [
-            {"selected": False, "icon": icons.west.symbol(), "text": "left"},
-            {"selected": False, "icon": icons.north.symbol(), "text": "top"},
-            {"selected": False, "icon": icons.south.symbol(), "text": "bottom"},
-            {"selected": False, "icon": icons.east.symbol(), "text": "right"},
+            {
+                "selected": False,
+                "icon": icons.west.symbol(),
+                "text": "left",
+                "value": "left",
+            },
+            {
+                "selected": False,
+                "icon": icons.north.symbol(),
+                "text": "top",
+                "value": "top",
+            },
+            {
+                "selected": False,
+                "icon": icons.south.symbol(),
+                "text": "bottom",
+                "value": "bottom",
+            },
+            {
+                "selected": False,
+                "icon": icons.east.symbol(),
+                "text": "right",
+                "value": "right",
+            },
         ]
 
         pill_pos = state.get(["pill", "POSITION"])
@@ -185,7 +242,9 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
 
         btn._group_id = group_id
         btn._position_data = position
-        btn._value = position["text"]
+
+        print(position)
+        btn._value = position["value"]
 
         return add_hover_cursor(btn)
 

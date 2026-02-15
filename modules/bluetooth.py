@@ -269,7 +269,7 @@ class BluetoothConnections(Box):
         if device.paired:
             return self.paired_box.add(slot)
         return self.available_box.add(slot)
-    
+
     def on_switch_toggled(self, switch, pspec):
         new_state = switch.get_active()
         if self.client.enabled != new_state:

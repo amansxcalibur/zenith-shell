@@ -23,7 +23,7 @@ DEFAULTS = {
         "BRIGHTNESS_DEV": "intel_backlight",
         "ALLOWED_PLAYERS": ["vlc", "cmus", "firefox", "spotify", "chromium"],
     },
-    "paths": {"WALLPAPERS_DIR": "~/Pictures/Wallpapers/", "SCRIPTS_DIR": "~/i3scripts"},
+    "paths": {"WALLPAPERS_DIR": "~/Pictures/Wallpapers/"},
     "dashboard": {
         "WIDGETS_ENABLED": ["clock", "weather"],
         "REFRESH_INTERVAL": 5000,

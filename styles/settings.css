@@ -28,22 +28,22 @@
   border: 2px solid var(--surface-bright);
 }
 
-#settings-header{
+#settings-header {
   border-radius: 25px 25px 0px 0px;
   background-color: var(--surface-dull);
 }
 
-#settings-content{
+#settings-content {
   background-color: var(--shadow);
   padding: 12px;
   border-radius: 25px;
 }
 
-#settings-footer{
+#settings-footer {
   padding: 0px 0px;
 }
 
-#settings-stack{
+#settings-stack {
   padding: 40px 0px;
 }
 
@@ -96,16 +96,16 @@
   min-width: 50px;
 }
 
-.settings-btn.bright{
+.settings-btn.bright {
   background-color: var(--surface-bright);
   color: var(--on-primary);
 }
 
-.settings-btn:hover, .settings-btn:hover>* {
+.settings-btn:hover,
+.settings-btn:hover > * {
   background-color: var(--primary);
   color: var(--on-primary);
 }
-
 
 .settings-section-container {
   /* margin-bottom: 10px; */
@@ -120,7 +120,6 @@
   border-radius: 5px;
   padding: 10px;
 }
-
 
 .settings-value {
   background-color: var(--surface-bright);
@@ -155,63 +154,73 @@
   padding: 8px 12px;
 }
 
-#settings-button-group-btn{
+#settings-button-group-btn {
   background-color: var(--on-primary);
   border-radius: 5px;
   padding: 8px 16px;
 }
 
-#settings-button-group-btn.first{
+#settings-button-group-btn.first {
   border-top-left-radius: 22px;
   border-bottom-left-radius: 22px;
 }
 
-#settings-button-group-btn.last{
+#settings-button-group-btn.last {
   background-color: var(--on-primary);
   border-top-right-radius: 22px;
   border-bottom-right-radius: 22px;
 }
 
-#settings-button-group-btn.active{
+#settings-button-group-btn.active {
   background-color: var(--primary);
   border-radius: 22px;
 }
 
-#settings-button-group-btn.active>*>*{
+#settings-button-group-btn.active > * > * {
   color: var(--surface);
 }
 
-.module-pill{
+.module-pill {
   background-color: var(--surface-semi-bright);
   border-radius: 15px;
   padding: 16px;
 }
 
-.module-pill.active{
+.module-pill.active {
   background-color: var(--primary);
   border-radius: 22px;
   color: var(--surface);
 }
 
-.module-pill.active.ranking{
+.module-pill.active.ranking {
   padding: 16px;
   border-radius: 30px;
 }
 
-#module-drop-box{
+#module-drop-box {
   background-color: var(--surface);
   border: dashed 3px var(--surface-bright);
   border-radius: 25px;
   padding: 10px;
 }
 
-.placeholder-row{
+.placeholder-row {
   border: dashed 3px var(--surface-bright);
   margin: 4px;
   border-radius: 25px;
 }
 
-#module-pill-close-button{
+#module-pill-close-button {
   padding: 0;
   margin-left: -2px;
+}
+
+#i3-settings-demo-window {
+  border: 3px solid var(--surface-bright);
+  border-radius: 21px;
+  
+}
+#i3-settings-demo-window.active {
+  border: 3px solid var(--primary);
+  background-color: var(--surface-semi-bright);
 }
