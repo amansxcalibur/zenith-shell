@@ -186,7 +186,7 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
         )
 
     def _create_i3_controls(
-        self, label: str, min_val: float, max_val: float, callback, initial_val=0
+        self, label: str, min_val: float, max_val: float, callback, initial_val=30
     ):
         value_label = Label(
             label=f"{int(initial_val)}px", style_classes="slider-value-label"
@@ -205,11 +205,11 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
         def on_value_changed(s):
             val = int(s.get_value())
             value_label.set_label(f"{val}px")
-            callback(s)
+            if scale.get_mapped():
+                callback(s)
 
         scale.connect("value-changed", on_value_changed)
-
-        callback(scale)
+        scale.connect('map', lambda: callback(scale))
 
         return Box(
             h_expand=True,
@@ -299,8 +299,9 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
         self.demo_container.set_style(f"padding: {val}px;")
         state.update(["i3", "gaps", "props", "outer"], val)
 
-    def _on_border_width_changed(self, scale):
+    def _on_border_width_changed(self, scale):    
         val = int(scale.get_value())
+
         for window in self.all_windows_list:
             color = "var(--primary)" if "active" in window.get_style_context().list_classes() else "var(--surface-bright)"
             window.get_children()[0].set_style(f"border: {val}px solid {color};")
