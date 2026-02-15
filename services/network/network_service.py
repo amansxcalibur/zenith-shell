@@ -562,7 +562,7 @@ class NetworkService(Service):
             self.connection_change("", False, DeviceStatus.NO_DEVICE.value)
 
         # init on/off
-        self.toggle_wifi_radio(enabled=config.network.wifi.ON)
+        self.toggle_wifi_radio(enabled=config.network.wifi.enabled)
 
     def scan(self) -> bool:
         if not self.scan_manager:

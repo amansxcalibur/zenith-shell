@@ -73,7 +73,7 @@ def generate_i3_border_theme_config(hex_color: str = None, reload: bool = False)
         f"#   {ROOT_DIR}/config/config.json  OR",
         f"#   {ROOT_DIR}/config/i3/utils.py  OR",
         "",
-        f"{'' if (theme_available and config.i3.borders.matugen_enable) else '# '}client.focused          {hex_color} {hex_color} {hex_color} {hex_color}",
+        f"{'' if (theme_available and config.i3.borders.matugen) else '# '}client.focused          {hex_color} {hex_color} {hex_color} {hex_color}",
         "# client.focused_inactive #ff0000 #ff0000 #ff0000 #ff0000",
         "# client.unfocused        #ff0000 #ff0000 #ff0000 #ff0000",
         "# client.urgent           #ff0000 #ff0000 #ff0000 #ff0000",
@@ -189,22 +189,22 @@ def generate_i3_gaps_and_borders_config():
     lines = []
 
     gaps_config = config.i3.gaps
-    if gaps_config.enable:
+    if gaps_config.enabled:
         lines.append("# gaps")
         for prop, val in gaps_config.props.get_all().items():
             lines.append(f"gaps {prop} {val}px")
         lines.append("")
 
     border_config = config.i3.borders
-    if border_config.enable:
+    if border_config.enabled:
         lines.append("# borders")
         lines.append(f"default_border pixel {border_config.props.border_width}")
         lines.append("default_floating_border none")
         lines.append("")
 
-    if config.i3.smart_borders.enable:
-        lines.append("smart_borders on")
-        lines.append("")
+        if config.i3.borders.props.smart_borders:
+            lines.append("smart_borders on")
+            lines.append("")
 
     return "\n".join(lines)
 

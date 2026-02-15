@@ -90,7 +90,7 @@ if __name__ == "__main__":
     top_window_manager = ShellTopWindowManager(pill=top_pill, dockBar=top_bar)
 
     corners = None
-    if config.corners.enable:
+    if config.corners.enabled:
         corners = Corners(config.corners.props.radius)
 
     app_kwargs = {

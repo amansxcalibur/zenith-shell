@@ -9,13 +9,12 @@ from .info import TEMP_DIR, CACHE_DIR, CONFIG_DIR, CONFIG_FILE
 
 DEFAULTS = {
     "i3": {
-        "gaps": {"enable": True, "props": {"outer": 3, "inner": 0}},
+        "gaps": {"enabled": True, "props": {"outer": 3, "inner": 0}},
         "borders": {
-            "enable": True,
+            "enabled": True,
             "props": {"border_width": 2, "smart_borders": True},
-            "matugen_enable": True,
+            "matugen": True,
         },
-        "smart_borders": {"enable": True},
     },
     "system": {
         "SILENT": False,
@@ -24,13 +23,13 @@ DEFAULTS = {
         "BRIGHTNESS_DEV": "intel_backlight",
         "ALLOWED_PLAYERS": ["vlc", "cmus", "firefox", "spotify", "chromium"],
     },
-    "paths": {"WALLPAPERS_DIR": "~/Pictures/Wallpapers/"},
+    "paths": {"WALLPAPERS_DIR": "~/Pictures/Wallpapers/", "SCRIPTS_DIR": "~/i3scripts"},
     "dashboard": {
         "WIDGETS_ENABLED": ["clock", "weather"],
         "REFRESH_INTERVAL": 5000,
         "SHOW_NOTIFICATIONS": True,
     },
-    "corners": {"enable": False, "props": {"radius": 20}},
+    "corners": {"enabled": False, "props": {"radius": 20}},
     "bar": {
         "POSITION": "bottom",
         "HEIGHT": 32,
@@ -47,11 +46,11 @@ DEFAULTS = {
         },
     },
     "pill": {"POSITION": {"x": "center", "y": "bottom"}},
-    "network": {"wifi": {"ON": True}},
+    "network": {"wifi": {"enabled": True}},
+    "bluetooth": {"enabled": False},
     "top_bar": {"POSITION": "top", "HEIGHT": 32, "SPACING": 8},
     "top_pill": {"POSITION": {"x": "center", "y": "top"}},
 }
-
 
 
 # TODO: Config shouldn't really create the 'paths'. It should point to the expected path.

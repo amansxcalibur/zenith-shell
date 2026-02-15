@@ -110,7 +110,7 @@ fi
     fi
 )
 
-# -------- Matugen (Required) --------
+# -------- Matugen --------
 log_info "Checking Matugen (Dynamic Theming)..."
 
 if ! command_exists matugen; then

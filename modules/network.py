@@ -674,7 +674,7 @@ class Network(Tile):
 
             # Save last successful state preferred by user
             # (Note: NetworkManager already restores WiFi state after sleep.)
-            config.network.wifi.ON = enabled  # CHANGES THE CONFIG!!
+            config.network.wifi.enabled = enabled  # CHANGES THE CONFIG!!
 
         except Exception as e:
             logger.error(f"Error toggling WiFi: {e}")

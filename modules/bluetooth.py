@@ -9,8 +9,10 @@ from fabric.bluetooth import BluetoothClient, BluetoothDevice
 
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
+
 import icons
 from modules.tile import Tile
+from config.config import config
 from utils.cursor import add_hover_cursor
 
 import gi
@@ -187,9 +189,10 @@ class BluetoothConnections(Box):
         self.bluetooth_toggle = Gtk.Switch(name="matugen-switcher")
         self._last_enabled = self.bluetooth_toggle.get_active()
         self.bluetooth_handler_id = self.bluetooth_toggle.connect(
-            "notify::active", lambda *_: self.client.toggle_power()
+            "notify::active", self.on_switch_toggled
         )
         self.bluetooth_toggle.set_visible(True)
+        self.bluetooth_toggle.set_active(config.bluetooth.enabled)
 
         self.client.connect("notify::enabled", self._do_toggle_bluetooth)
         self.client.connect("notify::scanning", self.set_scan_ui)
@@ -266,6 +269,12 @@ class BluetoothConnections(Box):
         if device.paired:
             return self.paired_box.add(slot)
         return self.available_box.add(slot)
+    
+    def on_switch_toggled(self, switch, pspec):
+        new_state = switch.get_active()
+        if self.client.enabled != new_state:
+            self.client.toggle_power()
+            config.bluetooth.enabled = new_state
 
     def _do_toggle_bluetooth(self):
         # prevent callback
