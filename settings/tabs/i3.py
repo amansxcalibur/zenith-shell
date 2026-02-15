@@ -1,6 +1,7 @@
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
+from fabric.widgets.eventbox import EventBox
 
 from widgets.wrap_box import WrapBox
 from widgets.material_label import MaterialIconLabel
@@ -52,42 +53,28 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
             )
         )
 
-        self.demo_container = Box(
-            name="module-drop-box",
-            size=(-1, 400),
-            spacing=10,
-        )
+        self.demo_container = Box(name="module-drop-box", size=(-1, 400), spacing=10)
 
-        self.demo_window_left = Box(
-            name="i3-settings-demo-window",
-            style_classes=["active"],
-            h_expand=True,
-            v_expand=True,
-        )
-        self.demo_window_right_top = Box(
-            name="i3-settings-demo-window", h_expand=True, v_expand=True
-        )
-        self.demo_window_right_bottom = Box(
-            name="i3-settings-demo-window", h_expand=True, v_expand=True
-        )
+        self.demo_window_left = self._create_demo_window(is_active=True)
+        self.demo_window_right_top = self._create_demo_window(is_active=False)
+        self.demo_window_right_bottom = self._create_demo_window(is_active=False)
 
-        # demo layout
-        right_stack = Box(spacing=10, h_expand=True, v_expand=True, orientation="v")
-        right_stack.children = [
+        self.demo_inner_stack = Box(spacing=10, h_expand=True, v_expand=True, orientation="v")
+        self.demo_inner_stack.children = [
             self.demo_window_right_top,
             self.demo_window_right_bottom,
         ]
-        self.demo_container.children = [self.demo_window_left, right_stack]
-
-        self.all_demo_windows = {
-            "active": [self.demo_window_left],
-            "inactive": [
-                self.demo_window_right_top,
-                self.demo_window_right_bottom,
-            ],
-        }
         
-        self.demo_inner_stack = right_stack
+        self.demo_container.children = [
+            self.demo_window_left,
+            self.demo_inner_stack
+        ]
+
+        self.all_windows_list = [
+            self.demo_window_left, 
+            self.demo_window_right_top, 
+            self.demo_window_right_bottom
+        ]
 
         self.container.add(
             LayoutBuilder.section(
@@ -301,15 +288,6 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
         if group_id == "Lockscreen":
             state.update(["system", "LOCKSCREEN"], val)
 
-    def _on_border_width_changed(self, scale):
-        val = int(scale.get_value())
-        for window in self.all_demo_windows["active"]:
-            window.set_style(f"border: {val}px solid var(--primary);")
-        for window in self.all_demo_windows["inactive"]:
-            window.set_style(f"border: {val}px solid var(--surface-bright);")
-
-        state.update(["i3", "borders", "props", "border_width"], val)
-
     def _on_inner_gap_changed(self, scale):
         val = int(scale.get_value())
         self.demo_container.set_spacing(val)
@@ -320,6 +298,42 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
         val = int(scale.get_value())
         self.demo_container.set_style(f"padding: {val}px;")
         state.update(["i3", "gaps", "props", "outer"], val)
+
+    def _on_border_width_changed(self, scale):
+        val = int(scale.get_value())
+        for window in self.all_windows_list:
+            color = "var(--primary)" if "active" in window.get_style_context().list_classes() else "var(--surface-bright)"
+            window.get_children()[0].set_style(f"border: {val}px solid {color};")
+
+        state.update(["i3", "borders", "props", "border_width"], val)
+
+    def _create_demo_window(self, is_active=False):
+        window = Box(
+            name="i3-settings-demo-window",
+            style_classes=["active"] if is_active else [],
+            h_expand=True,
+            v_expand=True,
+        )
+
+        event_box = EventBox(child=window,h_expand=True,
+            v_expand=True,)
+        
+        event_box.connect("enter-notify-event", lambda *_: self._set_window_active(window))
+        
+        return event_box
+
+    def _set_window_active(self, target_window):
+        border_width = state.get(["i3", "borders", "props", "border_width"])
+
+        for event_box in self.all_windows_list:
+            demo_window = event_box.get_child()
+            if demo_window == target_window:
+                demo_window.add_style_class("active")
+                demo_window.set_style(f"border: {border_width}px solid var(--primary);")
+            else:
+                demo_window.remove_style_class("active")
+                demo_window.set_style(f"border: {border_width}px solid var(--surface-bright);")
+
 
     def _on_toggle(self, switch, pspec, path):
         state.update(path, switch.get_active())
