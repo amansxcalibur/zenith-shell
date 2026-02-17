@@ -292,6 +292,8 @@ class LockScreen(Window):
 
         self._build_ui()
 
+        self.force_window_map()
+
         self.connect("map-event", self._on_mapped)
         self.connect("destroy", self._on_destroy)
 
@@ -376,6 +378,18 @@ class LockScreen(Window):
 
         self.children = main
 
+    def force_window_map(self):
+        # When another window is in fullscreen mode, the "map" signal never gets emitted.
+        # This function forces the window to map, hence triggering the raise loop
+        local_display = Display()
+        xid = self.get_window().get_xid()
+        x_win = local_display.create_resource_object("window", xid)
+
+        x_win.change_attributes(override_redirect=True)
+        x_win.map()
+        x_win.configure(stack_mode=X.Above)
+        local_display.sync()
+
     def _on_mapped(self, *_):
         self.xid = self.get_window().get_xid()
 
@@ -405,9 +419,8 @@ class LockScreen(Window):
             # hear about every other window's movement/mapping
             root.change_attributes(event_mask=X.SubstructureNotifyMask)
 
-            # changing override_redirect attribute usually requires a unmap/map cycle
-            # to take effect properly in X11, otherwise the visual state
-            # might desync.
+            # force an unmap/map for changed attributes (override_redirect, etc)
+            # to take effect properly, otherwise the visual state might desync.
             x_win.unmap()
             x_win.map()
 
@@ -556,8 +569,6 @@ class LockScreen(Window):
         GLib.idle_add(
             lambda: self.shapes.get_visible_child().set_color(rgb=None, redraw=False)
         )
-
-        return False
 
     def _unlock(self):
         """Unlock and quit the application."""
