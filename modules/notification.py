@@ -254,7 +254,7 @@ class NotificationWidget(EventBox):
         try:
             if parent := self.get_parent():
                 parent.remove(self)
-            self._on_close_callback()
+            self._on_close_callback(self)
             self.cleanup()
             self.destroy()
         except Exception as e:
@@ -420,7 +420,7 @@ class NotificationManager:
             notification_widget = NotificationWidget(
                 notification=notification,
                 timeout_callback=self._move_to_revealer,
-                on_close_callback=self._update_ui_state,
+                on_close_callback=self.close_active_notification,
             )
 
             if config.SILENT or self.revealer.child_revealed:
@@ -441,6 +441,13 @@ class NotificationManager:
 
         except Exception as e:
             logger.error(f"Failed to handle notification: {e}")
+
+    def close_active_notification(self, notification_widget: NotificationWidget):
+        if notification_widget in self._active_notifications:
+            self._active_notifications.remove(notification_widget)
+            self.active_notifications_box.remove(notification_widget)
+
+        self._update_ui_state()
 
     def _move_to_revealer(self, notification_widget: NotificationWidget):
         try:
