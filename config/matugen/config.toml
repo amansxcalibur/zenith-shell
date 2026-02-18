@@ -3,14 +3,14 @@
 # WARNING: Matugen needs to be compiled with the `update-informer` feature for this to work.
 version_check = false
 
-[config.wallpaper]
+#[config.wallpaper]
 # The base command to run for applying the wallpaper, shouldn't have spaces in it.
-command = "feh"
+#command = "feh"
 
 # The arguments that will be provided to the command.
 # Keywords like {{ mode }} or anything that works inside of hooks doesn't work here.
 # The last argument will be the image path.
-arguments = ["--bg-scale", "./"]
+#arguments = ["--bg-scale", "./"]
 
 # For example, killing the wallpaper daemon. Usage is like a normal hook.
 # pre_hook = ""

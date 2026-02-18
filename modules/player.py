@@ -308,7 +308,7 @@ class Player(Box):
         GLib.idle_add(lambda: self.set_style(f"background-image:url('{art_path}')"))
 
     def _apply_theme(self, source, theme_json):
-        primary_color = theme_json["colors"]["primary"]["dark"]
+        primary_color = theme_json["colors"]["primary"]["dark"]["color"]
 
         def _apply():
             self.play_pause_button.set_style(f"background-color: {primary_color}")

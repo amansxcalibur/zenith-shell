@@ -532,7 +532,7 @@ class WallpaperSelector(Box):
             return
 
         config_path = f"{CONFIG_DIR}/matugen/config.toml"
-        command = f"{matugen_bin} image '{image_path}' -t {scheme} -c '{config_path}'"
+        command = f"{matugen_bin} image '{image_path}' -t {scheme} -c '{config_path}' --source-color-index 0"
 
         try:
             process, _ = exec_shell_command_async(command)

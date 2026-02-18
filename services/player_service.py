@@ -277,6 +277,8 @@ class PlayerService(Service):
                     "hex",
                     "-t",
                     "scheme-fidelity",
+                    "--source-color-index",
+                    "0"
                 ],
                 capture_output=True,
                 text=True,
