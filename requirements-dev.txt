@@ -1,11 +1,15 @@
+astor==0.8.1
 certifi==2025.10.5
 cffi==2.0.0
 charset-normalizer==3.4.3
 click==8.1.8
 fabric @ git+https://github.com/Fabric-Development/fabric.git
+gengir==1.0.2
 i3ipc==2.2.1
 idna==3.10
+line_profiler==5.0.0
 loguru==0.7.3
+lxml==4.9.4
 pillow==11.1.0
 psutil==7.0.0
 pulsectl==24.11.0
