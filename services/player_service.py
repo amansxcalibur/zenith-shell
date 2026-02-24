@@ -6,6 +6,7 @@ from config.info import TEMP_DIR, ROOT_DIR
 
 import json
 import hashlib
+import mimetypes
 import subprocess
 import urllib.parse
 import urllib.request
@@ -278,7 +279,7 @@ class PlayerService(Service):
                     "-t",
                     "scheme-fidelity",
                     "--source-color-index",
-                    "0"
+                    "0",
                 ],
                 capture_output=True,
                 text=True,
@@ -308,19 +309,31 @@ class PlayerService(Service):
             cache_dir.mkdir(parents=True, exist_ok=True)
 
             parsed = urllib.parse.urlparse(art_url)
-            suffix = Path(parsed.path).suffix or ".png"
             filename_hash = hashlib.md5(art_url.encode()).hexdigest()
-            local_arturl = cache_dir / f"{filename_hash}{suffix}"
+            local_arturl = None
+            url_suffix = Path(parsed.path).suffix
+            if url_suffix:
+                test_path = cache_dir / f"{filename_hash}{url_suffix}"
+                if test_path.exists():
+                    local_arturl = test_path
+            else:
+                existing = list(cache_dir.glob(f"{filename_hash}.*"))
+                if existing:
+                    local_arturl = existing[0]
 
-            if not local_arturl.exists():
+            if not local_arturl:
                 with urllib.request.urlopen(art_url, timeout=5) as response:
                     data = response.read()
+                    content_type = response.info().get_content_type()
+                    suffix = mimetypes.guess_extension(content_type) or ".png"
+                    
+                    local_arturl = cache_dir / f"{filename_hash}{suffix}"
 
-                temp_file = local_arturl.with_suffix(".tmp")
-                temp_file.write_bytes(data)
-                temp_file.replace(local_arturl)
+                    temp_file = local_arturl.with_suffix(".tmp")
+                    temp_file.write_bytes(data)
+                    temp_file.replace(local_arturl)
 
-                logger.info(f"Downloaded artwork: {local_arturl}")
+                    logger.info(f"Downloaded artwork: {local_arturl}")
             else:
                 logger.debug(f"Using cached artwork: {local_arturl}")
 
