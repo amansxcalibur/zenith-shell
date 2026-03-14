@@ -8,6 +8,7 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 from modules.wiggle_bar import WigglyArrow
 from widgets.shapes import Pill, Circle, WavyCircle, Ellipse, Pentagon
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
+from widgets.shapes.expressive.morphing_shapes import AnimateShapeMorph
 
 import icons
 from config.info import CONFIG_FILE
@@ -27,6 +28,7 @@ from .tabs import (
     KeyBindingsTab,
     LauncherTab,
     PillDockTab,
+    ShapesTab,
     I3Tab,
 )
 
@@ -136,8 +138,6 @@ class SettingsWindow(Window):
         # self.connect("button-release-event", self.drag_handler.on_button_release)
         self.connect("delete-event", self.on_close)
 
-        GLib.timeout_add_seconds(1, self._cycle_shapes)
-
     def _build_ui(self):
         main_box = Box(name="settings", orientation="v", spacing=10)
 
@@ -195,21 +195,24 @@ class SettingsWindow(Window):
     def _create_sidebar(self) -> Box:
         switch_box = self._create_tab_switcher()
 
+        shapes_id = "shapes"
         aspect = Gtk.AspectFrame(ratio=1.0, obey_child=False, xalign=0.5, yalign=1.0)
-
-        self.shapes_box = Stack(
+        self.shapes_box = Box(
             name="shapes-box",
             h_expand=True,
             v_expand=True,
-            children=[
-                Pill(size=(-1, -1)),
-                Circle(size=(-1, -1)),
-                WavyCircle(size=(-1, -1)),
-                Ellipse(size=(-1, -1)),
-                Pentagon(size=(-1, -1)),
-            ],
+            children=[AnimateShapeMorph(name="settings-shapes-morph")],
         )
-        aspect.add(self.shapes_box)
+        aspect.add(
+            Button(
+                h_expand=True,
+                v_expand=True,
+                child=self.shapes_box,
+                on_clicked=lambda: self.stack.set_visible_child_name(shapes_id),
+            )
+        )
+
+        self.stack.add_titled(ShapesTab().get_widget(), shapes_id, "expressive-shapes")
 
         return Box(orientation="v", children=[switch_box, aspect])
 
@@ -323,18 +326,6 @@ class SettingsWindow(Window):
 
     def _on_tab_clicked(self, tab_id: str):
         self.stack.set_visible_child_name(tab_id)
-
-    def _cycle_shapes(self) -> bool:
-        if not self.shapes_box:
-            return False
-
-        widget_list = self.shapes_box.get_children()
-        current_shape = self.shapes_box.get_visible_child()
-        current_index = widget_list.index(current_shape)
-        next_index = (current_index + 1) % len(widget_list)
-
-        self.shapes_box.set_visible_child(widget_list[next_index])
-        return True
 
     def on_close(self, widget):
         if self.application:

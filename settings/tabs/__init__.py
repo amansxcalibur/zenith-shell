@@ -1,6 +1,7 @@
 from .typography import IconVariationsTab, FontVariationsTab
 from .navigation import KeyBindingsTab, LauncherTab
 from .pill_and_dock import PillDockTab
+from .shapes import ShapesTab
 from .i3 import I3Tab
 
 __all__ = [
@@ -9,5 +10,6 @@ __all__ = [
     "KeyBindingsTab",
     "LauncherTab",
     "PillDockTab",
+    "ShapesTab",
     "I3Tab",
 ]

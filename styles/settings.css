@@ -137,7 +137,7 @@
 
 #shapes-box {
   background-color: var(--surface-semi-bright);
-  padding: 20px;
+  padding: 5px;
   border-radius: 10px;
 }
 
@@ -223,4 +223,12 @@
 #i3-settings-demo-window.active {
   border: 3px solid var(--primary);
   background-color: var(--surface-semi-bright);
+}
+
+#settings-shapes-morph{
+  background-color: var(--primary);
+}
+
+#settings-shapes-flowbox{
+  background-color: var(--surface-bright);
 }
