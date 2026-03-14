@@ -6,7 +6,7 @@ from fabric.widgets.x11 import X11Window as Window
 from i3ipc import Connection
 
 from modules.systray import SystemTray
-from modules.workspaces import Workspaces
+from modules.workspaces.workspaces import Workspaces
 from modules.metrics import MetricsSmall, Battery
 from modules.core.bottom.dock.v0.dock_modules import DockModuleOverlay
 

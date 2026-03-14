@@ -9,7 +9,7 @@ from widgets.overrides import PatchedX11Window as Window
 
 from modules.systray import SystemTray
 from modules.weather import WeatherMini
-from modules.workspaces import Workspaces
+from modules.workspaces.workspaces import Workspaces
 from modules.controls import ControlsManager
 from modules.metrics import MetricsSmall, Battery
 from modules.core.bottom.dock.layout_manager import LayoutManager

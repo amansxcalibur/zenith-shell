@@ -1,16 +1,30 @@
 #workspaces-container {
   background-color: var(--surface-bright);
   border-radius: 17px;
-  padding: 13px;
+  /* padding: 13px; */
   margin-top: 1px;
 }
 
+#workspaces {
+  padding: 0 5px;
+}
+
 #workspaces > button {
-  min-width: 10px;
-  min-height: 10px;
+  min-width: 36px;
+  /* min-height: 10px; */
   transition: all 0.15s steps(8);
-  background-color: var(--foreground);
+  /* background-color: var(--foreground); */
   border-radius: 10px;
+  margin: 0 -5px;
+}
+
+#ws-btn-background-box {
+  transition: all 0.15s steps(8);
+  /* background-color: var(--surface); */
+  margin: 5px;
+}
+#ws-btn-background-box.activate {
+  margin: 15px;
 }
 
 #workspaces > button > label {
@@ -22,16 +36,29 @@
 }
 
 #workspaces > button.urgent {
-  background-color: var(--error);
+  /* background-color: var(--error); */
 }
 
 #workspaces > button.active {
-  padding: 0px 32px;
-  background-color: var(--primary);
+  /* padding: 0px 32px; */
+  /* background-color: var(--primary); */
 }
 
 #workspaces > button.empty {
+  /* background-color: var(--background); */
+}
+
+#workspace-morph-shape {
+  background-color: var(--primary);
+  transition: all 0.25s;
+}
+
+#workspace-morph-shape.empty {
   background-color: var(--background);
+}
+
+#workspace-morph-shape.urgent {
+  background-color: var(--error);
 }
 
 #active-window {

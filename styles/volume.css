@@ -175,15 +175,20 @@ highlight {
   box-shadow: 0 0 0 4px black;
 }
 
+#control-slider-mui:hover slider {
+  min-width: 2px;
+  box-shadow: 1px 0 0 4px black;
+}
+
 #control-slider-mui highlight {
   background-color: var(--primary);
   border-radius: 0 4px 4px 0;
-  /* box-shadow: 4px 0 0 4px black; */
+  box-shadow: 4px 0 0 4px black;
 }
 
 #control-slider-mui trough {
   border-radius: 0 12px 12px 0;
-  padding-right: 6px; /* counter slider negative margins */
+  padding-right: 8px; /* counter slider negative margins */
 }
 
 #control-slider-mui.vertical trough {
@@ -203,10 +208,15 @@ highlight {
   /* box-shadow: 0 0 0 4px black; */
 }
 
+#control-slider-mui.vertical:hover slider {
+  min-height: 2px;
+  box-shadow: 0 -1px 0 4px black;
+}
+
 #control-slider-mui.vertical highlight {
   background-color: var(--primary);
   border-radius: 4px 4px 12px 12px;
-  /* box-shadow: 0 4px 0 4px black; */
+  box-shadow: 0 -4px 0 4px black;
 }
 
 #control-slider-mui.vertical trough {

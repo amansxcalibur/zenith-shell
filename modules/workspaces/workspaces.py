@@ -1,15 +1,17 @@
+import threading
+from i3ipc import Connection, Event
+
 from fabric.widgets.box import Box
 from fabric.i3.widgets import (
     # I3Language,
     I3ActiveWindow,
     I3Workspaces,
-    WorkspaceButton,
+    # WorkspaceButton,
 )
 
-import threading
-from i3ipc import Connection, Event
-
+from .workspace_button import WorkspaceButton
 from config.config import config
+
 
 class i3Connector:
     _instance = None
@@ -96,12 +98,13 @@ class Workspaces(Box):
         self.children = (
             I3Workspaces(
                 name="workspaces",
-                v_align="center",
-                spacing=8,
                 buttons=[
-                    WorkspaceButton(id=ws_id, label=None) for ws_id in range(1, 11)
+                    WorkspaceButton(
+                        id=ws_id,
+                    )
+                    for ws_id in range(1, 11)
                 ],
-                buttons_factory=lambda ws_id: WorkspaceButton(id=ws_id, label=None),
+                # buttons_factory=lambda ws_id: WorkspaceButton(id=ws_id, label=None),
             ),
         )
 
