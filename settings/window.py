@@ -4,9 +4,9 @@ from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
 from fabric.widgets.x11 import X11Window as Window
 from fabric.widgets.scrolledwindow import ScrolledWindow
+from fabric.utils.helpers import exec_shell_command_async
 
 from modules.wiggle_bar import WigglyArrow
-from widgets.shapes import Pill, Circle, WavyCircle, Ellipse, Pentagon
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
 from widgets.shapes.expressive.morphing_shapes import AnimateShapeMorph
 
@@ -337,3 +337,7 @@ class SettingsWindow(Window):
         generate_i3_keybinds_config()
         state.print_all()
         state.save_to_disk()
+        exec_shell_command_async(
+            "notify-send 'Zenith Settings' 'Restart zenith-shell to apply changes.'"
+        )
+        self.on_close(None)

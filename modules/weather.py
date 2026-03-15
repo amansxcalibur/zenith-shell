@@ -17,6 +17,7 @@ from widgets.material_label import MaterialIconLabel
 
 import icons
 from config.info import ROOT_DIR
+from config.config import config
 from utils.cursor import add_hover_cursor
 from utils.colors import get_css_variable, hex_to_rgb01
 
@@ -87,7 +88,7 @@ class WeatherService(Service):
         super().__init__()
         self._initialized = True
 
-        self.CITY = "Kerala"
+        self.CITY = config.system.WEATHER_LOCATION
         self.API_URL = f"https://wttr.in/~{self.CITY}?format=%l+%z+%t+%f+%c+%P+%w+%h+%C"
         self._current_data = WeatherData()
 
@@ -261,7 +262,9 @@ class WeatherCard(Box):
             spacing=5,
             children=[
                 label,
-                MaterialIconLabel(style_classes=["weather-icons"], icon_text=icon_symbol),
+                MaterialIconLabel(
+                    style_classes=["weather-icons"], icon_text=icon_symbol
+                ),
             ],
         )
 

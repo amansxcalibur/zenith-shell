@@ -35,11 +35,9 @@ from expressive_shapes.shapes.shape_presets import (
 
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
-from widgets.material_label import MaterialIconLabel
-from widgets.shapes.expressive.morphing_shapes import ExpressiveShape
 from widgets.clipping_box import ClippingBox
+from widgets.shapes.expressive.morphing_shapes import ExpressiveShape
 
-import icons
 from ..base import BaseWidget, SectionBuilderMixin, LayoutBuilder
 
 import gi
@@ -102,7 +100,7 @@ class ShapesTab(BaseWidget, SectionBuilderMixin):
                             style_classes="section-subheading",
                             style="margin-bottom: 5px",
                             h_align="start",
-                            label="These are the shrines of god. You may worship them",
+                            label="These are shrines of god. You may worship them",
                         ),
                         Box(
                             children=ClippingBox(

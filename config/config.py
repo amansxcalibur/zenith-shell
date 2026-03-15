@@ -20,6 +20,7 @@ DEFAULTS = {
         "SILENT": False,
         "VERTICAL": False,
         "LOCKSCREEN": "i3lock",
+        "WEATHER_LOCATION": "Kerala",
         "BRIGHTNESS_DEV": "intel_backlight",
         "ALLOWED_PLAYERS": ["vlc", "cmus", "firefox", "spotify", "chromium"],
     },
@@ -151,6 +152,9 @@ class ConfigManager(Service):
                 with open(CONFIG_FILE, "r") as f:
                     loaded_data = json.load(f)
                     self._data = self._deep_merge(DEFAULTS.copy(), loaded_data)
+                    # write missing config keys
+                    if self._data != loaded_data:
+                        self._save()
             except Exception as e:
                 print(f"Error loading config.json: {e}")
                 self._data = DEFAULTS.copy()
