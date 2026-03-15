@@ -3,6 +3,7 @@ certifi==2025.10.5
 cffi==2.0.0
 charset-normalizer==3.4.3
 click==8.1.8
+expressive-shapes==0.2.0
 fabric @ git+https://github.com/Fabric-Development/fabric.git
 gengir==1.0.2
 i3ipc==2.2.1
