@@ -32,25 +32,30 @@
 }
 
 #workspaces > button:hover {
-  background-color: var(--error-dim);
+  border-radius: 50px;
+  background-color: var(--outline);
 }
 
-#workspaces > button.urgent {
-  /* background-color: var(--error); */
-}
+/* #workspaces > button.urgent {
+  background-color: var(--error);
+} */
 
-#workspaces > button.active {
-  /* padding: 0px 32px; */
-  /* background-color: var(--primary); */
-}
+/* #workspaces > button.active {
+  padding: 0px 32px;
+  background-color: var(--primary);
+} */
 
-#workspaces > button.empty {
-  /* background-color: var(--background); */
-}
+/* #workspaces > button.empty {
+  background-color: var(--background);
+} */
 
 #workspace-morph-shape {
-  background-color: var(--primary);
+  background-color: var(--foreground);
   transition: all 0.25s;
+}
+
+#workspace-morph-shape.active {
+  background-color: var(--primary);
 }
 
 #workspace-morph-shape.empty {

@@ -43,9 +43,11 @@ from expressive_shapes.shapes.shape_presets import (
 
 from fabric.widgets.box import Box
 from fabric.widgets.button import Button
+
 # from fabric.widgets.overlay import Overlay
 from fabric.core.service import Property
 from fabric.utils.helpers import FormattedString
+from fabric.i3.widgets import WorkspaceButton as FabricWorkspaceButton
 
 import gi
 
@@ -229,7 +231,7 @@ class WorkspaceShapeMorph(Gtk.DrawingArea):
             per_vertex.append(rounding_preset)
 
         return RoundedPolygon.create(vertices=verts, per_vertex_rounding=per_vertex)
-    
+
     def on_draw(self, widget, ctx: cairo.Context):
         width = self.get_allocated_width()
         height = self.get_allocated_height()
@@ -263,39 +265,21 @@ class WorkspaceShapeMorph(Gtk.DrawingArea):
         return False
 
 
-class WorkspaceButton(Button):
-    @Property(int, "readable")
-    def id(self) -> int:
-        return self._id
-
-    @Property(bool, "read-write", default_value=False)
-    def active(self) -> bool:
-        return self._active
-
-    @active.setter
+class WorkspaceButton(FabricWorkspaceButton):
+    @FabricWorkspaceButton.active.setter
     def active(self, value: bool):
         self._active = value
-        if value is True:
-            self.urgent = False
         self.handle_activate(value)
         self._update_style_class("active", value)
         return self.do_bake_label()
 
-    @Property(bool, "read-write", default_value=False)
-    def urgent(self) -> bool:
-        return self._urgent
-
-    @urgent.setter
+    @FabricWorkspaceButton.urgent.setter
     def urgent(self, value: bool):
         self._urgent = value
         self._update_style_class("urgent", value)
         return self.do_bake_label()
 
-    @Property(bool, "read-write", default_value=True)
-    def empty(self) -> bool:
-        return self._empty
-
-    @empty.setter
+    @FabricWorkspaceButton.empty.setter
     def empty(self, value: bool):
         self._empty = value
         self._update_style_class("empty", value)
@@ -325,8 +309,12 @@ class WorkspaceButton(Button):
         size: Iterable[int] | int | None = None,
         **kwargs,
     ):
+        self.morphing_shape = WorkspaceShapeMorph()
+        self.morphing_shape.morph_deactivate()
+
         super().__init__(
-            None,
+            id,
+            label,
             image,
             child,
             name,
@@ -343,20 +331,6 @@ class WorkspaceButton(Button):
             size,
             **kwargs,
         )
-        self._id: int = id
-        self._label: FormattedString | None = (
-            FormattedString(label) if isinstance(label, str) else label
-        )
-        self._active: bool = False
-        self._urgent: bool = False
-        self._empty: bool = True
-
-        self.morphing_shape = WorkspaceShapeMorph()
-        self.morphing_shape.morph_deactivate()
-
-        self.active = False
-        self.urgent = False
-        self.empty = True
 
         # TODO
         # self.bg_box = Box(
@@ -400,10 +374,8 @@ class WorkspaceButton(Button):
     def handle_activate(self, value: bool):
         if value:
             self.morphing_shape.morph_active()
-            self.bg_box.add_style_class("activate")
         else:
             self.morphing_shape.morph_deactivate()
-            self.bg_box.remove_style_class("activate")
 
     def do_bake_label(self):
         if not self._label:
