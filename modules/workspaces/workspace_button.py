@@ -42,10 +42,8 @@ from expressive_shapes.shapes.shape_presets import (
 
 
 from fabric.widgets.box import Box
-from fabric.widgets.button import Button
 
 # from fabric.widgets.overlay import Overlay
-from fabric.core.service import Property
 from fabric.utils.helpers import FormattedString
 from fabric.i3.widgets import WorkspaceButton as FabricWorkspaceButton
 
@@ -189,39 +187,35 @@ class WorkspaceShapeMorph(Gtk.DrawingArea):
 
         self.queue_draw()
         return True
+    
+    def _safely_start_animation(self, direction: bool):
+        if self.glib_id is not None:
+            GLib.source_remove(self.glib_id)
+        self.glib_id = GLib.timeout_add(16, self.update_animation, direction)  # ~60 fps
 
     def morph_active(self):
         # already in active state
-        if self.progress >= 1:
+        if self.glib_id is None and self.progress >= 1:
             return
 
-        # morph from 0.0 to 1.0
-        elif self.progress <= 0:
+        if self.progress <= 0:
             self.progress = 0.0
+            # only changing shape if all prev animations are done
             self._prepare_next_morph()
-            if self.glib_id is not None:
-                GLib.source_remove(self.glib_id)
-            self.glib_id = GLib.timeout_add(16, self.update_animation)  # ~60 fps
-
-        # morph to 1.0 with the same active shape
-        else:
-            if self.glib_id is not None:
-                GLib.source_remove(self.glib_id)
-            self.glib_id = GLib.timeout_add(16, self.update_animation, True)  # ~60 fps
+        
+        # morph from 0.0 to 1.0
+        self._safely_start_animation(True)
 
     def morph_deactivate(self):
         # already in deactive state
-        if self.progress <= 0:
+        if self.glib_id is None and self.progress <= 0:
             return
 
-        # morph to 0.0
-        else:
-            if self.progress > 1:
-                self.progress = 1.0
+        if self.progress > 1:
+            self.progress = 1.0
 
-            if self.glib_id is not None:
-                GLib.source_remove(self.glib_id)
-            self.glib_id = GLib.timeout_add(16, self.update_animation, False)  # ~60 fps
+        # morph to 0.0
+        self._safely_start_animation(False)
 
     def create_rounded_polygon(self, unit_data):
         verts = []
@@ -372,6 +366,7 @@ class WorkspaceButton(FabricWorkspaceButton):
             self.remove_style_class(class_name)
 
     def handle_activate(self, value: bool):
+        print(self.id, "handling activate", value)
         if value:
             self.morphing_shape.morph_active()
         else:
