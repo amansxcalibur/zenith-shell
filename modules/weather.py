@@ -13,7 +13,7 @@ from fabric.widgets.eventbox import EventBox
 from fabric.core.service import Service, Signal, Property
 
 from widgets.popup_window import SharedPopupWindow
-from widgets.material_label import MaterialIconLabel
+from widgets.material_label import MaterialIconLabel, MaterialFontLabel
 
 import icons
 from config.info import ROOT_DIR
@@ -46,6 +46,7 @@ class WeatherData:
         """Parse API response into WeatherData"""
         try:
             split_data = response_text.split()
+            # raise Exception
             return cls(
                 location=split_data[0],
                 time=f"Updated {split_data[1]}",
@@ -64,7 +65,7 @@ class WeatherData:
     @classmethod
     def error_state(cls) -> "WeatherData":
         """Return weather data in error state"""
-        return cls(temp="??", emoji="_")
+        return cls(temp="34°", emoji="_")
 
 
 class WeatherService(Service):
@@ -125,7 +126,9 @@ class WeatherMini(EventBox):
         self.service = WeatherService()
         initial_data = self.service.current_data
 
-        self.temperature = Label(name="weather-temp", label=initial_data.temp)
+        self.temperature = MaterialFontLabel(
+            name="weather-temp", text=initial_data.temp, font_family="Google Sans Flex", wght=500,
+        )
         self.emoji = Label(name="weather-emoji", label=initial_data.emoji)
 
         self.children = Button(
@@ -164,11 +167,13 @@ class WeatherCard(Box):
         )
 
         # temperature
-        self.temperature_label = Label(
+        self.temperature_label = MaterialFontLabel(
             name="weather-temp",
             style_classes=["card"],
             v_align="end",
-            label=initial_data.temp,
+            text=initial_data.temp,
+            font_family="Google Sans Flex",
+            wght=500,
         )
 
         self.emoji = Label(
@@ -336,19 +341,26 @@ class WeatherPill(Gtk.DrawingArea):
         text_color = "--foreground" if self.dark else "--on-primary"
         ctx.set_source_rgb(*self._get_color(text_color))
 
-        ctx.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
-        ctx.set_font_size(width / 2.5)
+        # draw temperature text
+        text_color = "--foreground" if self.dark else "--on-primary"
+        ctx.set_source_rgb(*self._get_color(text_color))
 
-        temp_text = self._current_data.temp
-        extents = ctx.text_extents(temp_text)
+        layout = PangoCairo.create_layout(ctx)
+        layout.set_text(str(self._current_data.temp), -1)
 
+        font_desc = Pango.FontDescription("Google Sans Flex Bold")
+        font_desc.set_size(int(width / 3 * Pango.SCALE)) 
+        font_desc.set_variations("ROND=100")
+        layout.set_font_description(font_desc)
+
+        ink_rect, logical_rect = layout.get_pixel_extents()
         temp_cx = width - base_radius
-        temp_cy = base_radius / 1.125
+        temp_cy = base_radius / 1.125        
         ctx.move_to(
-            temp_cx - (extents.x_bearing + extents.width / 2),
-            temp_cy - (extents.y_bearing + extents.height / 2),
+            temp_cx - (logical_rect.width / 2),
+            temp_cy - (logical_rect.height / 2)
         )
-        ctx.show_text(temp_text)
+        PangoCairo.show_layout(ctx, layout)
 
         # draw emoji
         text_color = "--foreground" if self.dark else "--foreground"

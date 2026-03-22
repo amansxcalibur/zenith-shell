@@ -34,6 +34,10 @@
     color: white;
 }
 
+#weather-temp{
+    font-size: 20px;
+}
+
 #weather-temp.card{
     font-size: 55px;
     font-weight: 600;
