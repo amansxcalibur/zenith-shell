@@ -121,7 +121,7 @@ class MaterialIconLabel(BaseMaterialLabel):
 
 
 class MaterialFontLabel(BaseMaterialLabel):
-    """Label for Variable Font (Roboto Flex)."""
+    """Label for Variable Font."""
 
     FONT_FAMILY = "Roboto Flex"
 
@@ -133,11 +133,13 @@ class MaterialFontLabel(BaseMaterialLabel):
         "ital": 0,
         "slnt": 0,
         "XTRA": 468,
+        "ROND": 100,
     }
     VARIATION_KEYS = set(VARIATION_DEFAULTS.keys())
 
-    def __init__(self, text, **kwargs):
+    def __init__(self, text, font_family="Roboto Flex", **kwargs):
+        self.FONT_FAMILY = font_family
         for k, v in self.VARIATION_DEFAULTS.items():
             kwargs.setdefault(k, v)
 
-        super().__init__(text=text, **kwargs)
+        super().__init__(text=text, **kwargs) 

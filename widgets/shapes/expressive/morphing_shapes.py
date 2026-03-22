@@ -1,5 +1,6 @@
 import cairo
 import threading
+from typing import Literal, Iterable
 
 from expressive_shapes.morph.bezier_morph import Morph
 from expressive_shapes.geometry.rounded_polygon import RoundedPolygon
@@ -38,15 +39,55 @@ from expressive_shapes.shapes.shape_presets import (
     pixel_triangle,
 )
 
+from fabric.widgets.container import Container
+
 import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk
 
 
-class ExpressiveShape(Gtk.DrawingArea):
-    def __init__(self, name: str, shape):
-        super().__init__(name=name)
+class ExpressiveShape(Gtk.Bin, Container):
+    def __init__(
+        self,
+        shape=circle,
+        child: Gtk.Widget | None = None,
+        name: str | None = None,
+        visible: bool = True,
+        all_visible: bool = False,
+        style: str | None = None,
+        style_classes: Iterable[str] | str | None = None,
+        tooltip_text: str | None = None,
+        tooltip_markup: str | None = None,
+        h_align: Literal["fill", "start", "end", "center", "baseline"]
+        | Gtk.Align
+        | None = None,
+        v_align: Literal["fill", "start", "end", "center", "baseline"]
+        | Gtk.Align
+        | None = None,
+        h_expand: bool = False,
+        v_expand: bool = False,
+        size: Iterable[int] | int | None = None,
+        **kwargs,
+    ):
+        Gtk.DrawingArea.__init__(self)  # type: ignore
+        Container.__init__(
+            self,
+            child,
+            name,
+            visible,
+            all_visible,
+            style,
+            style_classes,
+            tooltip_text,
+            tooltip_markup,
+            h_align,
+            v_align,
+            h_expand,
+            v_expand,
+            size,
+            **kwargs,
+        )
         self.set_hexpand(True)
         self.set_vexpand(True)
 
@@ -64,7 +105,7 @@ class ExpressiveShape(Gtk.DrawingArea):
             per_vertex.append(rounding_preset)
 
         return RoundedPolygon.create(vertices=verts, per_vertex_rounding=per_vertex)
-    
+
     def on_draw(self, widget, ctx: cairo.Context):
         width = self.get_allocated_width()
         height = self.get_allocated_height()
@@ -72,6 +113,8 @@ class ExpressiveShape(Gtk.DrawingArea):
         style_context = self.get_style_context()
         state = self.get_state_flags()
         background_color = style_context.get_background_color(state)
+
+        ctx.save()
 
         Gdk.cairo_set_source_rgba(ctx, background_color)
 
@@ -97,6 +140,11 @@ class ExpressiveShape(Gtk.DrawingArea):
         ctx.stroke_preserve()
 
         ctx.fill()
+
+        if child := self.get_child():
+            self.propagate_draw(child, ctx)
+
+        ctx.restore()
 
         return False
 
@@ -161,7 +209,7 @@ class BezierShapeMorph(Gtk.DrawingArea):
             per_vertex.append(rounding_preset)
 
         return RoundedPolygon.create(vertices=verts, per_vertex_rounding=per_vertex)
-    
+
     def on_draw(self, widget, ctx: cairo.Context):
         width = self.get_allocated_width()
         height = self.get_allocated_height()

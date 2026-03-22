@@ -5,7 +5,7 @@ from fabric.widgets.revealer import Revealer
 
 from widgets.overrides import PatchedX11Window as Window
 
-from modules.metrics import MetricsProvider
+from services.metrics import MetricsProvider
 from modules.controls import ControlsManager
 
 from widgets.material_label import MaterialIconLabel

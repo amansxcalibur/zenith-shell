@@ -1,19 +1,17 @@
-import psutil
-
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
-from fabric.widgets.scale import Scale
 from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.revealer import Revealer
 from fabric.core.fabricator import Fabricator
-from fabric.core.service import Service, Signal
 from fabric.widgets.circularprogressbar import CircularProgressBar
+
+from .metrics_popup import Metrics
 
 from widgets.animated_scale import AnimatedScale
 from widgets.popup_window import SharedPopupWindow
 from widgets.material_label import MaterialIconLabel
-from widgets.animated_circular_progress_bar import AnimatedCircularProgressBar
+from services.metrics import MetricsProvider
 
 import icons as icons
 from config.config import config
@@ -21,193 +19,8 @@ from config.config import config
 from gi.repository import GLib
 
 
-class MetricsProvider(Service):
-    """
-    Class responsible for obtaining centralized CPU, memory, disk usage, and battery metrics.
-    It updates periodically so that all widgets querying it display the same values.
-    """
-
-    _instance = None
-    _initialized = False
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
-    def __init__(self):
-        if self._initialized:
-            return
-        super().__init__()
-        self._initialized = True
-
-        self.cpu = 0.0
-        self.mem = 0.0
-        self.disk = 0.0
-
-        self.bat_percent = 0.0
-        self.bat_charging = None
-
-        # Updates every 1 second
-        GLib.timeout_add_seconds(1, self._update)
-
-    @Signal
-    def battery_changed(self, percent: float, charging: bool) -> None: ...
-
-    def _update(self):
-        # Get non-blocking usage percentages (interval=0)
-        # The first call may return 0, but subsequent calls will provide consistent values.
-        self.cpu = psutil.cpu_percent(interval=0)
-        self.mem = psutil.virtual_memory().percent
-        self.disk = psutil.disk_usage("/").percent
-
-        battery = psutil.sensors_battery()
-        if battery is None:
-            self.bat_percent = 0.0
-            self.bat_charging = None
-        else:
-            self.bat_percent = battery.percent
-            self.bat_charging = battery.power_plugged
-        if self.bat_charging is not None:
-            self.battery_changed(self.bat_percent, self.bat_charging)
-
-        return True
-
-    def get_metrics(self):
-        return (self.cpu, self.mem, self.disk)
-
-    def get_battery(self):
-        return (self.bat_percent, self.bat_charging)
-
-
 # Global instance to share data between both widgets.
 shared_provider = MetricsProvider()
-
-
-class Metrics(Box):
-    def __init__(self, **kwargs):
-        super().__init__(
-            name="metrics",
-            spacing=8,
-            h_align="center",
-            v_align="fill",
-            visible=True,
-            all_visible=True,
-        )
-
-        self.cpu_usage = Scale(
-            name="cpu-usage",
-            value=0.25,
-            orientation="v",
-            inverted=True,
-            v_align="fill",
-            v_expand=True,
-        )
-
-        self.cpu_label = Label(
-            name="cpu-label",
-            markup=icons.cpu.markup(),
-        )
-
-        self.cpu = Box(
-            name="cpu-box",
-            orientation="v",
-            spacing=8,
-            children=[
-                self.cpu_usage,
-                self.cpu_label,
-            ],
-        )
-
-        # self.cpu_slider = MetricsSliderMaterial3()
-
-        self.ram_usage = Scale(
-            name="ram-usage",
-            value=0.5,
-            orientation="v",
-            inverted=True,
-            v_align="fill",
-            v_expand=True,
-        )
-
-        self.ram_label = Label(
-            name="ram-label",
-            markup=icons.memory.markup(),
-        )
-
-        self.ram = Box(
-            name="ram-box",
-            orientation="v",
-            spacing=8,
-            children=[
-                self.ram_usage,
-                self.ram_label,
-            ],
-        )
-        # self.ram_slider = MetricsSliderMaterial3()
-
-        self.disk_usage = Scale(
-            name="disk-usage",
-            value=0.75,
-            orientation="v",
-            inverted=True,
-            v_align="fill",
-            v_expand=True,
-        )
-
-        self.disk_label = Label(
-            name="disk-label",
-            markup=icons.disk.markup(),
-        )
-
-        self.disk = Box(
-            name="disk-box",
-            orientation="v",
-            spacing=8,
-            children=[
-                self.disk_usage,
-                self.disk_label,
-            ],
-        )
-        # self.disk_slider = MetricsSliderMaterial3()
-
-        self.scales = [
-            self.disk,
-            self.ram,
-            self.cpu,
-        ]
-
-        # self.popup_win = PopupWindow(
-        #     widget=self,
-        #     child=Box(
-        #         name="control-slider-mui-container",
-        #         children=[self.cpu_slider, self.cpu_slider, self.disk_slider],
-        #     ),
-        # )
-
-        self.cpu_usage.set_sensitive(False)
-        self.ram_usage.set_sensitive(False)
-        self.disk_usage.set_sensitive(False)
-
-        for x in self.scales:
-            self.add(x)
-
-        # Update the widget every second
-        GLib.timeout_add_seconds(1, self.update_status)
-
-    def update_status(self):
-        # Retrieve centralized data
-        cpu, mem, disk = shared_provider.get_metrics()
-
-        # Normalize to 0.0 - 1.0
-        self.cpu_usage.value = cpu / 100.0
-        # self.cpu_slider.value = cpu / 100.0
-        self.ram_usage.value = mem / 100.0
-        # self.ram_slider.value = mem / 100.0
-        self.disk_usage.value = disk / 100.0
-        # self.disk_slider.value = disk / 100.0
-
-        return True  # Continue calling this function.
 
 
 class MetricsSmall(Button):
@@ -218,7 +31,9 @@ class MetricsSmall(Button):
             self.add_style_class("vertical")
 
         # ------------------ CPU ------------------
-        self.cpu_icon = MaterialIconLabel(name="cpu-icon", FILL=0, wght=600, icon_text=icons.cpu.symbol())
+        self.cpu_icon = MaterialIconLabel(
+            name="cpu-icon", FILL=0, wght=600, icon_text=icons.cpu.symbol()
+        )
         self.cpu_circle = CircularProgressBar(
             name="metrics-circle",
             value=0,
@@ -327,24 +142,16 @@ class MetricsSmall(Button):
         )
         self.children = self.main_box
 
-        # Connect events directly to the button
         self.connect("enter-notify-event", self.on_mouse_enter)
         self.connect("leave-notify-event", self.on_mouse_leave)
 
         # sliders for popup window
-        self.cpu_slider = MetricsSliderMaterial3(orientation="v")
-        self.ram_slider = MetricsSliderMaterial3(orientation="v")
-        self.disk_slider = MetricsSliderMaterial3(orientation="v")
+        # self.cpu_slider = MetricsSliderMaterial3(orientation="v")
+        # self.ram_slider = MetricsSliderMaterial3(orientation="v")
+        # self.disk_slider = MetricsSliderMaterial3(orientation="v")
 
         self.popup_win = SharedPopupWindow()
-        self.popup_win.add_child(
-            pointing_widget=self,
-            child=Box(
-                name="control-slider-mui-container",
-                spacing=7,
-                children=[self.disk_slider, self.ram_slider, self.cpu_slider],
-            ),
-        )
+        self.popup_win.add_child(pointing_widget=self, child=Metrics())
 
         # Metrics update every second
         GLib.timeout_add_seconds(1, self.update_metrics)
@@ -387,15 +194,14 @@ class MetricsSmall(Button):
         return False
 
     def update_metrics(self):
-        # Recover centralized data
         cpu, mem, disk = shared_provider.get_metrics()
         self.cpu_circle.set_value(cpu / 100.0)
         self.ram_circle.set_value(mem / 100.0)
         self.disk_circle.set_value(disk / 100.0)
 
-        self.cpu_slider.animate_value(cpu / 100.0)
-        self.ram_slider.animate_value(mem / 100.0)
-        self.disk_slider.animate_value(disk / 100.0)
+        # self.cpu_slider.animate_value(cpu / 100.0)
+        # self.ram_slider.animate_value(mem / 100.0)
+        # self.disk_slider.animate_value(disk / 100.0)
         # Update labels with formatted percentage
         self.cpu_level.set_label(self._format_percentage(int(cpu)))
         self.ram_level.set_label(self._format_percentage(int(mem)))
@@ -479,12 +285,11 @@ class Battery(Button):
         # Battery update every second
         self.batt_fabricator = Fabricator(
             poll_from=lambda v: shared_provider.get_battery(),
-            on_changed=lambda f, v: self.update_battery,
+            on_changed=lambda f, v: self.update_battery(f, v),
             interval=1000,
             stream=False,
             default_value=0,
         )
-        self.batt_fabricator.changed.connect(self.update_battery)
 
         # Initial state of the revealers and variables for hover management
         self.hide_timer = None
@@ -521,11 +326,10 @@ class Battery(Button):
 
     def update_battery(self, sender, battery_data):
         value, charging = battery_data
-        if value == 0:
-            self.set_visible(False)
-        else:
-            self.set_visible(True)
-            self.bat_circle.set_value(value / 100)
+        if value == -1:
+            return
+
+        self.bat_circle.set_value(value / 100)
         percentage = int(value)
         self.bat_level.set_label(self._format_percentage(percentage))
 

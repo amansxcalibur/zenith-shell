@@ -20,6 +20,7 @@ class MaterialIcon(Icon):
 # dashboard
 arrow_forward: str = "\ue5e1"
 
+device_thermostat: str = "\ue1ff"
 
 wifi_off: str = "&#xecfa;"
 night_off: str = "&#xf162;"
