@@ -133,14 +133,16 @@ install_fonts() {
     mkdir -p "$FONT_DIR"
     local ROBOTO_FILE="$FONT_DIR/RobotoFlex.ttf"
     local SYMBOLS_FILE="$FONT_DIR/MaterialSymbolsRounded.ttf"
+    local GOOGLE_SANS_FLEX_FILE="$FONT_DIR/GoogleSansFlex.ttf"
 
-    if [[ -f "$ROBOTO_FILE" && -f "$SYMBOLS_FILE" ]]; then
+    if [[ -f "$ROBOTO_FILE" && -f "$SYMBOLS_FILE" && -f "$GOOGLE_SANS_FLEX_FILE" ]]; then
         log_success "Fonts present."
         return
     fi
 
     log_info "Downloading fonts..."
     curl -L --fail --silent --show-error -o "$ROBOTO_FILE" "https://raw.githubusercontent.com/googlefonts/roboto-flex/main/fonts/RobotoFlex%5BGRAD%2CXOPQ%2CXTRA%2CYOPQ%2CYTAS%2CYTDE%2CYTFI%2CYTLC%2CYTUC%2Copsz%2Cslnt%2Cwdth%2Cwght%5D.ttf"
+    curl -L --fail --silent --show-error -o "$GOOGLE_SANS_FLEX_FILE" "https://raw.githubusercontent.com/amansxcalibur/zenith-resources/gh-pages/fonts/Google_Sans_Flex/GoogleSansFlex-VariableFont_GRAD%2CROND%2Copsz%2Cslnt%2Cwdth%2Cwght.ttf"
     curl -L --fail --silent --show-error -o "$SYMBOLS_FILE" "https://raw.githubusercontent.com/google/material-design-icons/master/variablefont/MaterialSymbolsRounded%5BFILL%2CGRAD%2Copsz%2Cwght%5D.ttf"
 
     log_info "Updating font cache..."
