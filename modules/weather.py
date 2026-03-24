@@ -2,8 +2,8 @@ import math
 import time
 import cairo
 import requests
-from loguru import logger
 from typing import Tuple
+from loguru import logger
 from dataclasses import dataclass
 
 from fabric.widgets.box import Box
@@ -12,10 +12,38 @@ from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
 from fabric.core.service import Service, Signal, Property
 
+from widgets.overrides import Svg
 from widgets.popup_window import SharedPopupWindow
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
 
 import icons
+from svg import underscore, question_mark
+from svg.weather.dark import (
+    fog,
+    icy,
+    sunny,
+    # windy,
+    cloudy,
+    drizzle,
+    # tornado,
+    blizzard,
+    flurries,
+    # hurricane,
+    sleet_hail,
+    heavy_rain,
+    heavy_snow,
+    wintry_mix,
+    # clear_night,
+    mostly_sunny,
+    blowing_snow,
+    snow_showers,
+    partly_cloudy,
+    thunderstorms,
+    # mostly_clear_night,
+    # mostly_cloudy_night,
+    # partly_cloudy_night,
+    strong_thunderstorms,
+)
 from config.info import ROOT_DIR
 from utils.cursor import add_hover_cursor
 from utils.colors import get_css_variable, hex_to_rgb01
@@ -25,7 +53,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 gi.require_version("PangoCairo", "1.0")
-from gi.repository import Gtk, GLib, Pango, PangoCairo
+from gi.repository import Gtk, GLib, Pango, PangoCairo, Rsvg
 
 
 @dataclass
@@ -34,7 +62,7 @@ class WeatherData:
     time: str = ""
     temp: str = "__"
     feels_like: str = ""
-    emoji: str = ""
+    emoji: str = underscore
     description: str = ""
     pressure: str = ""
     wind: str = ""
@@ -51,7 +79,7 @@ class WeatherData:
             return cls(
                 location=f"{location_json.get('city', 'Unknown')}, {location_json.get('country_code', '')}",
                 time=f"Updated {current['time'].split('T')[-1]}",
-                temp=f"{round(current['temperature_2m'])}",
+                temp=f"{round(current['temperature_2m'])}°",
                 feels_like=f"{round(current['apparent_temperature'])}",
                 emoji=emoji,
                 description=desc,
@@ -66,41 +94,43 @@ class WeatherData:
     @staticmethod
     def _get_wmo_info(code: int) -> tuple:
         mapping = {
-            0: ("☀️", "Clear sky"),
-            1: ("🌤️", "Mostly clear"),
-            2: ("⛅", "Partly cloudy"),
-            3: ("☁️", "Overcast"),
-            45: ("🌫️", "Fog"),
-            48: ("🌫️", "Icy fog"),
-            51: ("🌦️", "Light drizzle"),
-            53: ("🌦️", "Moderate drizzle"),
-            55: ("🌦️", "Heavy drizzle"),
-            56: {"🌦️", "Light freezing drizzle"},  #
-            57: {"🌦️", "Freezing drizzle"},  #
-            61: ("🌧️", "Slight rain"),
-            63: ("🌧️", "Moderate rain"),
-            65: ("🌧️", "Heavy rain"),
-            66: {"🌦️", "Light freezing rain"},  #
-            67: {"🌦️", "Freezing rain"},  #
-            71: ("❄️", "Slight snow"),
-            73: ("❄️", "Moderate snow"),
-            75: ("❄️", "Heavy snow"),
-            77: ("❄️", "Snow grains"),
-            80: ("🌦️", "Slight rain showers"),
-            81: ("🌧️", "Moderate rain showers"),
-            82: ("⛈️", "Violent rain showers"),
-            85: {"🌨️", "Light snow showers"},
-            86: {"🌨️", "Snow showers"},
-            95: ("🌩️", "Thunderstorm"),
-            96: ("🌩️", "Thunderstorm + Light hail"),
-            99: ("🌩️", "Thunderstorm + Hail"),
+            0: (sunny, "Clear sky"),
+            1: (mostly_sunny, "Mostly clear"),
+            2: (partly_cloudy, "Partly cloudy"),
+            3: (cloudy, "Overcast"),
+            45: (fog, "Fog"),
+            48: (fog, "Icy fog"),
+            # rain
+            51: (drizzle, "Light drizzle"),
+            53: (drizzle, "Moderate drizzle"),
+            55: (drizzle, "Heavy drizzle"),
+            56: (sleet_hail, "Light freezing drizzle"),
+            57: (sleet_hail, "Freezing drizzle"),
+            61: (drizzle, "Slight rain"),
+            63: (heavy_rain, "Moderate rain"),
+            65: (heavy_rain, "Heavy rain"),
+            66: (wintry_mix, "Light freezing rain"),
+            67: (wintry_mix, "Freezing rain"),
+            80: (drizzle, "Slight rain showers"),
+            81: (heavy_rain, "Moderate rain showers"),
+            82: (heavy_rain, "Violent rain showers"),
+            # snow
+            71: (flurries, "Slight snow"),
+            73: (snow_showers, "Moderate snow"),
+            75: (heavy_snow, "Heavy snow"),
+            77: (icy, "Snow grains"),
+            85: (blowing_snow, "Light snow showers"),
+            86: (blizzard, "Snow showers"),
+            95: (thunderstorms, "Thunderstorm"),
+            96: (strong_thunderstorms, "Thunderstorm + Light hail"),
+            99: (strong_thunderstorms, "Thunderstorm + Hail"),
         }
-        return mapping.get(code, ("❓", "Unknown"))
+        return mapping.get(code, (question_mark, "Unknown"))
 
     @classmethod
     def error_state(cls) -> "WeatherData":
         """Return weather data in error state"""
-        return cls(temp="??", emoji="?")
+        return cls(temp="??", emoji=question_mark)
 
 
 class WeatherService(Service):
@@ -139,15 +169,13 @@ class WeatherService(Service):
 
     def _fetch_weather_thread(self, *_):
         try:
-            ip_resp = requests.get(
-                "https://ipapi.co/json/",
-                timeout=self.API_TIMEOUT_SECONDS,
-                headers={"User-agent": "your bot 0.1"},
-            )
+            ip_url = "http://ip-api.com/json/"
+            ip_resp = requests.get(ip_url, timeout=self.API_TIMEOUT_SECONDS)
             ip_resp.raise_for_status()
 
             loc = ip_resp.json()
-            lat, lon = loc.get("latitude"), loc.get("longitude")
+            lat = loc.get("lat")
+            lon = loc.get("lon")
 
             weather_url = (
                 f"https://api.open-meteo.com/v1/forecast?"
@@ -181,11 +209,14 @@ class WeatherMini(EventBox):
             font_family="Google Sans Flex",
             wght=500,
         )
-        self.emoji = Label(name="weather-emoji", label=initial_data.emoji)
+
+        self.emoji_svg = Svg(
+            name="weather-emoji", size=(20, 20), svg_string=initial_data.emoji
+        )
 
         self.children = Button(
             name="weather-refresh-btn",
-            child=Box(children=[self.emoji, self.temperature]),
+            child=Box(spacing=2, children=[self.emoji_svg, self.temperature]),
             on_clicked=self.service._fetch_weather,
         )
 
@@ -201,7 +232,7 @@ class WeatherMini(EventBox):
 
     def _on_weather_update(self, source, data: WeatherData):
         self.temperature.set_label(data.temp)
-        self.emoji.set_label(data.emoji)
+        self.emoji_svg.set_from_string(data.emoji)
 
 
 class WeatherCard(Box):
@@ -228,11 +259,15 @@ class WeatherCard(Box):
             wght=500,
         )
 
-        self.emoji = Label(
+        self.emoji_svg = Svg(
             name="weather-emoji",
             style_classes=["card"],
             h_align="start",
-            label=initial_data.emoji,
+            v_align="start",
+            h_expand=True,
+            v_expand=True,
+            size=(50, 50),
+            svg_string=initial_data.emoji,
         )
 
         # location
@@ -275,7 +310,7 @@ class WeatherCard(Box):
                     Box(
                         orientation="v",
                         children=[
-                            self.emoji,
+                            self.emoji_svg,
                             Box(v_expand=True, children=self.temperature_label),
                         ],
                     ),
@@ -328,7 +363,7 @@ class WeatherCard(Box):
     def update_weather(self, source, data: WeatherData):
         self.temperature_label.set_label(data.temp)
         self.location.set_label(data.location)
-        self.emoji.set_label(data.emoji)
+        self.emoji_svg.set_from_string(data.emoji)
         self.humidity_label.set_label(data.humidity)
         self.wind_label.set_label(data.wind)
         self.pressure_label.set_label(data.pressure)
@@ -352,6 +387,12 @@ class WeatherPill(Gtk.DrawingArea):
 
     def on_weather_update(self, source, data: WeatherData):
         self._current_data = data
+        svg_string = data.emoji
+        try:
+            self._svg_handle = Rsvg.Handle.new_from_data(svg_string.encode())
+        except Exception as e:
+            print(f"Failed to load SVG: {e}")
+            self._svg_handle = None
         GLib.idle_add(self.queue_draw)
 
     def _get_color(self, css_var: str) -> Tuple[float, float, float]:
@@ -414,18 +455,21 @@ class WeatherPill(Gtk.DrawingArea):
         PangoCairo.show_layout(ctx, layout)
 
         # draw emoji
-        text_color = "--foreground" if self.dark else "--foreground"
-        ctx.set_source_rgb(*self._get_color(text_color))
+        if hasattr(self, "_svg_handle") and self._svg_handle:
+            target_size = width / 3
 
-        emoji_cx = base_radius / 1.35
-        emoji_cy = width - base_radius / 1.35
+            dims = self._svg_handle.get_dimensions()
+            svg_w, svg_h = dims.width, dims.height
 
-        layout = PangoCairo.create_layout(ctx)
-        layout.set_text(self._current_data.emoji, -1)
-        layout.set_font_description(Pango.FontDescription(f"Sans Bold {width / 4}"))
+            scale_x = target_size / svg_w if svg_w > 0 else 1
+            scale_y = target_size / svg_h if svg_h > 0 else 1
 
-        ink_rect, logical_rect = layout.get_pixel_extents()
-        ctx.move_to(
-            emoji_cx - logical_rect.width / 2, emoji_cy - logical_rect.height / 2
-        )
-        PangoCairo.show_layout(ctx, layout)
+            emoji_cx = base_radius / 1.35
+            emoji_cy = width - base_radius / 1.35
+
+            ctx.save()
+            ctx.translate(emoji_cx - (target_size / 2), emoji_cy - (target_size / 2))
+            ctx.scale(scale_x, scale_y)
+
+            self._svg_handle.render_cairo(ctx)
+            ctx.restore()
