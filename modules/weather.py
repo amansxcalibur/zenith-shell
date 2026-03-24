@@ -17,7 +17,6 @@ from widgets.material_label import MaterialIconLabel, MaterialFontLabel
 
 import icons
 from config.info import ROOT_DIR
-from config.config import config
 from utils.cursor import add_hover_cursor
 from utils.colors import get_css_variable, hex_to_rgb01
 
@@ -42,39 +41,79 @@ class WeatherData:
     humidity: str = ""
 
     @classmethod
-    def from_api_response(cls, response_text: str) -> "WeatherData":
-        """Parse API response into WeatherData"""
+    def from_open_meteo(cls, weather_json: dict, location_json: dict) -> "WeatherData":
         try:
-            split_data = response_text.split()
-            # raise Exception
+            current = weather_json["current"]
+            wmo_code = current["weather_code"]
+
+            emoji, desc = cls._get_wmo_info(wmo_code)
+
             return cls(
-                location=split_data[0],
-                time=f"Updated {split_data[1]}",
-                temp=split_data[2].lstrip("+").rstrip("C"),
-                feels_like=split_data[3].lstrip("+").rstrip("C"),
-                emoji=split_data[4],
-                pressure=split_data[5],
-                wind=split_data[6],
-                humidity=split_data[7],
-                description=" ".join(split_data[8:]),
+                location=f"{location_json.get('city', 'Unknown')}, {location_json.get('country_code', '')}",
+                time=f"Updated {current['time'].split('T')[-1]}",
+                temp=f"{round(current['temperature_2m'])}",
+                feels_like=f"{round(current['apparent_temperature'])}",
+                emoji=emoji,
+                description=desc,
+                pressure=f"{current['surface_pressure']}hPa",
+                wind=f"{current['wind_speed_10m']}km/h",
+                humidity=f"{current['relative_humidity_2m']}%",
             )
-        except (IndexError, AttributeError) as e:
+        except (KeyError, IndexError, TypeError) as e:
             logger.error(f"Failed to parse weather data: {e}")
-            return cls(temp="??", emoji="?")
+            return cls.error_state()
+
+    @staticmethod
+    def _get_wmo_info(code: int) -> tuple:
+        mapping = {
+            0: ("☀️", "Clear sky"),
+            1: ("🌤️", "Mostly clear"),
+            2: ("⛅", "Partly cloudy"),
+            3: ("☁️", "Overcast"),
+            45: ("🌫️", "Fog"),
+            48: ("🌫️", "Icy fog"),
+            51: ("🌦️", "Light drizzle"),
+            53: ("🌦️", "Moderate drizzle"),
+            55: ("🌦️", "Heavy drizzle"),
+            56: {"🌦️", "Light freezing drizzle"},  #
+            57: {"🌦️", "Freezing drizzle"},  #
+            61: ("🌧️", "Slight rain"),
+            63: ("🌧️", "Moderate rain"),
+            65: ("🌧️", "Heavy rain"),
+            66: {"🌦️", "Light freezing rain"},  #
+            67: {"🌦️", "Freezing rain"},  #
+            71: ("❄️", "Slight snow"),
+            73: ("❄️", "Moderate snow"),
+            75: ("❄️", "Heavy snow"),
+            77: ("❄️", "Snow grains"),
+            80: ("🌦️", "Slight rain showers"),
+            81: ("🌧️", "Moderate rain showers"),
+            82: ("⛈️", "Violent rain showers"),
+            85: {"🌨️", "Light snow showers"},
+            86: {"🌨️", "Snow showers"},
+            95: ("🌩️", "Thunderstorm"),
+            96: ("🌩️", "Thunderstorm + Light hail"),
+            99: ("🌩️", "Thunderstorm + Hail"),
+        }
+        return mapping.get(code, ("❓", "Unknown"))
 
     @classmethod
     def error_state(cls) -> "WeatherData":
         """Return weather data in error state"""
-        return cls(temp="34°", emoji="_")
+        return cls(temp="??", emoji="?")
 
 
 class WeatherService(Service):
     _instance = None
     UPDATE_INTERVAL_SECONDS = 3600  # 1 hour
-    API_TIMEOUT_SECONDS = 5
+    API_TIMEOUT_SECONDS = 10
 
     @Signal
     def value_changed(self, weather_data: object) -> None: ...
+
+    @Property(object, "readable")
+    def current_data(self):
+        return self._current_data
 
     def __new__(cls):
         if cls._instance is None:
@@ -88,18 +127,11 @@ class WeatherService(Service):
 
         super().__init__()
         self._initialized = True
-
-        self.CITY = config.system.WEATHER_LOCATION
-        self.API_URL = f"https://wttr.in/~{self.CITY}?format=%l+%z+%t+%f+%c+%P+%w+%h+%C"
         self._current_data = WeatherData()
 
         # update every hour
         GLib.timeout_add_seconds(self.UPDATE_INTERVAL_SECONDS, self._fetch_weather)
         self._fetch_weather()  # init
-
-    @Property(str, "readable")
-    def current_data(self):
-        return self._current_data
 
     def _fetch_weather(self, *_):
         GLib.Thread.new("weather-fetch", self._fetch_weather_thread, None)
@@ -107,10 +139,27 @@ class WeatherService(Service):
 
     def _fetch_weather_thread(self, *_):
         try:
-            response = requests.get(url=self.API_URL, timeout=self.API_TIMEOUT_SECONDS)
-            response.raise_for_status()
-            weather_data = WeatherData.from_api_response(response.text)
+            ip_resp = requests.get(
+                "https://ipapi.co/json/",
+                timeout=self.API_TIMEOUT_SECONDS,
+                headers={"User-agent": "your bot 0.1"},
+            )
+            ip_resp.raise_for_status()
+
+            loc = ip_resp.json()
+            lat, lon = loc.get("latitude"), loc.get("longitude")
+
+            weather_url = (
+                f"https://api.open-meteo.com/v1/forecast?"
+                f"latitude={lat}&longitude={lon}&"
+                f"current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,surface_pressure,wind_speed_10m"
+            )
+            weather_resp = requests.get(weather_url, timeout=self.API_TIMEOUT_SECONDS)
+            weather_resp.raise_for_status()
+
+            weather_data = WeatherData.from_open_meteo(weather_resp.json(), loc)
             self._current_data = weather_data
+
         except Exception as e:
             logger.error(f"Weather fetch failed: {e}")
             weather_data = WeatherData.error_state()
@@ -127,7 +176,10 @@ class WeatherMini(EventBox):
         initial_data = self.service.current_data
 
         self.temperature = MaterialFontLabel(
-            name="weather-temp", text=initial_data.temp, font_family="Google Sans Flex", wght=500,
+            name="weather-temp",
+            text=initial_data.temp,
+            font_family="Google Sans Flex",
+            wght=500,
         )
         self.emoji = Label(name="weather-emoji", label=initial_data.emoji)
 
@@ -349,16 +401,15 @@ class WeatherPill(Gtk.DrawingArea):
         layout.set_text(str(self._current_data.temp), -1)
 
         font_desc = Pango.FontDescription("Google Sans Flex Bold")
-        font_desc.set_size(int(width / 3 * Pango.SCALE)) 
+        font_desc.set_size(int(width / 3 * Pango.SCALE))
         font_desc.set_variations("ROND=100")
         layout.set_font_description(font_desc)
 
         ink_rect, logical_rect = layout.get_pixel_extents()
         temp_cx = width - base_radius
-        temp_cy = base_radius / 1.125        
+        temp_cy = base_radius / 1.125
         ctx.move_to(
-            temp_cx - (logical_rect.width / 2),
-            temp_cy - (logical_rect.height / 2)
+            temp_cx - (logical_rect.width / 2), temp_cy - (logical_rect.height / 2)
         )
         PangoCairo.show_layout(ctx, layout)
 

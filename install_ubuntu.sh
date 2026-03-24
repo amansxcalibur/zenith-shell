@@ -190,7 +190,6 @@ install_fonts() {
     local SYMBOLS_FILE="$FONT_DIR/MaterialSymbolsRounded.ttf"
     local GOOGLE_SANS_FLEX_FILE="$FONT_DIR/GoogleSansFlex.ttf"
 
-    # Use check to avoid expensive cache update if unnecessary
     if [[ -f "$ROBOTO_FILE" && -f "$SYMBOLS_FILE" && -f "$GOOGLE_SANS_FLEX_FILE" ]]; then
         log_success "Fonts present."
         return

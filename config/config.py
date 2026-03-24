@@ -20,7 +20,7 @@ DEFAULTS = {
         "SILENT": False,
         "VERTICAL": False,
         "LOCKSCREEN": "i3lock",
-        "WEATHER_LOCATION": "Kerala",
+        "WEATHER_LOCATION": "auto",
         "BRIGHTNESS_DEV": "intel_backlight",
         "ALLOWED_PLAYERS": ["vlc", "cmus", "firefox", "spotify", "chromium"],
     },
