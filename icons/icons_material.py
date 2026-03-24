@@ -124,6 +124,8 @@ blur: str = "\ue3a5"
 refresh: str = "\ue5d5"
 sync_saved_locally: str = "\uf820"
 
+planet: str = "\uf387"
+
 # wifi
 wifi: str = "\ue63e"
 wifi_1: str = "\ue4ca"

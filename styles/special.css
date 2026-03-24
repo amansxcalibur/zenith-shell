@@ -1,0 +1,7 @@
+.action-menu-label {
+  background-color: var(--surface);
+  padding: 0 12px;
+  border-radius: 40px;
+  font-family: Roboto Flex;
+  font-weight: 600;
+}

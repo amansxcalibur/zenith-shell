@@ -103,7 +103,9 @@ class SharedPopupWindow(Window):
             min_value=0,
             max_value=0,
             tick_widget=self,
-            notify_value=lambda p, *_: self._update_x_position(p.value),
+            notify_value=lambda p, *_: self._apply_position(
+                self._clamp_x(p.value), self.current_y
+            ),
         )
         # self.animator_y = Animator(
         #     bezier_curve=(0.15, 0.88, 0.68, 0.95),
@@ -137,18 +139,35 @@ class SharedPopupWindow(Window):
 
         self.children = Box(children=self.event_box)
 
+    def _clamp_x(self, x):
+        screen = self.get_screen()
+        if screen is None:
+            return x
+        return max(
+            self.POPUP_OFFSET, min(x, screen.get_width() - self.get_allocation().width)
+        )
+
+    def _clamp_y(self, y):
+        screen = self.get_screen()
+        if screen is None:
+            return y
+        return max(0, min(y, screen.get_height() - self.get_allocation().height))
+
     def _update_x_position(self, x_value):
         self.current_x = x_value
-        self._apply_position()
 
     def _update_y_position(self, y_value):
         self.current_y = y_value
-        self._apply_position()
 
-    def _apply_position(self):
+    def _apply_position(self, x_value, y_value):
         win = self.get_window()
-        if win is not None:
-            win.move(int(self.current_x), int(self.current_y))
+
+        if win is None:
+            return
+
+        self.current_x = x_value
+        self.current_y = y_value
+        win.move(int(self.current_x), int(self.current_y))
 
     def animate_to_position(self, target_x, target_y):
         win = self.get_window()
@@ -194,10 +213,6 @@ class SharedPopupWindow(Window):
         self.child_pointing_widget_dict[pointing_widget] = child
         self.stack.add_named(child, child.get_name())
 
-    def do_draw(self, cr):
-        self.place_popup()
-        return Window.do_draw(self, cr)
-
     def _calculate_popup_position(self):
         if not self.pointing_widget:
             return None, None
@@ -222,16 +237,16 @@ class SharedPopupWindow(Window):
 
     def place_popup(self, *_):
         target_x, target_y = self._calculate_popup_position()
-
         if target_x is None:
             return
+
+        target_x = self._clamp_x(target_x)
+        target_y = self._clamp_y(target_y)
 
         if self.should_animate:
             self.animate_to_position(target_x, target_y)
         else:
-            self._update_x_position(target_x)
-            self._update_y_position(target_y)
-            self._apply_position()
+            self._apply_position(target_x, target_y)
 
     def set_is_hover_popup(self, event, state):
         if event.detail == Gdk.NotifyType.INFERIOR:
@@ -286,3 +301,7 @@ class SharedPopupWindow(Window):
                 self.HIDE_DELAY_MS, lambda: self.set_visible(False)
             )
         return False
+
+    def do_draw(self, cr):
+        self.place_popup()
+        return Window.do_draw(self, cr)

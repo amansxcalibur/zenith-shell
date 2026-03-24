@@ -9,10 +9,10 @@ from widgets.overrides import PatchedX11Window as Window
 from modules.dashboard import Dashboard
 from modules.power_menu import PowerMenu
 from modules.player import PlayerContainer
-from modules.workspaces.workspaces import ActiveWindow
 from modules.controls import ControlsManager
 from modules.wallpaper import WallpaperSelector
 from modules.launcher import AppLauncher, AppCommands
+from modules.workspaces.workspaces import ActiveWindow
 
 from config.config import config
 from config.info import SHELL_NAME, USERNAME, HOSTNAME
@@ -20,7 +20,7 @@ from utils.helpers import open_settings
 
 
 class Pill(Window, Service):
-    WIN_ROLE = 'bottom-pill'
+    WIN_ROLE = "bottom-pill"
 
     @Signal
     def on_drag(self, drag_state: object, new_x: int, new_y: int): ...

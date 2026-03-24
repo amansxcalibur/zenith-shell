@@ -1,8 +1,10 @@
 import time
 from enum import Enum
+
 from fabric.widgets.box import Box
-from fabric.widgets.eventbox import EventBox
 from fabric.widgets.overlay import Overlay
+from fabric.widgets.eventbox import EventBox
+
 from utils.helpers import toggle_class
 
 import gi
@@ -125,7 +127,10 @@ class LayoutManager:
             if self.curr_hovered_index == 0 and self.side == "left":
                 self.starter_box.last_hover_time = time.monotonic()
                 self.starter_box.set_style("min-width:0px; background-color:black")
-            elif self.curr_hovered_index == len(self.placeholders)-1 and self.side == "right":
+            elif (
+                self.curr_hovered_index == len(self.placeholders) - 1
+                and self.side == "right"
+            ):
                 self.ender_box.last_hover_time = time.monotonic()
                 self.ender_box.set_style("min-width:0px; background-color:black")
 
@@ -141,8 +146,8 @@ class LayoutManager:
             # trigger default state
             GLib.timeout_add(
                 500,
-                lambda hover_time=self._last_event_update_time: self._trigger_default_hover(
-                    hover_time
+                lambda hover_time=self._last_event_update_time: (
+                    self._trigger_default_hover(hover_time)
                 ),
             )
             self.curr_hovered_index = -1

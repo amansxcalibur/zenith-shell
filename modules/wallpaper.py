@@ -54,7 +54,7 @@ def generate_wallpaper_preview(image_path: str | Path) -> Path | None:
 
         with Image.open(image_path) as img:
             img.thumbnail((400, 200))
-            # stomic save - write to temp first to prevent half-baked images
+            # atomic save - write to temp first to prevent half-baked images
             img.save(WP_PREVIEW_TEMP, "PNG")
 
         # replace temp
@@ -438,7 +438,7 @@ class WallpaperSelector(Box):
 
     def on_scheme_changed(self, combo):
         selected_scheme = combo.get_active_id()
-        print(f"Color scheme selected: {selected_scheme}")
+        logger.info(f"Color scheme selected: {selected_scheme}")
 
     def on_search_entry_key_press(self, widget, event):
         # scheme dropdown navigation with Shift

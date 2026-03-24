@@ -77,7 +77,7 @@ class WeatherData:
             emoji, desc = cls._get_wmo_info(wmo_code)
 
             return cls(
-                location=f"{location_json.get('city', 'Unknown')}, {location_json.get('country_code', '')}",
+                location=f"{location_json.get('city', 'Unknown')}",
                 time=f"Updated {current['time'].split('T')[-1]}",
                 temp=f"{round(current['temperature_2m'])}°",
                 feels_like=f"{round(current['apparent_temperature'])}",
@@ -391,7 +391,7 @@ class WeatherPill(Gtk.DrawingArea):
         try:
             self._svg_handle = Rsvg.Handle.new_from_data(svg_string.encode())
         except Exception as e:
-            print(f"Failed to load SVG: {e}")
+            logger.error(f"Failed to load SVG: {e}")
             self._svg_handle = None
         GLib.idle_add(self.queue_draw)
 
@@ -429,10 +429,6 @@ class WeatherPill(Gtk.DrawingArea):
         ctx.set_line_width(0)
         bottom_cx, bottom_cy = base_radius, width - base_radius
         self._draw_circle(ctx, bottom_cx, bottom_cy, base_radius)
-
-        # draw temperature text
-        text_color = "--foreground" if self.dark else "--on-primary"
-        ctx.set_source_rgb(*self._get_color(text_color))
 
         # draw temperature text
         text_color = "--foreground" if self.dark else "--on-primary"

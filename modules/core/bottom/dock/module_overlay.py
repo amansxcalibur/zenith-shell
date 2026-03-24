@@ -5,6 +5,7 @@ from fabric.widgets.eventbox import EventBox
 from fabric.core.service import Service, Signal
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gdk, Gtk
 

@@ -2,15 +2,19 @@
     all:unset;
     padding: 0px 8px;
     margin: 0px;
-
-    font-family: Roboto Flex;
+    font-family: Google Sans Flex;
     font-weight: 600;
     margin-bottom: -2px;
 }
 
-#date-time, label{
+label{
     color: white;
     font-size: 15px;
+}
+
+#date-time > label{
+    color: white;
+    font-size: 17px;
 }
 
 #date-time-container{

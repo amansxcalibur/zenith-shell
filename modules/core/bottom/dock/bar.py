@@ -1,24 +1,22 @@
 from fabric.widgets.box import Box
 from fabric.widgets.stack import Stack
-from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
-from fabric.widgets.datetime import DateTime
 
-from widgets.material_label import MaterialIconLabel
 from widgets.overrides import PatchedX11Window as Window
 
+from modules.special import ActionButton
+from modules.special import DateTime
 from modules.systray import SystemTray
 from modules.weather import WeatherMini
-from modules.workspaces.workspaces import Workspaces
 from modules.controls import ControlsManager
+from modules.workspaces.workspaces import Workspaces
 from modules.metrics.metrics import MetricsSmall, Battery
 from modules.core.bottom.dock.layout_manager import LayoutManager
 from modules.core.bottom.dock.module_overlay import HoverOverlay, HolePlaceholder
 
-import icons
 from config.config import config
 from utils.cursor import add_hover_cursor
-from utils.helpers import toggle_class, restart_shell
+from utils.helpers import toggle_class
 
 import gi
 
@@ -86,17 +84,7 @@ class DockBar(Window):
                     ),
                 ),
             ),
-            "vertical_toggle_btn": lambda: add_hover_cursor(
-                Button(
-                    name="orientation-btn",
-                    child=MaterialIconLabel(
-                        name="orientation-label",
-                        FILL=0,
-                        icon_text=(icons.toggle_orientation.symbol()),
-                    ),
-                    on_clicked=lambda b, *_: self.toggle_vertical(),
-                )
-            ),
+            "vertical_toggle_btn": lambda: add_hover_cursor(ActionButton()),
         }
 
         self.user_modules_left = [
@@ -307,11 +295,6 @@ class DockBar(Window):
             self.layout_manager_left.handle_hover(source, id)
         else:
             self.layout_manager_right.handle_hover(source, id)
-
-    def toggle_vertical(self):
-        # toggle_config_vertical_flag()
-        # restart bar
-        restart_shell()
 
     def toggle_visibility(self):
         visible = not self.is_visible()

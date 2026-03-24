@@ -51,7 +51,7 @@ button:focus {
 }
 
 #orientation-label {
-  color: var(--foreground);
+  color: var(--primary);
   font-size: 25px;
 }
 

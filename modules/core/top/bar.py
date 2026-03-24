@@ -178,17 +178,20 @@ class TopBar(Window):
         self._pill_is_docked = docked
 
     def override_close(self):
-        if self._pill_is_docked == False:
+        if not self._pill_is_docked:
             return
+
         self._pill_is_docked = False
         self.stack.set_visible_child(self.compact)
         self._apply_close_visual()
 
     def override_reset(self):
-        if self._pill_is_docked == True:
+        if self._pill_is_docked:
             return
+
         self._pill_is_docked = True
         self.stack.set_visible_child(self.pill_dock_container)
+
         if self.is_open:
             self._apply_open_visual()
         else:
@@ -219,6 +222,7 @@ class TopBar(Window):
 
         if self._controls_visibility_timeout_id:
             GLib.source_remove(self._controls_visibility_timeout_id)
+
         self.toggle_controls_visibility()
 
     def _apply_close_visual(self):
@@ -235,6 +239,7 @@ class TopBar(Window):
 
         if self._controls_visibility_timeout_id:
             GLib.source_remove(self._controls_visibility_timeout_id)
+
         self._controls_visibility_timeout_id = GLib.timeout_add(
             TRANSITION_DURATION, self.toggle_controls_visibility
         )
@@ -270,6 +275,7 @@ class TopBar(Window):
 
     def update_controls(self, source, child_controls):
         logger.debug("Updating controls", child_controls)
+
         if child_controls is None:
             child_controls = []
 
