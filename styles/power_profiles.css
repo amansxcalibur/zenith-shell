@@ -1,0 +1,43 @@
+.power-profile-btn {
+  min-width: 56px;
+  min-height: 56px;
+  border-radius: 20px;
+  font-size: 20px;
+}
+
+.power-profile-btn.active {
+  background-color: var(--primary);
+}
+
+#power-profiles-container {
+  background-color: var(--shadow);
+  padding: 6px;
+  border-radius: 50px;
+}
+
+#power-profile-slider {
+  min-height: 56px;
+  min-width: 56px;
+  border-radius: 999px;
+  background: var(--on-primary);
+}
+
+#power-profile-spacer-left {
+  transition: min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+#profile-label {
+  padding: 5px 15px;
+  color: var(--foreground);
+  border-radius: 20px;
+  font-size: 20px;
+  background-color: var(--shadow);
+}
+
+#power-profile-icon {
+  min-width: 65px;
+  background-color: var(--surface-bright);
+  border-radius: 20px;
+  font-size: 20px;
+  color: var(--primary);
+}

@@ -13,6 +13,7 @@ from modules.workspaces.workspaces import Workspaces
 from modules.metrics.metrics import MetricsSmall, Battery
 from modules.core.bottom.dock.layout_manager import LayoutManager
 from modules.core.bottom.dock.module_overlay import HoverOverlay, HolePlaceholder
+from modules.power_profiles import PowerProfilesSelector
 
 from config.config import config
 from utils.cursor import add_hover_cursor
@@ -85,6 +86,7 @@ class DockBar(Window):
                 ),
             ),
             "vertical_toggle_btn": lambda: add_hover_cursor(ActionButton()),
+            "system_profiles": PowerProfilesSelector,
         }
 
         self.user_modules_left = [

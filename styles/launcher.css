@@ -47,9 +47,10 @@
 }
 
 #scrolled-window viewport {
-  /* background-color: var(--surface);
-  padding: 3px; */
+  /* background-color: var(--surface); */
   border-radius: 16px;
+  background-color: var(--surface);
+  padding: 4px;
   /* border-bottom-right-radius: 25px;
   border-bottom-left-radius: 25px; */
 }
@@ -72,8 +73,8 @@
   border-radius: 16px;
   padding: 12px 16px;
   transition: all 0.1s linear;
-  /* background-color: var(--surface); */
-  border: 3px solid var(--surface);
+  background-color: var(--shadow);
+  /* border: 3px solid var(--surface); */
 }
 
 #app-slot-button:hover,

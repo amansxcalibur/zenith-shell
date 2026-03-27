@@ -15,6 +15,8 @@ from fabric.utils import invoke_repeater
 
 from modules.tile import Tile
 
+
+from widgets.clipping_box import ClippingBox
 from widgets.rounded_image import RoundedImage
 from widgets.material_label import MaterialIconLabel
 
@@ -331,8 +333,6 @@ class NotificationManager:
             ),
             child=self.viewport,
         )
-
-        from widgets.clipping_box import ClippingBox
 
         self.revealer = Revealer(
             child=ClippingBox(

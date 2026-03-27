@@ -135,7 +135,7 @@ class WeatherData:
 
 class WeatherService(Service):
     _instance = None
-    UPDATE_INTERVAL_SECONDS = 3600  # 1 hour
+    UPDATE_INTERVAL_SECONDS = 600  # 10 mins
     API_TIMEOUT_SECONDS = 10
 
     @Signal
