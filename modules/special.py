@@ -183,6 +183,15 @@ class ActionButton(EventBox):
             ),
             on_clicked=lambda b, *_: self.start_launcher(),
         )
+        self.start_power_btn = Button(
+            name="orientation-btn",
+            child=MaterialIconLabel(
+                name="orientation-label",
+                FILL=0,
+                icon_text=(icons.shutdown.symbol()),
+            ),
+            on_clicked=lambda b, *_: self.toggle_power_menu(),
+        )
 
         self.children = self.restart_btn
 
@@ -190,6 +199,24 @@ class ActionButton(EventBox):
             spacing=4,
             orientation="v",
             children=[
+                Button(
+                    child=Box(
+                        spacing=2,
+                        children=[
+                            MaterialIconLabel(
+                                name="orientation-label",
+                                style="background-color: var(--surface); padding: 2px 5px; border-radius: 15px",
+                                FILL=0,
+                                icon_text=self.start_power_btn.get_children()[0].get_text(),
+                            ),
+                            Label(
+                                label="Open power menu",
+                                style_classes="action-menu-label",
+                            ),
+                        ],
+                    ),
+                    on_clicked=lambda *_: self.select_action("power"),
+                ),
                 Button(
                     child=Box(
                         spacing=2,
@@ -257,6 +284,8 @@ class ActionButton(EventBox):
             self.children = self.restart_btn
         elif action == "launcher":
             self.children = self.start_launcher_btn
+        elif action == "power":
+            self.children = self.start_power_btn
         # self.popup_win.hide()
 
     def toggle_vertical(self):
@@ -266,3 +295,6 @@ class ActionButton(EventBox):
 
     def start_launcher(self):
         exec_shell_command_async(f"fabric-cli exec {SHELL_NAME} 'pill.open()'")
+
+    def toggle_power_menu(self):
+        exec_shell_command_async(f"fabric-cli exec {SHELL_NAME} 'pill.toggle_power_menu()'")
