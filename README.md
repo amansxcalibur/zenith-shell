@@ -81,6 +81,7 @@ The installers handle these automatically. Listed here for reference.
 
 - [matugen](https://github.com/InioX/matugen) - dynamic Material You theming
 - [Roboto Flex](https://github.com/googlefonts/roboto-flex)
+- [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex)
 - [Material Symbols](https://github.com/google/material-design-icons)
 
 **Python** - see `requirements.txt`
