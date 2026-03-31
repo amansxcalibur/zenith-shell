@@ -67,7 +67,7 @@ class Player(Box):
         )
         self.audo_device_label = Label(
             label=self._device_name,
-            style="color: black; font-size: 13px;",
+            style="color: var(--shadow); font-size: 13px;",
             max_chars_width=MAX_AUDIO_DEVICE_NAME_CHARS,
             ellipsization="end",
         )
@@ -76,7 +76,9 @@ class Player(Box):
             name="source-name",
             children=[
                 MaterialIconLabel(
-                    icon_text=icons.headphones.symbol(), wght=600, style="color: black;"
+                    icon_text=icons.headphones.symbol(),
+                    wght=600,
+                    style="color: var(--shadow);",
                 ),
                 self.audo_device_label,
             ],
@@ -635,7 +637,7 @@ class PlayerContainer(Box):
             "Tab": lambda: self.switch_relative_player(True),
             "Shift ISO_Left_Tab": lambda: self.switch_relative_player(False),
         }
-    
+
     def register_keybindings(self):
         """Register keyboard shortcuts"""
         for key, handler in self._keybindings().items():

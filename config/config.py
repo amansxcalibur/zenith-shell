@@ -1,9 +1,15 @@
 import os
+import copy
 import json
 from pathlib import Path
+from loguru import logger
 
 from fabric.core.service import Service, Signal
-
+from .bindings import (
+    KeyBinding,
+    hydrate_binding_config,
+    build_resolved_binding_instances,
+)
 from .info import TEMP_DIR, CACHE_DIR, CONFIG_DIR, CONFIG_FILE
 
 
@@ -51,6 +57,7 @@ DEFAULTS = {
     "bluetooth": {"enabled": False},
     "top_bar": {"POSITION": "top", "HEIGHT": 32, "SPACING": 8},
     "top_pill": {"POSITION": {"x": "center", "y": "top"}},
+    "bindings": {"i3": {}, "modules": {}},
 }
 
 
@@ -145,18 +152,36 @@ class ConfigManager(Service):
         self._load()
         self._ensure_directories()
 
+    def __getattr__(self, key):
+        """Allow access to top-level config modules like config.system"""
+        if key.startswith("_"):
+            raise AttributeError(f"No attribute '{key}'")
+
+        if key in self._modules:
+            return self._modules[key]
+
+        raise AttributeError(f"Config has no module '{key}'")
+
     def _load(self):
         """Load config from file, merge with defaults"""
         if os.path.exists(CONFIG_FILE):
             try:
                 with open(CONFIG_FILE, "r") as f:
                     loaded_data = json.load(f)
-                    self._data = self._deep_merge(DEFAULTS.copy(), loaded_data)
+                    self._data = self._deep_merge(
+                        DEFAULTS.copy(), copy.deepcopy(loaded_data)
+                    )
+
+                    hydrate_binding_config(self._data["bindings"]) # modifies in-place
+                    self.resolved_bindings = build_resolved_binding_instances(
+                        self._data["bindings"]
+                    )
+
                     # write missing config keys
                     if self._data != loaded_data:
                         self._save()
             except Exception as e:
-                print(f"Error loading config.json: {e}")
+                logger.error(f"Error loading config.json: {e}")
                 self._data = DEFAULTS.copy()
         else:
             self._data = DEFAULTS.copy()
@@ -174,11 +199,12 @@ class ConfigManager(Service):
                 # )
                 self._modules[key] = getattr(self._root_node, key)
 
-    def _deep_merge(self, base, updates):
+    @staticmethod
+    def _deep_merge(base, updates):
         """Recursively merge updates into base"""
         for key, value in updates.items():
             if key in base and isinstance(base[key], dict) and isinstance(value, dict):
-                base[key] = self._deep_merge(base[key], value)
+                base[key] = ConfigManager._deep_merge(base[key], value)
             else:
                 base[key] = value
         return base
@@ -190,22 +216,33 @@ class ConfigManager(Service):
             with open(CONFIG_FILE, "w") as f:
                 json.dump(self._data, f, indent=4)
         except Exception as e:
-            print(f"Error saving config.json: {e}")
-
-    def __getattr__(self, key):
-        """Allow access to top-level config modules like config.system"""
-        if key.startswith("_"):
-            raise AttributeError(f"No attribute '{key}'")
-
-        if key in self._modules:
-            return self._modules[key]
-
-        raise AttributeError(f"Config has no module '{key}'")
+            logger.error(f"Error saving config.json: {e}")
 
     def _on_change(self, key_path, value):
         """Called when any config value changes"""
         self._save()
         self.changed(key_path, value)
+
+    def _ensure_directories(self):
+        """Creates necessary system and configured directories if they don't exist."""
+        # System/Cache Directories
+        for directory in [TEMP_DIR, CACHE_DIR, CONFIG_DIR]:
+            path = Path(directory).expanduser()
+            if not path.exists():
+                path.mkdir(parents=True, exist_ok=True)
+                logger.info(f"Created system directory: {path}")
+
+        # Config Directories
+        user_paths = self._data.get("paths", {})
+        for key, folder_path in user_paths.items():
+            if isinstance(folder_path, str):
+                path = Path(folder_path).expanduser()
+                if not path.exists():
+                    try:
+                        path.mkdir(parents=True, exist_ok=True)
+                        logger.info(f"Created configured directory: {path}")
+                    except Exception as e:
+                        logger.warning(f"Warning: Could not create {path}: {e}")
 
     def get(self, path: list):
         """Get a value by path: config.get(['system', 'SILENT'])"""
@@ -232,26 +269,11 @@ class ConfigManager(Service):
         """Get all config data as a dict"""
         return self._data.copy()
 
-    def _ensure_directories(self):
-        """Creates necessary system and configured directories if they don't exist."""
-        # System/Cache Directories
-        for directory in [TEMP_DIR, CACHE_DIR, CONFIG_DIR]:
-            path = Path(directory).expanduser()
-            if not path.exists():
-                path.mkdir(parents=True, exist_ok=True)
-                print(f"Created system directory: {path}")
+    def get_binding(self, scope: str, action: str) -> KeyBinding | None:
+        return self.resolved_bindings.get(scope, {}).get(action)
 
-        # Config Directories
-        user_paths = self._data.get("paths", {})
-        for key, folder_path in user_paths.items():
-            if isinstance(folder_path, str):
-                path = Path(folder_path).expanduser()
-                if not path.exists():
-                    try:
-                        path.mkdir(parents=True, exist_ok=True)
-                        print(f"Created configured directory: {path}")
-                    except Exception as e:
-                        print(f"Warning: Could not create {path}: {e}")
+    def get_all_scoped_bindings(self, scope: str) -> list[KeyBinding]:
+        return list(self.resolved_bindings.get(scope, {}).values())
 
     # --- Convenience Properties ---
 

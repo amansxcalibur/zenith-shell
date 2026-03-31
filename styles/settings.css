@@ -127,6 +127,11 @@
   border-radius: 20px;
 }
 
+#settings-entry.hovered-entry {
+  border: 1px solid var(--primary);
+  margin: -1px; /* compensate border overshooting */
+}
+
 .section-heading {
   font-size: 18px;
 }
@@ -218,17 +223,16 @@
 #i3-settings-demo-window {
   border: 3px solid var(--surface-bright);
   border-radius: 21px;
-  
 }
 #i3-settings-demo-window.active {
   border: 3px solid var(--primary);
   background-color: var(--surface-semi-bright);
 }
 
-#settings-shapes-morph{
+#settings-shapes-morph {
   background-color: var(--primary);
 }
 
-#settings-shapes-flowbox{
+#settings-shapes-flowbox {
   background-color: var(--surface-bright);
 }

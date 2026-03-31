@@ -1,10 +1,12 @@
+import os
 import colorsys
 from pathlib import Path
 from loguru import logger
+from typing import Optional
 
-from config.config import config
+from config.config import config, _ConfigNode
 from config.info import ROOT_DIR, SHELL_NAME
-from config.bindings import KeyBinding, I3_KEYBINDINGS
+from config.bindings import KeyBinding, apply_keybinding_overrides, I3_KEYBINDINGS
 from utils.colors import get_css_variable, hex_to_rgb01
 
 from fabric.i3.widgets import get_i3_connection
@@ -16,6 +18,12 @@ CONFIG_GLOB_PATH = Path.home() / ".config/i3/conf.d"
 BORDERS_CONF_PATH = CONFIG_GLOB_PATH / "borders.conf"
 KEYBINDS_CONF_PATH = CONFIG_GLOB_PATH / "keybinds.conf"
 GENERAL_CONF_PATH = CONFIG_GLOB_PATH / "general.conf"
+
+
+class KeybindingValidationError(Exception):
+    """Raised when keybinding validation fails."""
+
+    pass
 
 
 def _reload_i3():
@@ -48,7 +56,9 @@ def ensure_vibrancy(hex_color: str, min_brightness=0.8, min_saturation=0.5) -> s
     return "#{:02x}{:02x}{:02x}".format(int(r * 255), int(g * 255), int(b * 255))
 
 
-def generate_i3_border_theme_config(hex_color: str = None, reload: bool = False):
+def generate_i3_border_theme_config(
+    hex_color: Optional[str] = None, reload: bool = False
+):
     ensure_i3_paths()
     STYLES_DIR = ROOT_DIR / "styles"
     COLORS_CSS_PATH = STYLES_DIR / "colors.css"
@@ -79,8 +89,11 @@ def generate_i3_border_theme_config(hex_color: str = None, reload: bool = False)
         "# client.urgent           #ff0000 #ff0000 #ff0000 #ff0000",
     ]
 
-    with open(BORDERS_CONF_PATH, "w") as f:
+    # atomic
+    temp_path = BORDERS_CONF_PATH.with_suffix(".tmp")
+    with open(temp_path, "w") as f:
         f.write("\n".join(border_conf))
+    os.replace(temp_path, BORDERS_CONF_PATH)
 
     if reload:
         _reload_i3()
@@ -91,10 +104,10 @@ def validate_keybindings(bindings: list[KeyBinding]) -> None:
 
     for b in bindings:
         if not b.key:
-            raise ValueError(f"Missing key for action {b.action}")
+            raise KeybindingValidationError(f"Missing key for action {b.action}")
 
         if b.key in seen_keys:
-            raise ValueError(f"Duplicate keybinding: {b.key}")
+            raise KeybindingValidationError(f"Duplicate keybinding: {b.key}")
 
         seen_keys.add(b.key)
 
@@ -136,7 +149,7 @@ def ensure_i3_config_includes_glob_dir(config_path: Path, include_dir: Path):
 
 def get_i3_config_path() -> Path:
     # Commented this out because I dont wanna be making changes
-    # to configs that are not intended to me touched...
+    # to configs that are not intended to be touched...
     # try:
     #     conn = get_i3_connection()
 
@@ -172,14 +185,30 @@ def generate_i3_keybinds_config(reload: bool = False):
 
     try:
         ensure_i3_config_includes_glob_dir(main_config_path, CONFIG_GLOB_PATH)
-        validate_keybindings(I3_KEYBINDINGS)
-        config = generate_i3_keybinds(I3_KEYBINDINGS)
 
-        with open(KEYBINDS_CONF_PATH, "w") as f:
-            f.write(config)
+        try:
+            i3_config_node: _ConfigNode = config.bindings.i3
+            overrides = i3_config_node.get_all()
+        except AttributeError:
+            logger.error("Failed to load i3wm keybind overrides")
+            overrides = {}
+
+        bindings = apply_keybinding_overrides(I3_KEYBINDINGS, overrides)
+
+        validate_keybindings(bindings)
+        config_str = generate_i3_keybinds(bindings)
+
+        # atomic
+        temp_path = KEYBINDS_CONF_PATH.with_suffix(".tmp")
+        with open(temp_path, "w") as f:
+            f.write(config_str)
+        os.replace(temp_path, KEYBINDS_CONF_PATH)
 
         if reload:
             _reload_i3()
+
+    except KeybindingValidationError:
+        raise
 
     except Exception as e:
         logger.error("Failed to apply keybindings: {}", e)
@@ -236,8 +265,11 @@ def generate_i3_general_config(reload: bool = False):
         logger.debug("Setting i3 borders and gaps")
         lines.append(generate_i3_gaps_and_borders_config())
 
-        with open(GENERAL_CONF_PATH, "w") as f:
+        # atomic
+        temp_path = GENERAL_CONF_PATH.with_suffix(".tmp")
+        with open(temp_path, "w") as f:
             f.write("\n".join(lines) + "\n")
+        os.replace(temp_path, GENERAL_CONF_PATH)
 
         if reload:
             _reload_i3()
@@ -264,6 +296,7 @@ def add_shell_startup_to_i3_config():
         logger.info(f"Adding {SHELL_NAME} startup to i3 config")
         # start on a new line
         prefix = "\n" if content and not content.endswith("\n") else ""
+
         with open(config_path, "a") as f:
             f.write(f"\n{prefix}{include_line}\n")
     else:

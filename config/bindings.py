@@ -1,7 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from collections.abc import Iterable, Mapping
 
 from .info import SHELL_NAME
-import icons.icons_material as icons
+import icons.icons_material as icons  # type: ignore[attr-defined]
+
 
 @dataclass(frozen=True)
 class KeyBinding:
@@ -19,6 +21,7 @@ I3_KEYBINDINGS = [
         key="$mod+d",
         command=f'fabric-cli exec {SHELL_NAME} "pill.open()"',
         title="Open Pill",
+        scope="i3",
         icon=icons.pill.symbol(),
     ),
     KeyBinding(
@@ -26,13 +29,15 @@ I3_KEYBINDINGS = [
         key="$mod+p",
         command=f'fabric-cli exec {SHELL_NAME} "pill.toggle_power_menu()"',
         title="Toggle Power Menu",
+        scope="i3",
         icon=icons.power.symbol(),
     ),
     KeyBinding(
         action="pill.cycle_modes",
-        key="Shift+$mod+m",
+        key="$mod+Shift+m",
         command=f'fabric-cli exec {SHELL_NAME} "pill.cycle_modes()"',
         title="Cycle Pill Modes",
+        scope="i3",
         icon=icons.pill.symbol(),
     ),
     KeyBinding(
@@ -40,6 +45,7 @@ I3_KEYBINDINGS = [
         key="$mod+n",
         command=f'fabric-cli exec {SHELL_NAME} "top_pill.toggle_notification()"',
         title="Toggle Notifications",
+        scope="i3",
         icon=icons.notifications.symbol(),
     ),
     KeyBinding(
@@ -47,6 +53,7 @@ I3_KEYBINDINGS = [
         key="$mod+Shift+n",
         command=f'fabric-cli exec {SHELL_NAME} "top_bar.toggle_detach()"',
         title="Toggle Controls Mode",
+        scope="i3",
         icon=icons.arrows_up_down_circle.symbol(),
     ),
     KeyBinding(
@@ -54,6 +61,7 @@ I3_KEYBINDINGS = [
         key="$mod+Escape",
         command=f'fabric-cli exec {SHELL_NAME} "dockBar.toggle_visibility()"',
         title="Toggle Dock Visibility",
+        scope="i3",
         icon=icons.dock_bottom.symbol(),
     ),
     KeyBinding(
@@ -61,6 +69,7 @@ I3_KEYBINDINGS = [
         key="$mod+u",
         command=f'fabric-cli exec {SHELL_NAME} "pill.toggle_player()"',
         title="Toggle Player",
+        scope="i3",
         icon=icons.disc.symbol(),
     ),
 ]
@@ -247,7 +256,7 @@ LAUNCHER_KEYBINDINGS = [
 
 NOTIFICATIONS_KEYBINDINGS = [
     KeyBinding(
-        action="notifciations.clear_all",
+        action="notifications.clear_all",
         key="Shift+d",
         command=None,
         title="Clear all notifications",
@@ -255,3 +264,68 @@ NOTIFICATIONS_KEYBINDINGS = [
         icon=icons.trash_material.symbol(),
     ),
 ]
+
+
+KEYBINDING_GROUPS: dict[str, list[KeyBinding]] = {
+    "i3": I3_KEYBINDINGS,
+    "player": PLAYER_KEYBINDINGS,
+    "wifi": WIFI_KEYBINDINGS,
+    "wallpaper": WALLPAPER_KEYBINDINGS,
+    "launcher": LAUNCHER_KEYBINDINGS,
+    "notifications": NOTIFICATIONS_KEYBINDINGS,
+}
+
+
+def get_all_keybindings_default() -> list[KeyBinding]:
+    bindings: list[KeyBinding] = []
+    for group in KEYBINDING_GROUPS.values():
+        bindings.extend(group)
+    return bindings
+
+
+def apply_keybinding_overrides(
+    bindings: Iterable[KeyBinding],
+    overrides: Mapping[str, str] | None,
+) -> list[KeyBinding]:
+    if not overrides:
+        return list(bindings)
+
+    if hasattr(overrides, "get_all"):
+        overrides = overrides.get_all()
+
+    return [
+        replace(b, key=overrides[b.action]) if b.action in overrides else b
+        for b in bindings
+    ]
+
+
+def hydrate_binding_config(bindings: dict) -> dict:
+    i3_dict = bindings.setdefault("i3", {})
+    modules_dict = bindings.setdefault("modules", {})
+
+    for binding in get_all_keybindings_default():
+        if binding.scope == "i3":
+            i3_dict.setdefault(binding.action, binding.key)
+        elif binding.scope is not None:
+            modules_dict.setdefault(binding.scope, {}).setdefault(
+                binding.action, binding.key
+            )
+
+    return bindings
+
+
+def build_resolved_binding_instances(
+    bindings_data: dict,
+) -> dict[str, dict[str, KeyBinding]]:
+    i3_overrides = bindings_data.get("i3", {})
+    modules_overrides = bindings_data.get("modules", {})
+
+    resolved = {}
+    for scope, base_bindings in KEYBINDING_GROUPS.items():
+        overrides = i3_overrides if scope == "i3" else modules_overrides.get(scope, {})
+        resolved[scope] = {
+            b.action: replace(b, key=overrides.get(b.action, b.key))
+            for b in base_bindings
+        }
+
+    return resolved  # dict[scope, dict[action, KeyBinding]]

@@ -86,7 +86,7 @@ class DockBar(Window):
                 ),
             ),
             "vertical_toggle_btn": lambda: add_hover_cursor(ActionButton()),
-            "system_profiles": PowerProfilesSelector,
+            "power_profiles": PowerProfilesSelector,
         }
 
         self.user_modules_left = [

@@ -1,5 +1,6 @@
 import os
 import setproctitle
+from loguru import logger
 from gi.repository import GLib
 
 from fabric import Application
@@ -7,7 +8,7 @@ from fabric.widgets.x11 import X11Window as Window
 
 Window.toggle_visibility = lambda self: self.set_visible(not self.is_visible())
 
-from fabric.utils import get_relative_path, monitor_file
+from fabric.utils import get_relative_path, monitor_file, exec_shell_command_async
 
 from modules.corners import Corners
 from modules.core.top.bar import TopBar
@@ -25,6 +26,7 @@ from config.i3.utils import (
     generate_i3_general_config,
     generate_i3_keybinds_config,
     generate_i3_border_theme_config,
+    KeybindingValidationError,
 )
 
 
@@ -76,8 +78,17 @@ if __name__ == "__main__":
     WallpaperService().initialize()
 
     # set i3 keybinds. Don't reload yet
-    generate_i3_keybinds_config()
-    generate_i3_general_config()
+    try:
+        generate_i3_keybinds_config()
+        generate_i3_general_config()
+
+    except KeybindingValidationError as e:
+        error_msg = str(e)
+        logger.warning(f"Validation failed: {error_msg}")
+
+        exec_shell_command_async(f"notify-send 'Keybinding Error' '{error_msg}'")
+    except Exception as e:
+        exec_shell_command_async(f"notify-send 'Zenith Error' '{e}'")
 
     pill = Pill()
     dockBar = DockBar(pill=pill)
@@ -108,9 +119,15 @@ if __name__ == "__main__":
             get_relative_path("./main.css"),
             # feast on juggad
             exposed_functions={
-                "mute_slider_img": lambda: f"background-image: url('{ROOT_DIR}/icons/mute.png');",
-                "volume_slider_img": lambda: f"background-image: url('{ROOT_DIR}/icons/volume.png');",
-                "brightness_slider_img": lambda: f"background-image: url('{ROOT_DIR}/icons/brightness.png');",
+                "mute_slider_img": lambda: (
+                    f"background-image: url('{ROOT_DIR}/icons/mute.png');"
+                ),
+                "volume_slider_img": lambda: (
+                    f"background-image: url('{ROOT_DIR}/icons/volume.png');"
+                ),
+                "brightness_slider_img": lambda: (
+                    f"background-image: url('{ROOT_DIR}/icons/brightness.png');"
+                ),
             },
         )
         # relaods i3wm

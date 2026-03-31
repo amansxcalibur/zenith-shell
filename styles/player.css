@@ -93,7 +93,7 @@
 }
 
 #source-name {
-  background-color: whitesmoke;
+  background-color: var(--primary-player);
   border-radius: 20px;
   padding: 0 9px;
 }

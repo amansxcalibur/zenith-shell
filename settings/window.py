@@ -1,3 +1,5 @@
+from loguru import logger
+
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
@@ -13,12 +15,7 @@ from widgets.shapes.expressive.morphing_shapes import AnimateShapeMorph
 import icons
 from config.info import CONFIG_FILE
 from utils.cursor import add_hover_cursor
-from config.i3.utils import generate_i3_keybinds_config
-
-import gi
-
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib
+from config.i3.utils import generate_i3_keybinds_config, KeybindingValidationError
 
 from .state import state
 from .base import TabConfig
@@ -31,6 +28,11 @@ from .tabs import (
     ShapesTab,
     I3Tab,
 )
+
+import gi
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, GLib
 
 
 class DragHandler:
@@ -334,10 +336,25 @@ class SettingsWindow(Window):
             self.destroy()
 
     def on_save(self, btn):
-        generate_i3_keybinds_config()
-        state.print_all()
-        state.save_to_disk()
-        exec_shell_command_async(
-            "notify-send 'Zenith Settings' 'Restart zenith-shell to apply changes.'"
-        )
-        self.on_close(None)
+        try:
+            generate_i3_keybinds_config()
+            state.print_all()
+            state.save_to_disk()
+            exec_shell_command_async(
+                "notify-send 'Zenith Settings' 'Restart zenith-shell to apply changes.'"
+            )
+            self.on_close(None)
+
+        except KeybindingValidationError as e:
+            error_msg = str(e)
+            logger.warning(f"Failed to save: {error_msg}")
+
+            exec_shell_command_async(
+                f"notify-send 'Keybinding Error' '{error_msg}'"
+            )
+
+        except Exception as e:
+            logger.warning(f"Failed to save: {e}")
+            exec_shell_command_async(
+                f"notify-send 'Zenith Settings' '{e}'"
+            )

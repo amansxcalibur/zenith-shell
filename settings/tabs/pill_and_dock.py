@@ -25,6 +25,7 @@ ALL_MODULES_MAPPING = {
     "date_time": "Date-Time",
     "battery": "Battery",
     "systray": "System Tray",
+    "power_profiles": "Power Profiles",
 }
 
 

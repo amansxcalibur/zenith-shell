@@ -1,6 +1,7 @@
 import copy
-from config.config import config
 import pprint
+
+from config.config import config
 
 class SettingsState:
     def __init__(self):
@@ -20,11 +21,22 @@ class SettingsState:
         """
         path: ["i3", "gaps", "inner", "props"]
         """
+        print("update:\n path:",path, " value: ", value)
         cursor = self.staged_data
         for key in path[:-1]:
             cursor = cursor.setdefault(key, {})
 
         cursor[path[-1]] = value
+
+    def delete(self, path: list):
+        cursor = self.staged_data
+        for key in path[:-1]:
+            node = cursor.get(key)
+            if not isinstance(node, dict):
+                return
+            cursor = node
+
+        cursor.pop(path[-1], None)
 
     def print_all(self):
         pprint.pprint(self.staged_data)
@@ -37,7 +49,6 @@ class SettingsState:
         for key, value in data.items():
             current_path = path + [key]
             if isinstance(value, dict):
-                # recurse deeper
                 self._apply_dict(value, current_path)
             else:
                 config.set(current_path, value=value)
