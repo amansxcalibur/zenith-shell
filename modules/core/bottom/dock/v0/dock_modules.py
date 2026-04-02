@@ -83,7 +83,7 @@ class DockModuleWrapper(Window):
         x = origin.x + alloc.x + dx
         y = origin.y + alloc.y + dy
 
-        print(x, y, "here are the target coordinates", self.count)
+        # print(x, y, "here are the target coordinates", self.count)
 
         self.move(x, y)
         return False  # Only run once in idle_add
@@ -144,7 +144,7 @@ class DockModuleOverlay(EventBox, Service):
 
         # Optional: synchronize sizes
         if self._overlays:
-            print("setting size grp")
+            # print("setting size grp")
             pill_size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
             pill_size_group.add_widget(self._overlays)
             pill_size_group.add_widget(self._box)
@@ -152,7 +152,7 @@ class DockModuleOverlay(EventBox, Service):
         return self._box
 
     def on_hover(self, widget, event):
-        print("Hover in")
+        # print("Hover in")
         self.hole_index(self._id)
         width = widget.get_allocated_width()
         GLib.timeout_add(

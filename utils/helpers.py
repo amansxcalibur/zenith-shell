@@ -62,7 +62,7 @@ def exec_shell_command_async_with_cwd(
                         callback(output)
                     reader_loop(stream)
             except Exception as e:
-                print(f"Error reading stream: {e}")
+                logger.error(f"Error reading stream: {e}")
 
         stream.read_line_async(GLib.PRIORITY_DEFAULT, None, read_line)
 

@@ -366,7 +366,6 @@ class WorkspaceButton(FabricWorkspaceButton):
             self.remove_style_class(class_name)
 
     def handle_activate(self, value: bool):
-        print(self.id, "handling activate", value)
         if value:
             self.morphing_shape.morph_active()
         else:

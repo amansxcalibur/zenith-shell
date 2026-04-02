@@ -244,7 +244,6 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
         btn._group_id = group_id
         btn._position_data = position
 
-        print(position)
         btn._value = position["value"]
 
         return add_hover_cursor(btn)

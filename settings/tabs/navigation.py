@@ -1,12 +1,18 @@
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.entry import Entry
+from fabric.widgets.eventbox import EventBox
 from widgets.material_label import MaterialIconLabel
 
 import icons
 from ..base import BaseWidget, SectionBuilderMixin, LayoutBuilder
 from ..state import state
 from config.config import config
+
+import gi
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gdk, Gtk, GLib
 
 
 class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
@@ -74,23 +80,35 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
 
     def _create_binding_row(self, binding):
         entry = Entry(
-            name="settings-entry", style_classes=["settings-value", "roboto-flex"]
+            name="settings-entry", style_classes=["roboto-flex"], h_expand=True
         )
         entry.set_text(self._get_binding_key(binding))
+        entry.set_width_chars(0)
+        entry.set_can_focus(True)
         self.entries[binding.action] = entry
 
-        entry.connect(
-            "changed", lambda widget: self._on_binding_changed(binding, widget)
-        )
-        entry.connect(
-            "focus-out-event",
-            lambda widget, *_: self._on_binding_blur(binding, widget),
-        )
-        entry.connect("enter-notify-event", self._on_hover_enter)
-        entry.connect("leave-notify-event", self._on_hover_leave)
-
-        entry.set_width_chars(0)
         self._update_entry_width(entry)
+
+        value_box = Box(
+            name="settings-entry-container", style_classes="settings-value", children=entry
+        )
+        value_box.set_can_focus(False)
+
+        event_box = EventBox(
+            child=value_box, events=["button-press", "enter-notify", "leave-notify"]
+        )
+        event_box.set_can_focus(False)
+
+        entry.connect("changed", lambda w: self._on_binding_changed(binding, w))
+        entry.connect(
+            "focus-out-event", lambda w, *_: self._on_binding_blur(binding, w)
+        )
+        event_box.connect(
+            "button-press-event",
+            lambda *_: (entry.grab_focus(), entry.set_position(-1)),
+        )
+        event_box.connect("enter-notify-event", self._handle_hover, value_box, True)
+        event_box.connect("leave-notify-event", self._handle_hover, value_box, False)
 
         return Box(
             style_classes="settings-item",
@@ -100,23 +118,23 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
                     icon_text=binding.icon or "\ue11f", font_size=17, h_expand=False
                 ),
                 Label(label=binding.title, h_expand=True, h_align="start"),
-                entry,
+                event_box,
             ],
         )
 
-    def _on_hover_enter(self, widget: Entry, event):
-        widget.add_style_class("hovered-entry")
-        return False
-
-    def _on_hover_leave(self, widget: Entry, event):
-        widget.remove_style_class("hovered-entry")
+    def _handle_hover(self, widget, event, target: Entry, is_enter):
+        if event.detail != Gdk.NotifyType.INFERIOR:
+            if is_enter:
+                target.add_style_class("hovered-entry")
+            else:
+                target.remove_style_class("hovered-entry")
         return False
 
     def _update_entry_width(self, entry):
         layout = entry.get_layout()
         text_width, text_height = layout.get_pixel_size()
-        # gotta settle with this for now
-        padding = 30
+        # padding for entry cursor
+        padding = 1
         new_width = text_width + padding
 
         entry.set_size_request(new_width, -1)
@@ -140,13 +158,15 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
     def _on_binding_blur(self, binding, widget):
         text = widget.get_text().strip()
         if not text:
+            # reset binding
             widget.set_text(binding.key)
+            self._update_entry_width(widget)
             self._clear_binding_override(binding)
 
     def _set_binding_override(self, binding, value: str):
         action = binding.action
         self._overrides[action] = value
-        print(action)
+
         if binding.scope == "i3":
             state.update(["bindings", "i3", action], value)
         else:

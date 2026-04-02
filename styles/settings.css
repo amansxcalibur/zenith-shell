@@ -127,9 +127,8 @@
   border-radius: 20px;
 }
 
-#settings-entry.hovered-entry {
-  border: 1px solid var(--primary);
-  margin: -1px; /* compensate border overshooting */
+#settings-entry-container.hovered-entry {
+  background-color: var(--on-primary);
 }
 
 .section-heading {

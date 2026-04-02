@@ -15,7 +15,7 @@ from widgets.shapes.expressive.morphing_shapes import AnimateShapeMorph
 import icons
 from config.info import CONFIG_FILE
 from utils.cursor import add_hover_cursor
-from config.i3.utils import generate_i3_keybinds_config, KeybindingValidationError
+from config.bindings import KeybindingValidationError
 
 from .state import state
 from .base import TabConfig
@@ -335,9 +335,22 @@ class SettingsWindow(Window):
         else:
             self.destroy()
 
+    def _validate_state_bindings(self):
+        staged_bindings = {"i3": state.get(["bindings", "i3"])} | state.get(
+            ["bindings", "modules"]
+        )
+        for module, bindings in staged_bindings.items():
+            seen_keys = set()
+            for keybinding in bindings.values():
+                if keybinding in seen_keys:
+                    raise KeybindingValidationError(
+                        f"[{module.upper()}] Duplicate keybinding: {keybinding}"
+                    )
+                seen_keys.add(keybinding)
+
     def on_save(self, btn):
         try:
-            generate_i3_keybinds_config()
+            self._validate_state_bindings()
             state.print_all()
             state.save_to_disk()
             exec_shell_command_async(
@@ -346,15 +359,9 @@ class SettingsWindow(Window):
             self.on_close(None)
 
         except KeybindingValidationError as e:
-            error_msg = str(e)
-            logger.warning(f"Failed to save: {error_msg}")
-
-            exec_shell_command_async(
-                f"notify-send 'Keybinding Error' '{error_msg}'"
-            )
+            logger.warning(f"Failed to save: {e}")
+            exec_shell_command_async(f"notify-send 'Keybinding Error' '{e}'")
 
         except Exception as e:
-            logger.warning(f"Failed to save: {e}")
-            exec_shell_command_async(
-                f"notify-send 'Zenith Settings' '{e}'"
-            )
+            logger.error(f"Failed to save: {e}")
+            exec_shell_command_async(f"notify-send 'Zenith Settings' '{e}'")

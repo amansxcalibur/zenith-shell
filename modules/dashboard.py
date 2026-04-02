@@ -274,22 +274,22 @@ class Dashboard(Box):
             elems = row.get_children()
             for elem in elems:
                 if elem.get_name() == tile:
-                    print("found")
+                    continue
+                
+                if toggle:
+                    try:
+                        elem.mini_view()
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to switch {elem.get_name()} to mini view: {e}"
+                        )
                 else:
-                    if toggle:
-                        try:
-                            elem.mini_view()
-                        except:
-                            logger.error(
-                                f"Failed to switch {elem.get_name()} to mini view"
-                            )
-                    else:
-                        try:
-                            elem.maxi_view()
-                        except:
-                            logger.error(
-                                f"Failed to switch {elem.get_name()} to mini view"
-                            )
+                    try:
+                        elem.maxi_view()
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to switch {elem.get_name()} to mini view: {e}"
+                        )
 
     def cycle_widgets(self, forward=True):
         if not self.widget_stack:

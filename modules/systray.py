@@ -1,3 +1,5 @@
+from loguru import logger
+
 from config.config import config
 
 import gi
@@ -94,7 +96,7 @@ class SystemTray(Gtk.Box):
             try:
                 item.activate(event.x, event.y)
             except Exception as e:
-                print(f"Error activating item: {e}")
+                logger.error(f"Error activating item: {e}")
         elif event.button == Gdk.BUTTON_SECONDARY:  # Right click
             menu = item.get_menu()
             if menu:

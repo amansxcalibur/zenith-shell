@@ -22,6 +22,7 @@ from modules.controls import ControlsManager
 
 import subprocess
 
+
 class DockBar(Window):
     def __init__(self, **kwargs):
         super().__init__(
@@ -70,9 +71,7 @@ class DockBar(Window):
             name="orientation-btn",
             child=Label(
                 name="orientation-label",
-                markup=(
-                    icons.toggle_orientation.markup()
-                ),
+                markup=(icons.toggle_orientation.markup()),
             ),
             on_clicked=lambda b, *_: self.toggle_vertical(),
         )
@@ -100,7 +99,7 @@ class DockBar(Window):
         self.start_modules = [
             self.make_module(self.vertical_toggle_btn, 0),
             self.make_module(self.workspaces, 1),
-            self.make_module(self.vol_brightness_box,2),
+            self.make_module(self.vol_brightness_box, 2),
         ]
         self.end_modules = [
             self.make_module(self.systray, 5),
@@ -193,12 +192,11 @@ class DockBar(Window):
                     0, lambda m=module: apply_styles(m, 0, 0, source) or False
                 )
             else:
-                print("iam source", module._id, i)
                 module.starter_box.set_style(
-                    f"transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1), min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1), margin-top 0.25s cubic-bezier(0.5, 0.25, 0, 1);"
+                    "transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1), min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1), margin-top 0.25s cubic-bezier(0.5, 0.25, 0, 1);"
                 )
                 module.ender_box.set_style(
-                    f"transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1), min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1), margin-top 0.25s cubic-bezier(0.5, 0.25, 0, 1);"
+                    "transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1), min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1), margin-top 0.25s cubic-bezier(0.5, 0.25, 0, 1);"
                 )
 
     def open(self):

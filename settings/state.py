@@ -3,6 +3,7 @@ import pprint
 
 from config.config import config
 
+
 class SettingsState:
     def __init__(self):
         # config.get_all() does a shallow copy
@@ -21,7 +22,6 @@ class SettingsState:
         """
         path: ["i3", "gaps", "inner", "props"]
         """
-        print("update:\n path:",path, " value: ", value)
         cursor = self.staged_data
         for key in path[:-1]:
             cursor = cursor.setdefault(key, {})
@@ -52,5 +52,6 @@ class SettingsState:
                 self._apply_dict(value, current_path)
             else:
                 config.set(current_path, value=value)
+
 
 state = SettingsState()

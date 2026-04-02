@@ -1,5 +1,7 @@
-from fabric.widgets.box import Box
+from loguru import logger
+
 from widgets.overrides import Svg
+from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.overlay import Overlay
@@ -94,7 +96,7 @@ class VolumeMaterial3(AnimatedScale):
 
     def on_value_changed(self, source, new_val, max_val, is_muted):
         if self.is_muted != is_muted:
-            print("toggling mute", is_muted)
+            logger.info("toggling mute", is_muted)
             self.is_muted = is_muted
             self.handle_mute_toggle(is_muted)
         self.update_volume(new_val, is_muted)

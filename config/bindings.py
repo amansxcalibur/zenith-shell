@@ -5,6 +5,10 @@ from .info import SHELL_NAME
 import icons.icons_material as icons  # type: ignore[attr-defined]
 
 
+class KeybindingValidationError(Exception):
+    pass
+
+
 @dataclass(frozen=True)
 class KeyBinding:
     action: str
@@ -329,3 +333,15 @@ def build_resolved_binding_instances(
         }
 
     return resolved  # dict[scope, dict[action, KeyBinding]]
+
+
+def validate_keybindings(bindings: list[KeyBinding]) -> None:
+    seen_keys = set()
+
+    for b in bindings:
+        if not b.key:
+            raise KeybindingValidationError(f"Missing key for action {b.action}")
+        if b.key in seen_keys:
+            raise KeybindingValidationError(f"Duplicate keybinding: {b.key}")
+
+        seen_keys.add(b.key)

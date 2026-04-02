@@ -6,7 +6,11 @@ from typing import Optional
 
 from config.config import config, _ConfigNode
 from config.info import ROOT_DIR, SHELL_NAME
-from config.bindings import KeyBinding, apply_keybinding_overrides, I3_KEYBINDINGS
+from config.bindings import (
+    KeyBinding,
+    apply_keybinding_overrides,
+    I3_KEYBINDINGS,
+)
 from utils.colors import get_css_variable, hex_to_rgb01
 
 from fabric.i3.widgets import get_i3_connection
@@ -18,12 +22,6 @@ CONFIG_GLOB_PATH = Path.home() / ".config/i3/conf.d"
 BORDERS_CONF_PATH = CONFIG_GLOB_PATH / "borders.conf"
 KEYBINDS_CONF_PATH = CONFIG_GLOB_PATH / "keybinds.conf"
 GENERAL_CONF_PATH = CONFIG_GLOB_PATH / "general.conf"
-
-
-class KeybindingValidationError(Exception):
-    """Raised when keybinding validation fails."""
-
-    pass
 
 
 def _reload_i3():
@@ -97,19 +95,6 @@ def generate_i3_border_theme_config(
 
     if reload:
         _reload_i3()
-
-
-def validate_keybindings(bindings: list[KeyBinding]) -> None:
-    seen_keys = set()
-
-    for b in bindings:
-        if not b.key:
-            raise KeybindingValidationError(f"Missing key for action {b.action}")
-
-        if b.key in seen_keys:
-            raise KeybindingValidationError(f"Duplicate keybinding: {b.key}")
-
-        seen_keys.add(b.key)
 
 
 def generate_i3_keybinds(bindings: list[KeyBinding]) -> str:
@@ -195,7 +180,8 @@ def generate_i3_keybinds_config(reload: bool = False):
 
         bindings = apply_keybinding_overrides(I3_KEYBINDINGS, overrides)
 
-        validate_keybindings(bindings)
+        # TODO
+        # validate_keybindings(bindings)
         config_str = generate_i3_keybinds(bindings)
 
         # atomic
@@ -206,9 +192,6 @@ def generate_i3_keybinds_config(reload: bool = False):
 
         if reload:
             _reload_i3()
-
-    except KeybindingValidationError:
-        raise
 
     except Exception as e:
         logger.error("Failed to apply keybindings: {}", e)

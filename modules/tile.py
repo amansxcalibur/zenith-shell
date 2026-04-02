@@ -32,7 +32,9 @@ class Tile(ClippingBox):
         self.state = False
         self.props = props
 
-        self.icon = MaterialIconLabel(style_classes="tile-icon", icon_text=markup, style=markup_styles)
+        self.icon = MaterialIconLabel(
+            style_classes="tile-icon", icon_text=markup, style=markup_styles
+        )
         self.icon_wrapper = Button(
             style="all:unset;",
             on_clicked=self.handle_state_toggle,
@@ -60,7 +62,9 @@ class Tile(ClippingBox):
         self.menu_button = Button(
             style_classes="tile-button",
             child=MaterialIconLabel(
-                name="menu-btn", style_classes="tile-icon", icon_text=icons.arrow_forward.symbol()
+                name="menu-btn",
+                style_classes="tile-icon",
+                icon_text=icons.arrow_forward.symbol(),
             ),
             on_clicked=self.handle_menu_click,
         )
@@ -149,7 +153,7 @@ class Tile(ClippingBox):
             self.stack.set_visible_child(self.menu)
             self.menu.add_style_class("expand")
             self.menu.remove_style_class("contract")
-        print(self.toggle, self.get_name())
+
         name = self.get_name()
 
         exec_shell_command_async(
