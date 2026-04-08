@@ -6,16 +6,14 @@ from datetime import datetime
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
+from fabric.widgets.window import Window
 from fabric.widgets.revealer import Revealer
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.notifications import Notifications, Notification
-from fabric.widgets.window import Window
 from fabric.utils import invoke_repeater
 
 from modules.tile import Tile
-
-
 from widgets.clipping_box import ClippingBox
 from widgets.rounded_image import RoundedImage
 from widgets.material_label import MaterialIconLabel
@@ -26,11 +24,13 @@ from config.config import config
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GdkPixbuf, Gdk
+from gi.repository import GdkPixbuf, Gdk, GLib
 
 
 class NotificationConfig:
     WIDTH = 360
+    MAX_CHARS_PER_LINE = 27
+    LINE_LIMIT = 3
     IMAGE_SIZE = 50
     TIMEOUT = 5 * 1000  # 5 seconds
     TRANSITION_DURATION = 250
@@ -100,9 +100,18 @@ class NotificationWidget(EventBox):
         self._timeout_id = None
         self._scaled_pixbuf = None
         self.timestamp = datetime.now()
+        self.urgency = notification.urgency
 
         body_container = Box(name="notification-box", orientation="v", spacing=10)
         content_box = Box(spacing=10)
+
+        match self.urgency:
+            case 0 | 1:
+                body_container.add_style_class("normal")
+            case 2:
+                body_container.add_style_class("critical")
+            case _:
+                logger.warning(f"Unknown notification urgency level {self.urgency}")
 
         try:
             if image_pixbuf := self._notification.image_pixbuf:
@@ -124,6 +133,7 @@ class NotificationWidget(EventBox):
                         name="notification-icon",
                         v_align="start",
                         icon_text=icons.blur.symbol(),
+                        style_classes="critical" if self.urgency == 2 else "",
                     )
                 )
         except Exception as e:
@@ -136,6 +146,27 @@ class NotificationWidget(EventBox):
                 )
             )
 
+        # TODO: implement real Revealer with animations and Pango pixel length(?)
+        self.revealer_btn_label = MaterialIconLabel(
+            icon_text=icons.arrow_forward.symbol(),
+            angle=-90,
+        )
+        self.revealer_btn = Button(
+            name="notif-expander-btn",
+            child=self.revealer_btn_label,
+            on_clicked=self._on_notification_expanded,
+        )
+
+        self.notif_body_label = Label(
+            label=self._notification.body,
+            line_wrap="word-char",
+            ellipsization="end",
+            style_classes="body",
+            max_chars_width=NotificationConfig.MAX_CHARS_PER_LINE,
+            h_align="start",
+        )
+        self.notif_body_label.set_lines(NotificationConfig.LINE_LIMIT)
+
         content_box.add(
             Box(
                 spacing=4,
@@ -146,47 +177,35 @@ class NotificationWidget(EventBox):
                         children=[
                             Box(
                                 spacing=6,
+                                h_expand=True,
                                 children=[
                                     Label(
                                         label=self._notification.app_name,
                                         h_align="start",
                                         v_expand=True,
+                                        style_classes="app-name",
                                         ellipsization="end",
-                                        max_chars_width=27,
-                                    )
-                                    .build()
-                                    .add_style_class("app-name")
-                                    .unwrap(),
+                                        max_chars_width=17,
+                                    ),
                                     Box(style_classes=["seperator"], v_align="center"),
                                     Label(
+                                        h_expand=True,
                                         label=self.timestamp.strftime("%H:%M"),
-                                        h_align="end",
-                                    )
-                                    .build()
-                                    .add_style_class("timestamp")
-                                    .unwrap(),
+                                        h_align="start",
+                                        style_classes="timestamp",
+                                    ),
+                                    self.revealer_btn,
                                 ],
                             ),
                             Label(
                                 label=self._notification.summary,
                                 h_align="start",
                                 v_expand=True,
+                                style_classes="summary",
                                 ellipsization="end",
                                 max_chars_width=27,
-                            )
-                            .build()
-                            .add_style_class("summary")
-                            .unwrap(),
-                            Label(
-                                label=self._notification.body,
-                                line_wrap="word-char",
-                                max_chars_width=27,
-                                v_align="start",
-                                h_align="start",
-                            )
-                            .build()
-                            .add_style_class("body")
-                            .unwrap(),
+                            ),
+                            self.notif_body_label,
                         ],
                         h_expand=True,
                         v_expand=True,
@@ -206,6 +225,7 @@ class NotificationWidget(EventBox):
                                     name="close-label", icon_text=icons.close.symbol()
                                 ),
                                 tooltip_text="Close",
+                                style_classes="critical" if self.urgency == 2 else "",
                                 on_clicked=lambda *_: self._notification.close(),
                             ),
                             Box(),
@@ -246,11 +266,33 @@ class NotificationWidget(EventBox):
             "closed", self._on_notification_closed
         )
 
-        self._timeout_repeater_id = invoke_repeater(
-            NotificationConfig.TIMEOUT,
-            lambda: timeout_callback(self),
-            initial_call=False,
+        # GLib.timeout_add() wrapper
+        self._timeout_repeater_id = (
+            invoke_repeater(
+                NotificationConfig.TIMEOUT,
+                lambda: timeout_callback(self),
+                initial_call=False,
+            )
+            if self.urgency in [0, 1]
+            else None
         )
+
+    def _on_notification_expanded(self, *_):
+        self.revealer_btn_label.set_angle(
+            90
+            if self.notif_body_label.get_lines() == NotificationConfig.LINE_LIMIT
+            else -90
+        )
+        self.notif_body_label.set_lines(
+            100
+            if self.notif_body_label.get_lines() == NotificationConfig.LINE_LIMIT
+            else NotificationConfig.LINE_LIMIT
+        )
+
+        # cancel timeout repeater
+        if self._timeout_repeater_id is not None:
+            GLib.source_remove(self._timeout_repeater_id)
+            self._timeout_repeater_id = None
 
     def _on_notification_closed(self, *_):
         try:
@@ -263,33 +305,22 @@ class NotificationWidget(EventBox):
             logger.error(f"Error in _on_notification_closed: {e}")
             try:
                 self.cleanup()
-            except:
+            except Exception:
                 pass
 
     def cleanup(self):
         # cancel timeout repeater
         if self._timeout_repeater_id is not None:
-            from gi.repository import GLib
-
-            try:
-                GLib.source_remove(self._timeout_repeater_id)
-            except:
-                pass
+            GLib.source_remove(self._timeout_repeater_id)
             self._timeout_repeater_id = None
 
         # disconnect signals
         if self._on_press_connection:
-            try:
-                self.disconnect(self._on_press_connection)
-            except:
-                pass
+            self.disconnect(self._on_press_connection)
             self._on_press_connection = None
 
         if self._closed_connection and self._notification:
-            try:
-                self._notification.disconnect(self._closed_connection)
-            except:
-                pass
+            self._notification.disconnect(self._closed_connection)
             self._closed_connection = None
 
         # clear pixbuf reference
@@ -401,9 +432,9 @@ class NotificationManager:
     def handle_silent_state_toggle(self, *_):
         return
         # CHANGES CONFIG
-        config.SILENT = not config.SILENT
-        if self.silent_btn is not None:
-            self.silent_btn.add_style_class("active")
+        # config.SILENT = not config.SILENT
+        # if self.silent_btn is not None:
+        #     self.silent_btn.add_style_class("active")
 
     def _handle_notification_added(self, source, notification_id: int):
         if not self._notification_service:
@@ -565,7 +596,7 @@ class NotificationManager:
                 self._notification_service.disconnect_by_func(
                     self._handle_notification_added
                 )
-            except:
+            except Exception:
                 pass
             self._notification_service = None
 

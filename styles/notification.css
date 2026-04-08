@@ -5,6 +5,10 @@
     min-width: 364px; /* 290+74 */
 }
 
+#notification-box.critical{
+    background-color: var(--surface-bright);
+}
+
 #notification-source{
     color: var(--outline);
 }
@@ -14,6 +18,15 @@
     margin-right: 7px;
     margin-left: 7px;
     color: var(--surface-bright);
+}
+#notification-icon.critical{
+    color: var(--surface);
+}
+#close-button.critical{
+    background-color: var(--surface-semi-bright);
+}
+#close-button.critical>*{
+    color: var(--surface-semi-bright);
 }
 
 #notification-container{
@@ -94,4 +107,14 @@
     min-height: 5px;
     border-radius: 100%;
     margin-bottom: -2px;
+}
+
+#notif-expander-btn{
+    border-radius: 10px;
+    background-color: var(--surface-bright);
+    padding: 0 6px;
+    margin: 0 2px;
+}
+#notif-expander-btn>*{
+    color: var(--foreground);
 }
