@@ -126,8 +126,8 @@
 #button-bar-brightness {
   border: none;
   box-shadow: none;
-  min-width: 37px;
-  min-height: 37px;
+  min-width: 36px;
+  min-height: 36px;
   border-radius: 45%;
 }
 #vol-button,

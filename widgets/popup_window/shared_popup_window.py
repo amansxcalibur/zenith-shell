@@ -1,17 +1,19 @@
+from loguru import logger
+
 from fabric.widgets.box import Box
 from fabric.widgets.stack import Stack
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.revealer import Revealer
 from fabric.widgets.x11 import X11Window as Window
 
+from widgets.clipping_box import ClippingBox
 from services.animator import Animator
-
-from loguru import logger
 
 import gi
 
+gi.require_version("Gtk", "3.0")
 gi.require_version("GLib", "2.0")
-from gi.repository import GLib, Gdk
+from gi.repository import GLib, Gdk, Gtk
 
 
 class SharedPopupWindow(Window):
@@ -53,11 +55,9 @@ class SharedPopupWindow(Window):
         self._initialized = True
 
         self.pointing_widget = None
-        self.should_animate = False
+        self.pointing_widget_size_alloc_hook = None
 
         # animation position tracking
-        self.current_x = 0
-        self.current_y = 0
         self.target_x = 0
         self.target_y = 0
 
@@ -69,13 +69,13 @@ class SharedPopupWindow(Window):
         self.unhover_delay_ref = None
         self.hide_delay_ref = None
 
-        # widget mapping
+        # widget-popup mapping
         self.child_pointing_widget_dict = {}
 
         self._initialize_animators()
         self._initialize_ui(transition_duration, transition_type)
 
-        # Disconnect the geometry enforcement hook
+        # disconnect the X11Window geometry enforcement hook
         if hasattr(self, "_size_allocate_hook") and self._size_allocate_hook:
             try:
                 self.handler_disconnect(self._size_allocate_hook)
@@ -87,40 +87,24 @@ class SharedPopupWindow(Window):
 
         self.event_box.connect(
             "enter-notify-event",
-            lambda x, y: self.set_is_hover_popup(event=y, state=True),
+            lambda x, y: self._on_hover_popup(event=y, state=True),
         )
         self.event_box.connect(
             "leave-notify-event",
-            lambda x, y: self.set_is_hover_popup(event=y, state=False),
+            lambda x, y: self._on_hover_popup(event=y, state=False),
         )
-
         # self.connect("configure-event", self.on_window_move)
 
-    def _initialize_animators(self):
-        self.animator_x = Animator(
-            bezier_curve=self.ANIMATION_BEZIER,
-            duration=self.ANIMATION_DURATION,
-            min_value=0,
-            max_value=0,
-            tick_widget=self,
-            notify_value=lambda p, *_: self._apply_position(
-                self._clamp_x(p.value), self.current_y
-            ),
-        )
-        # self.animator_y = Animator(
-        #     bezier_curve=(0.15, 0.88, 0.68, 0.95),
-        #     duration=0.1,
-        #     min_value=0,
-        #     max_value=0,
-        #     tick_widget=self,
-        #     notify_value=lambda p, *_: self._update_y_position(p.value),
-        # )
+    # def on_window_move(self, widget, event):
+    #     print(
+    #         f"Window moved to ({event.x}, {event.y}), size = {event.width}x{event.height}"
+    #     )
+    #     ...
 
     def _initialize_ui(self, transition_duration, transition_type):
         self.stack = Stack(
             transition_type=transition_type,
             transition_duration=transition_duration,
-            style="background-color:rgba(0,0,0,0.1); padding:5px; border-radius:20px",
         )
         self.stack.set_interpolate_size(True)
         self.stack.set_homogeneous(False)
@@ -129,89 +113,110 @@ class SharedPopupWindow(Window):
             transition_duration=transition_duration,
             transition_type=transition_type,
             child=self.stack,
+            child_revealed=False,
         )
 
-        self.event_box = EventBox(
-            orientation="h",
-            spacing=0,
-            child=self.revealer,
+        self.event_box = EventBox(child=self.revealer)
+        self.children = Box(
+            children=ClippingBox(style="border-radius:15px", children=self.event_box),
+            style="background-color:rgba(0,0,0,0.1); padding:5px; border-radius:20px",
         )
 
-        self.children = Box(children=self.event_box)
-
-    def _clamp_x(self, x):
-        screen = self.get_screen()
-        if screen is None:
-            return x
-        return max(
-            self.POPUP_OFFSET, min(x, screen.get_width() - self.get_allocation().width)
+    def _initialize_animators(self):
+        self.animator_x = Animator(
+            bezier_curve=self.ANIMATION_BEZIER,
+            duration=self.ANIMATION_DURATION,
+            tick_widget=self,
+            notify_value=self._on_animator_x_tick,
         )
 
-    def _clamp_y(self, y):
-        screen = self.get_screen()
-        if screen is None:
-            return y
-        return max(0, min(y, screen.get_height() - self.get_allocation().height))
-
-    def _update_x_position(self, x_value):
-        self.current_x = x_value
-
-    def _update_y_position(self, y_value):
-        self.current_y = y_value
-
-    def _apply_position(self, x_value, y_value):
-        win = self.get_window()
-
-        if win is None:
-            return
-
-        self.current_x = x_value
-        self.current_y = y_value
-        win.move(int(self.current_x), int(self.current_y))
-
-    def animate_to_position(self, target_x, target_y):
-        win = self.get_window()
-        if win is not None:
-            _, current_x, current_y = win.get_origin()
-            self.current_x = current_x
-            self.current_y = current_y
-
-        # set up animators
-        self.animator_x.pause()
-        self.animator_x.min_value = self.current_x
-        self.animator_x.max_value = target_x
-        self.animator_x.value = self.current_x
-
-        self.current_y = target_y
-
-        # self.animator_y.pause()
-        # self.animator_y.min_value = self.current_y
-        # self.animator_y.max_value = target_y
-        # self.animator_y.value = self.current_y
-
-        self.animator_x.play()
-        # self.animator_y.play()
-
-    # def on_window_move(self, widget, event):
-    #     print(f"Window moved to ({event.x}, {event.y}), size = {event.width}x{event.height}")
+    def _on_animator_x_tick(self, p, *_):
+        self.target_x = p.value
+        self.place_popup(p.value)
 
     def add_child(self, pointing_widget, child):
         if not isinstance(pointing_widget, EventBox):
-            logger.error(
-                "The widget PopupWindow is pointing to must be an EventBox instance"
+            logger.warning(
+                f"The widget ({pointing_widget.get_name()}) SharedPopupWindow is pointing to must be an EventBox instance"
             )
 
-        pointing_widget.connect(
-            "enter-notify-event",
-            lambda x, y: self.set_is_hover_widget(source=x, event=y, state=True),
-        )
-        pointing_widget.connect(
-            "leave-notify-event",
-            lambda x, y: self.set_is_hover_widget(source=x, event=y, state=False),
-        )
+        pointing_widget.connect("enter-notify-event", self._on_hover_widget, True)
+        pointing_widget.connect("leave-notify-event", self._on_hover_widget, False)
 
         self.child_pointing_widget_dict[pointing_widget] = child
         self.stack.add_named(child, child.get_name())
+
+    def _on_hover_popup(self, event, state):
+        if event.detail == Gdk.NotifyType.INFERIOR:
+            return
+
+        self.is_hover_popup = state
+        self._handle_window_visibility()
+
+    def _on_hover_widget(self, source, event, state):
+        if event.detail == Gdk.NotifyType.INFERIOR:
+            return
+
+        self.is_hover_widget = state
+
+        if state:
+            if source is not self.pointing_widget:
+                self._update_pointing_widget(source)
+
+            next_visible_child = self.child_pointing_widget_dict[source]
+            self.stack.set_visible_child(next_visible_child)
+
+            was_already_visible = self.get_visible()
+
+            def _set_position():
+                x, y = self._calculate_popup_position()
+                if x is not None:
+                    if was_already_visible:
+                        self.animate_to_position(x, y)
+                    else:
+                        # moves coords calculated using widget preferred height/width
+                        _, popup_widget_height = (
+                            next_visible_child.get_preferred_height()
+                        )
+                        win = self.get_window()
+                        if win:
+                            win.move(
+                                int(self._clamp_x(x)),
+                                int(self._get_target_baseline() - popup_widget_height),
+                            )
+                        self.target_x = x
+                return False
+
+            GLib.idle_add(_set_position)
+
+        self._handle_window_visibility()
+
+    def _update_pointing_widget(self, source):
+        if (
+            self.pointing_widget is not None
+            and self.pointing_widget_size_alloc_hook is not None
+        ):
+            self.pointing_widget.disconnect(self.pointing_widget_size_alloc_hook)
+            self.pointing_widget_size_alloc_hook = None
+
+        self.pointing_widget = source
+
+        self.pointing_widget_size_alloc_hook = self.pointing_widget.connect(
+            "size-allocate",
+            lambda w, alloc: self._on_widget_size_allocate(source),
+        )
+
+    def _on_widget_size_allocate(self, source_widget):
+        if source_widget is not self.pointing_widget or not self.get_visible():
+            return
+
+        x, y = self._calculate_popup_position()
+
+        if self.animator_x.playing:
+            self.animate_to_position(x, y)  # pauses, updates and plays
+            return
+        else:
+            self.place_popup(x)
 
     def _calculate_popup_position(self):
         if not self.pointing_widget:
@@ -219,13 +224,24 @@ class SharedPopupWindow(Window):
 
         widget_alloc = self.pointing_widget.get_allocation()
         win_alloc = self.get_allocation()
+        _, popup_widget_alloc = self.child_pointing_widget_dict[
+            self.pointing_widget
+        ].get_preferred_width()
 
         try:
             _, root_x, root_y = self.pointing_widget.get_window().get_origin()
 
+            # print("Position of widget: ", root_x + widget_alloc.x)
+            # print("popup widg final size", popup_widget_alloc)
+            # print("Position to be of popup: ", root_x + widget_alloc.x + widget_alloc.width/2 - popup_widget_alloc/2)
+            # print("------------------------------------------------------")
+
             # center horizontally, place above the widget
             target_x = (
-                root_x + widget_alloc.x - (win_alloc.width / 2 - widget_alloc.width / 2)
+                root_x
+                + widget_alloc.x
+                + widget_alloc.width / 2
+                - popup_widget_alloc / 2
             )
             target_y = root_y + widget_alloc.y - win_alloc.height - self.POPUP_OFFSET
 
@@ -235,45 +251,29 @@ class SharedPopupWindow(Window):
             logger.error(f"Failed to calculate popup position: {e}")
             return None, None
 
-    def place_popup(self, *_):
-        target_x, target_y = self._calculate_popup_position()
-        if target_x is None:
-            return
+    def _get_target_baseline(self):
+        _, _, pointing_widget_root_y = self.pointing_widget.get_window().get_origin()
+        return (
+            pointing_widget_root_y
+            + self.pointing_widget.get_allocation().y
+            - self.POPUP_OFFSET
+        )
 
-        target_x = self._clamp_x(target_x)
-        target_y = self._clamp_y(target_y)
+    def _clamp_x(self, x: int, width: int = None) -> int:
+        screen = self.get_screen()
+        if screen is None:
+            return x
+        w = width if width is not None else self.get_allocation().width
+        return max(self.POPUP_OFFSET, min(x, screen.get_width() - w))
 
-        if self.should_animate:
-            self.animate_to_position(target_x, target_y)
-        else:
-            self._apply_position(target_x, target_y)
+    def _clamp_y(self, y: int, height: int = None) -> int:
+        screen = self.get_screen()
+        if screen is None:
+            return y
+        h = height if height is not None else self.get_allocation().height
+        return max(0, min(y, screen.get_height() - h))
 
-    def set_is_hover_popup(self, event, state):
-        if event.detail == Gdk.NotifyType.INFERIOR:
-            return
-
-        self.is_hover_popup = state
-        self.handle_window_visibility()
-
-    def set_is_hover_widget(self, source, event, state):
-        self.is_hover_widget = state
-        self.pointing_widget = source
-
-        next_visible_child = self.child_pointing_widget_dict[source]
-        self.stack.set_visible_child(next_visible_child)
-
-        self.handle_window_visibility()
-
-    def _cancel_pending_timers(self):
-        if self.hide_delay_ref is not None:
-            GLib.source_remove(self.hide_delay_ref)
-            self.hide_delay_ref = None
-
-        if self.unhover_delay_ref is not None:
-            GLib.source_remove(self.unhover_delay_ref)
-            self.unhover_delay_ref = None
-
-    def handle_window_visibility(self):
+    def _handle_window_visibility(self):
         is_hovered = self.is_hover_widget or self.is_hover_popup
 
         if not is_hovered:
@@ -286,22 +286,74 @@ class SharedPopupWindow(Window):
             # show immediately, cancel any pending hides
             self._cancel_pending_timers()
 
-            # enable animation if already visible
-            was_visible = self.get_visible()
-            self.should_animate = was_visible
-
             self.set_visible(True)
-            self.place_popup()
             self.revealer.reveal()
+
+    def _cancel_pending_timers(self):
+        if self.hide_delay_ref is not None:
+            GLib.source_remove(self.hide_delay_ref)
+            self.hide_delay_ref = None
+
+        if self.unhover_delay_ref is not None:
+            GLib.source_remove(self.unhover_delay_ref)
+            self.unhover_delay_ref = None
 
     def _check_and_hide(self):
         if not self.is_hover_widget and not self.is_hover_popup:
             self.revealer.unreveal()
-            self.hide_delay_ref = GLib.timeout_add(
-                self.HIDE_DELAY_MS, lambda: self.set_visible(False)
-            )
+            self.animator_x.pause()
+
+            def _do_hide():
+                self.set_visible(False)
+                self.hide_delay_ref = None
+                return False
+
+            self.hide_delay_ref = GLib.timeout_add(self.HIDE_DELAY_MS, _do_hide)
+
+        self.unhover_delay_ref = None
         return False
 
-    def do_draw(self, cr):
-        self.place_popup()
-        return Window.do_draw(self, cr)
+    def animate_to_position(self, target_x, target_y):
+        _, start_x, _ = self.get_window().get_origin()
+        self.animator_x.pause()
+        self.animator_x.handler_block_by_func(self._on_animator_x_tick)
+        self.animator_x.min_value = start_x
+        self.animator_x.max_value = self._clamp_x(
+            target_x,
+            width=self.child_pointing_widget_dict[
+                self.pointing_widget
+            ].get_preferred_width()[1],
+        )
+        self.animator_x.value = start_x
+        self.animator_x.handler_unblock_by_func(self._on_animator_x_tick)
+        self.target_y = self._clamp_y(target_y)
+        self.animator_x.play()
+
+    def place_popup(self, override_x: int = None):
+        if override_x is None:
+            override_x = self.target_x
+        else:
+            self.target_x = override_x
+
+        win = self.get_window()
+        if win:
+            win.move(
+                int(self._clamp_x(override_x)),
+                int(self._get_target_baseline() - self.get_allocation().height),
+            )
+
+    def do_size_allocate(self, alloc):
+        # uses fresh allocation to move window before it extends below baseline
+        if self.pointing_widget and self.get_mapped():
+            try:
+                win = self.get_window()
+                if win:
+                    win.move(
+                        int(self._clamp_x(self.target_x)),
+                        int(self._get_target_baseline() - alloc.height),
+                    )
+
+            except Exception as e:
+                logger.error(f"do_size_allocate Y position failed: {e}")
+
+        Gtk.Window.do_size_allocate(self, alloc)

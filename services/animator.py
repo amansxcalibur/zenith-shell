@@ -121,6 +121,10 @@ class Animator(Service):
 
       self.value = self.do_ease(self._timeline_pos)
 
+    #   print("\nAnimator: ticked")
+    #   print("value: ", self.value)
+    #   print("---------------------------------------")
+
       if not self._timeline_pos >= 1:
           return
 
