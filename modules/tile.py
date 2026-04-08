@@ -11,34 +11,43 @@ from utils.cursor import add_hover_cursor
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
 
+import gi
 
-class Tile(ClippingBox):
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
+
+
+class TileSimple(ClippingBox):
     def __init__(
         self,
-        title: str = "",
-        menu: bool = False,
         markup: str = icons.blur.symbol(),
         label: str = "__",
-        menu_children=None,
-        props: Label = Label(style_classes="tile-label", label="N/A", h_align="start"),
+        status_label_widget: Label = Label(
+            style_classes="tile-label", label="N/A", h_align="start"
+        ),
         **kwargs,
     ):
-        default_classes = ["tile", "off"]
+        default_classes = ["tile", "simple", "off"]
         extra_classes = kwargs.pop("style_classes", [])
         merged_classes = default_classes + extra_classes
         markup_styles = kwargs.pop("markup_style", "")
         super().__init__(style_classes=merged_classes, v_align="start", **kwargs)
 
         self.state = False
-        self.props = props
+        self.props = status_label_widget
+        self.status_label_widget_revealer = Revealer(
+            transition_duration=250, transition_type="slide-down", child=self.props
+        ) 
 
         self.icon = MaterialIconLabel(
-            style_classes="tile-icon", icon_text=markup, style=markup_styles
+            style_classes="tile-icon",
+            icon_text=markup,
+            style=markup_styles,
+            v_align="center",
         )
-        self.icon_wrapper = Button(
-            style="all:unset;",
-            on_clicked=self.handle_state_toggle,
-            child=self.icon,
+        self.icon_wrapper = Box(
+            style_classes="tile-icon-box",
+            children=self.icon,
         )
         self.tile_label = Label(
             style_classes="tile-label", label=label, h_align="start"
@@ -46,7 +55,6 @@ class Tile(ClippingBox):
         self.toggle = False
 
         self.type_box = Button(
-            style="all:unset;",
             on_clicked=self.handle_state_toggle,
             style_classes="tile-type",
             h_expand=True,
@@ -55,46 +63,161 @@ class Tile(ClippingBox):
                 v_expand=True,
                 h_expand=True,
                 v_align="center",
-                children=[self.tile_label, self.props],
+                children=[self.tile_label, self.status_label_widget_revealer],
             ),
-        )
-
-        self.menu_button = Button(
-            style_classes="tile-button",
-            child=MaterialIconLabel(
-                name="menu-btn",
-                style_classes="tile-icon",
-                icon_text=icons.arrow_forward.symbol(),
-            ),
-            on_clicked=self.handle_menu_click,
         )
 
         self.content_button = None
 
-        if menu:
-            self.content_button = Revealer(
-                transition_duration=150,
-                transition_type="slide-left",
-                child=Box(h_expand=True, children=[self.type_box, self.menu_button]),
-                child_revealed=True,
-                h_expand=True,
-            )
-        else:
-            self.content_button = Revealer(
-                transition_duration=150,
-                transition_type="slide-left",
-                child=Box(h_expand=True, children=[self.type_box]),
-                child_revealed=True,
-                h_expand=True,
-            )
+        self.content_button = Revealer(
+            transition_duration=150,
+            transition_type="slide-left",
+            child=Box(h_expand=True, children=[self.type_box]),
+            child_revealed=True,
+            h_expand=True,
+        )
 
-        self.normal_view = Box(
+        self.normal_view = ClippingBox(
+            style_classes="tile-clipper",
             children=[
                 self.icon_wrapper,
                 self.content_button,
             ],
         )
 
+        self.children = add_hover_cursor(
+            Button(
+                h_expand=True,
+                child=self.normal_view,
+                on_clicked=self.handle_state_toggle,
+            )
+        )
+
+        add_hover_cursor(self.type_box)
+        add_hover_cursor(self.icon_wrapper)
+
+    def set_active_style(self, is_active: bool):
+        if is_active:
+            self.add_style_class("on")
+            self.remove_style_class("off")
+        else:
+            self.add_style_class("off")
+            self.add_style_class("on")
+
+    def handle_state_toggle(self, *_):
+        # overriden
+        self.state = not self.state
+
+    def close(self):
+        self.toggle = False
+        self.maxi_view()
+
+    def mini_view(self):
+        self.content_button.set_reveal_child(False)
+        self.icon_wrapper.set_h_expand(True)
+        self.content_button.set_h_expand(False)
+        self.add_style_class("mini")
+        # self.icon.add_style_class("mini")
+        # self.icon.remove_style_class("maxi")
+
+    def maxi_view(self):
+        self.content_button.set_reveal_child(True)
+        self.icon_wrapper.set_h_expand(False)
+        self.content_button.set_h_expand(True)
+        self.remove_style_class("mini")
+        # self.icon.add_style_class("maxi")
+        # self.icon.remove_style_class("mini")
+
+    def hide_status_widget(self):
+        self.status_label_widget_revealer.unreveal()
+
+    def reveal_status_widget(self):
+        self.status_label_widget_revealer.reveal()
+
+
+class TileSimpleWithMenu(ClippingBox):
+    def __init__(
+        self,
+        markup: str = icons.blur.symbol(),
+        label: str = "__",
+        title: str = "",  # Added title for the menu header
+        status_label_widget: Label = Label(
+            style_classes="tile-label", label="N/A", h_align="start"
+        ),
+        menu_children: Gtk.Widget = None,
+        **kwargs,
+    ):
+        default_classes = ["tile", "simple", "off"]
+        extra_classes = kwargs.pop("style_classes", [])
+        merged_classes = default_classes + extra_classes
+        markup_styles = kwargs.pop("markup_style", "")
+        super().__init__(style_classes=merged_classes, v_align="start", **kwargs)
+
+        self.state = False
+        self.props = status_label_widget
+        self.status_label_widget_revealer = Revealer(
+            transition_duration=250, transition_type="slide-up", child=self.props
+        )
+        self.toggle = False  # Tracks menu open/close state
+
+        # 1. Icon Setup (Retaining the SimpleTile visual style)
+        self.icon = MaterialIconLabel(
+            style_classes="tile-icon",
+            icon_text=markup,
+            style=markup_styles,
+            v_align="center",
+        )
+        self.icon_wrapper = Box(
+            style_classes="tile-icon-box",
+            children=self.icon,
+        )
+
+        # 2. Label Setup
+        self.tile_label = Label(
+            style_classes="tile-label", label=label, h_align="start"
+        )
+
+        # 3. Content Setup (The clickable middle part)
+        self.type_box = Button(
+            style="all:unset;",
+            on_clicked=self.handle_menu_click,  # Changed from state_toggle
+            style_classes="tile-type",
+            h_expand=True,
+            child=Box(
+                orientation="v",
+                v_expand=True,
+                h_expand=True,
+                v_align="center",
+                children=[self.tile_label, self.status_label_widget_revealer],
+            ),
+        )
+
+        self.content_button = Revealer(
+            transition_duration=150,
+            transition_type="slide-left",
+            child=Box(h_expand=True, children=[self.type_box]),
+            child_revealed=True,
+            h_expand=True,
+        )
+
+        # 4. The Normal View (Icon + Labels)
+        # Wrapped in a Button so the icon area is also clickable to open the menu
+        self.normal_view = ClippingBox(
+            style_classes="tile-clipper",
+            children=Button(
+                style="all:unset;",
+                h_expand=True,
+                on_clicked=self.handle_menu_click,
+                child=Box(
+                    children=[
+                        self.icon_wrapper,
+                        self.content_button,
+                    ],
+                ),
+            ),
+        )
+
+        # 5. The Menu View (Copied logic from Tile)
         self.menu_close_btn = Button(
             name="menu-close-button",
             child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
@@ -119,10 +242,15 @@ class Tile(ClippingBox):
                         ],
                     ),
                 ]
-                + ([menu_children] if menu_children else [Label(label="hi!")])
+                + (
+                    [menu_children]
+                    if menu_children
+                    else [Label(label="No options available")]
+                )
             ),
         )
 
+        # 6. Stack Integration
         self.stack = Stack(
             transition_type="crossfade",
             transition_duration=150,
@@ -134,15 +262,13 @@ class Tile(ClippingBox):
 
         self.children = self.stack
 
-        add_hover_cursor(self.menu)
+        # Cursors
+        add_hover_cursor(self.stack)
         add_hover_cursor(self.type_box)
-        add_hover_cursor(self.menu_button)
-        add_hover_cursor(self.icon_wrapper)
+        add_hover_cursor(self.menu_close_btn)
 
-    def handle_state_toggle(self, *_):
-        self.state = not self.state
-
-    def handle_menu_click(self, source):
+    def handle_menu_click(self, *_):
+        print("cliicking menu", self.toggle)
         if self.toggle:
             self.toggle = False
             self.menu.add_style_class("contract")
@@ -154,11 +280,20 @@ class Tile(ClippingBox):
             self.menu.add_style_class("expand")
             self.menu.remove_style_class("contract")
 
+        # Optional: Keep your shell notification if needed
         name = self.get_name()
+        if name:
+            exec_shell_command_async(
+                f"fabric-cli exec {SHELL_NAME} \"pill.dashboard.handle_tile_menu_expand('{name}', {self.toggle})\""
+            )
 
-        exec_shell_command_async(
-            f"fabric-cli exec {SHELL_NAME} \"pill.dashboard.handle_tile_menu_expand('{name}', {self.toggle})\""
-        )
+    def set_active_style(self, is_active: bool):
+        if is_active:
+            self.add_style_class("on")
+            self.remove_style_class("off")
+        else:
+            self.add_style_class("off")
+            self.remove_style_class("on")
 
     def close(self):
         self.toggle = False
@@ -172,16 +307,196 @@ class Tile(ClippingBox):
         self.icon_wrapper.set_h_expand(True)
         self.content_button.set_h_expand(False)
         self.add_style_class("mini")
-        # self.icon.add_style_class("mini")
-        # self.icon.remove_style_class("maxi")
 
     def maxi_view(self):
         self.content_button.set_reveal_child(True)
         self.icon_wrapper.set_h_expand(False)
         self.content_button.set_h_expand(True)
         self.remove_style_class("mini")
-        # self.icon.add_style_class("maxi")
-        # self.icon.remove_style_class("mini")
+
+    def hide_status_widget(self):
+        self.status_label_widget_revealer.unreveal()
+
+    def reveal_status_widget(self):
+        self.status_label_widget_revealer.reveal()
+
+
+class Tile(ClippingBox):
+    def __init__(
+        self,
+        title: str = "",
+        menu: bool = True,
+        markup: str = icons.blur.symbol(),
+        label: str = "__",
+        menu_children=None,
+        props: Label = None,
+        on_toggle: callable = None,
+        **kwargs,
+    ):
+        default_classes = ["tile", "off"]
+        extra_classes = kwargs.pop("style_classes", [])
+        merged_classes = default_classes + extra_classes
+        markup_styles = kwargs.pop("markup_style", "")
+        super().__init__(style_classes=merged_classes, v_align="start", **kwargs)
+
+        self._on_toggle = on_toggle
+        self.state = (
+            False  # state is utilised everywhere. Especially during on_toggle()
+        )
+        self.toggle = False  # Menu state
+        self.props = (
+            props
+            if props
+            else Label(style_classes="tile-label", label="N/A", h_align="start")
+        )
+        self.status_label_widget_revealer = Revealer(
+            transition_duration=250, transition_type="slide-up", child=self.props
+        )
+
+        # 1. Icon Button -> Triggers State Toggle
+        self.icon = MaterialIconLabel(
+            style_classes="tile-icon", icon_text=markup, style=markup_styles
+        )
+        self.icon_wrapper = Button(
+            style_classes="tile-icon-btn",
+            on_clicked=self.handle_state_toggle,  # Specific to state
+            child=self.icon,
+        )
+
+        # 2. Label Setup
+        self.tile_label = Label(
+            style_classes="tile-label", label=label, h_align="start"
+        )
+
+        # 3. Content Button -> Triggers Menu Toggle
+        self.type_box = Button(
+            style="all:unset;",
+            on_clicked=self.handle_menu_click,  # Specific to menu
+            style_classes="tile-type",
+            h_expand=True,
+            child=Box(
+                orientation="v",
+                v_expand=True,
+                h_expand=True,
+                v_align="center",
+                children=[self.tile_label, self.status_label_widget_revealer],
+            ),
+        )
+
+        self.content_button = Revealer(
+            transition_duration=150,
+            transition_type="slide-left",
+            child=Box(h_expand=True, children=[self.type_box]),
+            child_revealed=True,
+            h_expand=True,
+        )
+
+        # 4. Normal View Layout
+        self.normal_view = ClippingBox(
+            style_classes="tile-clipper",
+            children=[
+                self.icon_wrapper,
+                self.content_button,
+            ],
+        )
+
+        # 5. Menu View
+        self.menu_close_btn = Button(
+            name="menu-close-button",
+            child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
+            tooltip_text="Exit",
+            on_clicked=self.handle_menu_click,
+        )
+
+        self.menu_box = Box(
+            style_classes="tile-menu",
+            orientation="v",
+            children=(
+                [
+                    Box(
+                        name="menu-header",
+                        children=[
+                            Label(
+                                name="menu-title",
+                                label=title if title != "" else label,
+                                h_expand=True,
+                            ),
+                            self.menu_close_btn,
+                        ],
+                    ),
+                ]
+                + ([menu_children] if menu_children else [Label(label="Options")])
+            ),
+        )
+
+        # 6. Stack Integration
+        self.stack = Stack(
+            transition_type="crossfade",
+            transition_duration=150,
+            h_expand=True,
+            children=[self.normal_view, self.menu_box],
+        )
+        self.stack.set_interpolate_size(True)
+        self.stack.set_homogeneous(False)
+
+        self.children = self.stack
+
+        # Add cursors for interaction clarity
+        add_hover_cursor(self.icon_wrapper)
+        add_hover_cursor(self.type_box)
+        add_hover_cursor(self.menu_close_btn)
+
+    def handle_state_toggle(self, *_):
+        self.state = not self.state
+        if self.state:
+            self.add_style_class("on")
+            self.remove_style_class("off")
+        else:
+            self.add_style_class("off")
+            self.remove_style_class("on")
+
+        self._on_toggle()
+
+    def handle_menu_click(self, *_):
+        if self.toggle:
+            self.toggle = False
+            self.menu_box.add_style_class("contract")
+            self.menu_box.remove_style_class("expand")
+            self.stack.set_visible_child(self.normal_view)
+        else:
+            self.toggle = True
+            self.stack.set_visible_child(self.menu_box)
+            self.menu_box.add_style_class("expand")
+            self.menu_box.remove_style_class("contract")
+
+        name = self.get_name()
+        if name:
+            exec_shell_command_async(
+                f"fabric-cli exec {SHELL_NAME} \"pill.dashboard.handle_tile_menu_expand('{name}', {self.toggle})\""
+            )
+
+    def close(self):
+        self.toggle = False
+        self.stack.set_visible_child(self.normal_view)
+        self.maxi_view()
+
+    def mini_view(self):
+        self.content_button.set_reveal_child(False)
+        self.icon_wrapper.set_h_expand(True)
+        self.content_button.set_h_expand(False)
+        self.add_style_class("mini")
+
+    def maxi_view(self):
+        self.content_button.set_reveal_child(True)
+        self.icon_wrapper.set_h_expand(False)
+        self.content_button.set_h_expand(True)
+        self.remove_style_class("mini")
+
+    def hide_status_widget(self):
+        self.status_label_widget_revealer.unreveal()
+
+    def reveal_status_widget(self):
+        self.status_label_widget_revealer.reveal()
 
 
 class TileSpecial(Box):

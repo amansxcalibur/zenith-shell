@@ -14,7 +14,7 @@ from fabric.core.service import Service, Property
 from fabric.notifications import Notifications, Notification
 from fabric.utils import invoke_repeater
 
-from modules.tile import Tile
+from modules.tile import Tile, TileSimple
 from widgets.clipping_box import ClippingBox
 from widgets.rounded_image import RoundedImage
 from widgets.material_label import MaterialIconLabel
@@ -48,7 +48,7 @@ class NotificationConfig:
     SILENT = config.SILENT
 
 
-class NotificationTile(Tile):
+class NotificationTile(TileSimple):
     def __init__(self, **kwargs):
         self.label = Label(
             style_classes=["desc-label", "off"],
@@ -61,7 +61,7 @@ class NotificationTile(Tile):
         super().__init__(
             markup=icons.do_not_disturb_on.symbol(),
             label="Silent",
-            props=self.label,
+            status_label_widget=self.label,
             style_classes=["off"],
             **kwargs,
         )

@@ -109,6 +109,20 @@
     margin-bottom: -2px;
 }
 
+.app-name {
+  color: var(--outline);
+  font-size: 15px;
+}
+
+.summary {
+  font-weight: 600;
+}
+
+.body {
+  color: var(--foreground);
+}
+
+
 #notif-expander-btn{
     border-radius: 10px;
     background-color: var(--surface-bright);

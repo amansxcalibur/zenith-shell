@@ -11,7 +11,7 @@ from fabric.widgets.checkbutton import CheckButton
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.utils.helpers import exec_shell_command_async
 
-from modules.tile import Tile
+from modules.tile import Tile, TileSimple, TileSimpleWithMenu
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
 
@@ -689,7 +689,7 @@ class NetworkListManager:
         self.available_container.add(empty_label)
 
 
-class Network(Tile):
+class Network(TileSimpleWithMenu):
     STATUS_LABELS = {
         DeviceStatus.UNKNOWN: "Off",
         DeviceStatus.DEVICE_OFF: "Off",
@@ -790,14 +790,14 @@ class Network(Tile):
         super().__init__(
             title="Internet",
             label="Wi-Fi",
-            props=self.label,
+            status_label_widget=self.label,
             markup=icons.wifi.symbol(),
-            menu=True,
             menu_children=self.menu,
             style_classes=["off"],
             **kwargs,
         )
 
+        self.reveal_status_widget()
         self._initialize_network_state()
 
     def _build_menu(self) -> Box:

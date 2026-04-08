@@ -38,13 +38,16 @@ class Bluetooth(Tile):
             max_chars_width=9,
         )
 
+        self.bluetooth_connections = BluetoothConnections()
+
         super().__init__(
             label="Bluetooth",
             props=self.label,
             markup=icons.bluetooth.symbol(),
             menu=True,
-            menu_children=BluetoothConnections(),
+            menu_children=self.bluetooth_connections,
             style_classes=["off"],
+            on_toggle=lambda *_: self.bluetooth_connections.set_enabled(self.state),
             **kwargs,
         )
 
@@ -62,12 +65,14 @@ class Bluetooth(Tile):
 
         conns = self.client.connected_devices
         if len(conns) > 0:
+            self.reveal_status_widget()
             self.label.set_label(
                 conns[0].name if len(conns) == 1 else f"{len(conns)} Connected"
             )
             self.add_style_class("on")
         else:
             self.label.set_label("On")
+            self.hide_status_widget()
             self.add_style_class("on")
 
 
@@ -270,11 +275,13 @@ class BluetoothConnections(Box):
             return self.paired_box.add(slot)
         return self.available_box.add(slot)
 
-    def on_switch_toggled(self, switch, pspec):
-        new_state = switch.get_active()
-        if self.client.enabled != new_state:
+    def set_enabled(self, state: bool):
+        if self.client.enabled != state:
             self.client.toggle_power()
-            config.bluetooth.enabled = new_state
+            config.bluetooth.enabled = state
+
+    def on_switch_toggled(self, switch, pspec):
+        self.set_enabled(switch.get_active())
 
     def _do_toggle_bluetooth(self):
         # prevent callback

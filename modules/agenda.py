@@ -313,8 +313,8 @@ class AgendaApp(Box):
 
     def _assemble(self):
         scrolled = ScrolledWindow(
-            min_content_size=(300, 180),
-            max_content_size=(300, 180),
+            min_content_size=(300, 220),
+            max_content_size=(300, 220),
             h_expand=True,
             child=self.listbox,
         )

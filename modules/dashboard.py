@@ -10,7 +10,7 @@ from modules.agenda import AgendaApp
 from modules.weather import WeatherPill
 from modules.bluetooth import Bluetooth
 from modules.wavy_clock import WavyClock
-from modules.tile import TileSpecial, Tile
+from modules.tile import TileSpecial, Tile, TileSimple
 from modules.notification import NotificationTile
 from modules.player_mini import PlayerContainerMini
 from widgets.material_label import MaterialIconLabel
@@ -44,21 +44,22 @@ class Dashboard(Box):
         self.controls = controls
         self.brightness_revealer_mui = self.controls.get_brightness_slider_mui()
 
-        self.wavy_clock = CenterBox(
+        self.wavy_clock = Box(
             orientation="v",
             h_expand=True,
             v_expand=True,
             h_align="fill",
-            v_align="fill",
-            center_children=WavyClock(dark=False),
+            v_align="center",
+            children=WavyClock(dark=False),
         )
-        self.weather_pill = CenterBox(
+        self.weather_pill = Box(
             orientation="v",
             h_expand=True,
             v_expand=True,
             h_align="fill",
-            v_align="fill",
-            center_children=WeatherPill(dark=False),
+            v_align="center",
+            style="padding:8px",
+            children=WeatherPill(dark=False),
         )
         self.widget_stack = Stack(
             name="widget-stack",
@@ -72,6 +73,27 @@ class Dashboard(Box):
                 ]
             ),
         )
+        self.widget_stack_paginator_box = Box(name="widget_stack_paginator")
+        self.dots = []
+        widget_list = self.widget_stack.get_children()
+
+        for i, _ in enumerate(widget_list):
+            dot = Button(
+                name=f"dot-{i}",
+                style_classes=["stack-dot"],
+                on_clicked=lambda *_, idx=i: self.jump_to_widget(idx),
+            )
+            self.widget_stack_paginator_box.add(dot)
+            self.dots.append(dot)
+
+        self.update_dots()
+
+        self.dark_theme_tile = TileSimple(
+            markup=icons.contrast.symbol(),
+            label="Dark Theme",
+            style="border-radius:20px",
+        )
+        self.dark_theme_tile.set_active_style(True)
 
         self.tiles = Box(
             spacing=3,
@@ -96,7 +118,7 @@ class Dashboard(Box):
                                 label="~", style="font-size:25px; color: var(--outline)"
                             ),
                         ),
-                        Tile(style_classes=["off"]),
+                        self.dark_theme_tile,
                         # Box(style='background-color:white; min-height:60px; min-width:140px; border-radius:20px;'),
                         # Box(style='background-color:white; min-height:60px; min-width:70px; border-radius:20px;'),
                         # Box(style='background-color:white; min-height:60px; min-width:78px; border-radius:20px;'),
@@ -157,13 +179,13 @@ class Dashboard(Box):
                             ),
                             add_hover_cursor(
                                 widget=Button(
-                                    style="all:unset",
                                     v_expand=True,
                                     h_expand=True,
                                     child=self.widget_stack,
                                     on_clicked=lambda *_: self.cycle_widgets(),
                                 )
                             ),
+                            Box(h_align="center", children=self.widget_stack_paginator_box),
                         ],
                     ),
                 ],
@@ -232,6 +254,17 @@ class Dashboard(Box):
                             f"Failed to switch {elem.get_name()} to mini view: {e}"
                         )
 
+    def update_dots(self):
+        current_widget = self.widget_stack.get_visible_child()
+        widget_list = self.widget_stack.get_children()
+        current_index = widget_list.index(current_widget)
+
+        for i, dot in enumerate(self.dots):
+            if i == current_index:
+                dot.add_style_class("active")
+            else:
+                dot.remove_style_class("active")
+
     def cycle_widgets(self, forward=True):
         if not self.widget_stack:
             return
@@ -244,3 +277,10 @@ class Dashboard(Box):
         next_index = (current_index + (1 if forward else -1)) % len(widget_list)
         next_widget = widget_list[next_index]
         self.widget_stack.set_visible_child(next_widget)
+        self.update_dots()
+
+    def jump_to_widget(self, index):
+        widget_list = self.widget_stack.get_children()
+        if 0 <= index < len(widget_list):
+            self.widget_stack.set_visible_child(widget_list[index])
+            self.update_dots()

@@ -6,26 +6,32 @@
 
 .tile {
   min-height: 62px;
-  min-width: 145px;
-  border-radius: 20px;
+  min-width: 164px;
+  border-radius: 16px;
 }
-.tile.mini{
+.tile.mini {
   min-height: 46px;
   min-width: 46px;
   border-radius: 100%;
 }
-.tile.on {
-  background-color: var(--primary);
-}
-.tile.off {
+.tile.on .tile-clipper {
   background-color: var(--surface-bright);
 }
-.tile.on .desc-label,
-.tile.on .tile-label,
+.tile.simple.on .tile-clipper {
+  background-color: var(--primary);
+}
+
+.tile.off .tile-clipper,
+.tile.simple.off .tile-clipper {
+  background-color: var(--surface-bright);
+  border-radius: 50px;
+}
+.tile.simple.on .desc-label,
+.tile.simple.on .tile-label,
 .tile.on .tile-icon {
-    color: black;
-    transition: all;
-  }
+  color: var(--shadow);
+  transition: all;
+}
 .tile.off .desc-label,
 .tile.off .tile-label,
 .tile.off .tile-icon {
@@ -34,27 +40,42 @@
 }
 
 .tile-icon {
-  font-size: 20px;
-  margin: 10px;
+  font-size: 26px;
+  padding: 0 4px;
+  /* background-color: red; */
 }
-.tile-icon.mini{
+
+.tile-icon.mini {
   font-size: 20px;
   transition: font-size 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
-.tile-icon.maxi{
+.tile-icon.maxi {
   font-size: 16px;
   transition: font-size 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
-.tile-icon.special{
+.tile-icon.special {
   all: unset;
   font-size: 25px;
 }
+.tile-icon-btn,
+.tile-icon-box {
+  margin: 6px;
+  padding: 0 8px;
+}
+.tile.off .tile-icon-btn {
+  background-color: var(--surface-semi-bright);
+  border-radius: 999px;
+}
+.tile.on .tile-icon-btn {
+  background-color: var(--primary);
+  border-radius: 12px;
+}
 
-.tile-button{
+.tile-button {
   all: unset;
 }
 
-.tile-menu{
+.tile-menu {
   all: unset;
   min-width: 400px;
   min-height: 300px;
@@ -63,32 +84,35 @@
   /* margin: 2px; */
 }
 
-#menu-header{
+#menu-header {
   padding: 5px 5px 0px 5px;
 }
 
-#menu-btn{
+#menu-btn {
   margin-left: 0px;
 }
 
-#menu-title{
+#menu-title {
   font-size: 20px;
 }
 
-#menu-close-button{
+#menu-close-button {
   border-radius: 100%;
   margin-left: -29px;
 }
 
-.app-name{
-  color: var(--outline);
-  font-size: 15px;
+/* widget stack */
+#widget_stack_paginator .stack-dot {
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: 50%;
+  background-color: var(--foreground);
+  margin: 0 4px;
+  transition: all 200ms ease;
 }
 
-.summary{
-  font-weight: 600;
-}
-
-.body{
-  color: var(--foreground);
+#widget_stack_paginator .stack-dot.active {
+  background-color: var(--primary);
+  min-width: 20px;
+  border-radius: 4px;
 }

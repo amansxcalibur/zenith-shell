@@ -10,7 +10,7 @@
 
 #tray-button {
   background-color: var(--shadow);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 6px;
 }
 

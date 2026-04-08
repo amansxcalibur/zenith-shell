@@ -24,6 +24,8 @@ add_material: str = "\ue145"
 
 device_thermostat: str = "\ue1ff"
 
+contrast: str = '\ueb37'
+
 wifi_off: str = "&#xecfa;"
 night_off: str = "&#xf162;"
 notifications_off: str = "&#xece9;"

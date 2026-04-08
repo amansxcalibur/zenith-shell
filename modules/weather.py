@@ -372,7 +372,7 @@ class WeatherCard(Box):
 
 
 class WeatherPill(Gtk.DrawingArea):
-    def __init__(self, size: Tuple[int, int] = (-1, 140), dark: bool = False):
+    def __init__(self, size: Tuple[int, int] = (-1, 160), dark: bool = False):
         super().__init__()
         self.set_size_request(size[0], size[1])
         self.connect("draw", self.on_draw)

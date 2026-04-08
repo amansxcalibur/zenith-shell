@@ -13,7 +13,7 @@ from gi.repository import Gtk, GLib
 
 
 class WavyClock(Gtk.DrawingArea):
-    def __init__(self, size: Tuple[int, int] = (-1, 140), dark: True = False):
+    def __init__(self, size: Tuple[int, int] = (-1, 160), dark: True = False):
         super().__init__()
         self.set_size_request(size[0], size[1])
         self.connect("draw", self.on_draw)
