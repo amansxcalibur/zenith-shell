@@ -136,9 +136,9 @@ class BrightnessSmall(Box):
     def on_scroll(self, widget, event):
         match event.direction:
             case 0:
-                self.service_instance.decrement_brightness()
-            case 1:
                 self.service_instance.increment_brightness()
+            case 1:
+                self.service_instance.decrement_brightness()
 
     def on_brightness_changed(self, source, new_value, max_value):
         self.percentage = 100 * new_value / max_value

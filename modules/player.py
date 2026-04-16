@@ -253,7 +253,7 @@ class Player(Box):
         self._player_service.connect("theme-change", self._apply_theme)
         self._player_service.connect("artwork-change", self._apply_artwork)
 
-        self._volume_service.connect("device-changed", self.on_audio_device_changed)
+        self._volume_service.connect("speaker-device-changed", self.on_audio_device_changed)
 
         self.connect("destroy", self.on_destroy)
 

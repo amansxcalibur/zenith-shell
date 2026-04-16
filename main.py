@@ -1,4 +1,5 @@
 import os
+import shutil
 import setproctitle
 from gi.repository import GLib
 
@@ -72,6 +73,12 @@ if __name__ == "__main__":
 
     config._ensure_directories()
 
+    # resolve colors fallback
+    colors_path = get_relative_path("./styles/colors.css")
+    default_path = get_relative_path("./styles/colors.default.css")
+    if not os.path.exists(colors_path):
+        shutil.copy(default_path, colors_path)
+
     # set wallpaper and init service
     WallpaperService().initialize()
 
@@ -116,6 +123,12 @@ if __name__ == "__main__":
                 ),
                 "brightness_slider_img": lambda: (
                     f"background-image: url('{ROOT_DIR}/icons/brightness.png');"
+                ),
+                "mic_slider_img": lambda: (
+                    f"background-image: url('{ROOT_DIR}/icons/mic.svg');"
+                ),
+                "mic_off_slider_img": lambda: (
+                    f"background-image: url('{ROOT_DIR}/icons/mic_off.svg');"
                 ),
             },
         )

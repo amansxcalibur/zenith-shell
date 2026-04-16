@@ -102,6 +102,7 @@ class TransientWindow(Window):
             self.controls.get_volume_revealer(),
             self.controls.get_volume_overflow_revealer(),
             self.controls.get_brightness_revealer(),
+            self.controls.get_mic_revealer(),
         ]
 
         for revealer in self.revealers:

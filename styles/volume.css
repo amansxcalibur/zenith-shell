@@ -11,9 +11,9 @@
   min-height: 4px;
   padding: 0 14px;
   margin: -12px -14px;
-  background-color: black;
+  background-color: var(--shadow);
   border-radius: 20px;
-  border: 2px solid #3f3f3f;
+  border: 2px solid var(--surface-bright);
 }
 
 #control-slider trough highlight {
@@ -24,7 +24,8 @@
   background-color: var(--primary);
 }
 
-#control-slider.muted-slider highlight {
+#control-slider.muted-slider highlight,
+#control-slider.mic-off highlight {
   background-color: var(--outline);
 }
 
@@ -66,6 +67,18 @@
   background-size: contain;
 }
 
+#control-slider.mic slider {
+  /* background-image: url("resource:///zenith/icons/mic.svg"); */
+  @apply mic_slider_img();
+  background-size: contain;
+}
+
+#control-slider.mic-off slider {
+  /* background-image: url("resource:///zenith/icons/mic_off.svg"); */
+  @apply mic_off_slider_img();
+  background-size: contain;
+}
+
 #control-small {
   padding: 4px;
   margin-top: 4px;
@@ -82,12 +95,15 @@
 
 #button-volume.muted highlight,
 #button-volume.muted slider,
-#button-mic.muted {
+#button-mic.muted highlight,
+#button-mic.muted slider{
   background-color: var(--outline);
   border: 3px solid;
 }
 
-#button-volume slider, #button-brightness slider{
+#button-volume slider,
+#button-brightness slider,
+#button-mic slider {
   background-color: var(--primary);
   margin-left: 3px;
   margin-right: 3px;
@@ -96,12 +112,16 @@
   border-radius: 10px;
 }
 
-#button-volume highlight, #button-brightness highlight{
+#button-volume highlight,
+#button-brightness highlight,
+#button-mic highlight {
   background-color: var(--primary);
   border: 3px solid;
 }
 
-#button-volume trough, #button-brightness trough{
+#button-volume trough,
+#button-brightness trough,
+#button-mic trough {
   background-color: var(--surface-bright);
   border: 3px solid;
 }
@@ -117,12 +137,18 @@
   margin-top: -1px;
 }
 
+#mic-label {
+  font-size: 24px;
+}
+
 #vol-label.muted,
+#mic-label.muted,
 #mic-label.muted {
   color: var(--outline);
 }
 
 #button-bar-vol,
+#button-bar-mic,
 #button-bar-brightness {
   border: none;
   box-shadow: none;
@@ -136,10 +162,6 @@
 }
 #vol-button {
   padding: 9px;
-}
-.muted {
-  margin-left: -9px;
-  margin-bottom: -1px;
 }
 
 #brightness-label,

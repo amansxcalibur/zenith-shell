@@ -104,7 +104,8 @@ class Workspaces(Box):
                     )
                     for ws_id in range(1, 11)
                 ],
-                # buttons_factory=lambda ws_id: WorkspaceButton(id=ws_id, label=None),
+                # for special workspaces (multi monitor, etc)
+                buttons_factory=lambda ws_id: WorkspaceButton(id=ws_id),
             ),
         )
 

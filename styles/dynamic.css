@@ -2,17 +2,13 @@
   all: unset;
 }
 
-/* * {
-    font-family: "ZedMono NF", sans-serif;
-  } */
-
-/* * {
-  font-family: "Material Symbols Rounded";
-} */
-
-/* *{
+.roboto {
   font-family: Roboto Flex;
-} */
+}
+
+.google-sans-flex {
+  font-family: Google Sans Flex;
+}
 
 .material-label {
     font-family: "Material Symbols Rounded";

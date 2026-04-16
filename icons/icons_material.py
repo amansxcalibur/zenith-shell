@@ -111,6 +111,8 @@ shutdown: str = "\ue8ac"
 
 # controls
 brightness: str = "\ue3ab"
+mic: str = "\ue029"
+mic_off: str = "\ue02b"
 # vol_medium: str = "\ue04d"
 
 # metrics

@@ -52,22 +52,18 @@
 
 #bat-icon {
   font-size: 20px;
-  margin-left: 0px;
 }
 
 #disk-icon {
   font-size: 22px;
-  /* margin-left: -2px; */
 }
 
 #ram-icon {
   font-size: 22px;
-  margin-left: 2px;
 }
 
 #cpu-icon {
   font-size: 24px;
-  margin-left: 1px;
 }
 
 #disk-icon,
@@ -154,8 +150,8 @@
 }
 
 .full-bat {
-  border: #00ffb3;
-  color: #00ffb3;
+  border: var(--green);
+  color: var(--green);
 }
 
 .low-bat {
@@ -211,14 +207,6 @@
 
 .metrics-storage-circle.active {
   background-color: var(--surface-semi-bright);
-}
-
-.roboto {
-  font-family: Roboto Flex;
-}
-
-.google-sans-flex {
-  font-family: Google Sans Flex;
 }
 
 .metrics-desc-box {

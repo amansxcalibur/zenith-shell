@@ -2,7 +2,14 @@ from fabric.widgets.box import Box
 from fabric.widgets.revealer import Revealer
 from fabric.widgets.eventbox import EventBox
 
-from modules.volume import VolumeSmall, VolumeSlider, VolumeMaterial3
+from modules.volume import (
+    VolumeSmall,
+    VolumeSlider,
+    VolumeMaterial3,
+    MicSmall,
+    MicSlider,
+    MicMaterial3,
+)
 from modules.brightness import BrightnessSlider, BrightnessSmall, BrightnessMaterial3
 
 from widgets.popup_window import SharedPopupWindow
@@ -68,13 +75,15 @@ class ControlsManager:
             service_instance=self.brightness_manager.service,
             orientation="v",
         )
+        self.popup_slider_mic = self.volume_manager.mui_mic_slider
         self.vol_brightness_box = EventBox(
             child=Box(
                 name="vol-brightness-container",
                 orientation="h",
                 children=[
-                    self.volume_manager.vol_small, 
-                    self.brightness_manager.brightness_small
+                    self.volume_manager.mic_small,
+                    self.volume_manager.vol_small,
+                    self.brightness_manager.brightness_small,
                 ],
             )
         )
@@ -85,18 +94,38 @@ class ControlsManager:
             child=Box(
                 name="control-slider-mui-container",
                 spacing=7,
-                children=[self.popup_slider_vol, self.popup_slider_brightness],
+                children=[
+                    self.popup_slider_mic,
+                    self.popup_slider_vol,
+                    self.popup_slider_brightness,
+                ],
             ),
         )
 
     # getters
-    def get_controls_box(self): return self.vol_brightness_box
-    def get_volume_small(self): return self.volume_manager.vol_small
-    def get_volume_revealer(self): return self.volume_manager.volume_revealer.revealer
-    def get_volume_overflow_revealer(self): return self.volume_manager.volume_overflow_revealer.revealer
-    def get_brightness_small(self): return self.brightness_manager.brightness_small
-    def get_brightness_slider_mui(self): return self.brightness_manager.brightness_slider_mui
-    def get_brightness_revealer(self): return self.brightness_manager.brightness_revealer.revealer
+    def get_controls_box(self):
+        return self.vol_brightness_box
+
+    def get_volume_small(self):
+        return self.volume_manager.vol_small
+
+    def get_volume_revealer(self):
+        return self.volume_manager.volume_revealer.revealer
+
+    def get_volume_overflow_revealer(self):
+        return self.volume_manager.volume_overflow_revealer.revealer
+
+    def get_mic_revealer(self):
+        return self.volume_manager.mic_revealer.revealer
+
+    def get_brightness_small(self):
+        return self.brightness_manager.brightness_small
+
+    def get_brightness_slider_mui(self):
+        return self.brightness_manager.brightness_slider_mui
+
+    def get_brightness_revealer(self):
+        return self.brightness_manager.brightness_revealer.revealer
 
 
 class BrightnessManager:
@@ -169,6 +198,9 @@ class VolumeManager:
         self.mui_slider = VolumeMaterial3(min_value=0, max_value=2, orientation="v")
         volume_overflow_slider.add_style_class("vol-overflow-slider")
 
+        mic_slider = MicSlider(min_value=0, max_value=1)
+        self.mui_mic_slider = MicMaterial3(min_value=0, max_value=1, orientation="v")
+
         transition = "slide-down" if not config.VERTICAL else "slide-right"
 
         self.volume_revealer = AutoHideRevealer(
@@ -188,12 +220,27 @@ class VolumeManager:
             )
         )
 
-        self.volume_revealer_set = [self.volume_revealer, self.volume_overflow_revealer]
+        self.mic_revealer = AutoHideRevealer(
+            revealer=Revealer(
+                transition_duration=250,
+                transition_type=transition,
+                child=mic_slider,
+                child_revealed=False,
+            )
+        )
+
+        self.volume_mic_revealer_set = [
+            self.volume_revealer,
+            self.volume_overflow_revealer,
+            mic_slider,
+        ]
 
         self.vol_small = VolumeSmall()
+        self.mic_small = MicSmall()
 
     def _connect_signals(self):
-        self.service.connect("value-changed", self._on_volume_changed)
+        self.service.connect("speaker-volume-changed", self._on_volume_changed)
+        self.service.connect("mic-volume-changed", self._on_mic_volume_changed)
 
     def _on_volume_changed(self, source, new_val, max_val, is_mute):
         if new_val > max_val:
@@ -202,3 +249,6 @@ class VolumeManager:
         else:
             self.volume_overflow_revealer._hide()
             self.volume_revealer.reveal()
+
+    def _on_mic_volume_changed(self, *_):
+        self.mic_revealer.reveal()

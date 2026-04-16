@@ -24,6 +24,8 @@ shared_provider = MetricsProvider()
 
 
 class MetricsSmall(Button):
+    BAR_SIZE = 34
+
     def __init__(self, **kwargs):
         super().__init__(name="metrics-small", **kwargs)
 
@@ -37,7 +39,7 @@ class MetricsSmall(Button):
         self.cpu_circle = CircularProgressBar(
             name="metrics-circle",
             value=0,
-            size=28,
+            size=self.BAR_SIZE,
             line_width=2,
             # start_angle=150,
             # end_angle=390,
@@ -70,7 +72,7 @@ class MetricsSmall(Button):
         self.ram_circle = CircularProgressBar(
             name="metrics-circle",
             value=0,
-            size=28,
+            size=self.BAR_SIZE,
             line_width=2,
             start_angle=-90,
             end_angle=270,
@@ -101,7 +103,7 @@ class MetricsSmall(Button):
         self.disk_circle = CircularProgressBar(
             name="metrics-circle",
             value=0,
-            size=28,
+            size=self.BAR_SIZE,
             line_width=2,
             start_angle=-90,
             end_angle=270,
@@ -227,6 +229,8 @@ class MetricsSliderMaterial3(AnimatedScale):
 
 
 class Battery(Button):
+    BAR_SIZE = 34
+
     def __init__(self, **kwargs):
         super().__init__(name="bat-small", **kwargs)
 
@@ -243,7 +247,7 @@ class Battery(Button):
         self.bat_circle = CircularProgressBar(
             name="metrics-circle",
             value=0,
-            size=28,
+            size=self.BAR_SIZE,
             line_width=2,
             start_angle=-90,
             end_angle=270,
