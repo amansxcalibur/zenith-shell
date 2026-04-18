@@ -4,7 +4,6 @@ from loguru import logger
 from typing import Literal
 from collections.abc import Iterable
 
-from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.box import Box
 from fabric.widgets.eventbox import EventBox
@@ -15,6 +14,7 @@ import icons
 from config.info import SHELL_NAME
 from widgets.popup_window.shared_popup_window import SharedPopupWindow
 from widgets.material_label import MaterialFontLabel, MaterialIconLabel
+from services.animator import Animator
 from utils.helpers import restart_shell
 
 gi.require_version("Gtk", "3.0")
@@ -195,98 +195,127 @@ class ActionButton(EventBox):
 
         self.children = self.restart_btn
 
+        self.mapping = {
+            self.start_power_btn: {"label": "Open Power Menu", "action": "power"},
+            self.toggle_vrt_btn: {
+                "label": "Toggle Bar Orientation",
+                "action": "toggle",
+            },
+            self.start_launcher_btn: {"label": "Start Launcher", "action": "launcher"},
+            self.restart_btn: {"label": "Restart Bar", "action": "restart"},
+        }
+
         self.action_options = Box(
             spacing=4,
             orientation="v",
             children=[
                 Button(
+                    name="action-btn",
+                    h_align="start",
                     child=Box(
                         spacing=2,
                         children=[
                             MaterialIconLabel(
                                 name="orientation-label",
-                                style="background-color: var(--surface); padding: 2px 5px; border-radius: 15px",
+                                style_classes="action-icon",
                                 FILL=0,
-                                icon_text=self.start_power_btn.get_children()[0].get_text(),
+                                icon_text=btn.get_children()[0].get_text(),
                             ),
-                            Label(
-                                label="Open power menu",
+                            MaterialFontLabel(
+                                text=info["label"],
                                 style_classes="action-menu-label",
+                                font_family="Google Sans Flex",
+                                font_size=15,
                             ),
                         ],
                     ),
-                    on_clicked=lambda *_: self.select_action("power"),
-                ),
-                Button(
-                    child=Box(
-                        spacing=2,
-                        children=[
-                            MaterialIconLabel(
-                                name="orientation-label",
-                                style="background-color: var(--surface); padding: 2px 5px; border-radius: 15px",
-                                FILL=0,
-                                icon_text=self.toggle_vrt_btn.get_children()[0].get_text(),
-                            ),
-                            Label(
-                                label="Toggle Bar Orientation",
-                                style_classes="action-menu-label",
-                            ),
-                        ],
+                    on_clicked=lambda btn, *_, i=info: self.select_action(
+                        btn, i["action"]
                     ),
-                    on_clicked=lambda *_: self.select_action("toggle"),
-                ),
-                Button(
-                    child=Box(
-                        spacing=2,
-                        children=[
-                            MaterialIconLabel(
-                                name="orientation-label",
-                                style="background-color: var(--surface); padding: 2px 5px; border-radius: 15px",
-                                FILL=0,
-                                icon_text=self.start_launcher_btn.get_children()[0].get_text(),
-                            ),
-                            Label(
-                                label="Start Launcher",
-                                style_classes="action-menu-label",
-                            ),
-                        ],
-                    ),
-                    on_clicked=lambda *_: self.select_action("launcher"),
-                ),
-                Button(
-                    child=Box(
-                        spacing=2,
-                        children=[
-                            MaterialIconLabel(
-                                name="orientation-label",
-                                style="background-color: var(--surface); padding: 2px 5px; border-radius: 15px",
-                                FILL=0,
-                                icon_text=self.restart_btn.get_children()[0].get_text(),
-                            ),
-                            Label(
-                                label="Restart Bar",
-                                style_classes="action-menu-label",
-                            ),
-                        ],
-                    ),
-                    on_clicked=lambda *_: self.select_action("restart"),
-                ),
+                )
+                for btn, info in self.mapping.items()
             ],
         )
 
         self.popup_win = SharedPopupWindow()
         self.popup_win.add_child(pointing_widget=self, child=self.action_options)
 
-    def select_action(self, action: str):
-        if action == "toggle":
-            self.children = self.toggle_vrt_btn
-        elif action == "restart":
-            self.children = self.restart_btn
-        elif action == "launcher":
-            self.children = self.start_launcher_btn
-        elif action == "power":
-            self.children = self.start_power_btn
-        # self.popup_win.hide()
+    def select_action(self, btn_option: Button, action: str):
+        action_map = {
+            "toggle": self.toggle_vrt_btn,
+            "restart": self.restart_btn,
+            "launcher": self.start_launcher_btn,
+            "power": self.start_power_btn,
+        }
+
+        target_widget = action_map.get(action)
+        if target_widget:
+            if self.get_child():
+                self.remove(self.get_child())
+            self.add(target_widget)
+
+        def ensure_animator(label: MaterialFontLabel):
+            if hasattr(label, "_animator"):
+                return
+
+            # setup a 0.0 -> 1.0 animator (linear)
+            label._animator = Animator(
+                bezier_curve=(0, 0, 1, 1), duration=0.15, tick_widget=label
+            )
+
+            # visual state to interrupt animations smoothly
+            label._wght_start, label._wght_end = 450.0, 450.0
+            label._slnt_start, label._slnt_end = 0.0, 0.0
+
+            def on_animate_tick(*_):
+                t = label._animator.value
+
+                # lerp
+                curr_wght = (
+                    label._wght_start + (label._wght_end - label._wght_start) * t
+                )
+                curr_slnt = (
+                    label._slnt_start + (label._slnt_end - label._slnt_start) * t
+                )
+
+                label.set_variations(wght=curr_wght, slnt=curr_slnt)
+
+            label._animator.connect("notify::value", on_animate_tick)
+
+        for btn in self.action_options.get_children():
+            content_box = btn.get_children()[0]
+            label = content_box.get_children()[1]
+
+            ensure_animator(label)
+
+            # capture current state as the new start point
+            t_prev = label._animator.value
+            current_visual_wght = (
+                label._wght_start + (label._wght_end - label._wght_start) * t_prev
+            )
+            current_visual_slnt = (
+                label._slnt_start + (label._slnt_end - label._slnt_start) * t_prev
+            )
+
+            # reset timeline and play
+            if label._animator.playing:
+                label._animator.pause()
+
+            label._wght_start = current_visual_wght
+            label._slnt_start = current_visual_slnt
+
+            if btn == btn_option:
+                btn.add_style_class("active")
+                label._wght_end = 700.0
+                label._slnt_end = -10.0
+            else:
+                btn.remove_style_class("active")
+                label._wght_end = 450.0
+                label._slnt_end = 0.0
+
+            label._animator.play()
+
+        self.show_all()
 
     def toggle_vertical(self):
         exec_shell_command_async(
@@ -297,4 +326,6 @@ class ActionButton(EventBox):
         exec_shell_command_async(f"fabric-cli exec {SHELL_NAME} 'pill.open()'")
 
     def toggle_power_menu(self):
-        exec_shell_command_async(f"fabric-cli exec {SHELL_NAME} 'pill.toggle_power_menu()'")
+        exec_shell_command_async(
+            f"fabric-cli exec {SHELL_NAME} 'pill.toggle_power_menu()'"
+        )
