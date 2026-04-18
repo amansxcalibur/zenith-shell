@@ -603,6 +603,12 @@ if __name__ == "__main__":
                 "brightness_slider_img": lambda: (
                     f"background-image: url('{ROOT_DIR}/icons/brightness.png');"
                 ),
+                "mic_slider_img": lambda: (
+                    f"background-image: url('{ROOT_DIR}/icons/mic.svg');"
+                ),
+                "mic_off_slider_img": lambda: (
+                    f"background-image: url('{ROOT_DIR}/icons/mic_off.svg');"
+                ),
             },
         )
 
