@@ -326,9 +326,7 @@ class LockScreen(Window):
 
         # left
         if pad_left_width > 0:
-            middle_row.add(
-                Box(size=(pad_left_width, -1))
-            )
+            middle_row.add(Box(size=(pad_left_width, -1)))
 
         middle_row.add(
             CenterBox(
@@ -356,25 +354,19 @@ class LockScreen(Window):
 
         # right
         if pad_right_width > 0:
-            middle_row.add(
-                Box(size=(pad_right_width, -1))
-            )
+            middle_row.add(Box(size=(pad_right_width, -1)))
 
-        main = Box(orientation='v')
+        main = Box(orientation="v")
 
         # top
         if pad_top_height > 0:
-            main.add(
-                Box(size=(-1, pad_top_height))
-            )
+            main.add(Box(size=(-1, pad_top_height)))
 
         main.add(middle_row)
 
         # bottom
         if pad_bottom_height > 0:
-            main.add(
-                Box(size=(-1, pad_bottom_height))
-            )
+            main.add(Box(size=(-1, pad_bottom_height)))
 
         self.children = main
 
@@ -590,29 +582,9 @@ if __name__ == "__main__":
     app = Application("lockscreen", lock_win)
 
     def set_css(*args):
-        app.set_stylesheet_from_file(
-            get_relative_path("./main.css"),
-            # feast on juggad
-            exposed_functions={
-                "mute_slider_img": lambda: (
-                    f"background-image: url('{ROOT_DIR}/icons/mute.png');"
-                ),
-                "volume_slider_img": lambda: (
-                    f"background-image: url('{ROOT_DIR}/icons/volume.png');"
-                ),
-                "brightness_slider_img": lambda: (
-                    f"background-image: url('{ROOT_DIR}/icons/brightness.png');"
-                ),
-                "mic_slider_img": lambda: (
-                    f"background-image: url('{ROOT_DIR}/icons/mic.svg');"
-                ),
-                "mic_off_slider_img": lambda: (
-                    f"background-image: url('{ROOT_DIR}/icons/mic_off.svg');"
-                ),
-            },
-        )
+        app.set_stylesheet_from_file(get_relative_path("./styles/colors.css"))
 
-    app.style_monitor = monitor_file(get_relative_path("./styles"))
+    app.style_monitor = monitor_file(get_relative_path("./styles/colors.css"))
     app.style_monitor.connect("changed", set_css)
     set_css()
 

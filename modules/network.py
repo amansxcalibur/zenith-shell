@@ -1,6 +1,6 @@
 from typing import Any
 from loguru import logger
-from typing import Optional, Callable, List
+from typing import Optional, Callable
 
 from fabric.widgets.box import Box
 from fabric.widgets.entry import Entry
@@ -15,9 +15,12 @@ from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
 
 import icons
+from services.network.wifi import WifiDevice
+from services.network.ethernet import EthernetDevice
+from services.network.common import ConnectionResult, DeviceStatus
+from services.network.network_service import NetworkService, ConnectionType
 from config.config import config
 from utils.cursor import add_hover_cursor
-from services.network.network_service import NetworkService, ConnectionResult
 
 import gi
 
@@ -50,7 +53,7 @@ class BaseDialog(Gtk.Dialog):
         self.get_content_area().set_name("password-dialog-box")
         self.set_default_response(Gtk.ResponseType.OK)
 
-    def add_dialog_buttons(self, *labels: str) -> List[Gtk.Button]:
+    def add_dialog_buttons(self, *labels: str) -> list[Gtk.Button]:
         buttons = []
         for i, label in enumerate(labels):
             response = (
@@ -199,40 +202,23 @@ class ConfirmDialog(BaseDialog):
         self.destroy()
 
 
-class PropertiesDialog(BaseDialog):
-    """Network properties display dialog."""
+class BasePropertiesDialog(BaseDialog):
+    def __init__(self, parent_widget: Gtk.Widget, data: dict):
+        title = self.get_title_from_data(data)
+        super().__init__(parent_widget, f"Properties: {title}")
 
-    def __init__(self, parent_widget: Gtk.Widget, ap: dict):
-        ssid = ap.get("ssid", "Unknown")
-        super().__init__(parent_widget, f"Properties: {ssid}")
+        properties = self.get_properties(data)
 
-        self._build_ui(ap)
+        self._build_ui(properties)
         self.show_all()
 
-    def _build_ui(self, ap: dict) -> None:
-        ssid = ap.get("ssid", "Unknown")
-        strength = ap.get("strength", 0)
-        frequency = ap.get("frequency", 0)
-        secured = ap.get("secured", False)
-        bssid = ap.get("bssid", "Unknown")
+    def get_title_from_data(self, data: dict) -> str:
+        raise NotImplementedError("Subclasses must implement get_title_from_data")
 
-        freq_ghz = frequency / 1000 if frequency else 0
+    def get_properties(self, data: dict) -> dict:
+        raise NotImplementedError("Subclasses must implement get_properties")
 
-        if freq_ghz >= 5:
-            band = "5 GHz"
-        elif freq_ghz >= 2:
-            band = "2.4 GHz"
-        else:
-            band = "Unknown"
-
-        properties = {
-            "Network": ssid,
-            "Signal Strength": f"{strength}%",
-            "Frequency": f"{freq_ghz:.1f} GHz ({band})",
-            "Security": "Secured" if secured else "Open",
-            "BSSID": bssid,
-        }
-
+    def _build_ui(self, properties: dict) -> None:
         content_box = Box(name="password-dialog-box", orientation="v", spacing=10)
         self.get_content_area().add(content_box)
 
@@ -246,17 +232,46 @@ class PropertiesDialog(BaseDialog):
                         h_align="start",
                         h_expand=True,
                     ),
-                    Label(label=value, h_align="end"),
+                    Label(label=str(value), h_align="end"),
                 ],
             )
             content_box.add(row)
 
         buttons = Box(orientation="h", spacing=8, h_align="end")
-        content_box.add(buttons)
-
         close_btn = Button(name="dialog-btn", label="Close")
         close_btn.connect("clicked", lambda *_: self.destroy())
         buttons.add(close_btn)
+        content_box.add(buttons)
+
+
+class PropertiesDialogEthernet(BasePropertiesDialog):
+    def get_title_from_data(self, data: dict) -> str:
+        return data.get("name", "Unknown")
+
+    def get_properties(self, data: dict) -> dict:
+        return {
+            "Device/Connection ID": data.get("name", "Unknown"),
+            "State": str(data.get("state", "Unknown")),
+            "IFace": data.get("iface", "Unknown"),
+        }
+
+
+class PropertiesDialogWifi(BasePropertiesDialog):
+    def get_title_from_data(self, data: dict) -> str:
+        return data.get("ssid", "Unknown")
+
+    def get_properties(self, data: dict) -> dict:
+        freq = data.get("frequency", 0)
+        freq_ghz = freq / 1000 if freq else 0
+        band = "5 GHz" if freq_ghz >= 5 else "2.4 GHz" if freq_ghz >= 2 else "Unknown"
+
+        return {
+            "Network": data.get("ssid", "Unknown"),
+            "Signal Strength": f"{data.get('strength', 0)}%",
+            "Frequency": f"{freq_ghz:.1f} GHz ({band})",
+            "Security": "Secured" if data.get("secured") else "Open",
+            "BSSID": data.get("bssid", "Unknown"),
+        }
 
 
 class WifiButton(EventBox):
@@ -303,11 +318,16 @@ class WifiButton(EventBox):
             name="ap-label", label="Connecting...", h_align="start"
         )
 
-        children = [MaterialIconLabel(icon_text=self._get_wifi_icon(), h_expand = False), self.label_box]
+        children = [
+            MaterialIconLabel(icon_text=self._get_wifi_icon(), h_expand=False),
+            self.label_box,
+        ]
 
         if self.is_saved and not self.active:
             children.append(
-                MaterialIconLabel(icon_text=icons.sync_saved_locally.symbol(), tooltip_text="Saved")
+                MaterialIconLabel(
+                    icon_text=icons.sync_saved_locally.symbol(), tooltip_text="Saved"
+                )
             )
 
         if self.secured:
@@ -459,7 +479,7 @@ class WifiButton(EventBox):
         )
 
     def _show_properties(self) -> None:
-        PropertiesDialog(self, self.ap)
+        PropertiesDialogWifi(self, self.ap)
 
     def _disconnect_network(self) -> None:
         success = self.nm.disconnect()
@@ -469,12 +489,146 @@ class WifiButton(EventBox):
             logger.warning("Failed to disconnect")
 
 
+class EthernetButton(EventBox):
+    STATUS_LABELS = {
+        DeviceStatus.UNKNOWN: "Off",
+        DeviceStatus.DEVICE_OFF: "Off",
+        DeviceStatus.DISCONNECTED: "Disconnected",
+        DeviceStatus.CONNECTING: "Connecting…",
+        DeviceStatus.CONNECTED: "Connected",
+        DeviceStatus.NO_DEVICE: "No Device",
+    }
+
+    def __init__(
+        self,
+        eth_conn: dict,
+        network_service: NetworkService,
+        on_connect: Callable[[str, Optional[str]], None],
+        **kwargs,
+    ):
+        self.eth_conn = eth_conn
+        self.nm = network_service
+        self.on_connect = on_connect
+        self.device: EthernetDevice = eth_conn.get("device", None)
+
+        super().__init__(
+            events=["button-press", "button-release", "enter-notify", "leave-notify"],
+            **kwargs,
+        )
+
+        self.name = self.eth_conn.get("name", "Unknown")
+        self.state = self.eth_conn.get("state", DeviceStatus.UNKNOWN)
+
+        self._build_ui()
+
+        self.connect("button-press-event", self._on_button_press)
+        self.connect("enter-notify-event", self._on_enter)
+        self.connect("leave-notify-event", self._on_leave)
+        if self.device:
+            self.device.connect("state-changed", self._on_state_changed)
+
+    def _build_ui(self) -> None:
+        self.status_label = Label(
+            name="ap-label", label=self.STATUS_LABELS.get(self.state, "Unknown"), h_align="start"
+        )
+        self.label_box = Box(
+            orientation="v",
+            h_expand=True,
+            v_align="center",
+            children=[
+                Label(
+                    name="ap-label",
+                    label=self.name,
+                    h_align="start",
+                    max_chars_width=50,
+                    ellipsization="end",
+                ),
+                self.status_label,
+            ],
+        )
+
+        children = [
+            MaterialIconLabel(icon_text=self._get_ethernet_icon(), h_expand=False),
+            self.label_box,
+        ]
+
+        self.content = Box(name="ap-button", spacing=10, children=children)
+        self.children = self.content
+
+    def _get_ethernet_icon(self) -> str:
+        return icons.lan.symbol()
+
+    def _on_button_press(self, source: EventBox, event: Gdk.EventButton) -> bool:
+        if event.button == 1:  # left click
+            self._do_connect()
+            return True
+        elif event.button == 3:  # right click
+            self._show_context_menu(event)
+            return True
+        return False
+
+    def _on_state_changed(self, source, name, status):
+        self.status_label.set_label(self.STATUS_LABELS.get(status, "Unknown"))
+
+    def _do_connect(self) -> None:
+        if not self.name:
+            logger.error("Cannot connect: No connection name")
+            return
+
+        try:
+            logger.debug(f"Connecting: {self.name}")
+            self.device.connect_to_network()
+        except Exception as e:
+            logger.error(f"Error in WiFi button click: {e}")
+
+    def _disconnect_network(self) -> None:
+        success = self.device.disconnect_network()
+        if success:
+            logger.info(f"Disconnecting from {self.name}")
+        else:
+            logger.warning("Failed to disconnect")
+
+    def _on_enter(self, widget: EventBox, event: Gdk.EventCrossing) -> None:
+        self.content.add_style_class("hover")
+
+    def _on_leave(self, widget: EventBox, event: Gdk.EventCrossing) -> None:
+        if event.detail == Gdk.NotifyType.INFERIOR:
+            return
+        self.content.remove_style_class("hover")
+
+    def _show_context_menu(self, event: Gdk.EventButton) -> None:
+        menu = Gtk.Menu()
+
+        is_connected = (
+            self.device.get_state() == DeviceStatus.CONNECTED if self.device else False
+        )
+        if not is_connected:
+            connect_item = Gtk.MenuItem(label="Connect")
+            connect_item.connect("activate", lambda *_: self._do_connect())
+            menu.append(connect_item)
+        else:
+            disconnect_item = Gtk.MenuItem(label="Disconnect")
+            disconnect_item.connect("activate", lambda *_: self._disconnect_network())
+            menu.append(disconnect_item)
+
+        menu.append(Gtk.SeparatorMenuItem())
+        properties_item = Gtk.MenuItem(label="Properties")
+        properties_item.connect("activate", lambda *_: self._show_properties())
+        menu.append(properties_item)
+
+        menu.show_all()
+        menu.popup_at_pointer(event)
+
+    def _show_properties(self) -> None:
+        PropertiesDialogEthernet(self, self.eth_conn)
+
+
 class NetworkListManager:
     def __init__(
         self,
         active_container: Box,
         available_container: Box,
-        network_service: NetworkService,
+        network_service: WifiDevice,
         on_connect: Callable[[str, Optional[str]], None],
     ):
         self.active_container = active_container
@@ -482,7 +636,7 @@ class NetworkListManager:
         self.nm = network_service
         self.on_connect = on_connect
 
-    def update(self, wifi_list: List[dict]) -> None:
+    def update(self, wifi_list: list[dict]) -> None:
         self._clear()
 
         if not wifi_list:
@@ -533,6 +687,20 @@ class NetworkListManager:
 
 
 class Network(Tile):
+    STATUS_LABELS = {
+        DeviceStatus.UNKNOWN: "Off",
+        DeviceStatus.DEVICE_OFF: "Off",
+        DeviceStatus.DISCONNECTED: "Disconnected",
+        DeviceStatus.CONNECTING: "Connecting…",
+        DeviceStatus.NO_DEVICE: "No Device",
+    }
+
+    CONN_TYPE_META = {
+        ConnectionType.WIFI: {"text": "Wi-Fi", "icon": icons.wifi.symbol()},
+        ConnectionType.ETHERNET: {"text": "Ethernet", "icon": icons.lan.symbol()},
+        ConnectionType.NONE: {"text": "None", "icon": icons.blur.symbol()},
+    }
+
     def __init__(self, **kwargs):
         self.state: Optional[bool] = None
         self._is_initialized = False
@@ -546,12 +714,18 @@ class Network(Tile):
         )
 
         self.nm = NetworkService()
-        self.nm.connect("connection-change", self._on_connection_change)
-        self.nm.connect("ap-change", self._on_ap_change)
-        self.nm.connect("connection-result", self._on_connection_result)
+        self.nm.connect("primary-connection-change", self._on_connection_change)
+        self.nm.connect("ethernet-change", self._on_ethernet_list_changed)
+
+        self.wifi_dev = self.nm.get_wifi_device()
+        self.wifi_dev.connect("ap-change", self._on_ap_list_change)
+        self.wifi_dev.connect("connection-result", self._on_connection_result)
+
+        self._primary_device_singal_id = None
+        self._primary_device = None
 
         self.wifi_toggle = Gtk.Switch(name="matugen-switcher")
-        self.wifi_toggle.set_active(True)
+        self.wifi_toggle.set_active(self.nm.wifi_enabled)
         self.wifi_handler_id = self.wifi_toggle.connect(
             "notify::active", self._do_toggle_wifi
         )
@@ -580,12 +754,31 @@ class Network(Tile):
             ),
         )
 
+        # ethernet
+        self.ethernet_connection_container = Box(
+            name="connection-container", orientation="v", spacing=2, children=[]
+        )
+        self.ethernet_scrolled_container = ClippingBox(
+            name="network-scrolled-window-container",
+            children=ScrolledWindow(
+                name="network-scrolled-window",
+                h_expand=True,
+                max_content_size=(
+                    UIConstants.WINDOW_MAX_WIDTH,
+                    UIConstants.WINDOW_MAX_HEIGHT,
+                ),
+                h_scrollbar_policy="external",
+                v_scrollbar_policy="external",
+                child=self.ethernet_connection_container,
+            ),
+        )
+
         self.menu = self._build_menu()
 
         self.list_manager = NetworkListManager(
             self.active_connection,
             self.connection_container,
-            self.nm,
+            self.nm.get_wifi_device(),
             self._handle_network_connect,
         )
 
@@ -610,6 +803,34 @@ class Network(Tile):
             orientation="v",
             spacing=10,
             children=[
+                # ethernet
+                Box(
+                    name="subsection-heading-container",
+                    h_expand=True,
+                    v_expand=True,
+                    children=[
+                        Label(
+                            name="subsection-heading-label",
+                            label="Ethernet",
+                            h_expand=True,
+                            justification="left",
+                            h_align="start",
+                        ),
+                        add_hover_cursor(
+                            Button(
+                                h_align="end",
+                                on_clicked=lambda *_: self._on_ethernet_list_changed(),
+                                child=MaterialIconLabel(
+                                    style_classes=["menu-icon"],
+                                    icon_text=icons.refresh.symbol(),
+                                ),
+                                tooltip_markup="Rescan",
+                            )
+                        ),
+                    ],
+                ),
+                self.ethernet_scrolled_container,
+                # wifi
                 Box(
                     name="subsection-heading-container",
                     h_expand=True,
@@ -633,9 +854,10 @@ class Network(Tile):
                         add_hover_cursor(
                             Button(
                                 h_align="end",
-                                on_clicked=lambda *_: self.nm.scan(),
+                                on_clicked=lambda *_: self.wifi_dev.scan(),
                                 child=MaterialIconLabel(
-                                    style_classes=["menu-icon"], icon_text=icons.refresh.symbol()
+                                    style_classes=["menu-icon"],
+                                    icon_text=icons.refresh.symbol(),
                                 ),
                                 tooltip_markup="Rescan",
                             )
@@ -648,10 +870,27 @@ class Network(Tile):
 
     def _initialize_network_state(self) -> None:
         try:
-            self.nm.init_props()
+            self._on_ethernet_list_changed()
             self._is_initialized = True
         except Exception as e:
             logger.error(f"Failed to initialize network state: {e}")
+
+    def _on_ethernet_list_changed(self):
+        eth_list = self.nm.get_ethernet_list()
+        for child in self.ethernet_connection_container.get_children():
+            self.ethernet_connection_container.remove(child)
+            child.destroy()
+        for eth_info in eth_list:
+            if eth_info.get("device") is not None:
+                self.ethernet_connection_container.add(
+                    add_hover_cursor(
+                        widget=EthernetButton(
+                            eth_conn=eth_info,
+                            network_service=self.nm,
+                            on_connect=lambda *_: ...,
+                        )
+                    )
+                )
 
     def _do_toggle_wifi(self, switch: Gtk.Switch, pspec: Any) -> None:
         if not self._is_initialized:
@@ -683,47 +922,73 @@ class Network(Tile):
             switch.set_active(not enabled)
             self.wifi_toggle.handler_unblock(self.wifi_handler_id)
 
-    def _on_ap_change(self, source: NetworkService) -> None:
+    def _on_ap_list_change(self, source: NetworkService) -> None:
         try:
-            wifi_list = self.nm.get_wifi_list()
+            wifi_list = self.wifi_dev.get_networks()
             self.list_manager.update(wifi_list)
         except Exception as e:
             logger.error(f"Error updating access point list: {e}")
             self.list_manager._clear()
 
     def _on_connection_change(
-        self, source: NetworkService, ssid: str, connected: bool, status: str
+        self, source: NetworkService, device: Optional[EthernetDevice | WifiDevice]
     ) -> None:
-        if self.state != connected:
-            self.state = connected
-            if self.state:
-                self.remove_style_class("off")
-                self.add_style_class("on")
-            else:
-                self.remove_style_class("on")
-                self.add_style_class("off")
-            logger.debug(f"State change: {connected}")
 
-        if not connected:
-            label_map = {
-                "Wi-Fi Off": "Off",
-                "Wi-Fi On (No Connection)": "Disconnected",
-                "Connecting…": "Connecting…",
-                "No Device": "No Device",
-            }
-            self.label.set_label(label_map.get(status, "Unknown"))
-        else:
-            self.label.set_label(ssid or "Connected")
+        if device is None:
+            self._update_visuals("", DeviceStatus.UNKNOWN, ConnectionType.NONE)
+            return
+
+        conn_type = device.CONNECTION_TYPE
+        status = device.get_state()
+        if conn_type == ConnectionType.WIFI:
+            name = device.active_ssid
+        elif conn_type == ConnectionType.ETHERNET:
+            name = EthernetDevice._ethernet_display_name(device)
+
+        # wire up new device
+        if self._primary_device_singal_id is not None and self._primary_device is not None:
+            self._primary_device.disconnect(self._primary_device_singal_id)
+
+        self._primary_device_singal_id = device.connect(
+            "state-changed", self._on_primary_device_state_change, conn_type
+        )
+        self._primary_device = device
+        self._on_primary_device_state_change(device, name, status, conn_type)
+        logger.info(f"Updating primary connection -> {name} status: {status}")
+
+    def _on_primary_device_state_change(self, device, name, status, conn_type):
+        self._update_visuals(name, status, conn_type)
+
+    def _update_visuals(
+        self, name: str, status: DeviceStatus, conn_type: ConnectionType
+    ):
+        is_connected = status == DeviceStatus.CONNECTED
+
+        self.add_style_class("on" if is_connected else "off")
+        self.remove_style_class("off" if is_connected else "on")
+
+        label_text = name if is_connected else self.STATUS_LABELS.get(status, "Unknown")
+        self.label.set_label(label_text or "Connected")
+
+        meta = self.CONN_TYPE_META.get(
+            conn_type, self.CONN_TYPE_META[ConnectionType.NONE]
+        )
+        self.tile_label.set_label(meta["text"])
+        self.icon.set_icon(meta["icon"])
 
         self._update_wifi_toggle_state(status)
 
-    def _update_wifi_toggle_state(self, status: str) -> None:
+    def _update_wifi_toggle_state(self, status: DeviceStatus) -> None:
         # programmatic change, prevent callback
         self.wifi_toggle.handler_block(self.wifi_handler_id)
 
-        if status == "Wi-Fi Off":
+        if status == DeviceStatus.DEVICE_OFF:
             self.wifi_toggle.set_active(False)
-        elif status in ["Wi-Fi On (No Connection)", "Connecting…", "Connected"]:
+        elif status in [
+            DeviceStatus.DISCONNECTED,
+            DeviceStatus.CONNECTING,
+            DeviceStatus.CONNECTED,
+        ]:
             self.wifi_toggle.set_active(True)
 
         self.wifi_toggle.handler_unblock(self.wifi_handler_id)
@@ -746,7 +1011,7 @@ class Network(Tile):
         self, ssid: str, password: Optional[str] = None
     ) -> None:
         try:
-            result = self.nm.connect_to_network(ssid, password)
+            result = self.nm.get_wifi_device().connect_to_network(ssid, password)
 
             if result == ConnectionResult.PASSWORD_REQUIRED:
                 self._show_password_dialog(ssid)

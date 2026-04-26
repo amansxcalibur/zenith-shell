@@ -1,4 +1,6 @@
-# Network Service - Complete Workflows
+> [!WARNING]
+> This workflow is outdated.
+# Network Service - Complete Workflows (STALE)
 
 ## Workflow 1: Service Initialization
 

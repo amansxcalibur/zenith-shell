@@ -135,6 +135,8 @@ wifi_2: str = "\ue4d9"
 wifi_3: str = "\uef16"
 wifi_4: str = "\uef10"
 
+lan: str = "\ueb2f"
+
 balance: str = "\ueaf6"
 energy_savings_leaf: str = "\uec1a"
 

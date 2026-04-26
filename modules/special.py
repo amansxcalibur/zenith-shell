@@ -193,7 +193,7 @@ class ActionButton(EventBox):
             on_clicked=lambda b, *_: self.toggle_power_menu(),
         )
 
-        self.children = self.restart_btn
+        # self.children = self.restart_btn
 
         self.mapping = {
             self.start_power_btn: {"label": "Open Power Menu", "action": "power"},
@@ -239,6 +239,8 @@ class ActionButton(EventBox):
 
         self.popup_win = SharedPopupWindow()
         self.popup_win.add_child(pointing_widget=self, child=self.action_options)
+
+        self.action_options.get_children()[-1].emit("clicked")
 
     def select_action(self, btn_option: Button, action: str):
         action_map = {

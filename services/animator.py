@@ -116,14 +116,8 @@ class Animator(Service):
           return
 
       elapsed_time = delta_time - cast(float, self._start_time)
-
       self._timeline_pos = min(1, elapsed_time / self.duration)
-
       self.value = self.do_ease(self._timeline_pos)
-
-    #   print("\nAnimator: ticked")
-    #   print("value: ", self.value)
-    #   print("---------------------------------------")
 
       if not self._timeline_pos >= 1:
           return

@@ -108,7 +108,7 @@ class AppLauncher(Box):
 
         self.search_entry = Entry(
             name="search-entry",
-            placeholder="Search Applications...",
+            placeholder="Search Applications",
             h_expand=True,
             notify_text=lambda entry, *_: self._on_entry_changed(entry),
             on_activate=lambda entry, *_: self._on_search_entry_activate(

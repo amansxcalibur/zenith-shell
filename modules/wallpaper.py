@@ -196,7 +196,7 @@ class WallpaperSelector(Box):
 
         self.search_entry = Entry(
             name="search-entry-walls",
-            placeholder="Search Wallpapers...",
+            placeholder="Search Wallpapers",
             h_expand=True,
             style_classes="" if not config.VERTICAL else "vertical",
             notify_text=lambda entry, *_: self.arrange_viewport(entry.get_text()),
