@@ -1,7 +1,7 @@
 <h1 align="center">
-  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Activity/Sparkles.webp" alt="Sparkles" width="25" height="25" />
+  <img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/sparkles.gif" alt="Sparkles" width="25" height="25" />
   <b>ZENITH</b>
-  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Activity/Sparkles.webp" alt="Sparkles" width="25" height="25" />
+  <img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/sparkles.gif" alt="Sparkles" width="25" height="25" />
 </h1>
 
 A SOSS shell for **X11** and **i3wm**, crafted using [fabric](https://github.com/Fabric-Development/fabric). The shell features a plethora of widgets with an easily configurable and modular system. I've had a **LOT** of fun working with fabric and building this — I hope you do too!
@@ -99,9 +99,9 @@ The installers handle these automatically. Listed here for reference.
 <table align="center">
 <tr>
 <td align="center">
-<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Activity/Sparkles.webp" alt="Sparkles" width="16" height="16" />
+<img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/sparkles.gif" alt="Sparkles" width="16" height="16" />
 <b> sᴜᴘᴘᴏʀᴛ ᴛʜᴇ ᴘʀᴏᴊᴇᴄᴛ ~ ᴅʀᴏᴘ ᴀ ⭐️ </b>
-<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Activity/Sparkles.webp" alt="Sparkles" width="16" height="16" />
+<img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/sparkles.gif" alt="Sparkles" width="16" height="16" />
 </td>
 </tr>
 <tr>
