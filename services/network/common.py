@@ -49,6 +49,8 @@ class ConnectionType(Enum):
 
 
 class NetworkDevice(Service):
+    CONNECTION_TYPE = ConnectionType.NONE
+
     @Signal
     def state_changed(self, identifier: str, status: object) -> None: ...
 

@@ -1,11 +1,82 @@
 from loguru import logger
 
+from fabric.widgets.box import Box
+from fabric.widgets.button import Button
+from fabric.widgets.overlay import Overlay
+from fabric.utils.helpers import exec_shell_command_async
+
+from modules.notification import NotificationNotifier
+from widgets.material_label import MaterialIconLabel
+from utils.cursor import add_hover_cursor
 from config.config import config
+import icons
 
 import gi
 
 gi.require_version("Gray", "0.1")
 from gi.repository import Gray, Gtk, Gdk, GdkPixbuf, GLib
+
+
+class Notification(Box):
+    def __init__(self):
+        super().__init__()
+        self.unread_notif_indicator = Box(
+            name="notif-unread-indicator",
+            v_align="start",
+            h_align="end",
+        )
+        self.overlayed_widget = Box(
+            children=[
+                Box(h_expand=True),
+                self.unread_notif_indicator,
+            ],
+        )
+        self.notification_notifier = NotificationNotifier()
+        self.notification_notifier.connect(
+            "notify::has-unread", self._on_unread_notification_prop_change
+        )
+        self.notification_notifier.connect(
+            "notify::has-urgent-unread", self._on_unread_notification_prop_change
+        )
+
+        self.overlay = Overlay(
+            child=MaterialIconLabel(
+                font_size=18,
+                icon_text=icons.notifications.symbol(),
+            ),
+            overlays=self.overlayed_widget,
+        )
+        self.overlay.set_overlay_pass_through(self.overlayed_widget, True)
+        self.children = Box(
+            children=[
+                add_hover_cursor(
+                    Button(
+                        name="systray-notif-btn",
+                        child=self.overlay,
+                        on_clicked=lambda: exec_shell_command_async(
+                            'fabric-cli exec zenith "top_pill.toggle_notification()"'
+                        ),
+                    )
+                ),
+                # spacer
+                Box(
+                    style="" \
+                    "background-color:var(--surface-semi-bright); " \
+                    "min-width: 2px; " \
+                    "margin: 3px 4px 3px 0px; " \
+                    "border-radius: 4px;"
+                ),
+            ]
+        )
+
+    def _on_unread_notification_prop_change(self, *_):
+        if self.notification_notifier.has_unread:
+            self.unread_notif_indicator.add_style_class("unread")
+            if self.notification_notifier.has_urgent_unread:
+                self.unread_notif_indicator.add_style_class("urgent")
+        else:
+            self.unread_notif_indicator.remove_style_class("unread")
+            self.unread_notif_indicator.remove_style_class("urgent")
 
 
 class SystemTray(Gtk.Box):
@@ -24,6 +95,7 @@ class SystemTray(Gtk.Box):
         self.pixel_size = pixel_size
         self.watcher = Gray.Watcher()
         self.watcher.connect("item-added", self.on_item_added)
+        self.add(Notification())
 
     def _update_visibility(self):
         # Update visibility based on the number of child widgets.

@@ -1,16 +1,17 @@
 from loguru import logger
 from dataclasses import dataclass
-from typing import Optional, Dict, Any, List, Callable
+from typing import Optional, Any, Callable
 
 from fabric.core.service import Signal, Property
 
 from .common import (
-    NetworkConstants,
-    ConnectionResult,
     DeviceStatus,
-    ConnectionType,
     NetworkDevice,
+    ConnectionType,
+    ConnectionResult,
+    NetworkConstants,
 )
+
 
 import gi
 
@@ -108,16 +109,16 @@ class PendingConnection:
 
 class AccessPointManager:
     def __init__(self):
-        self.ap_list: List[NM.AccessPoint] = []
+        self.ap_list: list[NM.AccessPoint] = []
 
-    def update(self, new_list: List[NM.AccessPoint]) -> None:
+    def update(self, new_list: list[NM.AccessPoint]) -> None:
         self.ap_list = new_list
 
     def get_unique_networks(
         self, active_ssid: Optional[str] = None
-    ) -> List[NetworkInfo]:
+    ) -> list[NetworkInfo]:
         # deduplicate by SSID
-        ap_dict: Dict[str, NM.AccessPoint] = {}
+        ap_dict: dict[str, NM.AccessPoint] = {}
 
         for ap in self.ap_list:
             try:
@@ -166,7 +167,7 @@ class AccessPointManager:
 class ConnectionStateMachine:
     def __init__(self, network_service: "WifiDevice"):
         self.network_service = network_service
-        self.pending: Dict[str, PendingConnection] = {}
+        self.pending: dict[str, PendingConnection] = {}
 
     def track_connection(self, ssid: str, active_conn: Any, is_new: bool) -> None:
         self.pending[ssid] = PendingConnection(
@@ -361,7 +362,7 @@ class ConnectionProfileManager:
             logger.error(f"Failed to delete profiles for {ssid}: {e}")
             return False
 
-    def get_saved_ssids(self) -> List[str]:
+    def get_saved_ssids(self) -> list[str]:
         if not self.client:
             return []
 
@@ -483,7 +484,7 @@ class WifiDevice(NetworkDevice):
             return False
         return self.scan_manager.request_scan()
 
-    def get_networks(self) -> List[dict]:
+    def get_networks(self) -> list[dict]:
         if not self.device:
             logger.warning("Cannot get WiFi list: no device")
             return []
@@ -494,7 +495,7 @@ class WifiDevice(NetworkDevice):
         networks = self.ap_manager.get_unique_networks(active_ssid)
         return [network.to_dict() for network in networks]
 
-    def get_access_points(self) -> List[NM.AccessPoint]:
+    def get_access_points(self) -> list[NM.AccessPoint]:
         if not self.device:
             return []
         return self.device.get_access_points()
@@ -588,7 +589,7 @@ class WifiDevice(NetworkDevice):
     def forget_network(self, ssid: str) -> bool:
         return self.profile_manager.delete(ssid)
 
-    def get_saved_networks(self) -> List[str]:
+    def get_saved_networks(self) -> list[str]:
         return self.profile_manager.get_saved_ssids()
 
     def _activate_existing_connection(

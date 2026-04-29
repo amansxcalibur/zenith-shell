@@ -10,6 +10,7 @@ from fabric.widgets.window import Window
 from fabric.widgets.revealer import Revealer
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.scrolledwindow import ScrolledWindow
+from fabric.core.service import Service, Property
 from fabric.notifications import Notifications, Notification
 from fabric.utils import invoke_repeater
 
@@ -329,6 +330,43 @@ class NotificationWidget(EventBox):
         logger.debug("NotificationWidget cleaned up")
 
 
+class NotificationNotifier(Service):
+    _instance = None
+
+    @Property(bool, default_value=False, flags="read-write")
+    def has_unread(self) -> bool:
+        return self._has_unread
+
+    @has_unread.setter
+    def has_unread(self, value: bool) -> None:
+        self._has_unread = value
+        return
+
+    @Property(bool, default_value=False, flags="read-write")
+    def has_urgent_unread(self) -> bool:
+        return self._has_urgent_unread
+
+    @has_urgent_unread.setter
+    def has_urgent_unread(self, value: bool) -> None:
+        self._has_urgent_unread = value
+        return
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self):
+        if getattr(self, "_initialized", False):
+            return
+
+        super().__init__()
+        self._initialized = True
+
+        self._has_unread = False
+        self._has_urgent_unread = False
+
+
 class NotificationManager:
     def __init__(self, **kwargs):
         super().__init__(
@@ -346,6 +384,8 @@ class NotificationManager:
             )
         except Exception as e:
             logger.error(f"Failed to setup notification service: {e}")
+
+        self._notification_sig_emittor = NotificationNotifier()
 
         self.viewport = Box(
             orientation="v",
@@ -422,6 +462,14 @@ class NotificationManager:
         self.notification_history.unregister_keybindings = self.unregister_keybindings
         self.active_notifications_box.get_controls = self.get_controls
 
+        self.notification_history.connect("map", self.on_map)
+
+    def on_map(self, widget):
+        if self._notification_sig_emittor.has_unread:
+            self._notification_sig_emittor.has_unread = False
+        if self._notification_sig_emittor.has_urgent_unread:
+            self._notification_sig_emittor.has_urgent_unread = False
+
     def get_notifications_box(self):
         return self.notification_history
 
@@ -495,6 +543,16 @@ class NotificationManager:
                 self.viewport.pack_end(notification_widget, True, None, 0)
             else:
                 logger.debug("Skipping re-add: widget already in viewport")
+
+            # mark unread notifications
+            if notification_widget.urgency in (1, 2):
+                if not self._notification_sig_emittor.has_unread:
+                    self._notification_sig_emittor.has_unread = True
+                if (
+                    not self._notification_sig_emittor.has_urgent_unread
+                    and notification_widget.urgency == 2
+                ):
+                    self._notification_sig_emittor.has_urgent_unread = True
 
             self._update_ui_state()
 
