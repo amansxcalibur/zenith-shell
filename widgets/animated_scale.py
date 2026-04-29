@@ -5,6 +5,7 @@ from typing import Iterable, Literal, Tuple
 
 from fabric.widgets.scale import Scale
 from fabric.widgets.circularprogressbar import CircularProgressBar
+from fabric.widgets.circularscale import CircularScale as FabricCircularScale
 from fabric.utils.helpers import clamp
 
 from services.animator import Animator
@@ -469,7 +470,7 @@ class CircularScale(CircularProgressBar):
         return
 
 
-class AnimatedCircularScale(CircularScale):
+class AnimatedCircularScale(FabricCircularScale):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.animator = (
