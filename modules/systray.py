@@ -17,7 +17,7 @@ gi.require_version("Gray", "0.1")
 from gi.repository import Gray, Gtk, Gdk, GdkPixbuf, GLib
 
 
-class Notification(Box):
+class NotificationIndicator(Box):
     def __init__(self):
         super().__init__()
         self.unread_notif_indicator = Box(
@@ -60,10 +60,10 @@ class Notification(Box):
                 ),
                 # spacer
                 Box(
-                    style="" \
-                    "background-color:var(--surface-semi-bright); " \
-                    "min-width: 2px; " \
-                    "margin: 3px 4px 3px 0px; " \
+                    style=""
+                    "background-color:var(--surface-semi-bright); "
+                    "min-width: 2px; "
+                    "margin: 3px 4px 3px 0px; "
                     "border-radius: 4px;"
                 ),
             ]
@@ -95,7 +95,7 @@ class SystemTray(Gtk.Box):
         self.pixel_size = pixel_size
         self.watcher = Gray.Watcher()
         self.watcher.connect("item-added", self.on_item_added)
-        self.add(Notification())
+        self.add(NotificationIndicator())
 
     def _update_visibility(self):
         # Update visibility based on the number of child widgets.

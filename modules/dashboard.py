@@ -6,6 +6,7 @@ from fabric.widgets.revealer import Revealer
 from fabric.widgets.centerbox import CenterBox
 
 from modules.network import Network
+from modules.agenda import AgendaApp
 from modules.weather import WeatherPill
 from modules.bluetooth import Bluetooth
 from modules.wavy_clock import WavyClock
@@ -72,37 +73,6 @@ class Dashboard(Box):
             ),
         )
 
-        self.low_bat_msg = Label(label="Welcome to (=Zenith=)")
-
-        self.content_box = Box(
-            orientation="v",
-            children=[
-                Label(name="notification-source", label="Zenith Shell", h_align=True),
-                self.low_bat_msg,
-            ],
-        )
-
-        close_btn = Button(
-            name="close-button",
-            child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
-            tooltip_text="Exit",
-            on_clicked=lambda *_: print("clicked close"),
-        )
-
-        self.notification_box = Box(
-            name="notification-box",
-            style_classes="vertical" if config.VERTICAL else "horizontal",
-            children=[
-                MaterialIconLabel(
-                    name="notification-icon",
-                    h_align=True,
-                    icon_text=icons.blur.symbol(),
-                ),
-                Box(h_expand=True, children=self.content_box),
-                Box(children=close_btn),
-            ],
-        )
-
         self.tiles = Box(
             spacing=3,
             orientation="v",
@@ -136,36 +106,6 @@ class Dashboard(Box):
                 ),
             ],
         )
-        self.low_bat_msg_2 = Label(label="Happy farming :)")
-
-        self.content_box_2 = Box(
-            orientation="v",
-            children=[
-                Label(name="notification-source", label="System", h_align=True),
-                self.low_bat_msg_2,
-            ],
-        )
-
-        close_btn_2 = Button(
-            name="close-button",
-            child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
-            tooltip_text="Exit",
-            on_clicked=lambda *_: print("clicked close"),
-        )
-
-        self.notification_box_2 = Box(
-            name="notification-box",
-            style_classes="vertical" if config.VERTICAL else "horizontal",
-            children=[
-                MaterialIconLabel(
-                    name="notification-icon",
-                    h_align=True,
-                    icon_text=icons.blur.symbol(),
-                ),
-                Box(h_expand=True, children=self.content_box_2),
-                Box(children=close_btn_2),
-            ],
-        )
 
         self.notification_container = Revealer(
             transition_duration=250,
@@ -177,7 +117,7 @@ class Dashboard(Box):
                 spacing=3,
                 children=[
                     Box(
-                        name="notification-container",
+                        name="agenda-app-container",
                         orientation="v",
                         v_expand=True,
                         spacing=3,
@@ -186,8 +126,9 @@ class Dashboard(Box):
                                 label="SOSS Agenda",
                                 style="color:var(--foreground); margin-bottom:3px; font-family: Roboto Flex",
                             ),
-                            self.notification_box,
-                            self.notification_box_2,
+                            AgendaApp(),
+                            # self.notification_box,
+                            # self.notification_box_2,
                         ],
                     ),
                     Box(
@@ -275,7 +216,7 @@ class Dashboard(Box):
             for elem in elems:
                 if elem.get_name() == tile:
                     continue
-                
+
                 if toggle:
                     try:
                         elem.mini_view()

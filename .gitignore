@@ -17,3 +17,6 @@ gray/
 
 # Zenith config
 config/config.json
+
+# data
+/data

@@ -70,3 +70,20 @@
 #dialog-btn:hover {
   background-color: var(--outline);
 }
+
+#show-password-check check {
+    border: 1px solid var(--surface-bright);
+    border-radius: 8px;
+    min-height: 20px;
+    min-width: 20px;
+}
+
+#show-password-check check:checked {
+    background-color: var(--surface-bright);
+    -gtk-icon-source: -gtk-icontheme('object-select-symbolic');
+    color: var(--foreground);
+}
+
+#show-password-check label {
+    margin-left: 6px;
+}

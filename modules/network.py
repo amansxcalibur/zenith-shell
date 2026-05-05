@@ -7,6 +7,7 @@ from fabric.widgets.entry import Entry
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
+from fabric.widgets.checkbutton import CheckButton
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.utils.helpers import exec_shell_command_async
 
@@ -135,7 +136,7 @@ class PasswordDialog(BaseDialog):
         )
         content_box.add(self.password_entry)
 
-        show_password = Gtk.CheckButton(label="Show password")
+        show_password = CheckButton(name="show-password-check", label="Show password")
         show_password.connect(
             "toggled", lambda btn: self.password_entry.set_visibility(btn.get_active())
         )
@@ -529,7 +530,9 @@ class EthernetButton(EventBox):
 
     def _build_ui(self) -> None:
         self.status_label = Label(
-            name="ap-label", label=self.STATUS_LABELS.get(self.state, "Unknown"), h_align="start"
+            name="ap-label",
+            label=self.STATUS_LABELS.get(self.state, "Unknown"),
+            h_align="start",
         )
         self.label_box = Box(
             orientation="v",
@@ -946,7 +949,10 @@ class Network(Tile):
             name = EthernetDevice._ethernet_display_name(device)
 
         # wire up new device
-        if self._primary_device_singal_id is not None and self._primary_device is not None:
+        if (
+            self._primary_device_singal_id is not None
+            and self._primary_device is not None
+        ):
             self._primary_device.disconnect(self._primary_device_singal_id)
 
         self._primary_device_singal_id = device.connect(

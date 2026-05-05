@@ -243,7 +243,7 @@ class ShellWindowManager:
 
         dock_w = self._get_nat_width(self.dockBar.pill_dock_container)
 
-        BUFFER = 20  # pill start/end curved edge width
+        BUFFER = 0  # pill start/end curved edge width
         is_overflowing = (start_w + dock_w / 2 + BUFFER > screen_width / 2) or (
             end_w + dock_w / 2 + BUFFER > screen_width / 2
         )
