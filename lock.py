@@ -582,7 +582,7 @@ if __name__ == "__main__":
     app = Application("lockscreen", lock_win)
 
     def set_css(*args):
-        app.set_stylesheet_from_file(get_relative_path("./styles/colors.css"))
+        app.set_stylesheet_from_file(get_relative_path("./lock.css"))
 
     app.style_monitor = monitor_file(get_relative_path("./styles/colors.css"))
     app.style_monitor.connect("changed", set_css)
