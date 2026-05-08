@@ -6,6 +6,7 @@ from fabric.widgets.overlay import Overlay
 from fabric.utils.helpers import exec_shell_command_async
 
 from modules.notification import NotificationNotifier
+from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
 from utils.cursor import add_hover_cursor
 from config.config import config
@@ -79,23 +80,24 @@ class NotificationIndicator(Box):
             self.unread_notif_indicator.remove_style_class("urgent")
 
 
-class SystemTray(Gtk.Box):
+class SystemTray(Box):
     def __init__(self, pixel_size: int = 20, **kwargs) -> None:
         super().__init__(
             name="systray",
-            orientation=(
-                Gtk.Orientation.VERTICAL
-                if config.VERTICAL
-                else Gtk.Orientation.HORIZONTAL
-            ),
-            spacing=1,
+            orientation=("v" if config.VERTICAL else "h"),
             **kwargs,
         )
         self.set_visible(False)  # Initially hidden when empty.
         self.pixel_size = pixel_size
         self.watcher = Gray.Watcher()
         self.watcher.connect("item-added", self.on_item_added)
-        self.add(NotificationIndicator())
+        self.clipper = ClippingBox(
+            name='systray-clipper',
+            spacing=1,
+            orientation=("v" if config.VERTICAL else "h"),
+        )
+        self.clipper.add(NotificationIndicator())
+        self.add(self.clipper)
 
     def _update_visibility(self):
         # Update visibility based on the number of child widgets.
@@ -107,7 +109,7 @@ class SystemTray(Gtk.Box):
         item.connect(
             "removed", lambda *args: (item_button.destroy(), self._update_visibility())
         )
-        self.add(item_button)
+        self.clipper.add(item_button)
         item_button.show_all()
         self._update_visibility()
 

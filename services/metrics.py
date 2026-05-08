@@ -5,12 +5,16 @@ from fabric.core.service import Service, Signal
 
 from gi.repository import GLib
 
+
 class MetricsProvider(Service):
     _instance = None
     _initialized = False
 
     @Signal
     def battery_changed(self, percent: float, charging: bool) -> None: ...
+
+    @Signal
+    def metrics_changed(self, cpu: float, mem: float, disk: float) -> None: ...
 
     @property
     def cpu_brand(self) -> str:
@@ -49,18 +53,25 @@ class MetricsProvider(Service):
         return "Unknown CPU"
 
     def _update(self) -> bool:
-        self.cpu = psutil.cpu_percent(interval=0)
-        self.mem = psutil.virtual_memory().percent
-        self.disk = psutil.disk_usage("/").percent
+        new_cpu = psutil.cpu_percent(interval=0)
+        new_mem = psutil.virtual_memory().percent
+        new_disk = psutil.disk_usage("/").percent
+        if (new_cpu, new_mem, new_disk) != (self.cpu, self.mem, self.disk):
+            self.cpu, self.mem, self.disk = new_cpu, new_mem, new_disk
+            self.metrics_changed(self.cpu, self.mem, self.disk)
 
         battery = psutil.sensors_battery()
         if battery is None:
             self.bat_percent = 0.0
             self.bat_charging = None
         else:
-            self.bat_percent = battery.percent
-            self.bat_charging = battery.power_plugged
-            self.battery_changed(self.bat_percent, self.bat_charging)
+            if (
+                battery.percent != self.bat_percent
+                or battery.power_plugged != self.bat_charging
+            ):
+                self.bat_percent = battery.percent
+                self.bat_charging = battery.power_plugged
+                self.battery_changed(self.bat_percent, self.bat_charging)
 
         return True
 
