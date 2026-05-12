@@ -24,8 +24,24 @@
 .tile.off .tile-clipper,
 .tile.simple.off .tile-clipper {
   background-color: var(--surface-bright);
+  
+}
+.tile.simple.on .tile-overlay{
+  box-shadow: inset -16px 0 5px 0px var(--primary);
+}
+.tile.simple.off .tile-overlay{
+  box-shadow: inset -16px 0 5px 0px var(--surface-bright);
+}
+.tile:not(.simple) .tile-overlay{
+  box-shadow: inset -16px 0 5px 0px var(--surface-bright);
+}
+
+.tile.off .tile-clipper,
+.tile.simple.off .tile-clipper,
+.tile.off .tile-overlay{
   border-radius: 50px;
 }
+
 .tile.simple.on .desc-label,
 .tile.simple.on .tile-label,
 .tile.on .tile-icon {

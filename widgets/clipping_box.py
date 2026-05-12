@@ -56,9 +56,10 @@ class ClippingBox(Box):
 class TrueClippingBox(Box):
     """Adds max-height/width support"""
 
-    def __init__(self, max_height: int = -1, **kwargs):
+    def __init__(self, max_width: int = -1, max_height: int = -1, **kwargs):
         super().__init__(**kwargs)
         self._max_height = max_height  # -1 = no limit
+        self._max_width = max_width  # -1 = no limit
 
     @staticmethod
     def _rounded_rect(cr: cairo.Context, width: int, height: int, radius: int) -> None:
@@ -86,18 +87,27 @@ class TrueClippingBox(Box):
     ) -> None:
         TrueClippingBox._rounded_rect(cr, width, height, radius)
 
-    def _clamp(self, value: int) -> int:
+    def _clamp_w(self, value: int) -> int:
+        return min(value, self._max_width) if self._max_width != -1 else value
+    
+    def _clamp_h(self, value: int) -> int:
         return min(value, self._max_height) if self._max_height != -1 else value
 
+    def do_get_preferred_width(self) -> tuple[int, int]:
+        minimum, natural = Box.do_get_preferred_width(self)
+        return self._clamp_w(minimum), self._clamp_w(natural)
+    
     def do_get_preferred_height(self) -> tuple[int, int]:
         minimum, natural = Box.do_get_preferred_height(self)
-        return self._clamp(minimum), self._clamp(natural)
+        return self._clamp_h(minimum), self._clamp_h(natural)
 
     def do_get_preferred_height_for_width(self, width: int) -> tuple[int, int]:
         return self.do_get_preferred_height()
 
     def do_size_allocate(self, allocation) -> None:
         alloc = allocation.copy()
+        if self._max_width != -1:
+            alloc.width = min(alloc.width, self._max_width)
         if self._max_height != -1:
             alloc.height = min(alloc.height, self._max_height)
         Box.do_size_allocate(self, alloc)
@@ -115,12 +125,25 @@ class TrueClippingBox(Box):
         cr.restore()
         return True
 
+    def set_max_width(self, width: int) -> None:
+        self._max_width = width
+        self.queue_resize()
+
     def set_max_height(self, height: int) -> None:
         self._max_height = height
         self.queue_resize()
 
+    def clear_max_width(self) -> None:
+        self._max_width = -1
+        self.queue_resize()
+    
     def clear_max_height(self) -> None:
         self._max_height = -1
+        self.queue_resize()
+
+    def clear_max_constraints(self) -> None:
+        self._max_height = -1
+        self._max_width = -1
         self.queue_resize()
 
 

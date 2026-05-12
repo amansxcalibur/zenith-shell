@@ -34,8 +34,6 @@ class Bluetooth(Tile):
             style_classes=["desc-label", "off"],
             label="Off",
             h_align="start",
-            ellipsization="end",
-            max_chars_width=9,
         )
 
         self.bluetooth_connections = BluetoothConnections()
@@ -44,7 +42,6 @@ class Bluetooth(Tile):
             label="Bluetooth",
             props=self.label,
             markup=icons.bluetooth.symbol(),
-            menu=True,
             menu_children=self.bluetooth_connections,
             style_classes=["off"],
             on_toggle=lambda *_: self.bluetooth_connections.set_enabled(self.state),

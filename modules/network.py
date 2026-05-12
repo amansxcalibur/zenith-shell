@@ -11,7 +11,7 @@ from fabric.widgets.checkbutton import CheckButton
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.utils.helpers import exec_shell_command_async
 
-from modules.tile import Tile, TileSimple, TileSimpleWithMenu
+from modules.tile import TileSimpleWithMenu
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
 
@@ -712,8 +712,6 @@ class Network(TileSimpleWithMenu):
             style_classes=["desc-label", "off"],
             label="Disconnected",
             h_align="start",
-            ellipsization="end",
-            max_chars_width=UIConstants.MAX_SSID_DISPLAY_LENGTH,
         )
 
         self.nm = NetworkService()

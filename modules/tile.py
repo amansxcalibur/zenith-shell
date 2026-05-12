@@ -2,13 +2,14 @@ from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
+from fabric.widgets.overlay import Overlay
 from fabric.widgets.revealer import Revealer
 from fabric.utils.helpers import exec_shell_command_async
 
 import icons
 from config.info import SHELL_NAME
 from utils.cursor import add_hover_cursor
-from widgets.clipping_box import ClippingBox
+from widgets.clipping_box import ClippingBox, TrueClippingBox
 from widgets.material_label import MaterialIconLabel
 
 import gi
@@ -37,7 +38,7 @@ class TileSimple(ClippingBox):
         self.props = status_label_widget
         self.status_label_widget_revealer = Revealer(
             transition_duration=250, transition_type="slide-down", child=self.props
-        ) 
+        )
 
         self.icon = MaterialIconLabel(
             style_classes="tile-icon",
@@ -54,11 +55,10 @@ class TileSimple(ClippingBox):
         )
         self.toggle = False
 
-        self.type_box = Button(
-            on_clicked=self.handle_state_toggle,
+        self.type_box = Box(
             style_classes="tile-type",
             h_expand=True,
-            child=Box(
+            children=Box(
                 orientation="v",
                 v_expand=True,
                 h_expand=True,
@@ -67,9 +67,7 @@ class TileSimple(ClippingBox):
             ),
         )
 
-        self.content_button = None
-
-        self.content_button = Revealer(
+        self.content_revealer = Revealer(
             transition_duration=150,
             transition_type="slide-left",
             child=Box(h_expand=True, children=[self.type_box]),
@@ -77,24 +75,32 @@ class TileSimple(ClippingBox):
             h_expand=True,
         )
 
-        self.normal_view = ClippingBox(
+        self.normal_view = TrueClippingBox(
             style_classes="tile-clipper",
-            children=[
-                self.icon_wrapper,
-                self.content_button,
-            ],
+            max_width=164,
+            children=Box(
+                children=[
+                    self.icon_wrapper,
+                    self.content_revealer,
+                ]
+            ),
         )
-
+        box_shadow_overlay = Box(style_classes="tile-overlay")
+        self.overlay = Overlay(
+            h_expand=True,
+            child=self.normal_view,
+            overlays=box_shadow_overlay,
+        )
+        self.overlay.set_overlay_pass_through(box_shadow_overlay, True)
         self.children = add_hover_cursor(
             Button(
                 h_expand=True,
-                child=self.normal_view,
+                child=self.overlay,
                 on_clicked=self.handle_state_toggle,
             )
         )
 
         add_hover_cursor(self.type_box)
-        add_hover_cursor(self.icon_wrapper)
 
     def set_active_style(self, is_active: bool):
         if is_active:
@@ -113,17 +119,17 @@ class TileSimple(ClippingBox):
         self.maxi_view()
 
     def mini_view(self):
-        self.content_button.set_reveal_child(False)
+        self.content_revealer.set_reveal_child(False)
         self.icon_wrapper.set_h_expand(True)
-        self.content_button.set_h_expand(False)
+        self.content_revealer.set_h_expand(False)
         self.add_style_class("mini")
         # self.icon.add_style_class("mini")
         # self.icon.remove_style_class("maxi")
 
     def maxi_view(self):
-        self.content_button.set_reveal_child(True)
+        self.content_revealer.set_reveal_child(True)
         self.icon_wrapper.set_h_expand(False)
-        self.content_button.set_h_expand(True)
+        self.content_revealer.set_h_expand(True)
         self.remove_style_class("mini")
         # self.icon.add_style_class("maxi")
         # self.icon.remove_style_class("mini")
@@ -178,12 +184,10 @@ class TileSimpleWithMenu(ClippingBox):
         )
 
         # 3. Content Setup (The clickable middle part)
-        self.type_box = Button(
-            style="all:unset;",
-            on_clicked=self.handle_menu_click,  # Changed from state_toggle
+        self.type_box = Box(
             style_classes="tile-type",
             h_expand=True,
-            child=Box(
+            children=Box(
                 orientation="v",
                 v_expand=True,
                 h_expand=True,
@@ -192,7 +196,7 @@ class TileSimpleWithMenu(ClippingBox):
             ),
         )
 
-        self.content_button = Revealer(
+        self.content_revealer = Revealer(
             transition_duration=150,
             transition_type="slide-left",
             child=Box(h_expand=True, children=[self.type_box]),
@@ -202,20 +206,28 @@ class TileSimpleWithMenu(ClippingBox):
 
         # 4. The Normal View (Icon + Labels)
         # Wrapped in a Button so the icon area is also clickable to open the menu
-        self.normal_view = ClippingBox(
+
+        self.normal_view = TrueClippingBox(
             style_classes="tile-clipper",
+            max_width=164,
             children=Button(
-                style="all:unset;",
                 h_expand=True,
                 on_clicked=self.handle_menu_click,
                 child=Box(
                     children=[
                         self.icon_wrapper,
-                        self.content_button,
-                    ],
+                        self.content_revealer,
+                    ]
                 ),
             ),
         )
+        box_shadow_overlay = Box(style_classes="tile-overlay")
+        self.overlay = Overlay(
+            h_expand=True,
+            child=self.normal_view,
+            overlays=box_shadow_overlay,
+        )
+        self.overlay.set_overlay_pass_through(box_shadow_overlay, True)
 
         # 5. The Menu View (Copied logic from Tile)
         self.menu_close_btn = Button(
@@ -255,7 +267,7 @@ class TileSimpleWithMenu(ClippingBox):
             transition_type="crossfade",
             transition_duration=150,
             h_expand=True,
-            children=[self.normal_view, self.menu],
+            children=[self.overlay, self.menu],
         )
         self.stack.set_interpolate_size(True)
         self.stack.set_homogeneous(False)
@@ -273,7 +285,7 @@ class TileSimpleWithMenu(ClippingBox):
             self.toggle = False
             self.menu.add_style_class("contract")
             self.menu.remove_style_class("expand")
-            self.stack.set_visible_child(self.normal_view)
+            self.stack.set_visible_child(self.overlay)
         else:
             self.toggle = True
             self.stack.set_visible_child(self.menu)
@@ -299,19 +311,19 @@ class TileSimpleWithMenu(ClippingBox):
         self.toggle = False
         self.menu.add_style_class("contract")
         self.menu.remove_style_class("expand")
-        self.stack.set_visible_child(self.normal_view)
+        self.stack.set_visible_child(self.overlay)
         self.maxi_view()
 
     def mini_view(self):
-        self.content_button.set_reveal_child(False)
+        self.content_revealer.set_reveal_child(False)
         self.icon_wrapper.set_h_expand(True)
-        self.content_button.set_h_expand(False)
+        self.content_revealer.set_h_expand(False)
         self.add_style_class("mini")
 
     def maxi_view(self):
-        self.content_button.set_reveal_child(True)
+        self.content_revealer.set_reveal_child(True)
         self.icon_wrapper.set_h_expand(False)
-        self.content_button.set_h_expand(True)
+        self.content_revealer.set_h_expand(True)
         self.remove_style_class("mini")
 
     def hide_status_widget(self):
@@ -325,7 +337,6 @@ class Tile(ClippingBox):
     def __init__(
         self,
         title: str = "",
-        menu: bool = True,
         markup: str = icons.blur.symbol(),
         label: str = "__",
         menu_children=None,
@@ -392,13 +403,21 @@ class Tile(ClippingBox):
         )
 
         # 4. Normal View Layout
-        self.normal_view = ClippingBox(
+        self.normal_view = TrueClippingBox(
             style_classes="tile-clipper",
+            max_width=164,
             children=[
                 self.icon_wrapper,
                 self.content_button,
             ],
         )
+        box_shadow_overlay = Box(style_classes="tile-overlay")
+        self.overlay = Overlay(
+            h_expand=True,
+            child=self.normal_view,
+            overlays=box_shadow_overlay,
+        )
+        self.overlay.set_overlay_pass_through(box_shadow_overlay, True)
 
         # 5. Menu View
         self.menu_close_btn = Button(
@@ -434,7 +453,7 @@ class Tile(ClippingBox):
             transition_type="crossfade",
             transition_duration=150,
             h_expand=True,
-            children=[self.normal_view, self.menu_box],
+            children=[self.overlay, self.menu_box],
         )
         self.stack.set_interpolate_size(True)
         self.stack.set_homogeneous(False)
@@ -462,7 +481,7 @@ class Tile(ClippingBox):
             self.toggle = False
             self.menu_box.add_style_class("contract")
             self.menu_box.remove_style_class("expand")
-            self.stack.set_visible_child(self.normal_view)
+            self.stack.set_visible_child(self.overlay)
         else:
             self.toggle = True
             self.stack.set_visible_child(self.menu_box)
@@ -477,7 +496,7 @@ class Tile(ClippingBox):
 
     def close(self):
         self.toggle = False
-        self.stack.set_visible_child(self.normal_view)
+        self.stack.set_visible_child(self.overlay)
         self.maxi_view()
 
     def mini_view(self):
