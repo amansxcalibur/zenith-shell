@@ -2,10 +2,10 @@ from fabric.widgets.box import Box
 from fabric.widgets.button import Button
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
-from fabric.power_profiles.service import PowerProfiles
 
 from widgets.popup_window.shared_popup_window import SharedPopupWindow
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
+from services.power_profiles import power_profiles_service
 
 import icons
 
@@ -25,7 +25,7 @@ class PowerProfilesSelector(EventBox):
     def __init__(self, **kwargs):
         super().__init__(spacing=3)
 
-        self.service = PowerProfiles()
+        self.service = power_profiles_service
 
         self._profile_buttons = []
 

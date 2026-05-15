@@ -83,25 +83,28 @@ class MetricsSmall(Button):
         if config.VERTICAL:
             self.add_style_class("vertical")
 
+    # Revealing is disabled in favour of interruption free popup placement
     def on_mouse_enter(self, widget, event):
-        self.hover_counter += 1
-        if self.hide_timer:
-            GLib.source_remove(self.hide_timer)
-            self.hide_timer = None
-        for m in self.metrics_list:
-            m.revealer.set_reveal_child(True)
+        ...
+        # self.hover_counter += 1
+        # if self.hide_timer:
+        #     GLib.source_remove(self.hide_timer)
+        #     self.hide_timer = None
+        # for m in self.metrics_list:
+        #     m.revealer.set_reveal_child(True)
 
     def on_mouse_leave(self, widget, event):
-        self.hover_counter = max(0, self.hover_counter - 1)
-        if self.hover_counter == 0:
-            if self.hide_timer:
-                GLib.source_remove(self.hide_timer)
-            self.hide_timer = GLib.timeout_add(100, self.hide_revealer)
+        ...
+        # self.hover_counter = max(0, self.hover_counter - 1)
+        # if self.hover_counter == 0:
+        #     if self.hide_timer:
+        #         GLib.source_remove(self.hide_timer)
+        #     self.hide_timer = GLib.timeout_add(100, self.hide_revealer)
 
     def hide_revealer(self):
-        for m in self.metrics_list:
-            m.revealer.set_reveal_child(False)
-        self.hide_timer = None
+        # for m in self.metrics_list:
+        #     m.revealer.set_reveal_child(False)
+        # self.hide_timer = None
         return False
 
     def update_metrics(self, source, cpu, mem, disk):

@@ -8,6 +8,7 @@ from fabric.widgets.x11 import X11Window as Window
 
 from widgets.clipping_box import ClippingBox
 from services.animator import Animator
+from services.power_profiles import power_profiles_service
 
 import gi
 
@@ -72,6 +73,11 @@ class SharedPopupWindow(Window):
         # widget-popup mapping
         self.child_pointing_widget_dict = {}
 
+        self._animations_enabled = (
+            power_profiles_service.active_profile != "power-saver"
+        )
+        power_profiles_service.connect("changed", self._on_power_profile_changed)
+
         self._initialize_animators()
         self._initialize_ui(transition_duration, transition_type)
 
@@ -101,16 +107,27 @@ class SharedPopupWindow(Window):
     #     )
     #     ...
 
+    def _on_power_profile_changed(self, *_):
+        self._animations_enabled = (
+            power_profiles_service.active_profile != "power-saver"
+        )
+        duration = self.DEFAULT_TRANSITION_DURATION if self._animations_enabled else 0
+        self.stack.set_transition_duration(duration)
+        self.revealer.set_transition_duration(duration)
+        self.animator_x.duration = (
+            self.ANIMATION_DURATION if self._animations_enabled else 0
+        )  # seconds
+
     def _initialize_ui(self, transition_duration, transition_type):
         self.stack = Stack(
             transition_type=transition_type,
-            transition_duration=transition_duration,
+            transition_duration=transition_duration if self._animations_enabled else 0,
         )
         self.stack.set_interpolate_size(True)
         self.stack.set_homogeneous(False)
 
         self.revealer = Revealer(
-            transition_duration=transition_duration,
+            transition_duration=transition_duration if self._animations_enabled else 0,
             transition_type=transition_type,
             child=self.stack,
             child_revealed=False,
@@ -125,7 +142,7 @@ class SharedPopupWindow(Window):
     def _initialize_animators(self):
         self.animator_x = Animator(
             bezier_curve=self.ANIMATION_BEZIER,
-            duration=self.ANIMATION_DURATION,
+            duration=self.ANIMATION_DURATION if self._animations_enabled else 0,
             tick_widget=self,
             notify_value=self._on_animator_x_tick,
         )
@@ -171,7 +188,7 @@ class SharedPopupWindow(Window):
             def _set_position():
                 x, y = self._calculate_popup_position()
                 if x is not None:
-                    if was_already_visible:
+                    if was_already_visible and self._animations_enabled:
                         self.animate_to_position(x, y)
                     else:
                         # moves coords calculated using widget preferred height/width
@@ -213,8 +230,13 @@ class SharedPopupWindow(Window):
         x, y = self._calculate_popup_position()
 
         if self.animator_x.playing:
-            self.animate_to_position(x, y)  # pauses, updates and plays
+            if self._animations_enabled:
+                self.animate_to_position(x, y)  # pauses, updates and plays
+            else:
+                self.animator_x.stop()
+                self.place_popup(x)
             return
+        
         else:
             self.place_popup(x)
 

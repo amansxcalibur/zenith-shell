@@ -149,6 +149,11 @@ class Animator(Service):
   def play(self):
       if self.playing:
           return
+      
+      if self.duration == 0:
+        self.value = self.max_value
+        self.finished()
+        return
 
       self._start_time = self.do_get_time_now()
 
