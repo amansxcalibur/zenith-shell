@@ -9,12 +9,13 @@ from fabric.widgets.box import Box
 from fabric.widgets.entry import Entry
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
+from fabric.widgets.overlay import Overlay
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
 from widgets.clipping_box import ClippingBox
-from widgets.material_label import MaterialIconLabel
+from widgets.material_label import MaterialFontLabel, MaterialIconLabel
 
 import icons
 from config.config import config
@@ -235,15 +236,29 @@ class WallpaperSelector(Box):
                 self.scheme_dropdown,
                 Button(
                     name="close-button",
-                    child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
+                    child=MaterialIconLabel(
+                        name="close-label", icon_text=icons.close.symbol()
+                    ),
                     tooltip_text="Exit",
                     on_clicked=lambda *_: self._pill.close(),
                 ),
             ],
         )
 
-        self.add(self.scrolled_window)
-        self.add(self.header_box)
+        box_shadow_overlay = Box(name="wallpaper-overlay")
+        self.overlay = Overlay(
+            v_expand=True,
+            child=Box(
+                name="wallpaper-selector",
+                spacing=10,
+                orientation="v",
+                children=[self.scrolled_window, self.header_box],
+            ),
+            overlays=box_shadow_overlay,
+        )
+        self.overlay.set_overlay_pass_through(box_shadow_overlay, True)
+
+        self.add(self.overlay)
 
         self.setup_file_monitor()
         self.show_all()
@@ -324,6 +339,8 @@ class WallpaperSelector(Box):
                 child = self._create_flowbox_child(pixbuf, file_name)
                 self.viewport.add(child)
                 child.show_all()
+
+                self.update_badge_visibility()
                 GLib.idle_add(self.arrange_viewport, self.search_entry.get_text())
 
         except Exception as e:
@@ -361,18 +378,46 @@ class WallpaperSelector(Box):
         image = Gtk.Image.new_from_pixbuf(pixbuf)
         image.set_name("wallpaper-thumbnail")
 
+        badge = Box(
+            name="badge-container",
+            visible=False,
+            all_visible=False,
+            orientation="v",
+            children=[
+                Box(name="bade-hole", h_expand=True, v_expand=True),
+                Box(
+                    name="bade-label-container",
+                    h_expand=True,
+                    children=MaterialFontLabel(
+                        name="bade-label",
+                        h_expand=True,
+                        h_align="center",
+                        v_align="end",
+                        font_family="Google Sans Flex",
+                        wght=600,
+                        text="CURRENT",
+                    ),
+                ),
+            ],
+        )
+        badge.set_no_show_all(True)
+        badge.hide()
+
         box = ClippingBox(
             name="wallpaper-thumbnail-clipper",
             orientation=Gtk.Orientation.VERTICAL,
+            children=Overlay(child=image, overlays=badge),
             spacing=4,
         )
-        box.pack_start(image, False, False, 0)
 
         child = Gtk.FlowBoxChild()
         child.set_name("wallpaper-thumbnail-container")
         child.add(box)
-        child.file_name = file_name  # store metadata
+        child.file_name = file_name
         child.set_can_focus(True)
+
+        # ---- ADD THIS LINE HERE ----
+        child.badge = badge
 
         return child
 
@@ -435,6 +480,28 @@ class WallpaperSelector(Box):
             )
 
         future.add_done_callback(_on_preview_ready)
+
+        self.update_badge_visibility(target_file_name=file_name)
+
+    def update_badge_visibility(self, target_file_name: str = None):
+        # 1. Fallback to service state ONLY if no explicit target is provided
+        if target_file_name is None:
+            try:
+                current_path = self.wallpaper_service.get_wallpaper_path() or ""
+                target_file_name = os.path.basename(current_path)
+            except Exception:
+                target_file_name = ""
+
+        def _ui_sync():
+            for child in self.viewport.get_children():
+                if hasattr(child, "badge"):
+                    if child.file_name == target_file_name:
+                        child.badge.show()
+                    else:
+                        child.badge.hide()
+            return False
+
+        GLib.idle_add(_ui_sync)
 
     def on_scheme_changed(self, combo):
         selected_scheme = combo.get_active_id()
@@ -538,9 +605,11 @@ class WallpaperSelector(Box):
             process, _ = exec_shell_command_async(command)
             process.wait_check_async(
                 None,
-                lambda p, r: logger.info("Theme updated")
-                if p.wait_check_finish(r)
-                else logger.error("Theme failed"),
+                lambda p, r: (
+                    logger.info("Theme updated")
+                    if p.wait_check_finish(r)
+                    else logger.error("Theme failed")
+                ),
             )
         except Exception as e:
             logger.exception(f"Matugen error: {e}")

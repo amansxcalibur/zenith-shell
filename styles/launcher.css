@@ -1,25 +1,65 @@
-#header-box {
-  /* padding-left: 10px;
-  padding-right: 10px; */
-  /* background-color: red; */
+#app-launcher {
+  background-color: var(--shadow);
 }
 
+#launcher-overlay {
+  box-shadow: inset 0px 12px 5px 0px var(--shadow);
+}
+
+/* Laucher box */
+#launcher-box {
+  padding: 0 12px 12px 12px;
+}
+#viewport {
+  padding-top: 12px;
+}
+
+/* Header */
+#search-container {
+  background-color: var(--surface-semi-bright);
+  padding: 12px;
+  border-radius: 34px;
+}
+
+#search-container-item-seperator {
+  background-color: var(--surface-bright);
+  min-width: 4px;
+  border-radius: 4px;
+}
 #search-entry {
   font-weight: bold;
-  background-color: var(--surface);
+  background-color: var(--surface-semi-bright);
   color: var(--foreground);
-  border-radius: 16px;
+  border-radius: 34px;
 }
-
 #search-entry selection {
   color: var(--background);
   background-color: var(--primary);
 }
 
+/* Launch-Mode */
+#launch-mode-box {
+  min-width: 50px;
+  border-radius: 16px;
+}
+
+.launch-mode-btn {
+  min-width: 50px;
+  border-radius: 16px;
+}
+.launch-mode-btn:hover {
+  background-color: var(--surface-bright);
+}
+.launch-mode-btn > * {
+  font-size: 24px;
+  color: var(--primary);
+}
+
 #close-button {
-  background-color: var(--surface);
+  background-color: var(--surface-semi-bright);
   border-radius: 16px;
   padding: 10px;
+  min-width: 38px;
 }
 
 #close-button:hover,
@@ -32,73 +72,41 @@
 }
 
 #close-label {
-  color: var(--shadow);
+  color: var(--surface-semi-bright);
   background-color: var(--error-dim);
-  font-size: 20px;
+  font-size: 26px;
   padding: 2px;
   border-radius: 999px;
-  min-width: 25px;
+  min-width: 24px;
 }
 
-#scrolled-window {
-  border-radius: 16px;
-  border-bottom-right-radius: 25px;
-  border-bottom-left-radius: 25px;
-}
-
-#scrolled-window viewport {
-  /* background-color: var(--surface); */
-  border-radius: 16px;
-  background-color: var(--surface);
-  padding: 4px;
-  /* border-bottom-right-radius: 25px;
-  border-bottom-left-radius: 25px; */
-}
-
-#scrolled-window scrollbar {
-  border-radius: 10px;
-  background-color: var(--surface);
-  margin-left: 6px;
-  padding: 4px;
-}
-
-#scrolled-window slider {
-  border-radius: 6px;
-  min-width: 22px;
-  min-height: 48px;
-  background-color: var(--primary);
-}
-
-#app-slot-button {
+/* App slot */
+#app-slot-btn {
   border-radius: 16px;
   padding: 12px 16px;
   transition: all 0.1s linear;
-  background-color: var(--shadow);
+  background-color: var(--surface);
 }
-
-#app-slot-button.selected,
-#app-slot-button:hover,
-#app-slot-button:focus {
+#app-slot-btn.selected,
+#app-slot-btn:hover,
+#app-slot-btn:focus {
   background-color: var(--surface-bright);
   padding-left: 24px;
 }
-
-#app-slot-button:active {
+#app-slot-btn:active {
   background-color: var(--primary);
 }
 
 #app-icon {
   border-radius: 15px;
 }
-
 #app-icon.command {
   font-size: 24px;
 }
 
 #app-label {
   color: var(--foreground);
-  font-weight: bold;
-  text-shadow: none;
+  /* font-weight: bold; */
 }
 
 #app-desc {
@@ -106,42 +114,12 @@
   font-size: 14px;
 }
 
-#app-slot-button:hover #app-label,
-#app-slot-button:focus #app-label {
+#app-slot-btn:hover #app-label,
+#app-slot-btn:focus #app-label {
   color: var(--primary);
 }
 
-#app-slot-button:active #app-label {
+#app-slot-btn:active #app-label,
+#app-slot-btn:active #app-desc {
   color: var(--shadow);
-}
-
-.selected {
-  background-color: var(--surface-bright);
-  padding-left: 24px;
-  color: var(--primary);
-}
-
-#launcher-box {
-  min-width: 400px;
-  padding: 10px;
-}
-
-.launch-mode-btn {
-  background-color: var(--surface);
-  min-width: 50px;
-  border-radius: 16px;
-}
-
-#launch-mode-box {
-  background-color: var(--surface);
-  min-width: 50px;
-  border-radius: 16px;
-}
-.launch-mode-btn:hover {
-  background-color: var(--surface-bright);
-}
-
-.launch-mode-btn > * {
-  font-size: 24px;
-  color: var(--primary);
 }

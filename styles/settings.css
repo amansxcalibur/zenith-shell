@@ -235,3 +235,7 @@
 #settings-shapes-flowbox {
   background-color: var(--surface-bright);
 }
+
+#close-label.settings{
+  font-size: 20px;
+}

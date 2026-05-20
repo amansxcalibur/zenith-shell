@@ -19,6 +19,7 @@ class MaterialIcon(Icon):
 
 # dashboard
 arrow_forward: str = "\ue5e1"
+arrow_backward: str = "\ue2ea"
 
 add_material: str = "\ue145"
 

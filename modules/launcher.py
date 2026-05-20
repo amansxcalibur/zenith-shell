@@ -5,6 +5,7 @@ from fabric.widgets.entry import Entry
 from fabric.widgets.image import Image
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
+from fabric.widgets.overlay import Overlay
 from fabric.widgets.revealer import Revealer
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.scrolledwindow import ScrolledWindow
@@ -16,6 +17,7 @@ import icons
 from config.config import config
 
 from gi.repository import GLib, Gdk
+
 
 class AppCommands:
     POWER = "power"
@@ -104,8 +106,6 @@ class AppLauncher(Box):
         self._rebuild_mode_options()
 
     def _build_search_interface(self):
-        self.viewport = Box(name="viewport", spacing=4, v_align="end", orientation="v")
-
         self.search_entry = Entry(
             name="search-entry",
             placeholder="Search Applications",
@@ -118,28 +118,80 @@ class AppLauncher(Box):
         )
         self.search_entry.props.xalign = 0.5
 
+        # TODO
+        # self.search_result_cnt = MaterialFontLabel(
+        #     text="Apps 37",
+        #     font_family="Google Sans Flex",
+        # )
+
+        self.viewport = Box(name="viewport", spacing=6, v_align="end", orientation="v")
         self.scrolled_window = ScrolledWindow(
-            name="scrolled-window",
+            name="app-scrolled-window",
             spacing=10,
             style_classes="" if not config.VERTICAL else "vertical",
-            min_content_size=(400, 150),
-            max_content_size=(400, 150),
+            min_content_size=(450, 260),
+            max_content_size=(450, 260),
             child=self.viewport,
         )
 
     def _build_main_layout(self):
         self.header_box = Box(
             name="header-box",
-            spacing=10,
-            orientation="h",
+            spacing=2,
+            orientation="v",
             children=[
-                self.launch_mode_event_box,
-                self.search_entry,
-                Button(
-                    name="close-button",
-                    child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
-                    tooltip_text="Exit",
-                    on_clicked=lambda *_: self.close_launcher(),
+                # TODO
+                # Box(
+                #     style="padding: 0 4px;",
+                #     spacing=4,
+                #     children=[
+                #         self.search_result_cnt,
+                #         Box(h_expand=True),
+                #         Box(
+                #             style="padding: 0 6px; background-color: var(--surface-semi-bright); border-radius: 20px; margin-bottom: 4px",
+                #             children=[
+                #                 MaterialIconLabel(icon_text=icons.north.symbol()),
+                #                 MaterialIconLabel(icon_text=icons.south.symbol()),
+                #                 Label(style="color: var(--outline);", label="nav"),
+                #             ],
+                #         ),
+                #         Box(
+                #             style="padding: 0 6px; background-color: var(--surface-semi-bright); border-radius: 20px; margin-bottom: 4px",
+                #             children=[
+                #                 Label(style="color: var(--outline); ", label="Shift+"),
+                #                 MaterialIconLabel(
+                #                     icon_text=icons.arrow_backward.symbol()
+                #                 ),
+                #                 MaterialIconLabel(
+                #                     icon_text=icons.arrow_forward.symbol()
+                #                 ),
+                #                 Label(style="color: var(--outline); ", label="modes"),
+                #             ],
+                #         ),
+                #     ],
+                # ),
+                Box(
+                    spacing=8,
+                    children=[
+                        Box(
+                            name="search-container",
+                            h_expand=True,
+                            spacing=4,
+                            children=[
+                                self.launch_mode_event_box,
+                                Box(name="search-container-item-seperator"),
+                                self.search_entry,
+                            ],
+                        ),
+                        Button(
+                            name="close-button",
+                            child=MaterialIconLabel(
+                                name="close-label", icon_text=icons.close.symbol()
+                            ),
+                            tooltip_text="Exit",
+                            on_clicked=lambda *_: self.close_launcher(),
+                        ),
+                    ],
                 ),
             ],
         )
@@ -152,7 +204,15 @@ class AppLauncher(Box):
             children=[self.scrolled_window, self.header_box],
         )
 
-        self.add(self.launcher_box)
+        box_shadow_overlay = Box(name="launcher-overlay")
+        self.overlay = Overlay(
+            h_expand=True,
+            child=self.launcher_box,
+            overlays=box_shadow_overlay,
+        )
+        self.overlay.set_overlay_pass_through(box_shadow_overlay, True)
+
+        self.add(self.overlay)
 
     def _on_hover_enter(self, widget, event):
         if event.detail != Gdk.NotifyType.INFERIOR:
@@ -288,8 +348,10 @@ class AppLauncher(Box):
         filtered_apps = self._get_filtered_apps(query)
 
         self._arranger_handler = idle_add(
-            lambda apps_iter: self._add_next_application(apps_iter)
-            or self._handle_arrange_complete(query),
+            lambda apps_iter: (
+                self._add_next_application(apps_iter)
+                or self._handle_arrange_complete(query)
+            ),
             iter(reversed(filtered_apps)),
             pin=True,
         )
@@ -337,7 +399,7 @@ class AppLauncher(Box):
 
     def _create_application_slot(self, app: DesktopApp) -> Button:
         return Button(
-            name="app-slot-button",
+            name="app-slot-btn",
             child=Box(
                 name="app-slot-box",
                 orientation="h",
@@ -364,7 +426,7 @@ class AppLauncher(Box):
                                 ellipsization="end",
                                 v_align="center",
                                 h_align="start",
-                                max_chars_width=40,
+                                max_chars_width=50,
                                 h_expand=True,
                             ),
                         ],
@@ -378,7 +440,7 @@ class AppLauncher(Box):
     def _create_command_slot(self, cmd_data: dict) -> Button:
         icon = cmd_data["icon"]
         return Button(
-            name="app-slot-button",
+            name="app-slot-btn",
             child=Box(
                 name="app-slot-box",
                 orientation="h",
@@ -387,9 +449,7 @@ class AppLauncher(Box):
                     MaterialIconLabel(
                         name="app-icon",
                         style_classes="command",
-                        icon_text=icon.symbol()
-                        if hasattr(icon, "symbol")
-                        else icon,
+                        icon_text=icon.symbol() if hasattr(icon, "symbol") else icon,
                         v_align="center",
                     ),
                     Box(

@@ -1,3 +1,5 @@
+from loguru import logger
+
 from fabric.widgets.box import Box
 from fabric.widgets.stack import Stack
 from fabric.widgets.eventbox import EventBox
@@ -90,16 +92,30 @@ class DockBar(Window):
             "power_profiles": PowerProfilesSelector,
         }
 
+        def safe_load_module(module_name):
+            if module_name not in self.module_map:
+                logger.warning(
+                    f"[Warning] Module '{module_name}' is not defined in module_map."
+                )
+                return None
+            try:
+                return self.module_map[module_name]()
+            except Exception as e:
+                logger.error(
+                    f"[Error] Failed to initialize module '{module_name}': {e}"
+                )
+                return None
+
         self.user_modules_left = [
-            # self.module_map[m]()
-            # for m in config.bar.modules.left
-            # if m in self.module_map
+            mod
+            for m in config.bar.modules.left
+            if (mod := safe_load_module(m)) is not None
         ]
         self.user_modules_right = reversed(
             [
-                # self.module_map[m]()
-                # for m in config.bar.modules.right
-                # if m in self.module_map
+                mod
+                for m in config.bar.modules.right
+                if (mod := safe_load_module(m)) is not None
             ]
         )
 
@@ -191,7 +207,7 @@ class DockBar(Window):
 
         self.edge_fallback_left = EventBox(
             h_expand=True,
-            child=Box(h_expand=True, style="background-color:var(--shadow)"),
+            child=Box(h_expand=True),
             events=["enter-notify"],
         )
         self.edge_fallback_left.connect(

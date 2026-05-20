@@ -88,9 +88,7 @@ class LayoutManager:
                     )
                 else:
                     self.placeholder_row.add(self.main_hole_container)
-                    self.placeholder_row.add(
-                        Box(h_expand=True, style="background-color:black")
-                    )
+            self.placeholder_row.add(Box(h_expand=True, style="background-color:black"))
         else:
             self.placeholder_row.add(Box(h_expand=True, style="background-color:black"))
             self.placeholder_row.add(self.main_hole_container)
@@ -316,9 +314,7 @@ class LayoutManager:
         if hover_time != self._last_event_update_time:
             return False
         if self.hover_overlay_row and self.hover_overlay_row.children:
-            overlay = self.hover_overlay_row.children[
-                0 if self.side == "left" else -1
-            ]
+            overlay = self.hover_overlay_row.children[0 if self.side == "left" else -1]
             if isinstance(overlay, HoverOverlay):
                 overlay.on_hover(overlay, None)
         return False
