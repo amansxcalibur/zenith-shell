@@ -10,14 +10,15 @@ from modules.systray import SystemTray
 from modules.weather import WeatherMini
 from modules.controls import ControlsManager
 from modules.workspaces.workspaces import Workspaces
-from modules.metrics.metrics import MetricsSmall, Battery
-from modules.core.bottom.dock.layout_manager import LayoutManager
-from modules.core.bottom.dock.module_overlay import HoverOverlay, HolePlaceholder
 from modules.power_profiles import PowerProfilesSelector
+from modules.metrics.metrics import MetricsSmall, Battery
 
 from config.config import config
-from utils.cursor import add_hover_cursor
 from utils.helpers import toggle_class
+from utils.cursor import add_hover_cursor
+
+from .layout_manager import LayoutManager
+from .module_overlay import HoverOverlay, HolePlaceholder
 
 import gi
 
@@ -90,15 +91,15 @@ class DockBar(Window):
         }
 
         self.user_modules_left = [
-            self.module_map[m]()
-            for m in config.bar.modules.left
-            if m in self.module_map
+            # self.module_map[m]()
+            # for m in config.bar.modules.left
+            # if m in self.module_map
         ]
         self.user_modules_right = reversed(
             [
-                self.module_map[m]()
-                for m in config.bar.modules.right
-                if m in self.module_map
+                # self.module_map[m]()
+                # for m in config.bar.modules.right
+                # if m in self.module_map
             ]
         )
 
@@ -190,7 +191,7 @@ class DockBar(Window):
 
         self.edge_fallback_left = EventBox(
             h_expand=True,
-            child=Box(h_expand=True),
+            child=Box(h_expand=True, style="background-color:var(--shadow)"),
             events=["enter-notify"],
         )
         self.edge_fallback_left.connect(

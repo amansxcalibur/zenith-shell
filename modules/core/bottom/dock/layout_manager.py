@@ -1,11 +1,19 @@
+from __future__ import annotations
+
 import time
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from fabric.widgets.box import Box
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 
 from utils.helpers import toggle_class
+
+from .module_overlay import HoverOverlay
+
+if TYPE_CHECKING:
+    from .bar import DockBar
 
 import gi
 
@@ -25,7 +33,7 @@ class ModuleRelation(Enum):
 
 
 class LayoutManager:
-    def __init__(self, dock, side, **kwargs):
+    def __init__(self, dock: DockBar, side, **kwargs):
         self.dock = dock
         self.side = side
         self.curr_hovered_index = -1
@@ -308,6 +316,9 @@ class LayoutManager:
         if hover_time != self._last_event_update_time:
             return False
         if self.hover_overlay_row and self.hover_overlay_row.children:
-            overlay = self.hover_overlay_row.children[0 if self.side == "left" else -1]
-            overlay.on_hover(overlay, None)
+            overlay = self.hover_overlay_row.children[
+                0 if self.side == "left" else -1
+            ]
+            if isinstance(overlay, HoverOverlay):
+                overlay.on_hover(overlay, None)
         return False

@@ -24,7 +24,7 @@ add_material: str = "\ue145"
 
 device_thermostat: str = "\ue1ff"
 
-contrast: str = '\ueb37'
+contrast: str = "\ueb37"
 
 wifi_off: str = "&#xecfa;"
 night_off: str = "&#xf162;"
@@ -140,6 +140,8 @@ wifi_3: str = "\uef16"
 wifi_4: str = "\uef10"
 
 lan: str = "\ueb2f"
+
+globe_2_question: str = "\U000fffb6"
 
 balance: str = "\ueaf6"
 energy_savings_leaf: str = "\uec1a"

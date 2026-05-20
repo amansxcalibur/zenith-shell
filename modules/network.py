@@ -701,7 +701,7 @@ class Network(TileSimpleWithMenu):
     CONN_TYPE_META = {
         ConnectionType.WIFI: {"text": "Wi-Fi", "icon": icons.wifi.symbol()},
         ConnectionType.ETHERNET: {"text": "Ethernet", "icon": icons.lan.symbol()},
-        ConnectionType.NONE: {"text": "None", "icon": icons.blur.symbol()},
+        ConnectionType.NONE: {"text": "Internet", "icon": icons.globe_2_question.symbol()},
     }
 
     def __init__(self, **kwargs):
@@ -719,8 +719,9 @@ class Network(TileSimpleWithMenu):
         self.nm.connect("ethernet-change", self._on_ethernet_list_changed)
 
         self.wifi_dev = self.nm.get_wifi_device()
-        self.wifi_dev.connect("ap-change", self._on_ap_list_change)
-        self.wifi_dev.connect("connection-result", self._on_connection_result)
+        if self.wifi_dev:
+            self.wifi_dev.connect("ap-change", self._on_ap_list_change)
+            self.wifi_dev.connect("connection-result", self._on_connection_result)
 
         self._primary_device_singal_id = None
         self._primary_device = None
@@ -855,7 +856,13 @@ class Network(TileSimpleWithMenu):
                         add_hover_cursor(
                             Button(
                                 h_align="end",
-                                on_clicked=lambda *_: self.wifi_dev.scan(),
+                                on_clicked=lambda *_: (
+                                    self.wifi_dev.scan()
+                                    if self.wifi_dev is not None
+                                    else logger.error(
+                                        "[Netowrk] Wifi device is None, couldn't request scan."
+                                    )
+                                ),
                                 child=MaterialIconLabel(
                                     style_classes=["menu-icon"],
                                     icon_text=icons.refresh.symbol(),
