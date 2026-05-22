@@ -415,8 +415,6 @@ class WallpaperSelector(Box):
         child.add(box)
         child.file_name = file_name
         child.set_can_focus(True)
-
-        # ---- ADD THIS LINE HERE ----
         child.badge = badge
 
         return child

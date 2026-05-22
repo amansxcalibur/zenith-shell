@@ -152,7 +152,7 @@ class Pill(Window, Service):
         self._open_view(
             self.launcher,
             lambda: (
-                self.launcher.open_launcher(),
+                # self.launcher.open_launcher(),
                 self.launcher.search_entry.set_text(""),
                 self.launcher.search_entry.grab_focus(),
             ),

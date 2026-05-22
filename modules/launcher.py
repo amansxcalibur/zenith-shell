@@ -1,3 +1,5 @@
+from enum import Enum
+from functools import lru_cache
 from collections.abc import Iterator
 
 from fabric.widgets.box import Box
@@ -19,12 +21,12 @@ from config.config import config
 from gi.repository import GLib, Gdk
 
 
-class AppCommands:
-    POWER = "power"
-    DASHBOARD = "dashboard"
-    WALLPAPERS = "wallpapers"
-    PLAYER = "player"
-    SETTINGS = "settings"
+class AppCommands(Enum):
+    POWER = 0
+    DASHBOARD = 1
+    WALLPAPERS = 2
+    PLAYER = 3
+    SETTINGS = 4
 
 
 class AppLauncher(Box):
@@ -34,25 +36,40 @@ class AppLauncher(Box):
     MODE_CALC = "="
 
     COMMANDS = [
-        {"title": "Power", "cmd": ":p", "id": AppCommands.POWER, "icon": icons.power},
-        {"title": "Player", "cmd": ":u", "id": AppCommands.PLAYER, "icon": icons.disc},
+        {
+            "title": "Power",
+            "cmd": ":p",
+            "id": AppCommands.POWER,
+            "icon": icons.power,
+            "keywords": ["shutdown", "restart", "sleep", "lock", "poweroff"],
+        },
+        {
+            "title": "Player",
+            "cmd": ":u",
+            "id": AppCommands.PLAYER,
+            "icon": icons.disc,
+            "keywords": ["music", "audio", "media"],
+        },
         {
             "title": "Dashboard",
             "cmd": ":d",
             "id": AppCommands.DASHBOARD,
             "icon": icons.dashboard,
+            "keywords": ["home", "overview", "main"],
         },
         {
             "title": "Wallpapers",
             "cmd": ":w",
             "id": AppCommands.WALLPAPERS,
             "icon": icons.wallpaper,
+            "keywords": ["wallpaper", "background", "theme"],
         },
         {
             "title": "Zenith Settings",
             "cmd": ":s",
             "id": AppCommands.SETTINGS,
             "icon": icons.settings,
+            "keywords": ["settings", "prefs", "preferences", "config"],
         },
     ]
 
@@ -67,9 +84,10 @@ class AppLauncher(Box):
         self._pill = pill
         self.selected_index = -1
         self._arranger_handler = 0
-        self._all_apps = get_desktop_applications()
+        self._all_apps: list[DesktopApp] = []
         self.current_mode = self.MODE_APP
 
+        self._reload_apps()
         self._build_mode_selector()
         self._build_search_interface()
         self._build_main_layout()
@@ -216,6 +234,13 @@ class AppLauncher(Box):
 
         self.add(self.overlay)
 
+    def _reload_apps(self):
+        self._all_apps = sorted(
+            get_desktop_applications(),
+            key=lambda app: (app.display_name or "").casefold(),
+        )
+        self._get_filtered_apps.cache_clear()  # lru_cache bust on reload
+
     def _on_hover_enter(self, widget, event):
         if event.detail != Gdk.NotifyType.INFERIOR:
             self.launcher_options_revealer.set_reveal_child(True)
@@ -332,17 +357,53 @@ class AppLauncher(Box):
         self._clear_viewport()
 
         search_term = query.casefold()
-        filtered = [
-            cmd
-            for cmd in self.COMMANDS
-            if search_term in cmd["title"].casefold() or search_term in cmd["cmd"]
-        ]
+        term = search_term
+        if term.startswith(self.MODE_COMMAND):
+            term = term[1:]
+        term = term.strip()
+
+        if not term:
+            filtered = list(self.COMMANDS)
+        else:
+            ranked = []
+            for index, cmd in enumerate(self.COMMANDS):
+                score = self._score_command(cmd, term, search_term)
+                if score >= 0:
+                    ranked.append((score, index, cmd))
+            ranked.sort(key=lambda item: (-item[0], item[1]))
+            filtered = [cmd for _, _, cmd in ranked]
 
         for cmd in filtered:
-            self.viewport.add(self._create_command_slot(cmd))
+            self.viewport.pack_end(self._create_command_slot(cmd), True, True, 0)
 
         if filtered:
             GLib.idle_add(lambda: self._update_selection(len(filtered) - 1))
+
+    def _score_command(self, cmd: dict, term: str, raw_query: str) -> int:
+        cmd_text = cmd["cmd"].casefold()
+        cmd_short = cmd_text.lstrip(":")
+        title = cmd["title"].casefold()
+        keywords = [kw.casefold() for kw in cmd.get("keywords", [])]
+
+        if raw_query == cmd_text:
+            return 1000
+        if term == cmd_short:
+            return 950
+        if term == title:
+            return 900
+        if term in keywords:
+            return 850
+        if title.startswith(term):
+            return 800
+        if any(kw.startswith(term) for kw in keywords):
+            return 750
+        if term in title:
+            return 700
+        if any(term in kw for kw in keywords):
+            return 650
+        if term in cmd_text or term in cmd_short:
+            return 600
+        return -1
 
     def _arrange_app_mode(self, query):
         self._clear_viewport()
@@ -354,19 +415,19 @@ class AppLauncher(Box):
                 self._add_next_application(apps_iter)
                 or self._handle_arrange_complete(query)
             ),
-            iter(reversed(filtered_apps)),
+            iter(filtered_apps),
             pin=True,
         )
 
-    def _get_filtered_apps(self, query):
+    @lru_cache(maxsize=256)
+    def _get_filtered_apps(self, query: str) -> tuple[DesktopApp, ...]:
         query_lower = query.casefold()
-        filtered = [
+        return [
             app
             for app in self._all_apps
             if query_lower
             in f"{app.display_name or ''} {app.name} {app.generic_name or ''}".casefold()
         ]
-        return sorted(filtered, key=lambda app: (app.display_name or "").casefold())
 
     def _clear_viewport(self):
         remove_handler(self._arranger_handler) if self._arranger_handler else None
@@ -375,29 +436,31 @@ class AppLauncher(Box):
 
     def _handle_arrange_complete(self, query):
         children = self.viewport.get_children()
-
-        # auto-select last item if query exists
-        if query.strip():
+        if query.strip():  # auto-select last item if query exists
             if children:
                 GLib.idle_add(lambda: self._update_selection(len(children) - 1))
-
-        # scroll to bottom on empty query (launcher startup)
-        else:
-
-            def on_layout_complete(widget, allocation):
-                adj = self.scrolled_window.get_vadjustment()
-                adj.set_value(adj.get_upper())
-                widget.disconnect(handler_id)
-
-            handler_id = self.viewport.connect("size-allocate", on_layout_complete)
 
         return False
 
     def _add_next_application(self, apps_iter: Iterator[DesktopApp]):
         if app := next(apps_iter, None):
-            self.viewport.add(self._create_application_slot(app))
+            self.viewport.pack_end(self._create_application_slot(app), True, True, 0)
+            self._scroll_to_bottom()
             return True
         return False
+
+    def _scroll_to_bottom(self):
+        v_adjust = self.scrolled_window.get_vadjustment()
+
+        def on_adjust_changed(adj):
+            # upper (total height) - page_size (visible height) = bottom position
+            bottom_value = adj.get_upper() - adj.get_page_size()
+            adj.set_value(bottom_value)
+
+            # Disconnect immediately so the user can still scroll up manually later
+            adj.disconnect(handler_id)
+
+        handler_id = v_adjust.connect("changed", on_adjust_changed)
 
     def _create_application_slot(self, app: DesktopApp) -> Button:
         return Button(
@@ -534,8 +597,9 @@ class AppLauncher(Box):
     def close_launcher(self):
         self.viewport.children = []
         self.selected_index = -1
+        self._get_filtered_apps.cache_clear()
         self._pill.close()
 
     def open_launcher(self):
-        self._all_apps = get_desktop_applications()
+        self._reload_apps()
         self.arrange_viewport()
