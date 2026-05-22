@@ -106,6 +106,9 @@ class AppLauncher(Box):
         self._rebuild_mode_options()
 
     def _build_search_interface(self):
+        # don't move below search_entry init - notify_text callback clears viewport
+        self.viewport = Box(name="viewport", spacing=6, v_align="end", orientation="v")
+
         self.search_entry = Entry(
             name="search-entry",
             placeholder="Search Applications",
@@ -124,7 +127,6 @@ class AppLauncher(Box):
         #     font_family="Google Sans Flex",
         # )
 
-        self.viewport = Box(name="viewport", spacing=6, v_align="end", orientation="v")
         self.scrolled_window = ScrolledWindow(
             name="app-scrolled-window",
             spacing=10,

@@ -20,30 +20,19 @@
 }
 
 #user-label {
-  color: white;
-  background-color: black;
+  color: var(--foreground);
+  background-color: var(--shadow);
   border-radius: 25px;
   padding: 13px 15px;
   font-family: Roboto Flex;
   font-weight: 600;
 }
 
-button:focus {
-  outline: none;
-  box-shadow: none;
-}
-
 #orientation-btn {
-  all: unset;
-  background-color: black;
+  background-color: var(--shadow);
   border-radius: 17px;
   min-width: 38px;
   padding: 0px;
-}
-
-#orientation-btn:hover {
-  /* border-radius: 15px; */
-  transition: border 0.1s cubic-bezier(0.5, 0.25, 0, 1);
 }
 
 #orientation-label {
@@ -55,7 +44,27 @@ button:focus {
   background-color: black;
 }
 
-#pill.expand {
-  min-width: 100px;
-  min-height: 0px;
+
+#close-button-small {
+  background-color: var(--surface-semi-bright);
+  border-radius: 16px;
+  padding: 10px;
+}
+
+#close-button-small:hover,
+#close-button-small:focus {
+  background-color: var(--surface-bright);
+}
+
+#close-button-small:active {
+  background-color: var(--primary);
+}
+
+#close-label-small {
+  color: var(--shadow);
+  background-color: var(--error-dim);
+  font-size: 20px;
+  padding: 2px;
+  border-radius: 999px;
+  min-width: 25px;
 }

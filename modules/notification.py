@@ -219,9 +219,9 @@ class NotificationWidget(EventBox):
                         orientation="v",
                         children=[
                             Button(
-                                name="close-button",
+                                name="close-button-small",
                                 child=MaterialIconLabel(
-                                    name="close-label", icon_text=icons.close.symbol()
+                                    name="close-label-small", icon_text=icons.close.symbol()
                                 ),
                                 tooltip_text="Close",
                                 style_classes="critical" if self.urgency == 2 else "",
