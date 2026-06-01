@@ -106,6 +106,8 @@ class TopPill(Window, Service):
         self.connect("button-press-event", self.on_button_press)
         self.connect("motion-notify-event", self.on_motion)
         self.connect("button-release-event", self.on_button_release)
+        
+        self.connect("delete-event", self.on_delete_event)
 
     def focus_pill(self):
         exec_shell_command_async(f'i3-msg [window_role="^{self.WIN_ROLE}$"] focus')
@@ -250,3 +252,7 @@ class TopPill(Window, Service):
 
     def update_controls_positions(self):
         self.open()
+
+    def on_delete_event(self, *_):
+        # don't close me :(
+        return True

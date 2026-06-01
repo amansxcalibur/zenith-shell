@@ -99,6 +99,8 @@ class SharedPopupWindow(Window):
             "leave-notify-event",
             lambda x, y: self._on_hover_popup(event=y, state=False),
         )
+
+        self.connect("delete-event", self.on_delete_event)
         # self.connect("configure-event", self.on_window_move)
 
     # def on_window_move(self, widget, event):
@@ -379,3 +381,7 @@ class SharedPopupWindow(Window):
                 logger.error(f"do_size_allocate Y position failed: {e}")
 
         Gtk.Window.do_size_allocate(self, alloc)
+
+    def on_delete_event(self, *_):
+        # don't close me :(
+        return True

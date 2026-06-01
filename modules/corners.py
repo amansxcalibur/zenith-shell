@@ -67,4 +67,9 @@ class Corners(Window):
 
         self.add(self.all_corners)
 
+        self.connect("delete-event", self.on_delete_event)
         self.show_all()
+
+    def on_delete_event(self, *_):
+        # don't close me :(
+        return True

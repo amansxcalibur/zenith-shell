@@ -80,6 +80,8 @@ class PopupWindow(Window):
         # positioning events
         self.pointing_widget.connect("size-allocate", lambda *_: (self.place_popup))
 
+        self.connect("delete-event", self.on_delete_event)
+
     def do_draw(self, cr):
         self.place_popup()
         return Window.do_draw(self, cr)
@@ -130,3 +132,7 @@ class PopupWindow(Window):
             self.revealer.unreveal()
             self.hide_delay_ref = GLib.timeout_add(300, lambda: self.set_visible(False))
         return False
+    
+    def on_delete_event(self, *_):
+        # don't close me :(
+        return True

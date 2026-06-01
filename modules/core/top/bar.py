@@ -65,6 +65,7 @@ class TopBar(Window):
         self._pill_ref.connect("child-changed", self.update_controls)
         self.add_keybinding("Escape", lambda *_: self.close())
 
+        self.connect("delete-event", self.on_delete_event)
         self.connect("destroy", self._on_destroy)
 
     def init_modules(self):
@@ -443,7 +444,7 @@ class TopBar(Window):
             )
 
     def _on_destroy(self, *args):
-        # Cancel all pending timeouts
+        # cancel all pending timeouts
         if self._cleanup_timeout_id is not None:
             GLib.source_remove(self._cleanup_timeout_id)
             self._cleanup_timeout_id = None
@@ -464,5 +465,9 @@ class TopBar(Window):
             GLib.source_remove(self._detach_edge_timeout_id)
             self._detach_edge_timeout_id = None
 
-        # Clear all pending boxes
+        # clear all pending boxes
         self._boxes_to_clean.clear()
+
+    def on_delete_event(self, *_):
+        # don't close me :(
+        return True

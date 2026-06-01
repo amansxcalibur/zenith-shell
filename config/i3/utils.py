@@ -235,16 +235,7 @@ def generate_i3_general_config(reload: bool = False):
 
     try:
         ensure_i3_config_includes_glob_dir(main_config_path, CONFIG_GLOB_PATH)
-
-        logger.debug("Applying i3 kill exceptions for zenith")
-        lines.extend(
-            [
-                "# kill focused window (except zenith)",
-                f'bindsym $mod+Shift+q [con_id="__focused__" instance="^(?!{SHELL_NAME}-core).*$"] kill',
-                "",
-            ]
-        )
-
+        
         logger.debug("Setting i3 borders and gaps")
         lines.append(generate_i3_gaps_and_borders_config())
 
