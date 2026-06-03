@@ -18,7 +18,7 @@ from widgets.material_label import MaterialIconLabel
 import icons
 from config.config import config
 
-from gi.repository import GLib, Gdk
+from gi.repository import GLib, Gdk, Gtk
 
 
 class AppCommands(Enum):
@@ -82,10 +82,27 @@ class AppLauncher(Box):
         )
 
         self._pill = pill
-        self.selected_index = -1
         self._arranger_handler = 0
         self._all_apps: list[DesktopApp] = []
+        self._launcher_bindings_config = config.bindings.modules.launcher
         self.current_mode = self.MODE_APP
+        self.selected_index = -1
+
+        self._cached_binds = {
+            "mode-prev": Gtk.accelerator_parse(
+                self._launcher_bindings_config["launcher.mode_prev"]
+            ),
+            "mode-next": Gtk.accelerator_parse(
+                self._launcher_bindings_config["launcher.mode_next"]
+            ),
+            "up": Gtk.accelerator_parse(self._launcher_bindings_config["launcher.move_up"]),
+            "down": Gtk.accelerator_parse(
+                self._launcher_bindings_config["launcher.move_down"]
+            ),
+            "activate": Gtk.accelerator_parse(
+                self._launcher_bindings_config["launcher.activate"]
+            ),
+        }
 
         self._reload_apps()
         self._build_mode_selector()
@@ -132,9 +149,6 @@ class AppLauncher(Box):
             placeholder="Search Applications",
             h_expand=True,
             notify_text=lambda entry, *_: self._on_entry_changed(entry),
-            on_activate=lambda entry, *_: self._on_search_entry_activate(
-                entry.get_text()
-            ),
             on_key_press_event=self._on_search_entry_key_press,
         )
         self.search_entry.props.xalign = 0.5
@@ -323,20 +337,41 @@ class AppLauncher(Box):
                 children[selected_index].clicked()
 
     def _on_search_entry_key_press(self, widget, event):
-        # mode switching with Shift + Left/Right
-        if event.state & Gdk.ModifierType.SHIFT_MASK:
-            if event.keyval in (Gdk.KEY_Left, Gdk.KEY_Right):
-                delta = -1 if event.keyval == Gdk.KEY_Left else 1
-                current_index = self.LAUNCH_MODES.index(self.current_mode)
-                new_index = (current_index + delta) % len(self.LAUNCH_MODES)
-                self._select_mode(self.LAUNCH_MODES[new_index])
-                return True
+        core_modifiers = event.state & (
+            Gdk.ModifierType.SHIFT_MASK
+            | Gdk.ModifierType.CONTROL_MASK
+            | Gdk.ModifierType.MOD1_MASK
+        )
+        key_prev, mask_prev = self._cached_binds["mode-prev"]
+        key_next, mask_next = self._cached_binds["mode-next"]
+        key_up, mask_up = self._cached_binds["up"]
+        key_down, mask_down = self._cached_binds["down"]
+        key_activate, mask_activate = self._cached_binds["activate"]
+
+        # launch
+        if event.keyval == key_activate and core_modifiers == mask_activate:
+            self._on_search_entry_activate(widget.get_text())
+            return True
+
+        # mode switch
+        if event.keyval == key_prev and core_modifiers == mask_prev:
+            current_index = self.LAUNCH_MODES.index(self.current_mode)
+            new_index = (current_index - 1) % len(self.LAUNCH_MODES)
+            self._select_mode(self.LAUNCH_MODES[new_index])
+            return True
+
+        if event.keyval == key_next and core_modifiers == mask_next:
+            current_index = self.LAUNCH_MODES.index(self.current_mode)
+            new_index = (current_index + 1) % len(self.LAUNCH_MODES)
+            self._select_mode(self.LAUNCH_MODES[new_index])
+            return True
 
         # navigation
-        if event.keyval == Gdk.KEY_Down:
+        if event.keyval == key_down and core_modifiers == mask_down:
             self._move_selection(1)
             return True
-        elif event.keyval == Gdk.KEY_Up:
+
+        if event.keyval == key_up and core_modifiers == mask_up:
             self._move_selection(-1)
             return True
 

@@ -204,13 +204,13 @@ class SettingsWindow(Window):
         shapes_id = "shapes"
         aspect = Gtk.AspectFrame(ratio=1.0, obey_child=False, xalign=0.5, yalign=1.0)
         self.shapes_box = Box(
-            name="shapes-box",
             h_expand=True,
             v_expand=True,
             children=[AnimateShapeMorph(name="settings-shapes-morph")],
         )
         aspect.add(
             Button(
+                name="shapes-box",
                 h_expand=True,
                 v_expand=True,
                 child=self.shapes_box,

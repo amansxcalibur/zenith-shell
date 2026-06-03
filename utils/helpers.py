@@ -6,16 +6,19 @@ import subprocess
 from pathlib import Path
 from loguru import logger
 
-from gi.repository import Gio, GLib
-
+from fabric.utils.helpers import bulk_replace
 from config.info import ROOT_DIR
+
+from gi.repository import Gio, GLib
 
 
 def toggle_class(widget, remove, add):
     widget.remove_style_class(remove)
     widget.add_style_class(add)
 
+
 _settings_process: Gio.Subprocess | None = None
+
 
 def open_settings():
     global _settings_process
@@ -118,3 +121,11 @@ def get_screen_resolution_i3() -> tuple[int, int]:
     max_y = max(o["rect"]["y"] + o["rect"]["height"] for o in active)
 
     return max_x, max_y
+
+
+def format_accel_to_keybind(accel_name: str) -> str:
+    return bulk_replace(
+        accel_name,
+        ["<Mod2>", "<Shift>", "<Primary>", "<Mod4><Super>", "<Alt>"],
+        [" ", "Shift ", "Ctrl ", "Super ", "Alt "],
+    )

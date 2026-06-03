@@ -14,6 +14,7 @@ from fabric.utils.helpers import exec_shell_command_async
 from modules.tile import TileSimpleWithMenu
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
+from utils.helpers import format_accel_to_keybind
 
 import icons
 from services.network.wifi import WifiDevice
@@ -701,7 +702,10 @@ class Network(TileSimpleWithMenu):
     CONN_TYPE_META = {
         ConnectionType.WIFI: {"text": "Wi-Fi", "icon": icons.wifi.symbol()},
         ConnectionType.ETHERNET: {"text": "Ethernet", "icon": icons.lan.symbol()},
-        ConnectionType.NONE: {"text": "Internet", "icon": icons.globe_2_question.symbol()},
+        ConnectionType.NONE: {
+            "text": "Internet",
+            "icon": icons.globe_2_question.symbol(),
+        },
     }
 
     def __init__(self, **kwargs):
@@ -776,6 +780,8 @@ class Network(TileSimpleWithMenu):
         )
 
         self.menu = self._build_menu()
+        self.menu.connect("map", lambda *_: self.register_keybindings())
+        self.menu.connect("unmap", lambda *_: self.unregister_keybindings())
 
         self.list_manager = NetworkListManager(
             self.active_connection,
@@ -875,6 +881,28 @@ class Network(TileSimpleWithMenu):
                 self.scrolled_container,
             ],
         )
+
+    def _keybindings(self):
+        wifi_bindings = config.bindings.modules.wifi
+        return {
+            format_accel_to_keybind(wifi_bindings["wifi.rescan"]): lambda *_: (
+                self.wifi_dev.scan()
+                if self.wifi_dev is not None
+                else logger.error(
+                    "[Netowrk] Wifi device is None, couldn't request scan."
+                )
+            ),
+        }
+
+    def register_keybindings(self):
+        window = self.get_toplevel()
+        for key, handler in self._keybindings().items():
+            window.add_keybinding(key, lambda *_, h=handler: h())
+
+    def unregister_keybindings(self):
+        window = self.get_toplevel()
+        for key in self._keybindings().keys():
+            window.remove_keybinding(key)
 
     def _initialize_network_state(self) -> None:
         try:

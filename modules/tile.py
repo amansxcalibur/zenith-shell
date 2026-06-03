@@ -146,7 +146,7 @@ class TileSimpleWithMenu(ClippingBox):
         self,
         markup: str = icons.blur.symbol(),
         label: str = "__",
-        title: str = "",  # Added title for the menu header
+        title: str = "",
         status_label_widget: Label = Label(
             style_classes="tile-label", label="N/A", h_align="start"
         ),
@@ -164,9 +164,8 @@ class TileSimpleWithMenu(ClippingBox):
         self.status_label_widget_revealer = Revealer(
             transition_duration=250, transition_type="slide-up", child=self.props
         )
-        self.toggle = False  # Tracks menu open/close state
+        self.toggle = False
 
-        # 1. Icon Setup (Retaining the SimpleTile visual style)
         self.icon = MaterialIconLabel(
             style_classes="tile-icon",
             icon_text=markup,
@@ -178,12 +177,10 @@ class TileSimpleWithMenu(ClippingBox):
             children=self.icon,
         )
 
-        # 2. Label Setup
         self.tile_label = Label(
             style_classes="tile-label", label=label, h_align="start"
         )
 
-        # 3. Content Setup (The clickable middle part)
         self.type_box = Box(
             style_classes="tile-type",
             h_expand=True,
@@ -203,9 +200,6 @@ class TileSimpleWithMenu(ClippingBox):
             child_revealed=True,
             h_expand=True,
         )
-
-        # 4. The Normal View (Icon + Labels)
-        # Wrapped in a Button so the icon area is also clickable to open the menu
 
         self.normal_view = TrueClippingBox(
             style_classes="tile-clipper",
@@ -229,10 +223,13 @@ class TileSimpleWithMenu(ClippingBox):
         )
         self.overlay.set_overlay_pass_through(box_shadow_overlay, True)
 
-        # 5. The Menu View (Copied logic from Tile)
         self.menu_close_btn = Button(
             name="menu-close-button",
-            child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
+            child=MaterialIconLabel(
+                name="close-label",
+                style_classes="settings",
+                icon_text=icons.close.symbol(),
+            ),
             tooltip_text="Exit",
             on_clicked=self.handle_menu_click,
         )
@@ -262,7 +259,6 @@ class TileSimpleWithMenu(ClippingBox):
             ),
         )
 
-        # 6. Stack Integration
         self.stack = Stack(
             transition_type="crossfade",
             transition_duration=150,
@@ -274,13 +270,12 @@ class TileSimpleWithMenu(ClippingBox):
 
         self.children = self.stack
 
-        # Cursors
+        # cursors
         add_hover_cursor(self.stack)
         add_hover_cursor(self.type_box)
         add_hover_cursor(self.menu_close_btn)
 
     def handle_menu_click(self, *_):
-        print("cliicking menu", self.toggle)
         if self.toggle:
             self.toggle = False
             self.menu.add_style_class("contract")
@@ -292,7 +287,6 @@ class TileSimpleWithMenu(ClippingBox):
             self.menu.add_style_class("expand")
             self.menu.remove_style_class("contract")
 
-        # Optional: Keep your shell notification if needed
         name = self.get_name()
         if name:
             exec_shell_command_async(
@@ -351,10 +345,8 @@ class Tile(ClippingBox):
         super().__init__(style_classes=merged_classes, v_align="start", **kwargs)
 
         self._on_toggle = on_toggle
-        self.state = (
-            False  # state is utilised everywhere. Especially during on_toggle()
-        )
-        self.toggle = False  # Menu state
+        self.state = False
+        self.toggle = False  # menu state
         self.props = (
             props
             if props
@@ -364,25 +356,21 @@ class Tile(ClippingBox):
             transition_duration=250, transition_type="slide-up", child=self.props
         )
 
-        # 1. Icon Button -> Triggers State Toggle
         self.icon = MaterialIconLabel(
             style_classes="tile-icon", icon_text=markup, style=markup_styles
         )
         self.icon_wrapper = Button(
             style_classes="tile-icon-btn",
-            on_clicked=self.handle_state_toggle,  # Specific to state
+            on_clicked=self.handle_state_toggle,
             child=self.icon,
         )
 
-        # 2. Label Setup
         self.tile_label = Label(
             style_classes="tile-label", label=label, h_align="start"
         )
 
-        # 3. Content Button -> Triggers Menu Toggle
         self.type_box = Button(
-            style="all:unset;",
-            on_clicked=self.handle_menu_click,  # Specific to menu
+            on_clicked=self.handle_menu_click,
             style_classes="tile-type",
             h_expand=True,
             child=Box(
@@ -402,7 +390,6 @@ class Tile(ClippingBox):
             h_expand=True,
         )
 
-        # 4. Normal View Layout
         self.normal_view = TrueClippingBox(
             style_classes="tile-clipper",
             max_width=164,
@@ -419,10 +406,13 @@ class Tile(ClippingBox):
         )
         self.overlay.set_overlay_pass_through(box_shadow_overlay, True)
 
-        # 5. Menu View
         self.menu_close_btn = Button(
             name="menu-close-button",
-            child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
+            child=MaterialIconLabel(
+                name="close-label",
+                style_classes="settings",
+                icon_text=icons.close.symbol(),
+            ),
             tooltip_text="Exit",
             on_clicked=self.handle_menu_click,
         )
@@ -448,7 +438,6 @@ class Tile(ClippingBox):
             ),
         )
 
-        # 6. Stack Integration
         self.stack = Stack(
             transition_type="crossfade",
             transition_duration=150,
@@ -460,7 +449,7 @@ class Tile(ClippingBox):
 
         self.children = self.stack
 
-        # Add cursors for interaction clarity
+        # cursors
         add_hover_cursor(self.icon_wrapper)
         add_hover_cursor(self.type_box)
         add_hover_cursor(self.menu_close_btn)

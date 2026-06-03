@@ -127,7 +127,8 @@
   border-radius: 20px;
 }
 
-#settings-entry-container.hovered-entry {
+#settings-entry-container.hovered-entry,
+#settings-entry-container:hover {
   background-color: var(--on-primary);
 }
 
@@ -143,6 +144,9 @@
   background-color: var(--surface-semi-bright);
   padding: 5px;
   border-radius: 10px;
+}
+#shapes-box:hover {
+  background-color: var(--surface-bright);
 }
 
 #config-path-label {
@@ -236,6 +240,7 @@
   background-color: var(--surface-bright);
 }
 
-#close-label.settings{
+#close-label.settings {
   font-size: 20px;
+  padding: 3px 0px;
 }

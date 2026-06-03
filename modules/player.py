@@ -13,6 +13,7 @@ from modules.wallpaper import WallpaperService
 from services.volume_service import VolumeService
 from widgets.material_label import MaterialIconLabel
 from services.player_service import PlayerManager, PlayerService
+from utils.helpers import format_accel_to_keybind
 
 import svg
 import icons
@@ -21,7 +22,7 @@ from config.config import config
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib, GObject
+from gi.repository import GLib
 
 
 class Player(Box):
@@ -562,8 +563,6 @@ class PlayerContainer(Box):
         self.update_player_list()
 
     def switch_player(self, player_name, button):
-        """Switch to a specific player"""
-
         def _switch():
             self.stack.set_visible_child_name(player_name)
 
@@ -575,7 +574,6 @@ class PlayerContainer(Box):
         GLib.idle_add(_switch)
 
     def on_player_vanish(self, manager, player_name: str):
-        """Called when a player disappears"""
         logger.info(f"Removing UI for player: {player_name}")
 
         if player_name not in self.player_widgets:
@@ -628,58 +626,51 @@ class PlayerContainer(Box):
         GLib.idle_add(_update_buttons)
 
     def _keybindings(self):
+        player_bindings = config.bindings.modules.player
         return {
-            "p": self.handle_play_pause,
-            "j": self.handle_prev,
-            "k": self.handle_skip_backward,
-            "l": self.handle_skip_forward,
-            "semicolon": self.handle_next,
-            "Tab": lambda: self.switch_relative_player(True),
-            "Shift ISO_Left_Tab": lambda: self.switch_relative_player(False),
+            format_accel_to_keybind(player_bindings["player.play_pause"]): self.handle_play_pause,
+            format_accel_to_keybind(player_bindings["player.prev"]): self.handle_prev,
+            format_accel_to_keybind(player_bindings["player.skip_backward"]): self.handle_skip_backward,
+            format_accel_to_keybind(player_bindings["player.skip_forward"]): self.handle_skip_forward,
+            format_accel_to_keybind(player_bindings["player.next"]): self.handle_next,
+            format_accel_to_keybind(player_bindings["player.switch_next"]): lambda: self.switch_relative_player(True),
+            format_accel_to_keybind(player_bindings["player.switch_prev"]): lambda: self.switch_relative_player(False),
         }
 
     def register_keybindings(self):
-        """Register keyboard shortcuts"""
         for key, handler in self._keybindings().items():
             self.window.add_keybinding(key, lambda *_, h=handler: h())
 
     def unregister_keybindings(self):
-        """Unregister keyboard shortcuts"""
         for key in self._keybindings().keys():
             self.window.remove_keybinding(key)
 
     def handle_play_pause(self):
-        """Handle play/pause for current player"""
         if current := self.stack.get_visible_child():
             if isinstance(current, Player):
                 current.handle_play_pause()
 
     def handle_prev(self):
-        """Handle previous track for current player"""
         if current := self.stack.get_visible_child():
             if isinstance(current, Player):
                 current.handle_prev()
 
     def handle_next(self):
-        """Handle next track for current player"""
         if current := self.stack.get_visible_child():
             if isinstance(current, Player):
                 current.handle_next()
 
     def handle_skip_forward(self):
-        """Skip forward 10 seconds in current player"""
         if current := self.stack.get_visible_child():
             if isinstance(current, Player):
                 current.skip_forward(seconds=10)
 
     def handle_skip_backward(self):
-        """Skip backward 10 seconds in current player"""
         if current := self.stack.get_visible_child():
             if isinstance(current, Player):
                 current.skip_backward(seconds=10)
 
     def switch_relative_player(self, forward=True):
-        """Switch to next/previous player"""
         if not self.player_widgets:
             return
 
@@ -706,7 +697,6 @@ class PlayerContainer(Box):
                 break
 
     def cleanup(self):
-        """Cleanup all resources on application shutdown"""
         logger.info("Cleaning up PlayerContainer")
 
         # unregister keybindings

@@ -1,5 +1,6 @@
 import os
 import json
+from loguru import logger
 from typing import Callable
 
 from fabric.widgets.box import Box
@@ -228,7 +229,7 @@ class AgendaItem(Gtk.ListBoxRow):
             self.apply_background()
             self.on_save()
         except Exception as e:
-            print(f"Failed to crop image: {e}")
+            logger.error(f"Failed to crop image: {e}")
 
     def _make_file_dialog(self) -> Gtk.FileChooserDialog:
         dialog = Gtk.FileChooserDialog(
@@ -371,7 +372,7 @@ class AgendaApp(Box):
                     )
             self.show_all()
         except Exception as e:
-            print(f"Error loading agenda: {e}")
+            logger.error(f"Error loading agenda: {e}")
 
     def save_to_disk(self):
         os.makedirs(DATA_DIR, exist_ok=True)

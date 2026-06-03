@@ -129,7 +129,7 @@ PLAYER_KEYBINDINGS = [
     ),
     KeyBinding(
         action="player.switch_prev",
-        key="Shift+ISO_Left_Tab",
+        key="<Shift>ISO_Left_Tab",
         command=None,
         title="Previous Player",
         scope="player",
@@ -151,7 +151,7 @@ WIFI_KEYBINDINGS = [
 WALLPAPER_KEYBINDINGS = [
     KeyBinding(
         action="wallpaper.scheme_prev",
-        key="Shift+Up",
+        key="<Shift>Up",
         command=None,
         title="Previous scheme",
         scope="wallpaper",
@@ -159,7 +159,7 @@ WALLPAPER_KEYBINDINGS = [
     ),
     KeyBinding(
         action="wallpaper.scheme_next",
-        key="Shift+Down",
+        key="<Shift>Down",
         command=None,
         title="Next scheme",
         scope="wallpaper",
@@ -167,7 +167,7 @@ WALLPAPER_KEYBINDINGS = [
     ),
     KeyBinding(
         action="wallpaper.scheme_open",
-        key="Shift+Right",
+        key="<Shift>Right",
         command=None,
         title="Open scheme list",
         scope="wallpaper",
@@ -207,7 +207,7 @@ WALLPAPER_KEYBINDINGS = [
     ),
     KeyBinding(
         action="wallpaper.activate",
-        key="Enter",
+        key="Return",
         command=None,
         title="Set wallpaper",
         scope="wallpaper",
@@ -217,8 +217,8 @@ WALLPAPER_KEYBINDINGS = [
 
 LAUNCHER_KEYBINDINGS = [
     KeyBinding(
-        action="launcher.mod_prev",
-        key="Shift+Left",
+        action="launcher.mode_prev",
+        key="<Shift>Left",
         command=None,
         title="Previous mode",
         scope="launcher",
@@ -226,7 +226,7 @@ LAUNCHER_KEYBINDINGS = [
     ),
     KeyBinding(
         action="launcher.mode_next",
-        key="Shift+Right",
+        key="<Shift>Right",
         command=None,
         title="Next mode",
         scope="launcher",
@@ -250,7 +250,7 @@ LAUNCHER_KEYBINDINGS = [
     ),
     KeyBinding(
         action="launcher.activate",
-        key="Enter",
+        key="Return",
         command=None,
         title="Launch App/Cmd",
         scope="launcher",
@@ -261,7 +261,7 @@ LAUNCHER_KEYBINDINGS = [
 NOTIFICATIONS_KEYBINDINGS = [
     KeyBinding(
         action="notifications.clear_all",
-        key="Shift+d",
+        key="<Shift>d",
         command=None,
         title="Clear all notifications",
         scope="notifications",

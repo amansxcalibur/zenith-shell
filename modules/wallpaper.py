@@ -165,6 +165,17 @@ class WallpaperSelector(Box):
         self.files = []
         self.thumbnails_map = {}
         self._visible_children = []
+        self._wallpaper_bindings_config = config.bindings.modules.wallpaper
+        self._cached_binds = {
+            "scheme_prev": Gtk.accelerator_parse(self._wallpaper_bindings_config["wallpaper.scheme_prev"]),
+            "scheme_next": Gtk.accelerator_parse(self._wallpaper_bindings_config["wallpaper.scheme_next"]),
+            "scheme_open": Gtk.accelerator_parse(self._wallpaper_bindings_config["wallpaper.scheme_open"]),
+            "move_up":     Gtk.accelerator_parse(self._wallpaper_bindings_config["wallpaper.move_up"]),
+            "move_down":   Gtk.accelerator_parse(self._wallpaper_bindings_config["wallpaper.move_down"]),
+            "move_left":   Gtk.accelerator_parse(self._wallpaper_bindings_config["wallpaper.move_left"]),
+            "move_right":  Gtk.accelerator_parse(self._wallpaper_bindings_config["wallpaper.move_right"]),
+            "activate":    Gtk.accelerator_parse(self._wallpaper_bindings_config["wallpaper.activate"]),
+        }
         self.executor = ThreadPoolExecutor(max_workers=5)
 
         self.executor.submit(self._perform_scan_and_clean)
@@ -506,35 +517,61 @@ class WallpaperSelector(Box):
         logger.info(f"Color scheme selected: {selected_scheme}")
 
     def on_search_entry_key_press(self, widget, event):
+        # ignores CapsLock, NumLock, etc.
+        core_modifiers = event.state & (
+            Gdk.ModifierType.SHIFT_MASK | 
+            Gdk.ModifierType.CONTROL_MASK | 
+            Gdk.ModifierType.MOD1_MASK
+        )
+        key_s_prev, mask_s_prev = self._cached_binds["scheme_prev"]
+        key_s_next, mask_s_next = self._cached_binds["scheme_next"]
+        key_s_open, mask_s_open = self._cached_binds["scheme_open"]
+        key_up, mask_up = self._cached_binds["move_up"]
+        key_down, mask_down = self._cached_binds["move_down"]
+        key_left, mask_left = self._cached_binds["move_left"]
+        key_right, mask_right = self._cached_binds["move_right"]
+        key_activate, mask_activate = self._cached_binds["activate"]
+
         # scheme dropdown navigation with Shift
-        if event.state & Gdk.ModifierType.SHIFT_MASK:
-            if event.keyval in (Gdk.KEY_Up, Gdk.KEY_Down):
-                schemes_list = list(self.schemes.keys())
-                current_id = self.scheme_dropdown.get_active_id()
-                current_index = (
-                    schemes_list.index(current_id) if current_id in schemes_list else 0
-                )
-                new_index = (
-                    (current_index - 1) % len(schemes_list)
-                    if event.keyval == Gdk.KEY_Up
-                    else (current_index + 1) % len(schemes_list)
-                )
-                self.scheme_dropdown.set_active(new_index)
-                return True
-            elif event.keyval == Gdk.KEY_Right:
-                self.scheme_dropdown.popup()
-                return True
+        if event.keyval == key_s_prev and core_modifiers == mask_s_prev:
+            schemes_list = list(self.schemes.keys())
+            current_id = self.scheme_dropdown.get_active_id()
+            current_index = (
+                schemes_list.index(current_id) if current_id in schemes_list else 0
+            )
+            new_index = (current_index - 1) % len(schemes_list)
+            self.scheme_dropdown.set_active(new_index)
+            return True
+
+        elif event.keyval == key_s_next and core_modifiers == mask_s_next:
+            schemes_list = list(self.schemes.keys())
+            current_id = self.scheme_dropdown.get_active_id()
+            current_index = (
+                schemes_list.index(current_id) if current_id in schemes_list else 0
+            )
+            new_index = (current_index + 1) % len(schemes_list)
+            self.scheme_dropdown.set_active(new_index)
+            return True
+
+        elif event.keyval == key_s_open and core_modifiers == mask_s_open:
+            self.scheme_dropdown.popup()
+            return True
 
         # Arrow key navigation in FlowBox
-        if event.keyval in (Gdk.KEY_Up, Gdk.KEY_Down, Gdk.KEY_Left, Gdk.KEY_Right):
+        if (event.keyval == key_up and core_modifiers == mask_up) or \
+        (event.keyval == key_down and core_modifiers == mask_down) or \
+        (event.keyval == key_left and core_modifiers == mask_left) or \
+        (event.keyval == key_right and core_modifiers == mask_right):
             self.move_selection_2d(event.keyval)
             return True
+
         # Enter key to activate selection
-        elif event.keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
+        elif event.keyval == key_activate and core_modifiers == mask_activate:
             selected = self.viewport.get_selected_children()
             if selected:
                 self.on_wallpaper_selected(self.viewport, selected[0])
             return True
+
         return False
 
     def move_selection_2d(self, keyval):

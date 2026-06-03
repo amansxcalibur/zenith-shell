@@ -18,6 +18,7 @@ from modules.tile import TileSimple
 from widgets.clipping_box import ClippingBox
 from widgets.rounded_image import RoundedImage
 from widgets.material_label import MaterialIconLabel
+from utils.helpers import format_accel_to_keybind
 
 import icons
 from config.config import config
@@ -221,7 +222,8 @@ class NotificationWidget(EventBox):
                             Button(
                                 name="close-button-small",
                                 child=MaterialIconLabel(
-                                    name="close-label-small", icon_text=icons.close.symbol()
+                                    name="close-label-small",
+                                    icon_text=icons.close.symbol(),
                                 ),
                                 tooltip_text="Close",
                                 style_classes="critical" if self.urgency == 2 else "",
@@ -349,6 +351,16 @@ class NotificationNotifier(Service):
         self._has_urgent_unread = value
         return
 
+    @Property(bool, default_value=False, flags="read-write")
+    def silent(self) -> bool:
+        return self._silent
+
+    @silent.setter
+    def silent(self, value: bool) -> None:
+        self._silent = value
+        config.SILENT = value
+        return
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -363,6 +375,7 @@ class NotificationNotifier(Service):
 
         self._has_unread = False
         self._has_urgent_unread = False
+        self._silent = config.SILENT
 
 
 class NotificationManager:
@@ -461,12 +474,33 @@ class NotificationManager:
         self.active_notifications_box.get_controls = self.get_controls
 
         self.notification_history.connect("map", self.on_map)
+        self.notification_history.connect(
+            "unmap", lambda *_: self.unregister_keybindings()
+        )
 
     def on_map(self, widget):
+        self.register_keybindings()
         if self._notification_sig_emittor.has_unread:
             self._notification_sig_emittor.has_unread = False
         if self._notification_sig_emittor.has_urgent_unread:
             self._notification_sig_emittor.has_urgent_unread = False
+
+    def _keybindings(self):
+        notif_bindings = config.bindings.modules.notifications
+        return {
+            # "d": self.del_last_notif, # kill last
+            format_accel_to_keybind(notif_bindings["notifications.clear_all"]): self.close_all_notifications,
+        }
+
+    def register_keybindings(self):
+        window = self.notification_history.get_toplevel()
+        for key, handler in self._keybindings().items():
+            window.add_keybinding(key, lambda *_, h=handler: h())
+
+    def unregister_keybindings(self):
+        window = self.notification_history.get_toplevel()
+        for key in self._keybindings().keys():
+            window.remove_keybinding(key)
 
     def get_notifications_box(self):
         return self.notification_history
@@ -543,14 +577,15 @@ class NotificationManager:
                 logger.debug("Skipping re-add: widget already in viewport")
 
             # mark unread notifications
-            if notification_widget.urgency in (1, 2):
-                if not self._notification_sig_emittor.has_unread:
-                    self._notification_sig_emittor.has_unread = True
-                if (
-                    not self._notification_sig_emittor.has_urgent_unread
-                    and notification_widget.urgency == 2
-                ):
-                    self._notification_sig_emittor.has_urgent_unread = True
+            if not self.notification_history.get_mapped():
+                if notification_widget.urgency in (1, 2):
+                    if not self._notification_sig_emittor.has_unread:
+                        self._notification_sig_emittor.has_unread = True
+                    if (
+                        not self._notification_sig_emittor.has_urgent_unread
+                        and notification_widget.urgency == 2
+                    ):
+                        self._notification_sig_emittor.has_urgent_unread = True
 
             self._update_ui_state()
 
@@ -631,7 +666,7 @@ class NotificationManager:
         for notification_widget in self.viewport.get_children()[:]:
             try:
                 notification_widget._notification.close()
-            except Exception as e:
+            except Exception:
                 try:
                     if notification_widget.get_parent():
                         notification_widget.get_parent().remove(notification_widget)
@@ -664,21 +699,3 @@ class NotificationManager:
 
     def get_controls(self):
         return [self.clear_btn]
-
-    def _keybindings(self):
-        return {
-            # "d": self.del_last_notif, # kill last
-            "Shift d": self.close_all_notifications,
-        }
-
-    def register_keybindings(self):
-        window = self.notification_history.get_toplevel()
-        if isinstance(window, Window):
-            for key, handler in self._keybindings().items():
-                window.add_keybinding(key, lambda *_, h=handler: h())
-
-    def unregister_keybindings(self):
-        window = self.notification_history.get_toplevel()
-        if window:
-            for key in self._keybindings().keys():
-                window.remove_keybinding(key)
