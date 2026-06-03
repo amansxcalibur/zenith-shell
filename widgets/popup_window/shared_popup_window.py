@@ -9,6 +9,7 @@ from fabric.widgets.x11 import X11Window as Window
 from widgets.clipping_box import ClippingBox
 from services.animator import Animator
 from services.power_profiles import power_profiles_service
+from config.info import SHELL_NAME
 
 import gi
 
@@ -54,6 +55,7 @@ class SharedPopupWindow(Window):
             **kwargs,
         )
         self._initialized = True
+        self.set_role(f"{SHELL_NAME}-popup")
 
         self.pointing_widget = None
         self.pointing_widget_size_alloc_hook = None
