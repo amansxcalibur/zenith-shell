@@ -17,7 +17,7 @@
 .tile.on .tile-clipper {
   background-color: var(--surface-bright);
 }
-.tile.simple.on .tile-clipper {
+.tile.simple.on .tile-clipper, .tile.mini.on {
   background-color: var(--primary);
 }
 

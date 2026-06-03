@@ -1,9 +1,3 @@
-from fabric.core.service import Service, Signal, Property
-from fabric import Fabricator
-
-from config.config import config
-from config.info import TEMP_DIR, ROOT_DIR
-
 import json
 import hashlib
 import mimetypes
@@ -12,6 +6,13 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 from loguru import logger
+from PIL import Image, ImageFilter, ImageOps
+
+from fabric import Fabricator
+from fabric.core.service import Service, Signal, Property
+
+from config.config import config
+from config.info import TEMP_DIR, ROOT_DIR
 
 import gi
 
@@ -29,7 +30,7 @@ def check_shuffle_strictly(bus_name):
     params = GLib.Variant("(ss)", ("org.mpris.MediaPlayer2.Player", "Shuffle"))
 
     try:
-        result = connection.call_sync(
+        connection.call_sync(
             bus_name,
             "/org/mpris/MediaPlayer2",
             "org.freedesktop.DBus.Properties",
@@ -53,7 +54,7 @@ class PlayerService(Service):
     def meta_change(self, metadata: GLib.Variant, player: Playerctl.Player) -> None: ...
 
     @Signal
-    def artwork_change(self, local_path: str) -> None: ...
+    def artwork_change(self, local_path: str, blurred_local_path: str) -> None: ...
 
     @Signal
     def theme_change(self, theme_json: object) -> None: ...
@@ -101,6 +102,7 @@ class PlayerService(Service):
         self._current_artwork_hash = ""
         self._current_theme = None
         self._current_artwork_path = ""
+        self._current_blurred_artwork_path = ""
         self._theme_cache = {}
         self._is_cleaning_up = False
         self._signal_ids = []  # track signal connection IDs
@@ -142,8 +144,11 @@ class PlayerService(Service):
         if self.status.value_name == "PLAYERCTL_PLAYBACK_STATUS_PLAYING":
             self.pos_fabricator.start()
 
-    def get_artwork(self):
+    def get_artwork(self) -> str:
         return self._current_artwork_path
+    
+    def get_blurred240x60_artwork(self) -> str:
+        return self._current_blurred_artwork_path
 
     def get_theme(self):
         return self._current_theme
@@ -251,13 +256,47 @@ class PlayerService(Service):
                 artwork_hash,
             )
 
+    def _blur_image(self, source_path: Path, destination_path: Path, radius: int = 20):
+        try:
+            logger.debug(f"Blurring and resizing image to: {destination_path}")
+            with Image.open(source_path) as img:
+                # convert to RGB if it's RGBA to avoid transparency issues
+                if img.mode in ("RGBA", "LA"):
+                    img = img.convert("RGB")
+
+                # blur effect
+                processed_img = img.filter(ImageFilter.GaussianBlur(radius=radius))
+
+                # fit, crop from center, scale to 240x60
+                target_size = (240, 60)
+                processed_img = ImageOps.fit(
+                    processed_img, target_size, centering=(0.5, 0.5)
+                )
+                processed_img.save(destination_path)
+
+        except Exception as e:
+            logger.error(f"Failed to blur and resize image: {e}")
+
     def _process_local_artwork(self, art_url, artwork_hash):
         if self._is_cleaning_up:
             return
 
+        input_path = Path(art_url)
+        blurred_dir = Path(TEMP_DIR) / "player-art" / "blurred"
+        blurred_dir.mkdir(parents=True, exist_ok=True)
+
+        suffix = input_path.suffix or ".png"
+        blurred_artwork_path = blurred_dir / f"{artwork_hash}{suffix}"
+
+        if not blurred_artwork_path.exists():
+            self._blur_image(input_path, blurred_artwork_path)
+
         # signal artwork change
         self._current_artwork_path = art_url
-        self.artwork_change(self._current_artwork_path)
+        self._current_blurred_artwork_path = blurred_artwork_path
+        self.artwork_change(
+            self._current_artwork_path, self._current_blurred_artwork_path
+        )
 
         if artwork_hash in self._theme_cache:
             logger.debug("Using cached theme colors")
@@ -326,7 +365,7 @@ class PlayerService(Service):
                     data = response.read()
                     content_type = response.info().get_content_type()
                     suffix = mimetypes.guess_extension(content_type) or ".png"
-                    
+
                     local_arturl = cache_dir / f"{filename_hash}{suffix}"
 
                     temp_file = local_arturl.with_suffix(".tmp")

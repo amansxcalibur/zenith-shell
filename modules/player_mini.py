@@ -1,9 +1,15 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.centerbox import CenterBox
+if TYPE_CHECKING:
+    from fabric.widgets.widget import Widget
 
 from widgets.overrides import Svg
 from widgets.material_label import MaterialIconLabel
@@ -14,7 +20,7 @@ from services.player_service import PlayerManager, PlayerService
 import svg
 import icons
 from config.config import config
-from config.info import CACHE_DIR
+from config.info import CACHE_DIR, ROOT_DIR
 
 from loguru import logger
 
@@ -22,6 +28,13 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib  # noqa: E402
+
+
+def apply_filter_to_player_art(widget: Widget, art_url: str):
+    widget.set_style(
+        f"background-image: url('{ROOT_DIR}/svg/player/player_grad.svg'),\
+                            url('{art_url}') ;"
+    )
 
 
 class PlayerMini(Box):
@@ -37,7 +50,7 @@ class PlayerMini(Box):
         def _set_initial_bg(
             service: WallpaperService, full_path: str, preview_path: str
         ):
-            self.set_style(f"background-image:url('{preview_path}')")
+            apply_filter_to_player_art(self, preview_path)
             return False
 
         self._wallpaper_signal_id = self._wallpaper_service.connect(
@@ -202,8 +215,11 @@ class PlayerMini(Box):
 
         # init artwork
         current_artwork = self._player_service.get_artwork()
+        current_blurred_artwork = self._player_service.get_blurred240x60_artwork()
         if current_artwork:
-            self._apply_artwork(self._player_service, current_artwork)
+            self._apply_artwork(
+                self._player_service, current_artwork, current_blurred_artwork
+            )
 
     # def on_update_track_position(self, sender, pos, dur):
     #     if dur == 0:
@@ -222,7 +238,7 @@ class PlayerMini(Box):
     def skip_backward(self, seconds=10):
         self._player_service._player.seek(-1 * seconds * 1000000)
 
-    def _apply_artwork(self, source, art_path):
+    def _apply_artwork(self, source, art_path, blurred_art_path):
         # remove wallpaper connection
         if self._wallpaper_signal_id:
             self._wallpaper_service.disconnect(self._wallpaper_signal_id)
@@ -230,7 +246,7 @@ class PlayerMini(Box):
 
         def _apply():
             self.album_cover.set_style(f"background-image:url('{art_path}')")
-            self.set_style(f"background-image:url('{art_path}')")
+            apply_filter_to_player_art(self, blurred_art_path)
             return False
 
         GLib.idle_add(_apply)
@@ -375,7 +391,7 @@ class PlaceholderMini(Box):
         def _set_initial_bg(
             service: WallpaperService, full_path: str, preview_path: str
         ):
-            self.set_style(f"background-image:url('{preview_path}')")
+            apply_filter_to_player_art(self, preview_path)
             self.album_cover.set_style(f"background-image:url('{preview_path}')")
             return False
 
@@ -467,7 +483,7 @@ class PlayerContainerMini(Box):
         )
 
         self.mini_tile_view = Box(
-            style_classes=["tile", "mini", "on"],
+            style_classes=["tile", "mini", "simple", "on"],
             children=Box(
                 style="padding: 10px", children=self.mini_tile_icon, h_expand=True
             ),
@@ -645,11 +661,9 @@ class PlayerContainerMini(Box):
         GLib.idle_add(_update_mini_tile_icon)
 
     def get_mini_view(self):
-        """Get the mini tile view widget"""
         return self.mini_tile_view
 
     def cleanup(self):
-        """Cleanup all resources on application shutdown"""
         logger.info("Cleaning up PlayerContainerMini")
 
         # cleanup all widgets

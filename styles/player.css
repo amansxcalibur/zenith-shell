@@ -17,12 +17,13 @@
   min-height: 60px;
   min-width: 220px;
   padding-right: 20px;
-  /* box-shadow: inset 0 0 100px rgb(148, 148, 148),
-             inset 60px 0px 10px rgba(255, 255, 255, 1); */
-  box-shadow:
+  /* background-color: rgba(255, 255, 255, 0.3);
+  background-blend-mode: hue; */
+  /* removed grads in favor of performance */
+  /* box-shadow:
     inset 0 0 100px rgb(148, 148, 148),
     inset 70px 0 20px rgba(255, 255, 255, 0.788),
-    inset 0px 0px 20px 5px rgba(255, 255, 255, 0.808);
+    inset 0px 0px 20px 5px rgba(255, 255, 255, 0.808); */
   border-top-right-radius: 15px;
   border-bottom-right-radius: 15px;
   border-top-left-radius: 20px;
@@ -185,9 +186,7 @@
 #prev-button:hover,
 #play-pause-button:hover {
   border-radius: 100%;
-  /* background-color: white; */
-  /* opacity: .3; */
-  box-shadow: inset rgba(255, 255, 255, 0.5) 0 0 10px;
+  box-shadow: inset rgba(255, 255, 255, 0.6) 0 0 10px;
 }
 
 .player-button {
