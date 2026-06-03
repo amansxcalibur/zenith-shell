@@ -341,5 +341,5 @@ class ShortcutButton(Button, Service):
         window = self.get_toplevel()
         window.disconnect(self.handler_id)
         self.disconnect(self.focus_out_id)
-        self.set_label(self.binding_string)
+        self.set_label(format_accel_to_keybind(self.binding_string))
         return False
