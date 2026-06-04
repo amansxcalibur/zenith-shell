@@ -47,9 +47,8 @@ DEFAULTS = {
                 "workspaces",
                 "vol_brightness_box",
                 "weather_mini",
-                "metrics",
             ],
-            "right": ["date_time", "battery", "systray"],
+            "right": ["date_time", "battery", "systray", "power_profiles", "metrics"],
         },
     },
     "pill": {"POSITION": {"x": "center", "y": "bottom"}},
@@ -172,7 +171,7 @@ class ConfigManager(Service):
                         DEFAULTS.copy(), copy.deepcopy(loaded_data)
                     )
 
-                    hydrate_binding_config(self._data["bindings"]) # modifies in-place
+                    hydrate_binding_config(self._data["bindings"])  # modifies in-place
                     self.resolved_bindings = build_resolved_binding_instances(
                         self._data["bindings"]
                     )

@@ -10,7 +10,7 @@ from fabric.utils.helpers import get_relative_path, monitor_file
 from widgets.shapes import Pill, Circle, WavyCircle, Ellipse, Pentagon
 from modules.weather import WeatherPill
 from modules.wavy_clock import WavyClock
-from config.info import USERNAME, ROOT_DIR
+from config.info import USERNAME
 
 import pam
 from loguru import logger
@@ -32,7 +32,7 @@ except ImportError:
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib, Gdk
+from gi.repository import GLib, Gdk
 
 # TODO:
 # - re-raise worker (needs testing and improvement)

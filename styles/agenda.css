@@ -1,7 +1,7 @@
-#agenda-app-container{
-    background-color: var(--surface-semi-bright);
-    border-radius: 30px;
-    padding: 6px;
+#agenda-app-container {
+  background-color: var(--surface-semi-bright);
+  border-radius: 30px;
+  padding: 6px;
 }
 
 #text-view {
@@ -29,14 +29,14 @@
   margin-left: 6px;
 }
 
-#agenda-btn{
-    background-color: var(--surface);
-    padding: 6px 10px;
-    border-radius: 20px;
-    margin-top: 2px;
+#agenda-btn {
+  background-color: var(--surface);
+  padding: 6px 10px;
+  border-radius: 20px;
+  margin-top: 2px;
 }
-#agenda-btn:hover{
-    background-color: var(--surface-bright);
+#agenda-btn:hover {
+  background-color: var(--surface-bright);
 }
 .agenda-icon {
   font-size: 20px;
@@ -76,151 +76,161 @@
   min-width: 372px;
 }
 
-#editor-btn{
-    background-color: var(--surface);
-    padding: 8px;
-    border-radius: 20px;
+#editor-btn {
+  background-color: var(--surface);
+  padding: 8px;
+  border-radius: 20px;
 }
-#editor-btn:hover{
-    background-color: var(--surface-semi-bright);
+#editor-btn:hover {
+  background-color: var(--surface-semi-bright);
 }
-
-#agenda-box{
-    min-height: 25px;
-    background-color: var(--shadow);
-    border-radius: 24px;
-    padding: 5px; 
+#editor-btn.delete-btn {
+  background-color: var(--error-dim);
 }
-
-#display-box{
-    padding: 8px;
-    background-color: rgba(0, 0, 0, 0.5);
-    background-blend-mode: multiply;
-    border-radius: 20px;
+#editor-btn.delete-btn > :first-child {
+  color: var(--shadow);
+}
+#editor-btn.delete-btn:hover {
+  background-color: var(--error);
 }
 
-#agenda-scrolled-clipper{
-    border-radius: 24px;
+#agenda-box {
+  min-height: 25px;
+  background-color: var(--shadow);
+  border-radius: 24px;
+  padding: 5px;
 }
 
-#agenda-list-box{
+#display-box {
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.5);
+  background-blend-mode: multiply;
+  border-radius: 20px;
+}
+
+#agenda-scrolled-clipper {
+  border-radius: 24px;
+}
+
+#agenda-list-box {
   padding-bottom: 64px;
 }
-
 
 /* file chooser dialog styles */
 
 .agenda-file-chooser-dialog {
-    background-color: var(--surface);
-    border-radius: 25px;
-    border: 2px solid var(--surface-bright);
+  background-color: var(--surface);
+  border-radius: 25px;
+  border: 2px solid var(--surface-bright);
 }
 
 filechooser {
-    background-color: transparent;
-    padding: 10px;
+  background-color: transparent;
+  padding: 10px;
 }
 
 filechooser > box {
-    background-color: var(--shadow);
-    border-radius: 20px;
-    padding: 10px;
+  background-color: var(--shadow);
+  border-radius: 20px;
+  padding: 10px;
 }
 
 filechooser paned > box {
-    background-color: var(--surface);
-    border-radius: 20px;
+  background-color: var(--surface);
+  border-radius: 20px;
 }
 
 /* sidebar */
 filechooser .sidebar {
-    background-color: transparent;
-    border-radius: 20px;
-    margin-right: 5px;
+  background-color: transparent;
+  border-radius: 20px;
+  margin-right: 5px;
 }
 
 .sidebar-row {
-    border-radius: 10px;
-    padding: 8px;
+  border-radius: 10px;
+  padding: 8px;
 }
 
 .sidebar-row:hover {
-    background-color: var(--primary);
-    color: var(--shadow);
+  background-color: var(--primary);
+  color: var(--shadow);
 }
 
 .sidebar-row label {
-    margin-left: 8px;
+  margin-left: 8px;
 }
 
 .sidebar-row:hover label {
-    color: var(--shadow);
+  color: var(--shadow);
 }
 
 /* pathbar and search */
 #pathbarbox {
-    background-color: var(--shadow);
-    margin: 10px;
-    border-radius: 15px;
+  background-color: var(--shadow);
+  margin: 10px;
+  border-radius: 15px;
 }
 
 /* Pathbar Buttons */
-pathbar button, .path-bar button {
-    padding: 4px 10px;
+pathbar button,
+.path-bar button {
+  padding: 4px 10px;
 }
 
-pathbar button:hover, .path-bar button:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+pathbar button:hover,
+.path-bar button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 /* Specific button types in the path bar */
 .path-bar > .toggle {
-    background-color: var(--surface-semi-bright);
-    border-radius: 4px;
-    padding: 0 6px;
-    margin: 0 2px;
+  background-color: var(--surface-semi-bright);
+  border-radius: 4px;
+  padding: 0 6px;
+  margin: 0 2px;
 }
 
 .path-bar > .toggle:hover {
-    background-color: var(--surface-bright);
+  background-color: var(--surface-bright);
 }
 
 /* Pathbar Icons and Internal Boxes */
 .image-button > * {
-    margin-right: 4px;
+  margin-right: 4px;
 }
 
-pathbar button > box image, 
+pathbar button > box image,
 .path-bar button > box image {
-    margin-right: 4px;
+  margin-right: 4px;
 }
 
 /* search and path */
 #pathbarbox stack entry {
-    background-color: var(--surface);
-    border-radius: 20px;
-    padding: 4px 10px;
+  background-color: var(--surface);
+  border-radius: 20px;
+  padding: 4px 10px;
 }
 
 /* file list */
 filechooser paned > box > box > stack {
-    padding: 10px;
-    border-radius: 20px;
+  padding: 10px;
+  border-radius: 20px;
 }
 
 filechooser treeview.view:hover {
-    background-color: var(--primary);
-    color: var(--shadow);
+  background-color: var(--primary);
+  color: var(--shadow);
 }
 
 /* action area */
 .dialog-action-box {
-    margin: -6px 4px 4px 0;
+  margin: -6px 4px 4px 0;
 }
 
 filechooser combobox {
-    border: 2px var(--surface-bright) solid;
-    padding: 4px 8px;
-    margin: 12px 0 0 0;
-    border-radius: 14px;
+  border: 2px var(--surface-bright) solid;
+  padding: 4px 8px;
+  margin: 12px 0 0 0;
+  border-radius: 14px;
 }

@@ -87,8 +87,8 @@ class AgendaItem(Gtk.ListBoxRow):
 
         self._build_display()
         self._build_editor()
-        self._build_action_revealer(on_delete)
-        self._build_stack()
+        self._build_action_revealer()
+        self._build_stack(on_delete)
 
         self.apply_background()
         self.show_all()
@@ -122,7 +122,7 @@ class AgendaItem(Gtk.ListBoxRow):
             children=[self.text_view, editor_actions],
         )
 
-    def _build_action_revealer(self, on_delete: Callable):
+    def _build_action_revealer(self):
         self.action_revealer = Revealer(
             transition_type="slide-left",
             transition_duration=200,
@@ -134,12 +134,14 @@ class AgendaItem(Gtk.ListBoxRow):
                         icons.edit_material, "Edit Task", self._on_edit_requested
                     ),
                     _make_icon_button(
-                        icons.trash_material, "Delete Task", lambda _: on_delete(self)
-                    ),
-                    _make_icon_button(
                         icons.wallpaper,
                         "Set Background Image",
                         self._on_select_background,
+                    ),
+                    _make_icon_button(
+                        icons.trash_material,
+                        "Delete Task",
+                        lambda: self.stack.set_visible_child_name("delete"),
                     ),
                 ],
             ),
@@ -147,7 +149,7 @@ class AgendaItem(Gtk.ListBoxRow):
             v_align="start",
         )
 
-    def _build_stack(self):
+    def _build_stack(self, on_delete: Callable):
         self.event_box = EventBox(
             child=Overlay(child=self.display_box, overlays=self.action_revealer),
             events=["enter-notify", "leave-notify", "button-press-event"],
@@ -156,11 +158,35 @@ class AgendaItem(Gtk.ListBoxRow):
         self.event_box.connect("leave-notify-event", self._on_hover, False)
         self.event_box.connect("button-press-event", self._on_click)
 
+        del_actions = Box(
+            spacing=5,
+            children=[
+                _make_editor_button("Delete", lambda _: on_delete(self))
+                .build()
+                .add_style_class("delete-btn")
+                .unwrap(),
+                _make_editor_button("Cancel", self._on_cancel_edit),
+            ],
+        )
+        self.del_box = Box(
+            orientation="v",
+            spacing=5,
+            children=[
+                Label(
+                    name="text-editor",
+                    h_align="start",
+                    label="Are you sure you wanna delete this?",
+                ),
+                del_actions,
+            ],
+        )
+
         self.stack = Stack(transition_type="crossfade", transition_duration=250)
         self.stack.set_interpolate_size(True)
         self.stack.set_homogeneous(False)
         self.stack.add_named(self.event_box, "display")
         self.stack.add_named(self.edit_vbox, "edit")
+        self.stack.add_named(self.del_box, "delete")
         self.add(self.stack)
 
     def _on_click(self, _source, event):
@@ -361,18 +387,18 @@ class AgendaApp(Box):
     def load_from_disk(self):
         if not os.path.exists(DATA_FILE):
             return
-        try:
-            with open(DATA_FILE) as f:
-                for item in reversed(json.load(f)):
-                    text = item if isinstance(item, str) else item.get("text")
-                    img = None if isinstance(item, str) else item.get("image")
-                    # add to the beginning
-                    self.listbox.prepend(
-                        AgendaItem(text, self._remove_item, self.save_to_disk, img)
-                    )
-            self.show_all()
-        except Exception as e:
-            logger.error(f"Error loading agenda: {e}")
+        # try:
+        with open(DATA_FILE) as f:
+            for item in reversed(json.load(f)):
+                text = item if isinstance(item, str) else item.get("text")
+                img = None if isinstance(item, str) else item.get("image")
+                # add to the beginning
+                self.listbox.prepend(
+                    AgendaItem(text, self._remove_item, self.save_to_disk, img)
+                )
+        self.show_all()
+        # except Exception as e:
+        #     logger.error(f"Error loading agenda: {e}")
 
     def save_to_disk(self):
         os.makedirs(DATA_DIR, exist_ok=True)
