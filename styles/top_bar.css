@@ -4,18 +4,8 @@
   The overflowing right shadow is hidden by the next widget */
   /* Well i've wrapped the container in a ClippingBox so this doesn't
   really matter. But I'm leaving it here regardless. */
-  box-shadow: 10px -28px 0 10px black;
+  box-shadow: 10px -28px 0 10px var(--shadow);
   transition: border-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
-}
-
-#hori-top.pill.attach {
-  border-top-left-radius: 30px;
-  border-top-right-radius: 30px;
-}
-
-#hori-top.pill.detach {
-  border-top-left-radius: 0px;
-  border-top-right-radius: 0px;
 }
 
 #vert-top {
@@ -26,103 +16,119 @@
   min-height: 40px;
   /* min-height: 36px; */
   /* min-width: 446px; */
-  transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1),
+  transition:
+    min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1),
     min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 
 #vert-top.contractor {
   min-height: 0px;
   min-width: 0px;
-  transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1),
+  transition:
+    min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1),
     min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 
 #hori-top.expander {
   border-top-right-radius: 20px;
   border-top-left-radius: 20px;
-  transition: border-bottom-right-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1),
+  transition:
+    border-bottom-right-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1),
     border-bottom-left-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 
 #hori-top.contractor {
   border-top-right-radius: 0px;
   border-top-left-radius: 0px;
-  transition: border-bottom-right-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1),
+  transition:
+    border-bottom-right-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1),
     border-bottom-left-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 
+/* --- Base Styles --- */
 #start-top,
 #end-top {
-  background-color: black;
+  background-color: var(--shadow);
   min-width: 20px;
   border-bottom-right-radius: 20px;
   border-bottom-left-radius: 20px;
-  transition: border-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1),
-              margin 0.05s cubic-bezier(0.5, 0.25, 0, 1),
-              padding 0.05s cubic-bezier(0.5, 0.25, 0, 1);
-}
-#start-top.attach {
-  border-top-right-radius: 0px;
-  border-top-left-radius: 0px;
-  padding-top: 0px;
-}
-#end-top.attach {
-  border-top-right-radius: 0px;
-  border-top-left-radius: 0px;
-  padding-top: 0px;
-}
-#start-top.detach {
-  border-top-right-radius: 20px;
-  border-top-left-radius: 20px;
-  padding-top: 4px;
-}
-#end-top.detach {
-  border-top-right-radius: 20px;
-  border-top-left-radius: 20px;
-  padding-top: 4px;
-}
 
-#start-top.attach.pushup {
-  margin-top: 0px;
-}
-#end-top.attach.pushup {
-  margin-top: 0px;
-}
-#start-top.detach.pushdown {
-  margin-top: 2px;
-}
-#end-top.detach.pushdown {
-  margin-top: 2px;
-}
-
-#bottom-top {
-  /* background-color: black; */
+  /* Standard transition definitions */
+  transition:
+    border-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1),
+    margin 0.05s cubic-bezier(0.5, 0.25, 0, 1),
+    padding 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 
 #left-edge,
 #right-edge {
   background-color: transparent;
   min-width: 30px;
-  min-height: 60px; /* enough height for corners and negative margin to not push other widgets */
+  min-height: 60px;
   margin-bottom: -60px;
-  box-shadow: 0px -30px 0 0px black;
+  box-shadow: 0px -30px 0 0px var(--shadow);
   transition: border-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 
 #left-edge.attach {
   border-top-right-radius: 30px;
 }
-
 #right-edge.attach {
   border-top-left-radius: 30px;
 }
-
 #left-edge.detach {
   border-top-right-radius: 0px;
 }
-
 #right-edge.detach {
   border-top-left-radius: 0px;
+}
+
+#left-edge.attach,
+#right-edge.attach {
+  transition-delay: 0.15s;
+}
+
+#start-top.attach,
+#end-top.attach {
+  border-top-right-radius: 0px;
+  border-top-left-radius: 0px;
+  padding-top: 0px;
+}
+
+#start-top.detach,
+#end-top.detach {
+  border-top-right-radius: 20px;
+  border-top-left-radius: 20px;
+  padding-top: 5px;
+  /* border-radius, margin, padding */
+  transition-delay: 0.25s, 0.25s, 0s;
+}
+
+#start-top.detach.pushdown,
+#end-top.detach.pushdown {
+  margin-top: 2px;
+}
+
+#start-top.attach.pushup,
+#end-top.attach.pushup {
+  margin-top: 0px;
+}
+
+#hori-top.pill.attach {
+  border-top-left-radius: 30px;
+  border-top-right-radius: 30px;
+  transition-delay: 0.15s;
+}
+
+#hori-top.pill.detach {
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+  transition-delay: 0s;
+}
+
+#start-top.pushdown,
+#end-top.pushdown {
+  transition-delay: 0.15s, 0.2s;
 }
 
 #top-main {
@@ -141,22 +147,23 @@
   padding: 0px 5px 5px 5px;
 }
 
-.top-bar-control-btn:hover, .top-bar-control-btn:active {
+.top-bar-control-btn:hover,
+.top-bar-control-btn:active {
   background-color: var(--surface-bright);
 }
 
-#top-pill-stack{
-    all: unset;
-    border-radius: 23px;
-    /* background-color: black; */
+#top-pill-stack {
+  all: unset;
+  border-radius: 23px;
+  /* background-color: black; */
 }
 
-#top-pill-container{
-    all: unset;
-    padding: 2px 3px 2px 3px;
+#top-pill-container {
+  padding: 2px 3px 2px 3px;
+  border-radius: 30px;
 }
 
-#close-control-label{
+#close-control-label {
   color: var(--outline);
   margin: -5px -4px;
   font-size: 25px;

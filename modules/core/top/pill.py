@@ -1,10 +1,10 @@
 from fabric.widgets.box import Box
-from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
 from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
+from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
 from widgets.overrides import PatchedX11Window as Window
 
@@ -89,7 +89,7 @@ class TopPill(Window, Service):
         self.stack.set_interpolate_size(True)
         self.stack.set_homogeneous(False)
 
-        self.pill_container = Box(
+        self.pill_container = ClippingBox(
             name="top-pill-container", orientation="v", children=[self.stack]
         )
         self.children = self.pill_container

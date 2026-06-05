@@ -6,7 +6,6 @@ from datetime import datetime
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
-from fabric.widgets.window import Window
 from fabric.widgets.revealer import Revealer
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.scrolledwindow import ScrolledWindow
