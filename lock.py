@@ -35,9 +35,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gdk
 
 # TODO:
-# - re-raise worker (needs testing and improvement)
-# - compositor handle
-# - handle runtime keymap changes.
+# - handle runtime keymap changes
 # - multi monitor setups (dynamic changes/plug n plays)
 # - handle screen configuration change
 # - mlock for passwords (sweat cpython)
@@ -84,32 +82,37 @@ class InputGrabber:
             XK.XK_Scroll_Lock,
         }
 
-    def try_grab(self) -> bool:
-        """Attempt to grab keyboard and pointer input."""
-        if not XLIB_AVAILABLE:
-            logger.error("python-xlib not available; skipping input grab")
+    def setup(self) -> bool:
+        self.gdk_window = self.window.get_window()
+        if not self.gdk_window:
             return False
 
-        gdk_window = self.window.get_window()
-        if not gdk_window:
-            return False
-
-        xid = gdk_window.get_xid()
+        xid = self.gdk_window.get_xid()
         self.display = Display()
         self.xwin = self.display.create_resource_object("window", xid)
         self.root_win = self.display.screen().root
 
         self.xwin.change_attributes(
-            override_redirect=True, event_mask=X.KeyPressMask | X.KeyReleaseMask
+            override_redirect=True,
+            event_mask=(
+                X.KeyPressMask
+                | X.KeyReleaseMask
+                | X.VisibilityChangeMask
+                | X.StructureNotifyMask
+            ),
         )
 
+        # hide cursor
+        display = self.gdk_window.get_display()
+        cursor = Gdk.Cursor.new_for_display(display, Gdk.CursorType.BLANK_CURSOR)
+        self.gdk_window.set_cursor(cursor)
+
+        return True
+
+    def try_grab(self) -> bool:
+        """Attempt to grab keyboard and pointer input."""
+
         # grab inputs
-        keyboard_result = self.root_win.grab_keyboard(
-            owner_events=False,
-            pointer_mode=X.GrabModeAsync,
-            keyboard_mode=X.GrabModeAsync,
-            time=X.CurrentTime,
-        )
         pointer_result = self.root_win.grab_pointer(
             owner_events=False,
             event_mask=X.ButtonPressMask | X.ButtonReleaseMask | X.PointerMotionMask,
@@ -119,18 +122,19 @@ class InputGrabber:
             cursor=X.NONE,
             time=X.CurrentTime,
         )
-
-        # hide cursor
-        display = gdk_window.get_display()
-        cursor = Gdk.Cursor.new_for_display(display, Gdk.CursorType.BLANK_CURSOR)
-        gdk_window.set_cursor(cursor)
+        keyboard_result = self.root_win.grab_keyboard(
+            owner_events=False,
+            pointer_mode=X.GrabModeAsync,
+            keyboard_mode=X.GrabModeAsync,
+            time=X.CurrentTime,
+        )
 
         if keyboard_result == X.GrabSuccess:
             logger.info("Keyboard grab successful")
             if pointer_result == X.GrabSuccess:
                 logger.info("Pointer grab successful")
             else:
-                logger.warning(f"Pointer grab failed ({pointer_result})")
+                logger.warning(f"Pointer grab failed (result={pointer_result})")
             self._start_event_loop()
             self.display.sync()
             return True
@@ -148,12 +152,9 @@ class InputGrabber:
         """Captures X11 events directly (blocking)."""
         while self._running and self.display:
             try:
-                if self.display.pending_events():
-                    event = self.display.next_event()
-                    if event.type == X.KeyPress:
-                        self._process_keypress(event)
-                else:
-                    time.sleep(0.01)
+                event = self.display.next_event()  # blocking
+                if event.type == X.KeyPress:
+                    self._process_keypress(event)
             except Exception as e:
                 logger.error(f"Error in X event loop: {e}")
                 break
@@ -168,7 +169,7 @@ class InputGrabber:
         alt = bool(event.state & X.Mod1Mask)
         caps_lock = bool(event.state & X.LockMask)
 
-        keysym = self.display.keycode_to_keysym(keycode, 1 if shift else 0)
+        keysym = self.display.keycode_to_keysym(keycode, 0)
 
         # ignore modifier keys
         if keysym in self.ignored_keys:
@@ -184,8 +185,15 @@ class InputGrabber:
         try:
             char = XK.keysym_to_string(keysym)
             if char and len(char) == 1:
-                if caps_lock and char.isalpha():
-                    char = char.lower() if shift else char.upper()
+                if char.isalpha():
+                    # XOR fyaa
+                    char = char.upper() if (caps_lock ^ shift) else char.lower()
+                elif shift:
+                    # for symbols/numbers
+                    shifted_keysym = self.display.keycode_to_keysym(keycode, 1)
+                    shifted_char = XK.keysym_to_string(shifted_keysym)
+                    if shifted_char and len(shifted_char) == 1:
+                        char = shifted_char
 
                 # only process printable characters
                 if char.isprintable():
@@ -193,8 +201,7 @@ class InputGrabber:
                 else:
                     logger.debug(f"Non-printable character (ord={ord(char)})")
             else:
-                keysym_base = self.display.keycode_to_keysym(keycode, 0)
-                keyname = XK.keysym_to_string(keysym_base)
+                keyname = XK.keysym_to_string(keysym)
                 logger.debug(f"Unhandled keysym: {keysym} (name={keyname})")
 
         except Exception as e:
@@ -290,12 +297,11 @@ class LockScreen(Window):
         self.grabber = InputGrabber(self, self.handle_keypress)
         self.authenticator = Authenticator(USERNAME)
 
-        self._build_ui()
-
-        self.force_window_map()
-
         self.connect("map-event", self._on_mapped)
         self.connect("destroy", self._on_destroy)
+
+        self._build_ui()
+        self.force_window_map()
 
     def _build_ui(self):
         pad_left_width = self.mon_x
@@ -376,25 +382,40 @@ class LockScreen(Window):
         local_display = Display()
         xid = self.get_window().get_xid()
         x_win = local_display.create_resource_object("window", xid)
+        x_win.change_attributes(
+            override_redirect=True,
+            event_mask=X.VisibilityChangeMask | X.StructureNotifyMask,
+        )
 
-        x_win.change_attributes(override_redirect=True)
+        # bypass compositor
+        atom = local_display.intern_atom("_NET_WM_BYPASS_COMPOSITOR")
+        x_win.change_property(
+            atom,
+            local_display.intern_atom("CARDINAL"),
+            32,
+            [1],  # 1 = disable compositing for this window
+            X.PropModeReplace,
+        )
         x_win.map()
         x_win.configure(stack_mode=X.Above)
         local_display.sync()
+        local_display.close()
 
     def _on_mapped(self, *_):
         self.xid = self.get_window().get_xid()
-
         self.move(0, 0)
 
         if self.monitor_thread is None or not self.monitor_thread.is_alive():
             logger.info("Starting fresh monitor thread.")
             self.monitor_thread = threading.Thread(target=self.raise_loop, daemon=True)
             self.monitor_thread.start()
+            threading.Thread(
+                target=self._try_grab_input_with_retry, daemon=True
+            ).start()
         else:
             logger.debug("Monitor thread already active; skipping spawn.")
 
-        GLib.idle_add(lambda: self.present())
+        GLib.idle_add(self.present)
 
     def raise_loop(self):
         if not XLIB_AVAILABLE:
@@ -406,37 +427,27 @@ class LockScreen(Window):
             x_win = local_display.create_resource_object("window", self.xid)
             root = local_display.screen().root
 
-            x_win.change_attributes(override_redirect=True)
-
-            # hear about every other window's movement/mapping
+            # listen to every other window's movement/mapping
             root.change_attributes(event_mask=X.SubstructureNotifyMask)
-
-            # force an unmap/map for changed attributes (override_redirect, etc)
-            # to take effect properly, otherwise the visual state might desync.
-            x_win.unmap()
-            x_win.map()
 
             # raise window
             x_win.configure(stack_mode=X.Above)
             local_display.flush()
-            self.present()
 
             logger.info(
                 f"Monitor thread active. Watching Root {hex(root.id)} for intruders."
             )
 
-            GLib.idle_add(self._try_grab_input_with_retry)
-
             while True:
-                # blocking
-                event = local_display.next_event()
+                event = local_display.next_event()  # blocking
 
-                # # Obscured
+                # # obscured
                 # if event.type == X.VisibilityNotify and event.window.id == self.xid:
                 #     if event.state != X.VisibilityUnobscured:
                 #         logger.debug("Lock screen obscured.")
                 #         should_raise = True
 
+                # very aggressive >.<
                 if event.type in [
                     X.MapNotify,  # ANY window maps
                     X.ConfigureNotify,  # Something else moved/resized/restacked
@@ -460,18 +471,23 @@ class LockScreen(Window):
 
         return False
 
-    def _try_grab_input_with_retry(self, attempts: int = 100):
-        if not self.grabber.try_grab():
-            logger.warning(
-                f"Grab failed (Attempts left:{attempts}), retrying in 100ms..."
-            )
-            if attempts > 0:
-                GLib.timeout_add(10, self._try_grab_input_with_retry, attempts - 1)
-            else:
-                logger.error("Could not successfully grab inputs")
-                self._unlock()
-            return False
-        return False
+    def _try_grab_input_with_retry(self):
+        if not self.grabber.setup():
+            logger.error("Grabber setup failed")
+            GLib.idle_add(self._unlock)
+            return
+
+        # steal focus, possibly closing context menus that hold grabs
+        self.grabber.xwin.set_input_focus(X.RevertToParent, X.CurrentTime)
+        self.grabber.display.flush()
+
+        for _ in range(5000):
+            if self.grabber.try_grab():
+                return
+            time.sleep(0.00005)  # 50 microseconds
+
+        logger.error("Could not grab inputs after 2000 attempts")
+        GLib.idle_add(self._unlock)
 
     def handle_keypress(self, keyname: str) -> bool:
         """Handle keypresses from X11 grab."""
@@ -579,7 +595,7 @@ class LockScreen(Window):
 
 if __name__ == "__main__":
     lock_win = LockScreen()
-    app = Application("lockscreen", lock_win)
+    app = Application("zenith-lockscreen", lock_win)
 
     def set_css(*args):
         app.set_stylesheet_from_file(get_relative_path("./lock.css"))

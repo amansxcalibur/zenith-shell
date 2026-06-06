@@ -16,7 +16,7 @@ from config.info import SHELL_NAME
 
 
 class TopPill(Window, Service):
-    WIN_ROLE = "top-pill"
+    WIN_ROLE = f"{SHELL_NAME}-top-pill"
 
     @Signal
     def on_drag(self, drag_state: object, new_x: int, new_y: int): ...
