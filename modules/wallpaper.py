@@ -449,6 +449,8 @@ class WallpaperSelector(Box):
         if first_visible:
             self.viewport.select_child(first_visible)
             # first_visible.grab_focus()
+        else:
+            self.viewport.unselect_all()
 
     def on_wallpaper_selected(self, flowbox, child):
         file_name = child.file_name
