@@ -4,6 +4,8 @@ from fabric.widgets.stack import Stack
 from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
+from widgets.clipping_box import ClippingBox
+from widgets.elastic.elastic_stack import ElasticStack
 from widgets.overrides import PatchedX11Window as Window
 
 from modules.dashboard import Dashboard
@@ -44,27 +46,27 @@ class Pill(Window, Service):
         self._dock_is_visible = True
         # for custom geometry handle in ShellWindowManager
         self._pos = config.pill.POSITION  # changes the config
+        self._drag_state = {
+            "dragging": False,
+            "offset_x": 0,
+            "offset_y": 0,
+            "start_pos": None,
+        }
 
         # pill-compact
         self.active_window = ActiveWindow()
         self.user = Label(name="user-label", label=f"{USERNAME}@{HOSTNAME}")
         self.dot_placeholder = Box(style="min-width:1px; min-height:1px;")
-        self.user.add_style_class("hide")
-        self.active_window.active_window.add_style_class("hide")
         self.pill_compact = Stack(
             name="collapsed",
             transition_type="crossfade",
             transition_duration=250,
             style_classes="" if not config.VERTICAL else "vertical",
-            children=(
-                [
-                    self.user,
-                    self.active_window.active_window,
-                    self.dot_placeholder,
-                ]
-                if not config.VERTICAL
-                else [self.workspaces]
-            ),
+            children=[
+                self.user,
+                self.active_window.active_window,
+                self.dot_placeholder,
+            ],
         )
         self.pill_compact.set_visible_child(self.dot_placeholder)
         self._current_compact_mode = self.dot_placeholder
@@ -80,10 +82,11 @@ class Pill(Window, Service):
 
         self.lift_box = Box(style="min-height:36px;")  # 40-3-1
 
-        self.stack = Stack(
+        self.stack = ElasticStack(
             name="pill-stack",
             transition_type="crossfade",
             transition_duration=250,
+            interpolate_size=True,
             children=[
                 self.pill_compact,
                 self.launcher,
@@ -93,10 +96,7 @@ class Pill(Window, Service):
                 self.power_menu,
             ],
         )
-        self.stack.set_interpolate_size(True)
-        self.stack.set_homogeneous(False)
-
-        from widgets.clipping_box import ClippingBox
+        self.stack.get_inner_stack().set_homogeneous(False)
 
         self.pill_container = Box(
             name="pill-container",
@@ -109,13 +109,6 @@ class Pill(Window, Service):
         self.children = self.pill_container
 
         self.add_keybinding("Escape", lambda *_: self.close())
-
-        self._drag_state = {
-            "dragging": False,
-            "offset_x": 0,
-            "offset_y": 0,
-            "start_pos": None,
-        }
 
         # drag events
         self.connect("button-press-event", self.on_button_press)
@@ -263,7 +256,7 @@ class Pill(Window, Service):
 
     def get_drag_state(self):
         return self._drag_state
-    
+
     def on_delete_event(self, *_):
         # don't close me :(
         return True
