@@ -25,7 +25,7 @@ class LowBatteryBanner(Revealer):
             transition_type="slide-down",
             child_revealed=False,
             style_classes="vertical" if config.VERTICAL else "horizontal",
-            **kwargs
+            **kwargs,
         )
 
         self.provider = MetricsProvider()
@@ -43,8 +43,10 @@ class LowBatteryBanner(Revealer):
         )
 
         close_btn = Button(
-            name="close-button",
-            child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
+            name="close-button-small",
+            child=MaterialIconLabel(
+                name="close-label-small", icon_text=icons.close.symbol()
+            ),
             tooltip_text="Exit",
             on_clicked=lambda *_: self.close_notification(),
         )
@@ -53,7 +55,11 @@ class LowBatteryBanner(Revealer):
             name="notification-box",
             style_classes="vertical" if config.VERTICAL else "horizontal",
             children=[
-                MaterialIconLabel(name="notification-icon", h_align=True, icon_text=icons.blur.symbol()),
+                MaterialIconLabel(
+                    name="notification-icon",
+                    h_align=True,
+                    icon_text=icons.blur.symbol(),
+                ),
                 Box(h_expand=True, children=self.content_box),
                 Box(children=close_btn),
             ],
@@ -90,9 +96,9 @@ class TransientWindow(Window):
             name="notification-popup",
             layer="top",
             geometry="top",
-            type_hint='notification',
+            type_hint="notification",
             visible=False,
-            **kwargs
+            **kwargs,
         )
 
         self.controls = ControlsManager()
@@ -128,4 +134,3 @@ class TransientWindow(Window):
 
         if not any(r.get_child_revealed() for r in self.revealers):
             self.set_visible(False)
-

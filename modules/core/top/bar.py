@@ -209,6 +209,8 @@ class TopBar(Window):
 
         if self.detach_mode:
             self.detach_controls(detach=True)
+        else:
+            self.detach_edge(detach=False)
 
         if self._controls_visibility_timeout_id:
             GLib.source_remove(self._controls_visibility_timeout_id)
@@ -223,6 +225,8 @@ class TopBar(Window):
 
         if self.detach_mode:
             self.detach_controls(detach=False)
+        else:
+            self.detach_edge(detach=True)
 
         if self._controls_visibility_timeout_id:
             GLib.source_remove(self._controls_visibility_timeout_id)

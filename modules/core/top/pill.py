@@ -6,6 +6,7 @@ from fabric.utils.helpers import exec_shell_command_async
 
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
+from widgets.elastic.elastic_stack import ElasticStack
 from widgets.overrides import PatchedX11Window as Window
 
 from modules.notification import NotificationManager
@@ -77,17 +78,17 @@ class TopPill(Window, Service):
 
         self.lift_box = Box(style="min-height:0px;")  # 40-3-1 -3(dock padding)
 
-        self.stack = Stack(
+        self.stack = ElasticStack(
             name="top-pill-stack",
             transition_type="crossfade",
             transition_duration=250,
+            interpolate_size=True,
             children=[
                 self.pill_compact,
                 self.notification,
             ],
         )
-        self.stack.set_interpolate_size(True)
-        self.stack.set_homogeneous(False)
+        self.stack.get_inner_stack().set_homogeneous(False)
 
         self.pill_container = ClippingBox(
             name="top-pill-container", orientation="v", children=[self.stack]
