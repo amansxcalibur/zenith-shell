@@ -7,6 +7,7 @@ from fabric.utils.helpers import exec_shell_command_async
 from widgets.clipping_box import ClippingBox
 from widgets.elastic.elastic_stack import ElasticStack
 from widgets.overrides import PatchedX11Window as Window
+from services.power_profiles import power_profiles_service
 
 from modules.dashboard import Dashboard
 from modules.power_menu import PowerMenu
@@ -52,6 +53,9 @@ class Pill(Window, Service):
             "offset_y": 0,
             "start_pos": None,
         }
+        self._animations_enabled = (
+            power_profiles_service.active_profile != "power-saver"
+        )
 
         # pill-compact
         self.active_window = ActiveWindow()
@@ -87,6 +91,7 @@ class Pill(Window, Service):
             transition_type="crossfade",
             transition_duration=250,
             interpolate_size=True,
+            bounce=self._animations_enabled,
             children=[
                 self.pill_compact,
                 self.launcher,
@@ -115,7 +120,14 @@ class Pill(Window, Service):
         self.connect("motion-notify-event", self.on_motion)
         self.connect("button-release-event", self.on_button_release)
 
+        power_profiles_service.connect("changed", self._on_power_profile_changed)
         self.connect("delete-event", self.on_delete_event)
+
+    def _on_power_profile_changed(self, *_):
+        self._animations_enabled = (
+            power_profiles_service.active_profile != "power-saver"
+        )
+        self.stack.set_bounce(self._animations_enabled)
 
     def focus_pill(self):
         exec_shell_command_async(f'i3-msg [window_role="^{self.WIN_ROLE}$"] focus')

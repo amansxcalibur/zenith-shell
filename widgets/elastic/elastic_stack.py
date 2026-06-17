@@ -14,6 +14,7 @@ class ElasticStack(AnimatedScaleBox):
         self,
         bounce_duration=0.35,
         bounce_bezier=(0.34, 1.56, 0.64, 1.0),
+        bounce=True,
         children=None,
         **stack_kwargs,
     ):
@@ -22,6 +23,7 @@ class ElasticStack(AnimatedScaleBox):
         self._bounce_bezier = bounce_bezier
         self._last_visible: Widget | None = None
         self._pending_overshoot: float | None = None
+        self._bounce: bool = bounce
 
         super().__init__(scale=1.0, child=self._inner_stack)
 
@@ -43,6 +45,12 @@ class ElasticStack(AnimatedScaleBox):
     def get_inner_stack(self) -> Stack:
         return self._inner_stack
 
+    def get_bounce(self) -> True:
+        return self._bounce
+
+    def set_bounce(self, value) -> None:
+        self._bounce = value
+
     def add_named(self, widget, name):
         self._inner_stack.add_named(widget, name)
 
@@ -63,6 +71,9 @@ class ElasticStack(AnimatedScaleBox):
         return nat.width * nat.height
 
     def _on_visible_child_changed(self, stack, _param):
+        if not self._bounce:
+            return
+
         incoming = stack.get_visible_child()
         if incoming is None:
             self._last_visible = None
