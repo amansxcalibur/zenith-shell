@@ -4,7 +4,6 @@ from fabric.widgets.box import Box
 from fabric.widgets.stack import Stack
 from fabric.widgets.eventbox import EventBox
 
-from widgets.clipping_box import TrueClippingBox
 from widgets.overrides import PatchedX11Window as Window
 
 from modules.special import ActionButton

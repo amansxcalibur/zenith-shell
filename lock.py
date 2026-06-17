@@ -1,3 +1,20 @@
+import pam
+import time
+import threading
+from loguru import logger
+from typing import Optional
+
+try:
+    from Xlib import X, XK
+    from Xlib.display import Display
+
+    XLIB_AVAILABLE = True
+
+except ImportError:
+    logger.warning("Install python-xlib for grabbing functionality.")
+    XLIB_AVAILABLE = False
+    display = None
+
 from fabric import Application
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
@@ -12,31 +29,14 @@ from modules.weather import WeatherPill
 from modules.wavy_clock import WavyClock
 from config.info import USERNAME
 
-import pam
-from loguru import logger
-import threading
-import time
-from typing import Optional
-
-
-try:
-    from Xlib import X, XK
-    from Xlib.display import Display
-
-    XLIB_AVAILABLE = True
-except ImportError:
-    logger.warning("Install python-xlib for grabbing functionality.")
-    XLIB_AVAILABLE = False
-    display = None
-
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib, Gdk
+from gi.repository import GLib, Gdk  # noqa: E402
 
 # TODO:
 # - handle runtime keymap changes
-# - multi monitor setups (dynamic changes/plug n plays)
+# - multi monitor setup as multiple windows instead of one window (dynamic changes/plug n plays)
 # - handle screen configuration change
 # - mlock for passwords (sweat cpython)
 # - dpms handle
@@ -165,8 +165,8 @@ class InputGrabber:
 
         # check modifier state
         shift = bool(event.state & X.ShiftMask)
-        ctrl = bool(event.state & X.ControlMask)
-        alt = bool(event.state & X.Mod1Mask)
+        _ = bool(event.state & X.ControlMask)  # ctrl
+        _ = bool(event.state & X.Mod1Mask)  # alt
         caps_lock = bool(event.state & X.LockMask)
 
         keysym = self.display.keycode_to_keysym(keycode, 0)
@@ -265,15 +265,6 @@ class LockScreen(Window):
         # self.fullscreen()
         # self.set_app_paintable(True)
 
-        # to get the virtual screen size (multi monitor)
-        tmp_display = Display()
-        screen = tmp_display.screen()
-        root = screen.root
-
-        root_geom = root.get_geometry()
-        self.root_width = root_geom.width
-        self.root_height = root_geom.height
-
         display = Gdk.Display.get_default()
 
         monitor = display.get_primary_monitor()
@@ -285,13 +276,9 @@ class LockScreen(Window):
         self.mon_x = geometry.x
         self.mon_y = geometry.y
 
-        self.set_size_request(self.root_width, self.root_height)
-
         self.set_decorated(False)
         self.set_resizable(False)
         self.set_keep_above(True)
-
-        tmp_display.close()
 
         self.monitor_thread = None
         self.grabber = InputGrabber(self, self.handle_keypress)
@@ -300,15 +287,21 @@ class LockScreen(Window):
         self.connect("map-event", self._on_mapped)
         self.connect("destroy", self._on_destroy)
 
+        self.pad_left = Box()
+        self.pad_right = Box()
+        self.pad_top = Box(orientation="v")
+        self.pad_bottom = Box(orientation="v")
+
         self._build_ui()
+        self._update_monitor_geometry()
         self.force_window_map()
 
-    def _build_ui(self):
-        pad_left_width = self.mon_x
-        pad_right_width = self.root_width - (self.mon_x + self.mon_width)
-        pad_top_height = self.mon_y
-        pad_bottom_height = self.root_height - (self.mon_y + self.mon_height)
+        # react to monitor hotplug / layout changes
+        display = Gdk.Display.get_default()
+        display.connect("monitor-added", self._on_monitors_changed)
+        display.connect("monitor-removed", self._on_monitors_changed)
 
+    def _build_ui(self):
         self.status_label = Label(
             label="Enter password",
             style="color: white; font-size: 14px;",
@@ -328,53 +321,107 @@ class LockScreen(Window):
             ],
         )
 
-        middle_row = Box()
-
-        # left
-        if pad_left_width > 0:
-            middle_row.add(Box(size=(pad_left_width, -1)))
-
-        middle_row.add(
-            CenterBox(
-                spacing=10,
-                size=(self.mon_width, self.mon_height),
-                center_children=[
-                    Box(
-                        spacing=10,
-                        v_align="center",
-                        children=[
-                            WavyClock(size=(400, 400)),
-                            WeatherPill(size=(400, 400)),
-                        ],
-                    ),
-                ],
-                end_children=Box(
-                    orientation="v",
-                    v_align="end",
+        self.center_box = CenterBox(
+            spacing=10,
+            center_children=[
+                Box(
                     spacing=10,
-                    style="margin:20px;",
-                    children=[EventBox(child=self.shapes)],
+                    v_align="center",
+                    children=[
+                        WavyClock(size=(400, 400)),
+                        WeatherPill(size=(400, 400)),
+                    ],
                 ),
-            )
+            ],
+            end_children=Box(
+                orientation="v",
+                v_align="end",
+                spacing=10,
+                style="margin:20px;",
+                children=[EventBox(child=self.shapes)],
+            ),
+        )
+        middle_row = Box(children=[self.pad_left, self.center_box, self.pad_right])
+        main = Box(
+            orientation="v", children=[self.pad_top, middle_row, self.pad_bottom]
         )
 
-        # right
-        if pad_right_width > 0:
-            middle_row.add(Box(size=(pad_right_width, -1)))
-
-        main = Box(orientation="v")
-
-        # top
-        if pad_top_height > 0:
-            main.add(Box(size=(-1, pad_top_height)))
-
-        main.add(middle_row)
-
-        # bottom
-        if pad_bottom_height > 0:
-            main.add(Box(size=(-1, pad_bottom_height)))
-
         self.children = main
+
+    def _get_primary_geometry(self):
+        display = Gdk.Display.get_default()
+        monitor = display.get_primary_monitor()
+        if monitor is None:
+            # fall back to monitor 0 if no primary is set
+            monitor = display.get_monitor(0)
+        return monitor.get_geometry()
+
+    def _update_monitor_geometry(self, *_):
+        local_display = Display()
+        screen = local_display.screen()
+        root = screen.root
+        root_geom = root.get_geometry()
+
+        self.root_width = root_geom.width
+        self.root_height = root_geom.height
+
+        geometry = self._get_primary_geometry()
+
+        self.mon_width = geometry.width
+        self.mon_height = geometry.height
+        self.mon_x = geometry.x
+        self.mon_y = geometry.y
+
+        pad_left_width = self.mon_x
+        pad_right_width = self.root_width - (self.mon_x + self.mon_width)
+        pad_top_height = self.mon_y
+        pad_bottom_height = self.root_height - (self.mon_y + self.mon_height)
+
+        self.pad_left.set_size_request(pad_left_width, -1)
+        self.pad_left.set_visible(pad_left_width > 0)
+        self.pad_left.queue_resize()
+
+        self.pad_right.set_size_request(pad_right_width, -1)
+        self.pad_right.set_visible(pad_right_width > 0)
+        self.pad_right.queue_resize()
+
+        self.pad_top.set_size_request(-1, pad_top_height)
+        self.pad_top.set_visible(pad_top_height > 0)
+        self.pad_top.queue_resize()
+
+        self.pad_bottom.set_size_request(-1, pad_bottom_height)
+        self.pad_bottom.set_visible(pad_bottom_height > 0)
+        self.pad_bottom.queue_resize()
+
+        self.center_box.set_size_request(self.mon_width, self.mon_height)
+        self.center_box.queue_resize()
+
+        self.set_size_request(self.root_width, self.root_height)
+        self.queue_resize()
+        self.set_size_request(self.root_width, self.root_height)
+        self.resize(self.root_width, self.root_height)
+
+        gdk_win = self.get_window()
+        if gdk_win is not None:
+            gdk_win.resize(self.root_width, self.root_height)
+
+        local_display.close()
+
+        # do the X-level repositioning after GTK's resize has been applied
+        GLib.idle_add(self._reassert_geometry)
+
+    def _reassert_geometry(self):
+        local_display = Display()
+        xid = self.get_window().get_xid()
+        x_win = local_display.create_resource_object("window", xid)
+
+        x_win.configure(x=0, y=0, stack_mode=X.Above)
+        local_display.sync()
+        local_display.close()
+        return False
+
+    def _on_monitors_changed(self, *_):
+        self._update_monitor_geometry()
 
     def force_window_map(self):
         # When another window is in fullscreen mode, the "map" signal never gets emitted.
@@ -397,13 +444,13 @@ class LockScreen(Window):
             X.PropModeReplace,
         )
         x_win.map()
-        x_win.configure(stack_mode=X.Above)
+        x_win.configure(x=0, y=0, stack_mode=X.Above)
         local_display.sync()
         local_display.close()
 
     def _on_mapped(self, *_):
         self.xid = self.get_window().get_xid()
-        self.move(0, 0)
+        # self.move(0, 0)
 
         if self.monitor_thread is None or not self.monitor_thread.is_alive():
             logger.info("Starting fresh monitor thread.")
@@ -431,7 +478,7 @@ class LockScreen(Window):
             root.change_attributes(event_mask=X.SubstructureNotifyMask)
 
             # raise window
-            x_win.configure(stack_mode=X.Above)
+            x_win.configure(x=0, y=0, stack_mode=X.Above)
             local_display.flush()
 
             logger.info(
@@ -441,6 +488,7 @@ class LockScreen(Window):
             while True:
                 event = local_display.next_event()  # blocking
 
+                # ugh for some reason I'm not able to get VisibilityNotify events :(
                 # # obscured
                 # if event.type == X.VisibilityNotify and event.window.id == self.xid:
                 #     if event.state != X.VisibilityUnobscured:
@@ -453,6 +501,7 @@ class LockScreen(Window):
                     X.ConfigureNotify,  # Something else moved/resized/restacked
                     X.CirculateNotify,  # We were obscured
                 ]:
+                    logger.debug("Raising window...")
                     # skip if the event is about our own window to avoid infinite loops
                     if hasattr(event, "window") and event.window.id == self.xid:
                         continue
@@ -481,12 +530,12 @@ class LockScreen(Window):
         self.grabber.xwin.set_input_focus(X.RevertToParent, X.CurrentTime)
         self.grabber.display.flush()
 
-        for _ in range(5000):
+        for _ in range(200):
             if self.grabber.try_grab():
                 return
             time.sleep(0.00005)  # 50 microseconds
 
-        logger.error("Could not grab inputs after 2000 attempts")
+        logger.error("Could not grab inputs after 200 attempts")
         GLib.idle_add(self._unlock)
 
     def handle_keypress(self, keyname: str) -> bool:
