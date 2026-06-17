@@ -488,7 +488,9 @@ class NotificationManager:
         notif_bindings = config.bindings.modules.notifications
         return {
             # "d": self.del_last_notif, # kill last
-            format_accel_to_keybind(notif_bindings["notifications.clear_all"]): self.close_all_notifications,
+            format_accel_to_keybind(
+                notif_bindings["notifications.clear_all"]
+            ): self.close_all_notifications,
         }
 
     def register_keybindings(self):
@@ -643,7 +645,10 @@ class NotificationManager:
         self._update_ui_state()
 
     def close_notification_stack(self):
-        self.revealer.unreveal()
+        if self.revealer.get_mapped():
+            self.revealer.unreveal()
+        else:
+            self.revealer.connect("map", lambda *_: self.revealer.unreveal())
         self._update_ui_state()
 
     def close_all_notifications(self, *_):
