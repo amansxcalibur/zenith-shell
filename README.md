@@ -13,18 +13,18 @@ A SOSS shell for **X11** and **i3wm**, crafted using [fabric](https://github.com
 
 <table align="center">
 <tr>
-<td colspan="3"><img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/screenshots/dashboard.png"></td>
+<td colspan="3"><img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/screenshots/dashboard-m3.png"></td>
 </tr>
 <tr>
-<td colspan="1"><img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/screenshots/launcher.png"></td>
-<td colspan="1"><img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/screenshots/player.png"></td>
-<td colspan="1"><img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/screenshots/wallpaper-selector.png"></td>
+<td colspan="1"><img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/screenshots/launcher-1.png"></td>
+<td colspan="1"><img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/screenshots/player-1.png"></td>
+<td colspan="1"><img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/screenshots/wallpaper-1.png"></td>
 </tr>
 </table>
 
 ### LockScreen (WIP)
 
-<img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/screenshots/lockscreen.png">
+<img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/screenshots/lockscreen-1.png">
 
 > [!WARNING]
 > The lockscreen is currently a WIP and may not handle all edge cases. While barely functional, it is far from secure. Please test thoroughly in a safe environment before relying on it for security-critical scenarios.
