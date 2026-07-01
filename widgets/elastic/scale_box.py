@@ -1,6 +1,6 @@
 import cairo
 from typing import Iterable, Literal
-
+from typing import Callable
 from fabric.core.service import Property
 from services.animator import Animator
 from .rotate_box import RotateBox
@@ -196,6 +196,7 @@ class AnimatedScaleBox(ScaleBox):
             tick_widget=self,
         )
         self._animator.connect("notify::value", self._on_animator_value)
+        self._done_handler_id: int | None = None 
 
     def _on_animator_value(self, animator: Animator, _):
         v = animator.value
@@ -210,13 +211,34 @@ class AnimatedScaleBox(ScaleBox):
     def animate_to(
         self,
         target: float,
-        duration: float = 3,
+        duration: float = 0.3,
         bezier: tuple[float, float, float, float] = (0.4, 0.0, 0.2, 1.0),
+        on_done: Callable | None = None,
     ):
+        start = self._scale_x  # snapshot before pause()
+
         self._animator.pause()
-        self._animator.min_value = self._scale_x  # start from current scale
+
+        # disconnect previous one-shot finished handler
+        if self._done_handler_id is not None:
+            try:
+                self._animator.disconnect(self._done_handler_id)
+            except Exception:
+                pass
+            self._done_handler_id = None
+
+        self._animator.min_value = start
         self._animator.max_value = target
         self._animator.duration = duration
         self._animator.bezier_curve = bezier
-        self._animator.value = self._scale_x
+        self._animator.value = start
+
+        if on_done is not None:
+            def _on_finished(_):
+                self._animator.disconnect(self._done_handler_id)
+                self._done_handler_id = None
+                on_done()
+
+            self._done_handler_id = self._animator.connect("finished", _on_finished)
+
         self._animator.play()

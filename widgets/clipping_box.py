@@ -6,7 +6,7 @@ from services.animator import Animator
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk  # noqa: E402
 
 
 class ClippingBox(Box):
@@ -89,14 +89,14 @@ class TrueClippingBox(Box):
 
     def _clamp_w(self, value: int) -> int:
         return min(value, self._max_width) if self._max_width != -1 else value
-    
+
     def _clamp_h(self, value: int) -> int:
         return min(value, self._max_height) if self._max_height != -1 else value
 
     def do_get_preferred_width(self) -> tuple[int, int]:
         minimum, natural = Box.do_get_preferred_width(self)
         return self._clamp_w(minimum), self._clamp_w(natural)
-    
+
     def do_get_preferred_height(self) -> tuple[int, int]:
         minimum, natural = Box.do_get_preferred_height(self)
         return self._clamp_h(minimum), self._clamp_h(natural)
@@ -136,7 +136,7 @@ class TrueClippingBox(Box):
     def clear_max_width(self) -> None:
         self._max_width = -1
         self.queue_resize()
-    
+
     def clear_max_height(self) -> None:
         self._max_height = -1
         self.queue_resize()
@@ -176,8 +176,8 @@ class AnimatedClippingBox(TrueClippingBox):
         )
         self.animator.connect("notify::value", self._on_animation_tick)
 
-    def _on_animation_tick(self, anim, _pspec) -> None:
-        self.set_max_height(int(anim.value))
+    def _on_animation_tick(self, animator: Animator, _pspec) -> None:
+        self.set_max_height(int(animator.value))
 
     def _animate(self, from_height: int, to_height: int) -> None:
         self.animator.pause()
@@ -191,15 +191,37 @@ class AnimatedClippingBox(TrueClippingBox):
         else:
             self.expand()
 
-    def expand(self) -> None:
+    def expand(self, target_height: int| None = None) -> None:
         if self._revealed:
             return
         self._revealed = True
-        _, natural_height = Box.do_get_preferred_height(self)
+
+        if target_height is None:
+            _, natural_height = Box.do_get_preferred_height(self)
+        else:
+            natural_height = target_height
         self._animate(self.get_allocated_height(), natural_height)
+
+        # once animation settles, lift the constraint entirely
+        # so future child resizes are never clipped
+        def _on_done(anim, _pspec):
+            if not anim.playing:
+                self.clear_max_height()
+                anim.disconnect(handler)
+
+        handler = self.animator.connect("notify::playing", _on_done)
 
     def collapse(self, target_height: int = _COLLAPSED_HEIGHT_DEFAULT) -> None:
         if not self._revealed:
             return
         self._revealed = False
+
+        self._max_height = self.get_allocated_height()
         self._animate(self.get_allocated_height(), target_height)
+
+    def refresh(self) -> None:
+        # only meaningful when collapsed
+        if self._revealed:
+            return
+        _, natural_height = Box.do_get_preferred_height(self)
+        self._animate(self.get_allocated_height(), natural_height)

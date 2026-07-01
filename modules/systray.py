@@ -5,7 +5,7 @@ from fabric.widgets.button import Button
 from fabric.widgets.overlay import Overlay
 from fabric.utils.helpers import exec_shell_command_async
 
-from modules.notification import NotificationNotifier
+from modules.notifications.notification import NotificationNotifier
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
 from utils.cursor import add_hover_cursor

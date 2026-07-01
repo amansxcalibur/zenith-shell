@@ -1,15 +1,48 @@
 import time
+import random
 from loguru import logger
 from typing import Callable
 from datetime import datetime
+from expressive_shapes.shapes.shape_presets import (
+    fan,
+    gem,
+    bun,
+    pill,
+    star,
+    oval,
+    arch,
+    boom,
+    heart,
+    arrow,
+    sunny,
+    flower,
+    shield,
+    circle,
+    square,
+    slanted,
+    diamond,
+    triangle,
+    pentagon,
+    cookie_4,
+    cookie_8,
+    clamshell,
+    ghost_ish,
+    cookie_12,
+    very_sunny,
+    semicircle,
+    pixel_circle,
+    organic_blob,
+    leaf_clover_4,
+    leaf_clover_8,
+    puffy_diamond,
+    pixel_triangle,
+)
 
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
-from fabric.widgets.revealer import Revealer
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.scrolledwindow import ScrolledWindow
-from fabric.core.service import Service, Property
 from fabric.notifications import Notifications, Notification
 from fabric.utils import invoke_repeater
 
@@ -17,35 +50,18 @@ from modules.tile import TileSimple
 from widgets.clipping_box import ClippingBox
 from widgets.rounded_image import RoundedImage
 from widgets.material_label import MaterialIconLabel
+from widgets.shapes.expressive.morphing_shapes import ExpressiveShape
 from utils.helpers import format_accel_to_keybind
-
 import icons
 from config.config import config
+
+from .notification_group import NotificationGroup
+from .common import NotificationConfig, NotificationNotifier
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GdkPixbuf, Gdk, GLib
-
-
-class NotificationConfig:
-    WIDTH = 360
-    MAX_CHARS_PER_LINE = 27
-    LINE_LIMIT = 3
-    IMAGE_SIZE = 50
-    TIMEOUT = 5 * 1000  # 5 seconds
-    TRANSITION_DURATION = 250
-    REVEALER_TRANSITION_TYPE = "slide-down"
-    MAX_ACTIVE_NOTIFS = 2
-    WINDOW_MIN_HEIGHT = 10
-    WINDOW_MIN_WIDTH = 364
-    WINDOW_MAX_HEIGHT = 700
-    WINDOW_MAX_WIDTH = 1900
-    SPACING = 3
-    MARGIN = 3
-    IMAGE_BORDER_RADIUS = 18
-    SNAP_THRESHOLD = 50
-    SILENT = config.SILENT
+from gi.repository import GdkPixbuf, Gdk, GLib  # noqa: E402
 
 
 class NotificationTile(TileSimple):
@@ -82,7 +98,42 @@ class NotificationTile(TileSimple):
         return super().handle_state_toggle(*_)
 
 
-class NotificationWidget(EventBox):
+class ActiveNotificationWidget(EventBox):
+    _SHAPES = [
+        fan,
+        gem,
+        bun,
+        pill,
+        star,
+        oval,
+        arch,
+        boom,
+        heart,
+        arrow,
+        sunny,
+        flower,
+        shield,
+        circle,
+        square,
+        slanted,
+        diamond,
+        triangle,
+        pentagon,
+        cookie_4,
+        cookie_8,
+        clamshell,
+        ghost_ish,
+        cookie_12,
+        very_sunny,
+        semicircle,
+        pixel_circle,
+        organic_blob,
+        leaf_clover_4,
+        leaf_clover_8,
+        puffy_diamond,
+        pixel_triangle,
+    ]
+
     def __init__(
         self,
         notification: Notification,
@@ -93,24 +144,18 @@ class NotificationWidget(EventBox):
         super().__init__(**kwargs)
 
         self._notification = notification
+        self._notification.shape = None
         self._timeout_callback = timeout_callback
         self._on_close_callback = on_close_callback
         self._on_press_connection = None
-        self._timeout_id = None
+        self._closed_connection = None
+        self._timeout_repeater_id = None
         self._scaled_pixbuf = None
         self.timestamp = datetime.now()
         self.urgency = notification.urgency
 
         body_container = Box(name="notification-box", orientation="v", spacing=10)
         content_box = Box(spacing=10)
-
-        match self.urgency:
-            case 0 | 1:
-                body_container.add_style_class("normal")
-            case 2:
-                body_container.add_style_class("critical")
-            case _:
-                logger.warning(f"Unknown notification urgency level {self.urgency}")
 
         try:
             if image_pixbuf := self._notification.image_pixbuf:
@@ -127,21 +172,24 @@ class NotificationWidget(EventBox):
                     )
                 )
             else:
+                self._notification.shape = random.choice(self._SHAPES)
                 content_box.add(
-                    MaterialIconLabel(
-                        name="notification-icon",
+                    Box(
+                        name="img-expander",
+                        style_classes="expand",
                         v_align="start",
-                        icon_text=icons.blur.symbol(),
-                        style_classes="critical" if self.urgency == 2 else "",
+                        children=ExpressiveShape(shape=self._notification.shape),
                     )
                 )
         except Exception as e:
             logger.error(f"Failed to resolve image_pixbuff: {e}")
+            self._notification.shape = random.choice(self._SHAPES)
             content_box.add(
-                MaterialIconLabel(
-                    name="notification-icon",
+                Box(
+                    name="img-expander",
+                    style_classes="expand",
                     v_align="start",
-                    icon_text=icons.blur.symbol(),
+                    children=ExpressiveShape(shape=self._notification.shape),
                 )
             )
 
@@ -155,6 +203,16 @@ class NotificationWidget(EventBox):
             child=self.revealer_btn_label,
             on_clicked=self._on_notification_expanded,
         )
+
+        match self.urgency:
+            case 0 | 1:
+                body_container.add_style_class("normal")
+                self.revealer_btn.add_style_class("normal")
+            case 2:
+                body_container.add_style_class("critical")
+                self.revealer_btn.add_style_class("critical")
+            case _:
+                logger.warning(f"Unknown notification urgency level {self.urgency}")
 
         self.notif_body_label = Label(
             label=self._notification.body,
@@ -186,7 +244,10 @@ class NotificationWidget(EventBox):
                                         ellipsization="end",
                                         max_chars_width=17,
                                     ),
-                                    Box(style_classes=["seperator"], v_align="center"),
+                                    Box(
+                                        style_classes=["notif-dot-separator"],
+                                        v_align="center",
+                                    ),
                                     Label(
                                         h_expand=True,
                                         label=self.timestamp.strftime("%H:%M"),
@@ -299,14 +360,11 @@ class NotificationWidget(EventBox):
             if parent := self.get_parent():
                 parent.remove(self)
             self._on_close_callback(self)
-            self.cleanup()
             self.destroy()
         except Exception as e:
             logger.error(f"Error in _on_notification_closed: {e}")
-            try:
-                self.cleanup()
-            except Exception:
-                pass
+        finally:
+            self.cleanup()
 
     def cleanup(self):
         # cancel timeout repeater
@@ -329,54 +387,6 @@ class NotificationWidget(EventBox):
         logger.debug("NotificationWidget cleaned up")
 
 
-class NotificationNotifier(Service):
-    _instance = None
-
-    @Property(bool, default_value=False, flags="read-write")
-    def has_unread(self) -> bool:
-        return self._has_unread
-
-    @has_unread.setter
-    def has_unread(self, value: bool) -> None:
-        self._has_unread = value
-        return
-
-    @Property(bool, default_value=False, flags="read-write")
-    def has_urgent_unread(self) -> bool:
-        return self._has_urgent_unread
-
-    @has_urgent_unread.setter
-    def has_urgent_unread(self, value: bool) -> None:
-        self._has_urgent_unread = value
-        return
-
-    @Property(bool, default_value=False, flags="read-write")
-    def silent(self) -> bool:
-        return self._silent
-
-    @silent.setter
-    def silent(self, value: bool) -> None:
-        self._silent = value
-        config.SILENT = value
-        return
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
-    def __init__(self):
-        if getattr(self, "_initialized", False):
-            return
-
-        super().__init__()
-        self._initialized = True
-
-        self._has_unread = False
-        self._has_urgent_unread = False
-        self._silent = config.SILENT
-
-
 class NotificationManager:
     def __init__(self, **kwargs):
         super().__init__(
@@ -386,6 +396,7 @@ class NotificationManager:
         self.last_hover_time = 0
         self._notification_service = None
         self._active_notifications = []
+        self._is_open = False  # single source of truth for panel visibility
 
         try:
             self._notification_service = Notifications()
@@ -403,6 +414,7 @@ class NotificationManager:
             v_align="end",
             spacing=NotificationConfig.SPACING,
         )
+        self._groups: dict[str, NotificationGroup] = {}  # keyed by app_name
         self.scrolled_window = ScrolledWindow(
             name="notification-scrolled-window",
             size=2,
@@ -415,12 +427,8 @@ class NotificationManager:
             child=self.viewport,
         )
 
-        self.revealer = Revealer(
-            child=ClippingBox(
-                name="notification-window-container", children=self.scrolled_window
-            ),
-            transition_duration=NotificationConfig.TRANSITION_DURATION,
-            transition_type=NotificationConfig.REVEALER_TRANSITION_TYPE,
+        self.notification_content = ClippingBox(
+            name="notification-window-container", children=self.scrolled_window
         )
 
         self.active_notifications_box = Box(
@@ -435,7 +443,6 @@ class NotificationManager:
             ),
             tooltip_text="Show/Hide notifications",
             on_clicked=lambda *_: self.handle_silent_state_toggle(),
-            # visible=False,
         )
         self.clear_btn = Button(
             # name="notification-reveal-btn",
@@ -444,7 +451,6 @@ class NotificationManager:
             ),
             tooltip_text="Clear notifications",
             on_clicked=lambda *_: self.close_all_notifications(),
-            # visible=False,
         )
 
         self.notification_history = Box(
@@ -458,7 +464,7 @@ class NotificationManager:
                         Box(
                             orientation="v",
                             children=[
-                                self.revealer,
+                                self.notification_content,
                             ],
                         ),
                     ],
@@ -503,12 +509,6 @@ class NotificationManager:
         for key in self._keybindings().keys():
             window.remove_keybinding(key)
 
-    def get_notifications_box(self):
-        return self.notification_history
-
-    def get_active_notifications_box(self):
-        return self.active_notifications_box
-
     # TODO: sync system
     def handle_silent_state_toggle(self, *_):
         return
@@ -529,13 +529,13 @@ class NotificationManager:
                 logger.warning(f"Failed to get notification with ID: {notification_id}")
                 return
 
-            notification_widget = NotificationWidget(
+            notification_widget = ActiveNotificationWidget(
                 notification=notification,
                 timeout_callback=self._move_to_revealer,
                 on_close_callback=self.close_active_notification,
             )
 
-            if config.SILENT or self.revealer.child_revealed:
+            if config.SILENT or self._is_open:
                 self._move_to_revealer(notification_widget=notification_widget)
             else:
                 if (
@@ -554,14 +554,14 @@ class NotificationManager:
         except Exception as e:
             logger.error(f"Failed to handle notification: {e}")
 
-    def close_active_notification(self, notification_widget: NotificationWidget):
+    def close_active_notification(self, notification_widget: ActiveNotificationWidget):
         if notification_widget in self._active_notifications:
             self._active_notifications.remove(notification_widget)
             self.active_notifications_box.remove(notification_widget)
 
         self._update_ui_state()
 
-    def _move_to_revealer(self, notification_widget: NotificationWidget):
+    def _move_to_revealer(self, notification_widget: ActiveNotificationWidget) -> None:
         try:
             if notification_widget._on_press_connection:
                 notification_widget.disconnect(notification_widget._on_press_connection)
@@ -571,13 +571,20 @@ class NotificationManager:
                 self._active_notifications.remove(notification_widget)
                 self.active_notifications_box.remove(notification_widget)
 
-            # flex tape fix
-            if notification_widget.get_parent() is not self.viewport:
-                self.viewport.pack_end(notification_widget, True, None, 0)
-            else:
-                logger.debug("Skipping re-add: widget already in viewport")
+            app_name = notification_widget._notification.app_name
 
-            # mark unread notifications
+            if app_name not in self._groups:
+                group = NotificationGroup(
+                    app_name=app_name,
+                    on_empty=self._remove_group,
+                )
+                self._groups[app_name] = group
+                self.viewport.pack_end(group, True, None, 0)
+
+            self._groups[app_name].add_widget(notification_widget)
+            self._resort_viewport()
+
+            # mark unread
             if not self.notification_history.get_mapped():
                 if notification_widget.urgency in (1, 2):
                     if not self._notification_sig_emittor.has_unread:
@@ -593,23 +600,35 @@ class NotificationManager:
         except Exception as e:
             logger.error(f"Failed to move notification to revealer: {e}")
 
+    def _remove_group(self, group: NotificationGroup) -> None:
+        """Called by NotificationGroup when it becomes empty."""
+        app_name = group.app_name
+        if app_name in self._groups:
+            del self._groups[app_name]
+        if group.get_parent() is self.viewport:
+            self.viewport.remove(group)
+        self._update_ui_state()
+
+    def _group_sort_key(self, group: NotificationGroup):
+        # urgency DESC, latest timestamp DESC
+        return (-group.max_urgency, -group.latest_timestamp.timestamp())
+
+    def _resort_viewport(self) -> None:
+        # urgency > recency
+        groups = list(self._groups.values())
+        groups.sort(key=self._group_sort_key)
+
+        for group in self.viewport.get_children():
+            self.viewport.remove(group)
+        for group in groups:
+            self.viewport.pack_end(group, True, None, 0)
+
     def _update_ui_state(self):
-        # active_notifications[] isnt updated yet
-        has_active_notifications = len(self.active_notifications_box.get_children()) > 0
-        has_revealed_notifications = self.revealer.child_revealed
-
-        if has_revealed_notifications:
-            widget = self.clear_btn.get_children()[0]
-            widget.set_icon(icons.trash_material.symbol())
-            # toggle_class(widget, "trash-up-icon-adjust", "trash-icon-adjust")
-        else:
-            widget = self.clear_btn.get_children()[0]
-            widget.set_icon(icons.trash_up.symbol())
-            # toggle_class(widget, "trash-icon-adjust", "trash-up-icon-adjust")
-
-        # should_show_button = has_active_notifications or has_revealed_notifications
-        # self.reveal_btn.set_visible(should_show_button)
-        # self.clear_btn.set_visible(should_show_button)
+        widget = self.clear_btn.get_children()[0]
+        icon = (
+            icons.trash_material.symbol() if self._is_open else icons.trash_up.symbol()
+        )
+        widget.set_icon(icon)
 
     def _handle_hover_reveal(self, source, event):
         if (
@@ -624,66 +643,58 @@ class NotificationManager:
 
         self.toggle_notification_stack_reveal()
 
-    def toggle_notification_stack_reveal(self):
-        try:
-            if not self.revealer.child_revealed:
-                self.revealer.reveal()
-                for notification_widget in self._active_notifications[:]:
-                    self._move_to_revealer(notification_widget)
-            else:
-                self.revealer.unreveal()
-
-            self._update_ui_state()
-
-        except Exception as e:
-            logger.error(f"Failed to toggle revealer: {e}")
-
-    def open_notification_stack(self):
-        self.revealer.reveal()
+    def _drain_active_into_groups(self) -> None:
         for notification_widget in self._active_notifications[:]:
             self._move_to_revealer(notification_widget)
+
+    def open_notification_stack(self):
+        self._is_open = True
+        GLib.idle_add(self._drain_active_into_groups)
         self._update_ui_state()
 
     def close_notification_stack(self):
-        if self.revealer.get_mapped():
-            self.revealer.unreveal()
-        else:
-            self.revealer.connect("map", lambda *_: self.revealer.unreveal())
+        self._is_open = False
         self._update_ui_state()
 
-    def close_all_notifications(self, *_):
-        # iterate over a COPY!!
-        for notification_widget in self._active_notifications[:]:
-            try:
-                notification_widget._notification.close()
-            except Exception as e:
-                try:
-                    if notification_widget in self._active_notifications:
-                        self._active_notifications.remove(notification_widget)
-                    if notification_widget.get_parent():
-                        notification_widget.get_parent().remove(notification_widget)
-                    notification_widget.cleanup()
-                    notification_widget.destroy()
-                except Exception as cleanup_error:
-                    logger.error(f"Failed to cleanup notification: {cleanup_error}")
+    def toggle_notification_stack_reveal(self):
+        try:
+            if not self._is_open:
+                self.open_notification_stack()
+            else:
+                self.close_notification_stack()
+        except Exception as e:
+            logger.error(f"Failed to toggle notification stack: {e}")
 
-        for notification_widget in self.viewport.get_children()[:]:
+    def close_all_notifications(self, *_) -> None:
+        # iterate over a COPY!!!
+        for widget in self._active_notifications[:]:
             try:
-                notification_widget._notification.close()
+                widget._notification.close()
             except Exception:
                 try:
-                    if notification_widget.get_parent():
-                        notification_widget.get_parent().remove(notification_widget)
-                    notification_widget.cleanup()
-                    notification_widget.destroy()
-                except Exception as cleanup_error:
-                    logger.error(
-                        f"Failed to cleanup revealed notification: {cleanup_error}"
-                    )
+                    self._active_notifications.remove(widget)
+                    if widget.get_parent():
+                        widget.get_parent().remove(widget)
+                    widget.cleanup()
+                    widget.destroy()
+                except Exception as e:
+                    logger.error(f"Failed to cleanup active notification: {e}")
 
+        for group in list(self._groups.values()):
+            group._dismiss_all()
+
+        self._groups.clear()
         self._active_notifications.clear()
-
         self._update_ui_state()
+
+    def get_notifications_box(self):
+        return self.notification_history
+
+    def get_active_notifications_box(self):
+        return self.active_notifications_box
+
+    def get_controls(self):
+        return [self.clear_btn]
 
     def destroy(self):
         if self._notification_service:
@@ -697,9 +708,3 @@ class NotificationManager:
 
         self.close_all_notifications()
         super().destroy()
-
-    def get_drag_state(self):
-        return self._drag_state
-
-    def get_controls(self):
-        return [self.clear_btn]

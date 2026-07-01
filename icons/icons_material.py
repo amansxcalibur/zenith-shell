@@ -32,6 +32,8 @@ night_off: str = "&#xf162;"
 notifications_off: str = "&#xece9;"
 notifications: str = "\ue7f4"
 notifications_clear: str = "&#xf814;"
+clear_all: str = "\ue0b8"
+mop: str = "\ue28d"
 
 do_not_disturb_on: str = "\ue644"
 

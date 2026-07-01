@@ -9,7 +9,7 @@ from widgets.material_label import MaterialIconLabel
 from widgets.elastic.elastic_stack import ElasticStack
 from widgets.overrides import PatchedX11Window as Window
 
-from modules.notification import NotificationManager
+from modules.notifications.notification import NotificationManager
 
 import icons
 from config.config import config
@@ -96,7 +96,9 @@ class TopPill(Window, Service):
         self.children = self.pill_container
 
         self.pill_close_btn = Button(
-            child=MaterialIconLabel(name="close-control-label", icon_text=icons.close.symbol()),
+            child=MaterialIconLabel(
+                name="close-control-label", icon_text=icons.close.symbol()
+            ),
             tooltip_text="Close",
             on_clicked=lambda *_: self.close(),
         )
@@ -107,7 +109,7 @@ class TopPill(Window, Service):
         self.connect("button-press-event", self.on_button_press)
         self.connect("motion-notify-event", self.on_motion)
         self.connect("button-release-event", self.on_button_release)
-        
+
         self.connect("delete-event", self.on_delete_event)
 
     def focus_pill(self):
@@ -141,18 +143,18 @@ class TopPill(Window, Service):
         if self.stack.get_visible_child() != self.notification:
             self._open_view(
                 self.notification,
-                focus_callback=self.notification_manager.open_notification_stack(),
+                focus_callback=self.notification_manager.open_notification_stack,
             )
         else:
             self._close_view(
-                unfocus_callback=self.notification_manager.close_notification_stack()
+                unfocus_callback=self.notification_manager.close_notification_stack
             )
 
     def open(self):
         # opens notifications
         self._open_view(
             self.notification,
-            lambda: (self.notification_manager.open_notification_stack(),),
+            focus_callback=self.notification_manager.open_notification_stack,
         )
 
     def close(self, *_):
