@@ -47,7 +47,6 @@
 
 .metrics-icon {
   font-size: 20px;
-  /* color: var(--foreground); */
 }
 
 #bat-icon {
@@ -66,10 +65,11 @@
   font-size: 24px;
 }
 
-#disk-icon,
-#cpu-icon,
-#ram-icon {
-  /* color: var(--foreground); */
+.light #disk-icon,
+.light #cpu-icon,
+.light #ram-icon,
+.light #bat-icon {
+  color: var(--foreground);
 }
 
 #metrics-icon.alert {
@@ -166,7 +166,7 @@
   }
   50% {
     background-color: white;
-    color: black;
+    color: var(--shadow);
     border: red;
   }
   100% {
@@ -202,15 +202,18 @@
 
 .metrics-storage-circle {
   border: 1.5px solid var(--surface-bright);
-  background-color: black;
+  background-color: var(--shadow);
 }
 
 .metrics-storage-circle.active {
   background-color: var(--surface-semi-bright);
 }
+.light .metrics-storage-circle.active {
+  background-color: var(--primary);
+}
 
 .metrics-desc-box {
-  background-color: black;
+  background-color: var(--shadow);
   border-radius: 20px;
   padding: 0 12px;
 }
@@ -218,4 +221,11 @@
 .metrics-sub-text {
   color: var(--outline);
   font-size: 14px;
+}
+
+#cpu-expressive-shape{
+background-color: var(--surface-bright);
+}
+.light #cpu-expressive-shape{
+background-color: var(--primary);
 }

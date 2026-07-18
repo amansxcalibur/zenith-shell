@@ -15,6 +15,8 @@ from modules.workspaces.workspaces import Workspaces
 from modules.power_profiles import PowerProfilesSelector
 from modules.metrics.metrics import MetricsSmall, Battery
 
+from services.theme import ThemeManager
+
 from config.config import config
 from utils.helpers import toggle_class
 from utils.cursor import add_hover_cursor
@@ -47,6 +49,10 @@ class DockBar(Window):
             **kwargs,
         )
         self.set_title(self.WIN_ROLE)
+
+        self.theme_service = ThemeManager()
+        if self.theme_service.mode == "light":
+            self.add_style_class('light')
 
         self._pill_ref = pill
 

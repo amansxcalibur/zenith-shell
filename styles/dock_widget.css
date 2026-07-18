@@ -6,7 +6,7 @@
     padding: 0px;
 } */
 #hole-placeholder-box {
-  background-color: black;
+  background-color: var(--shadow);
   /* border: solid 1px red     */
 }
 

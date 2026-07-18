@@ -16,6 +16,7 @@ from modules.controls import ControlsManager
 from modules.wallpaper import WallpaperSelector
 from modules.launcher import AppLauncher, AppCommands
 from modules.workspaces.workspaces import ActiveWindow
+from services.theme import ThemeManager
 
 from config.config import config
 from config.info import SHELL_NAME, USERNAME, HOSTNAME
@@ -42,6 +43,10 @@ class Pill(Window, Service):
             all_visible=True,
         )
         self.set_role(self.WIN_ROLE)
+
+        self.theme_service = ThemeManager()
+        if self.theme_service.mode == "light":
+            self.add_style_class('light')
 
         self._current_compact_mode = None
         self._dock_is_visible = True

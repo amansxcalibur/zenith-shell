@@ -6,6 +6,8 @@ from fabric.widgets.overlay import Overlay
 from fabric.widgets.revealer import Revealer
 from fabric.utils.helpers import exec_shell_command_async
 
+from services.theme import ThemeManager
+
 import icons
 from config.info import SHELL_NAME
 from utils.cursor import add_hover_cursor
@@ -365,7 +367,10 @@ class Tile(ClippingBox):
         on_toggle: callable = None,
         **kwargs,
     ):
+        self.theme_service = ThemeManager()
         default_classes = ["tile", "off"]
+        if self.theme_service.mode == "light":
+            default_classes += ["light"]
         extra_classes = kwargs.pop("style_classes", [])
         merged_classes = default_classes + extra_classes
         markup_styles = kwargs.pop("markup_style", "")

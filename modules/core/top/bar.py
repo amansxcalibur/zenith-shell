@@ -7,6 +7,8 @@ from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.x11 import X11WindowGeometry
 
+from services.theme import ThemeManager
+
 from widgets.clipping_box import ClippingBox
 from widgets.overrides import PatchedX11Window as Window
 from utils.helpers import toggle_class
@@ -36,6 +38,10 @@ class TopBar(Window):
             **kwargs,
         )
         self._pill_ref = pill
+
+        self.theme_service = ThemeManager()
+        if self.theme_service.mode == "light":
+            self.add_style_class('light')
 
         self.is_open = False
         self._pill_is_docked = True

@@ -13,7 +13,7 @@ label{
 }
 
 #date-time > label{
-    color: white;
+    color: var(--foreground);
     font-size: 17px;
 }
 
@@ -22,5 +22,5 @@ label{
     padding: 0px;
     padding-left: 0px;
     border-radius: 17px;
-    background-color: black;
+    background-color: var(--shadow);
 }

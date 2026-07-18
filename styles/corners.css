@@ -1,6 +1,6 @@
 #corner{
-    background-color: black;
-    color: black;
+    background-color: var(--shadow);
+    color: var(--shadow);
 }
 
  #all-corners{

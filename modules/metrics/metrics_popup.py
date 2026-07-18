@@ -113,18 +113,18 @@ class Metrics(Box):
         # radial graph
         cpu_radial = ClippingBox(
             size=(250, 250), h_expand=True, v_align="center",
-            style="background-color: black; border-radius: 999px",
+            style="background-color: var(--shadow); border-radius: 999px",
             children=Box(
                 h_expand=True, style="margin: -10px;",
                 children=Overlay(
                     h_expand=True,
                     child=ExpressiveShape(
-                        style="background-color: var(--surface-bright);",
+                        name="cpu-expressive-shape",
                         shape=cookie_12,
                         child=Box(
                             style="padding: 2px;",
                             children=ExpressiveShape(
-                                style="background-color: var(--surface-semi-bright);",
+                                name="cpu-expressive-shape",
                                 shape=cookie_12,
                                 child=Box(children=[self.cpu_circular_graph]),
                             ),
@@ -149,7 +149,7 @@ class Metrics(Box):
                                   children=[header] + ([extra_overlay] if extra_overlay else []))
             return Overlay(
                 name="metric-graph-container",
-                child=ClippingBox(style="background-color: black; border-radius: 20px", children=graph),
+                child=ClippingBox(style="background-color: var(--shadow); border-radius: 20px", children=graph),
                 overlays=[overlay_content],
             )
 

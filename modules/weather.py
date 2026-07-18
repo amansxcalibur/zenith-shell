@@ -12,6 +12,8 @@ from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
 from fabric.core.service import Service, Signal, Property
 
+from services.theme import ThemeManager
+
 from widgets.overrides import Svg
 from widgets.popup_window import SharedPopupWindow
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
@@ -186,6 +188,7 @@ class WeatherMini(EventBox):
         super().__init__(name="weather-mini-container", spacing=3, **kwargs)
         self.dark = dark
 
+        self.theme_service = ThemeManager()
         self.service = WeatherService()
         initial_data: WeatherData = self.service.current_data
 
@@ -197,7 +200,9 @@ class WeatherMini(EventBox):
         )
 
         self.emoji_svg = Svg(
-            name="weather-emoji", size=(20, 20), svg_string=initial_data.get_emoji(self.dark)
+            name="weather-emoji",
+            size=(20, 20),
+            svg_string=initial_data.get_emoji(self.dark),
         )
 
         self.children = Button(
@@ -218,7 +223,11 @@ class WeatherMini(EventBox):
 
     def _on_weather_update(self, source, data: WeatherData):
         self.temperature.set_label(data.temp)
-        self.emoji_svg.set_from_string(data.get_emoji(self.dark))
+        self.emoji_svg.set_from_string(
+            data.get_emoji(
+                self.dark if self.theme_service.mode == "dark" else not self.dark
+            )
+        )
 
 
 class WeatherCard(Box):
@@ -226,6 +235,9 @@ class WeatherCard(Box):
         super().__init__(spacing=5, orientation="v", **kwargs)
         self.dark = dark
 
+        self.theme_service = ThemeManager()
+        if self.theme_service.mode == "light":
+            self.add_style_class('light')
         self.service = WeatherService()
         initial_data = self.service.current_data
 
@@ -254,7 +266,9 @@ class WeatherCard(Box):
             h_expand=True,
             v_expand=True,
             size=(50, 50),
-            svg_string=initial_data.get_emoji(self.dark),
+            svg_string=initial_data.get_emoji(
+                self.dark if self.theme_service.mode == "dark" else not self.dark
+            ),
         )
 
         # location
@@ -350,7 +364,11 @@ class WeatherCard(Box):
     def update_weather(self, source, data: WeatherData):
         self.temperature_label.set_label(data.temp)
         self.location.set_label(data.location)
-        self.emoji_svg.set_from_string(data.get_emoji(self.dark))
+        self.emoji_svg.set_from_string(
+            data.get_emoji(
+                self.dark if self.theme_service.mode == "dark" else not self.dark
+            )
+        )
         self.humidity_label.set_label(data.humidity)
         self.wind_label.set_label(data.wind)
         self.pressure_label.set_label(data.pressure)
@@ -366,6 +384,7 @@ class WeatherPill(Gtk.DrawingArea):
 
         self.dark = dark
 
+        self.theme_service = ThemeManager()
         self.service = WeatherService()
         self._current_data = self.service.current_data
         self.service.connect("value-changed", self.on_weather_update)
@@ -374,7 +393,9 @@ class WeatherPill(Gtk.DrawingArea):
 
     def on_weather_update(self, source, data: WeatherData):
         self._current_data = data
-        svg_string = data.get_emoji(self.dark)
+        svg_string = data.get_emoji(
+            self.dark if self.theme_service.mode == "dark" else not self.dark
+        )
         try:
             self._svg_handle = Rsvg.Handle.new_from_data(svg_string.encode())
         except Exception as e:

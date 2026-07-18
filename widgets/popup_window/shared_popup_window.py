@@ -8,6 +8,7 @@ from fabric.widgets.x11 import X11Window as Window
 
 from widgets.clipping_box import ClippingBox
 from services.animator import Animator
+from services.theme import ThemeManager
 from services.power_profiles import power_profiles_service
 from config.info import SHELL_NAME
 
@@ -15,7 +16,7 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("GLib", "2.0")
-from gi.repository import Gdk, GLib, Gtk
+from gi.repository import Gdk, GLib, Gtk  # noqa: E402
 
 
 class SharedPopupWindow(Window):
@@ -56,6 +57,10 @@ class SharedPopupWindow(Window):
         )
         self._initialized = True
         self.set_role(f"{SHELL_NAME}-popup")
+
+        self.theme_service = ThemeManager()
+        if self.theme_service.mode == "light":
+            self.add_style_class("light")
 
         self.pointing_widget = None
         self.pointing_widget_size_alloc_hook = None

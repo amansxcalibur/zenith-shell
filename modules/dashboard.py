@@ -93,7 +93,7 @@ class Dashboard(Box):
             label="Dark Theme",
             style="border-radius:20px",
         )
-        self.dark_theme_tile.set_active_style(True)
+        # self.dark_theme_tile.set_active_style(False)
 
         self.tiles = Box(
             spacing=3,

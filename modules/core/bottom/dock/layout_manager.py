@@ -54,7 +54,7 @@ class LayoutManager:
                     orientation="v",
                     children=[
                         self.main_hole,
-                        Box(v_expand=True, style="background-color:black"),
+                        Box(v_expand=True, style="background-color:var(--shadow)"),
                     ],
                 ),
                 self.ender_box,
@@ -88,9 +88,9 @@ class LayoutManager:
                     )
                 else:
                     self.placeholder_row.add(self.main_hole_container)
-            self.placeholder_row.add(Box(h_expand=True, style="background-color:black"))
+            self.placeholder_row.add(Box(h_expand=True, style="background-color:var(--shadow)"))
         else:
-            self.placeholder_row.add(Box(h_expand=True, style="background-color:black"))
+            self.placeholder_row.add(Box(h_expand=True, style="background-color:var(--shadow)"))
             self.placeholder_row.add(self.main_hole_container)
             for i, module in enumerate(self.placeholders):
                 if i > 0:
@@ -132,13 +132,13 @@ class LayoutManager:
 
             if self.curr_hovered_index == 0 and self.side == "left":
                 self.starter_box.last_hover_time = time.monotonic()
-                self.starter_box.set_style("min-width:0px; background-color:black")
+                self.starter_box.set_style("min-width:0px; background-color:var(--shadow)")
             elif (
                 self.curr_hovered_index == len(self.placeholders) - 1
                 and self.side == "right"
             ):
                 self.ender_box.last_hover_time = time.monotonic()
-                self.ender_box.set_style("min-width:0px; background-color:black")
+                self.ender_box.set_style("min-width:0px; background-color:var(--shadow)")
 
             toggle_class(self.starter_box, "expander", "contractor")
             toggle_class(self.ender_box, "expander", "contractor")
@@ -305,7 +305,7 @@ class LayoutManager:
                 self.side == "right" and i > 1 and i % 2 == 0
             ):
                 if hovered_id < 0:
-                    module.set_style(f"background-color:black; min-width:{SPACING}px")
+                    module.set_style(f"background-color:var(--shadow); min-width:{SPACING}px")
                 elif i / 2 > source_id and i < len(self.placeholder_row.children) - 1:
                     module.set_style("background-color:transparent; min-width:0px;")
 

@@ -5,14 +5,14 @@
 
 #hori{
     background-color: transparent;
-    box-shadow: 0px 17px 0 0 black;
+    box-shadow: 0px 17px 0 0 var(--shadow);
     border-bottom-left-radius: 20px;
     border-bottom-right-radius: 20px;
 }
 
 #hori.pill{
     background-color: transparent;
-    box-shadow: 0px 26px 0 10px black;
+    box-shadow: 0px 26px 0 10px var(--shadow);
     border-bottom-left-radius: 25px;
     border-bottom-right-radius: 25px;
 }
@@ -47,7 +47,7 @@
 }
 
 #start, #end{
-    background-color: black;
+    background-color: var(--shadow);
     min-width: 20px;
 }
 #start.expander{
@@ -68,12 +68,12 @@
 }
 
 #bottom{
-    background-color: black;
+    background-color: var(--shadow);
 }
 
 #text{
     min-width: 44px;
-    background-color: black;
+    background-color: var(--shadow);
     border-radius: 20px;
 }
 
@@ -91,7 +91,7 @@
 #pill-stack{
     all: unset;
     border-radius: 23px;
-    background-color: black;
+    background-color: var(--shadow);
 }
 
 #pill-border-clipper{

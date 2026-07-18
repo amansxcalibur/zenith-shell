@@ -1,5 +1,5 @@
 #power-menu {
-  background-color: black;
+  background-color: var(--shadow);
   padding: 10px;
   border-radius: 25px;
   min-height: 30px;

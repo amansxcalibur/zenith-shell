@@ -18,10 +18,16 @@ version_check = false
 [config.custom_keywords]
 test = "aaaa"
 
-[templates.fabric]
+[templates.zenith_dark]
 # Relative paths will be resolved from the path `config.toml` is in.
-input_path = "./colors.css"
-output_path = "../../styles/colors.css"
+input_path = "./colors.dark.css"
+output_path = "../../data/colors.dark.css"
+
+# TODO
+[templates.zenith_light]
+# Relative paths will be resolved from the path `config.toml` is in.
+input_path = "./colors.light.css"
+output_path = "../../data/colors.light.css"
 
 [templates.gtk3]
 input_path = './gtk3.css'

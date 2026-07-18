@@ -15,7 +15,7 @@ import icons
 import gi
 
 gi.require_version("Gray", "0.1")
-from gi.repository import Gray, Gtk, Gdk, GdkPixbuf, GLib
+from gi.repository import Gray, Gtk, Gdk, GdkPixbuf, GLib  # noqa: E402
 
 
 class NotificationIndicator(Box):
@@ -42,6 +42,7 @@ class NotificationIndicator(Box):
 
         self.overlay = Overlay(
             child=MaterialIconLabel(
+                name="systray-notif-icon",
                 font_size=18,
                 icon_text=icons.notifications.symbol(),
             ),
@@ -60,13 +61,7 @@ class NotificationIndicator(Box):
                     )
                 ),
                 # spacer
-                Box(
-                    style=""
-                    "background-color:var(--surface-semi-bright); "
-                    "min-width: 2px; "
-                    "margin: 3px 4px 3px 0px; "
-                    "border-radius: 4px;"
-                ),
+                Box(name="systray-spacer"),
             ]
         )
 
@@ -92,7 +87,7 @@ class SystemTray(Box):
         self.watcher = Gray.Watcher()
         self.watcher.connect("item-added", self.on_item_added)
         self.clipper = ClippingBox(
-            name='systray-clipper',
+            name="systray-clipper",
             spacing=1,
             orientation=("v" if config.VERTICAL else "h"),
         )

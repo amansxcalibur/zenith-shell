@@ -4,6 +4,8 @@ from fabric.widgets.button import Button
 from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
+from services.theme import ThemeManager
+
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
 from widgets.elastic.elastic_stack import ElasticStack
@@ -39,6 +41,10 @@ class TopPill(Window, Service):
             all_visible=True,
         )
         self.set_role(self.WIN_ROLE)
+
+        self.theme_service = ThemeManager()
+        if self.theme_service.mode == "light":
+            self.add_style_class('light')
 
         self._drag_state = {
             "dragging": False,

@@ -1,6 +1,6 @@
 #notif-group-container {
   border-radius: 25px;
-  background-color: var(--shadow);
+  background-color: var(--surface);
 }
 #notif-group-children-box.contract > :last-child > :last-child {
   transition: all 0.15s linear;
@@ -10,7 +10,7 @@
 #notification-box,
 #notification-widget {
   transition: all 0.15s linear;
-  background-color: var(--shadow);
+  /* background-color: var(--shadow); */
   border-radius: 25px;
   padding: 10px;
   min-width: 364px; /* 290+74 */
@@ -79,6 +79,9 @@
   /* min-width: 27px; */
   font-size: 18px;
   color: var(--outline);
+}
+.light #notification-clear-label {
+  color: var(--foreground);
 }
 .trash-icon-adjust {
   /* font-size: 25px; */
@@ -152,6 +155,10 @@
   padding: 0 6px;
   /* margin: 0 2px; */
 }
+.light #notif-expander-btn,
+.light #notif-group-toggle-btn {
+  background-color: var(--outline);
+}
 
 #notif-expander-btn {
   padding: 3px 6px;
@@ -182,7 +189,7 @@
 #notif-group-header {
   padding: 10px;
   border-radius: 25px;
-  background-color: var(--shadow);
+  /* background-color: var(--shadow); */
   transition: background-color 200ms ease;
 }
 #notif-group-header.critical {
@@ -203,6 +210,9 @@
   border-radius: 10px;
   color: var(--foreground);
 }
+.light .notif-group-count {
+  color: var(--background);
+}
 
 #notif-group-clear-btn {
   border-radius: 14px;
@@ -211,6 +221,9 @@
 }
 #notif-group-clear-btn:hover {
   background-color: var(--surface-bright);
+}
+.light #notif-group-clear-btn {
+  background-color: var(--outline);
 }
 
 #expand-img {

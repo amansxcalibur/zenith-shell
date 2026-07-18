@@ -14,6 +14,8 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
+from services.theme import ThemeManager
+
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialFontLabel, MaterialIconLabel
 
@@ -26,7 +28,7 @@ from utils.lock import generate_lockscreen_image
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GdkPixbuf, Gtk, GLib, Gio, Gdk
+from gi.repository import GdkPixbuf, Gtk, GLib, Gio, Gdk  # noqa: E402
 
 
 # paths
@@ -161,6 +163,7 @@ class WallpaperSelector(Box):
             **kwargs,
         )
         self.wallpaper_service = WallpaperService()
+        self.theme_service = ThemeManager()
 
         self.files = []
         self.thumbnails_map = {}
@@ -636,14 +639,14 @@ class WallpaperSelector(Box):
             return
 
         config_path = f"{CONFIG_DIR}/matugen/config.toml"
-        command = f"{matugen_bin} image '{image_path}' -t {scheme} -c '{config_path}' --source-color-index 0"
+        command = f"{matugen_bin} image '{image_path}' -m {self.theme_service.mode} -t {scheme} -c '{config_path}' --source-color-index 0"
 
         try:
             process, _ = exec_shell_command_async(command)
             process.wait_check_async(
                 None,
                 lambda p, r: (
-                    logger.info("Theme updated")
+                    (logger.info("Theme updated"), self.theme_service.update_colors())
                     if p.wait_check_finish(r)
                     else logger.error("Theme failed")
                 ),

@@ -4,7 +4,7 @@
   border-radius: 20px;
 }
 
-#systray-clipper{
+#systray-clipper {
   border-radius: 20px;
 }
 
@@ -23,8 +23,15 @@
   margin: 1px 3px 1px 1px;
 }
 
+.light #systray-notif-icon{
+  color: var(--foreground)
+}
+
 #systray-notif-btn:hover {
   background-color: var(--outline);
+}
+.light #systray-notif-btn:hover {
+  background-color: var(--shadow);
 }
 
 #notif-unread-indicator {
@@ -41,4 +48,14 @@
 
 #notif-unread-indicator.unread.urgent {
   background-color: rgb(238, 63, 63);
+}
+
+#systray-spacer {
+  background-color: var(--surface-semi-bright);
+  min-width: 2px;
+  margin: 3px 4px 3px 0px;
+  border-radius: 4px;
+}
+.light #systray-spacer {
+  background-color: var(--shadow);
 }

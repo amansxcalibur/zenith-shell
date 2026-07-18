@@ -5,14 +5,14 @@
 
 #hori-notif{
     background-color: transparent;
-    box-shadow: 0px 17px 0 0 black;
+    box-shadow: 0px 17px 0 0 var(--shadow);
     border-bottom-left-radius: 20px;
     border-bottom-right-radius: 20px;
 }
 
 #hori-notif.pill{
     background-color: transparent;
-    box-shadow: 0px -25px 0 10px black;
+    box-shadow: 0px -25px 0 10px var(--shadow);
     border-top-left-radius: 50px;
     border-top-right-radius: 50px;
 }
@@ -49,7 +49,7 @@
 }
 
 #start-notif-controls, #end-notif-controls{
-    background-color: black;
+    background-color: var(--shadow);
     min-width: 48px;
     padding-left: 15px;
     padding-right: 15px;
@@ -83,12 +83,12 @@
 }
 
 #bottom{
-    background-color: black;
+    background-color: var(--shadow);
 }
 
 #text{
     min-width: 44px;
-    background-color: black;
+    background-color: var(--shadow);
     border-radius: 20px;
 }
 
@@ -114,7 +114,7 @@
 #end-notif-control-left-drop, #start-notif-control-left-drop{
     min-width: 47px;
     background-color: transparent;
-    box-shadow: 0px -20px 0 0 black;
+    box-shadow: 0px -20px 0 0 var(--shadow);
 }
 #start-notif-control-left-drop{
     border-top-right-radius: 50px;

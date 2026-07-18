@@ -22,7 +22,7 @@ from config.config import config
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib
+from gi.repository import GLib  # noqa: E402
 
 
 class AutoHideRevealer:

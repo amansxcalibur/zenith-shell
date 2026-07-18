@@ -155,7 +155,7 @@
 #top-pill-stack {
   all: unset;
   border-radius: 23px;
-  /* background-color: black; */
+  /* background-color: var(--shadow); */
 }
 
 #top-pill-container {
@@ -167,5 +167,7 @@
   color: var(--outline);
   margin: -5px -4px;
   font-size: 25px;
-  /* background-color: red; */
+}
+.light #close-control-label {
+  color: var(--foreground);
 }

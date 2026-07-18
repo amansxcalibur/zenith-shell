@@ -86,7 +86,7 @@
 
 #settings-tab {
   all: unset;
-  background-color: black;
+  background-color: var(--shadow);
 }
 
 .settings-btn {

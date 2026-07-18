@@ -21,6 +21,9 @@
   border-radius: 999px;
   background: var(--on-primary);
 }
+.light #power-profile-slider {
+  background: var(--primary);
+}
 
 #power-profile-spacer-left {
   transition: min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1);
@@ -32,6 +35,9 @@
   border-radius: 20px;
   font-size: 20px;
   background-color: var(--shadow);
+}
+.light #profile-label{
+  color: var(--background)
 }
 
 #power-profile-icon {

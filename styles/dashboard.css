@@ -1,5 +1,5 @@
 #dashboard {
-  background-color: black;
+  background-color: var(--shadow);
   border-radius: 25px;
   padding: 13px;
 }
@@ -45,12 +45,14 @@
 .tile.simple.on .desc-label,
 .tile.simple.on .tile-label,
 .tile.on .tile-icon {
-  color: var(--shadow);
+  color: var(--background);
   transition: all;
 }
 .tile.off .desc-label,
 .tile.off .tile-label,
-.tile.off .tile-icon {
+.tile.off .tile-icon,
+.light.tile.on .tile-label,
+.light.tile.on .desc-label {
   color: var(--foreground);
   transition: all;
 }
@@ -58,7 +60,6 @@
 .tile-icon {
   font-size: 26px;
   padding: 0 4px;
-  /* background-color: red; */
 }
 
 .tile-icon.mini {

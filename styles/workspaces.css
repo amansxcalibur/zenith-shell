@@ -35,6 +35,9 @@
   border-radius: 50px;
   background-color: var(--outline);
 }
+.light #workspaces > button:hover {
+  background-color: var(--on-surface-variant);
+}
 
 /* #workspaces > button.urgent {
   background-color: var(--error);
@@ -53,6 +56,9 @@
   background-color: var(--foreground);
   transition: all 0.25s;
 }
+.light #workspace-morph-shape {
+  background-color: var(--outline);
+}
 
 #workspace-morph-shape.active {
   background-color: var(--primary);
@@ -61,13 +67,16 @@
 #workspace-morph-shape.empty {
   background-color: var(--background);
 }
+.light #workspace-morph-shape.empty {
+  background-color: var(--foreground);
+}
 
 #workspace-morph-shape.urgent {
   background-color: var(--error);
 }
 
 #active-window {
-  background-color: black;
+  background-color: var(--shadow);
   padding: 13px 15px;
   font-family: Roboto Flex;
   font-weight: 600;

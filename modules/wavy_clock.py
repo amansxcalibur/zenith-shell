@@ -55,7 +55,7 @@ class WavyClock(Gtk.DrawingArea):
         self._dynamic_font_size_px = None
 
         self._load_theme_colors()
-        self.connect("style-updated", lambda *_: self._load_theme_colors())
+        # self.connect("style-updated", lambda *_: self._load_theme_colors())
         self.connect("draw", self.on_draw)
 
         GLib.timeout_add_seconds(1, self.on_tick)
@@ -66,7 +66,7 @@ class WavyClock(Gtk.DrawingArea):
         css_path = f"{ROOT_DIR}/styles/colors.css"
         self._primary_rgb = hex_to_rgb01(get_css_variable(css_path, "--primary"))
         self._on_primary_rgb = hex_to_rgb01(get_css_variable(css_path, "--on-primary"))
-        self._tertiary_rgb = hex_to_rgb01(get_css_variable(css_path, "--tertiary"))
+        self._tertiary_fixed_rgb = hex_to_rgb01(get_css_variable(css_path, "--tertiary-fixed"))
 
     def _ensure_size_dependent_state(self, width, height):
         if width == self._cached_width and height == self._cached_height:
@@ -96,6 +96,8 @@ class WavyClock(Gtk.DrawingArea):
         width = self.get_allocated_width()
         height = self.get_allocated_height()
         cx, cy = width / 2, height / 2
+
+        self._load_theme_colors() # yuck
 
         self._ensure_size_dependent_state(width, height)
         base_radius = self._base_radius
@@ -163,7 +165,7 @@ class WavyClock(Gtk.DrawingArea):
         x = cx + orbit * math.cos(angle)
         y = cy + orbit * math.sin(angle)
         ctx.arc(x, y, dot_radius, 0, math.tau)
-        ctx.set_source_rgb(*self._tertiary_rgb)
+        ctx.set_source_rgb(*self._tertiary_fixed_rgb)
         ctx.fill()
 
     def _draw_curved_date(self, ctx, cx, cy, second_angle, second_orbit, dot_radius):
