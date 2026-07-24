@@ -15,6 +15,7 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 
 from widgets.material_label import MaterialIconLabel
 from widgets.clipping_box import ClippingBox, AnimatedClippingBox
+from services.theme import ThemeManager
 
 import icons
 from config.info import DATA_DIR, CACHE_DIR
@@ -30,7 +31,7 @@ AGENDA_CACHE_DIR = os.path.join(CACHE_DIR, "agenda")
 THUMB_W, THUMB_H = 500, 100
 
 os.makedirs(AGENDA_CACHE_DIR, exist_ok=True)
-
+theme_service = ThemeManager()
 
 def ensure_data_file():
     os.makedirs(DATA_DIR, exist_ok=True)
@@ -95,7 +96,11 @@ class AgendaItem(Gtk.ListBoxRow):
 
     def _build_display(self):
         self.label = Label(
-            label=self.text, h_align="start", line_wrap="word-char", max_chars_width=30
+            style_classes="agenda-display-text",
+            label=self.text,
+            h_align="start",
+            line_wrap="word-char",
+            max_chars_width=30,
         )
         self.clipping_wrapper = AnimatedClippingBox(max_height=22)
         self.clipping_wrapper.add(self.label)
@@ -182,9 +187,12 @@ class AgendaItem(Gtk.ListBoxRow):
             children=[
                 Label(
                     name="text-editor",
-                    h_align="start",
+                    h_expand=True,
                     label="Are you sure you wanna delete this?",
-                ),
+                )
+                .build()
+                .set_xalign(0.0)
+                .unwrap(),
                 del_actions,
             ],
         )
@@ -272,6 +280,8 @@ class AgendaItem(Gtk.ListBoxRow):
             action=Gtk.FileChooserAction.OPEN,
         )
         dialog.get_style_context().add_class("agenda-file-chooser-dialog")
+        if theme_service.mode=='light':
+            dialog.get_style_context().add_class("light")
         dialog.set_visual(dialog.get_screen().get_rgba_visual())
 
         for stock, response, extra_class in [
@@ -316,7 +326,7 @@ class AgendaApp(Box):
             v_scrollbar_policy="automatic",
             min_content_size=(-1, 80),
             max_content_size=(-1, 150),
-            child=self.new_text_view
+            child=self.new_text_view,
         )
 
         editor_box = Box(

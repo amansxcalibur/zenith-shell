@@ -38,9 +38,15 @@
 #agenda-btn:hover {
   background-color: var(--surface-bright);
 }
+.light #agenda-btn:hover {
+  background-color: var(--primary-container);
+}
 .agenda-icon {
   font-size: 20px;
   padding: 0 2px;
+}
+.light .agenda-icon{
+  color: var(--foreground);
 }
 
 #text-editor {
@@ -51,6 +57,12 @@
 #text-editor selection {
   background-color: var(--primary);
   color: var(--shadow);
+}
+.light #text-editor {
+  color: var(--foreground);
+}
+.light #text-editor selection {
+  color: var(--background);
 }
 
 #add-new-agenda-btn {
@@ -85,6 +97,9 @@
   padding: 8px;
   border-radius: 20px;
 }
+.light #editor-btn > * {
+  color: var(--foreground);
+}
 #editor-btn:hover {
   background-color: var(--surface-semi-bright);
 }
@@ -93,6 +108,9 @@
 }
 #editor-btn.delete-btn > :first-child {
   color: var(--shadow);
+}
+.light #editor-btn.delete-btn > :first-child {
+  color: var(--background);
 }
 #editor-btn.delete-btn:hover {
   background-color: var(--error);
@@ -110,6 +128,13 @@
   background-color: rgba(0, 0, 0, 0.5);
   background-blend-mode: multiply;
   border-radius: 20px;
+}
+.light #display-box {
+  background-color: rgba(255, 255, 255, 0.5);
+  background-blend-mode: hue;
+}
+.agenda-display-text {
+  color: var(--foreground);
 }
 
 #agenda-scrolled-clipper {
@@ -131,6 +156,9 @@
 filechooser {
   background-color: transparent;
   padding: 10px;
+}
+.light filechooser{
+  color: var(--foreground)
 }
 
 filechooser > box {
