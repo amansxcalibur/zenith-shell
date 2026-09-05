@@ -221,6 +221,24 @@ def generate_i3_gaps_and_borders_config():
             lines.append("smart_borders on")
             lines.append("")
 
+    if IS_WAYLAND:
+        # settings window
+        config_block = [
+            "# floating settings win",
+            f'for_window [app_id="{SHELL_NAME}-settings"] {{',
+            "    floating enable",
+            "    border none",
+        ]
+        if is_swayfx():
+            config_block.extend(
+                [
+                    "    shadows disable",
+                    "    blur disable",
+                ]
+            )
+        config_block.append("}")
+        lines.append("\n".join(config_block))
+
     return "\n".join(lines)
 
 
@@ -276,3 +294,15 @@ def add_shell_startup_to_i3_config():
             f.write(f"\n{prefix}{include_line}\n")
     else:
         logger.debug("{} config already contains {} startup", WM, SHELL_NAME)
+
+
+def is_swayfx() -> bool:
+    from fabric.i3.service import I3MessageType
+
+    reply = get_i3_connection().send_command("", I3MessageType.GET_VERSION)
+    if reply.is_ok and isinstance(reply.reply, dict):
+        return (
+            "sway_original_version" in reply.reply
+            and reply.reply.get("variant") == "sway"
+        )
+    return False

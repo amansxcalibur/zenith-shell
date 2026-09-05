@@ -19,8 +19,8 @@ from widgets.material_label import MaterialIconLabel, MaterialFontLabel
 from widgets.shapes.expressive.morphing_shapes import AnimateShapeMorph
 
 import icons
-from config.info import CONFIG_FILE
 from utils.cursor import add_hover_cursor
+from config.info import CONFIG_FILE, SHELL_NAME
 from config.bindings import KeybindingValidationError
 
 from .state import state
@@ -72,7 +72,7 @@ class SettingsWindow(Window):
     def __init__(self):
         if IS_WAYLAND:
             super().__init__(
-                name="pill",
+                title=f"{SHELL_NAME}-settings",
                 type="popup",
                 visible=True,
                 all_visible=True,
