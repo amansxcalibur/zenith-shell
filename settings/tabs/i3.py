@@ -9,6 +9,7 @@ from widgets.animated_scale import AnimatedScale
 
 import icons
 from config.info import IS_WAYLAND
+from config.i3.utils import is_swayfx
 from utils.cursor import add_hover_cursor
 from utils.helpers import bind_group_toggle
 from utils.lock import get_available_external_locker
@@ -20,7 +21,8 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # type: ignore
 
-WM = "Sway" if IS_WAYLAND else "I3"
+WM = ("SwayFX" if is_swayfx else "Sway") if IS_WAYLAND else "I3"
+
 
 class I3Tab(BaseWidget, SectionBuilderMixin):
     def __init__(self, **kwargs):
@@ -39,12 +41,14 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
             },
         ]
         if locker := get_available_external_locker():
-            lockscreen_options.append({
-                "selected": False,
-                "icon": icons.editors_choice.symbol(),
-                "text": locker,
-                "value": locker,
-            })
+            lockscreen_options.append(
+                {
+                    "selected": False,
+                    "icon": icons.editors_choice.symbol(),
+                    "text": locker,
+                    "value": locker,
+                }
+            )
 
         lockscreen_selected = state.get(["system", "LOCKSCREEN"])
 
@@ -65,7 +69,7 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
         )
         corners_enabled_switch = self._create_switch(
             state_path=[
-                "corners",
+                "screen_corners",
                 "enabled",
             ]
         )
@@ -74,7 +78,7 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
             0,
             50,
             self._on_corner_radius_changed,
-            state.get(["corners", "props", "radius"]),
+            state.get(["screen_corners", "props", "radius"]),
         )
         bind_group_toggle(corners_enabled_switch, [corner_radius_control])
         self.container.add(
@@ -83,7 +87,7 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
                 spacing=30,
                 children=[
                     LayoutBuilder.section(
-                        "Corner",
+                        "Screen Corner",
                         [
                             Box(
                                 spacing=30,
@@ -175,10 +179,30 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
             self._on_border_width_changed,
             state.get(["i3", "borders", "props", "border_width"]),
         )
+        border_radius_control = (
+            self._create_i3_controls(
+                "Corner Radius",
+                0,
+                50,
+                None,
+                state.get(["i3", "borders", "props", "corner_radius"]),
+            )
+            if is_swayfx()
+            else None
+        )
 
         bind_group_toggle(
             borders_enabled_switch,
-            [border_width_control, border_theme_row, border_smart_row],
+            [
+                w
+                for w in [
+                    border_width_control,
+                    border_theme_row,
+                    border_smart_row,
+                    border_radius_control,
+                ]
+                if w is not None
+            ],
         )
 
         # gaps settings
@@ -213,18 +237,28 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
                                 spacing=10,
                                 children=[
                                     Box(
-                                        h_expand=True,
+                                        orientation="v",
                                         children=[
-                                            Label(
-                                                label="Borders",
-                                                style_classes="section-subheading",
-                                                h_align="start",
+                                            Box(
                                                 h_expand=True,
+                                                children=[
+                                                    Label(
+                                                        label="Borders",
+                                                        style_classes="section-subheading",
+                                                        h_align="start",
+                                                        h_expand=True,
+                                                    ),
+                                                    borders_enabled_switch,
+                                                ],
                                             ),
-                                            borders_enabled_switch,
+                                            border_width_control,
+                                            *(
+                                                [border_radius_control]
+                                                if border_radius_control
+                                                else []
+                                            ),
                                         ],
                                     ),
-                                    border_width_control,
                                     border_theme_row,
                                     border_smart_row,
                                 ],
@@ -265,7 +299,7 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
         label: str,
         min_val: float,
         max_val: float,
-        callback: callable,
+        callback: callable = None,  # noqa: RUF013
         initial_val=30,
     ):
         value_label = Label(
@@ -285,11 +319,12 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
         def on_value_changed(s):
             val = int(s.get_value())
             value_label.set_label(f"{val}px")
-            if scale.get_mapped():
+            if callback is not None and scale.get_mapped():
                 callback(s)
 
         scale.connect("value-changed", on_value_changed)
-        scale.connect("map", lambda: callback(scale))
+        if callback is not None:
+            scale.connect("map", lambda: callback(scale))
 
         return Box(
             h_expand=True,
@@ -395,7 +430,7 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
     def _on_corner_radius_changed(self, scale):
         val = int(scale.get_value())
         self.corner_demo.set_style(f"border-radius: {val}px")
-        state.update(["corners", "props", "radius"], val)
+        state.update(["screen_corners", "props", "radius"], val)
 
     def _create_demo_window(self, is_active=False):
         window = Box(

@@ -10,7 +10,7 @@ from collections.abc import Callable
 from fabric.utils.helpers import bulk_replace
 from config.info import ROOT_DIR
 
-from gi.repository import Gio, GLib  # type: ignore
+from gi.repository import Gdk, Gio, GLib  # type: ignore
 
 
 def toggle_class(widget, remove, add):
@@ -144,25 +144,10 @@ def bind_group_toggle(switch, targets):
     switch.connect("notify::active", lambda s, _p: apply(s.get_active()))
 
 
-from gi.repository import Gtk, GtkLayerShell, Gdk
-
-
-def dump_layer_info(window):
-    print(f"window: {window.get_title()}")
-    print(f"  layer: {GtkLayerShell.get_layer(window)}")
-    print(
-        f"  anchor: top={GtkLayerShell.get_anchor(window, GtkLayerShell.Edge.TOP)} "
-        f"bottom={GtkLayerShell.get_anchor(window, GtkLayerShell.Edge.BOTTOM)} "
-        f"left={GtkLayerShell.get_anchor(window, GtkLayerShell.Edge.LEFT)} "
-        f"right={GtkLayerShell.get_anchor(window, GtkLayerShell.Edge.RIGHT)}"
-    )
-    print(f"  exclusive_zone: {GtkLayerShell.get_exclusive_zone(window)}")
-    print(f"  margin: top={GtkLayerShell.get_margin(window, GtkLayerShell.Edge.TOP)}")
-    print(f"  keyboard_mode: {GtkLayerShell.get_keyboard_mode(window)}")
-
-
 def get_absolute_wayland_widget_position(widget):
     """Compute widget's current absolute (x, y) screen position."""
+    from gi.repository import GtkLayerShell  # type: ignore
+
     toplevel = widget.get_toplevel()
     win = toplevel.get_window()
     display = Gdk.Display.get_default()

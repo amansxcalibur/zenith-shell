@@ -18,7 +18,7 @@ DEFAULTS = {
         "gaps": {"enabled": True, "props": {"outer": 3, "inner": 0}},
         "borders": {
             "enabled": True,
-            "props": {"border_width": 2, "smart_borders": True},
+            "props": {"border_width": 2, "corner_radius": 16, "smart_borders": True},
             "matugen": True,
         },
     },
@@ -36,7 +36,7 @@ DEFAULTS = {
         "REFRESH_INTERVAL": 5000,
         "SHOW_NOTIFICATIONS": True,
     },
-    "corners": {"enabled": False, "props": {"radius": 20}},
+    "screen_corners": {"enabled": False, "props": {"radius": 20}},
     "bar": {
         "POSITION": "bottom",
         "HEIGHT": 32,

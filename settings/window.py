@@ -19,6 +19,7 @@ from widgets.material_label import MaterialIconLabel, MaterialFontLabel
 from widgets.shapes.expressive.morphing_shapes import AnimateShapeMorph
 
 import icons
+from config.i3.utils import is_swayfx
 from utils.cursor import add_hover_cursor
 from config.info import CONFIG_FILE, SHELL_NAME
 from config.bindings import KeybindingValidationError
@@ -108,7 +109,7 @@ class SettingsWindow(Window):
                 ),
                 TabConfig(
                     "i3wm",
-                    "Sway" if IS_WAYLAND else "I3",
+                    ("SwayFX" if is_swayfx else "Sway") if IS_WAYLAND else "I3",
                     icons.bento.symbol(),
                     lambda: I3Tab().get_widget(),
                     "Appearance",

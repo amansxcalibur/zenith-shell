@@ -25,11 +25,7 @@ from modules.workspaces.workspaces import ActiveWindow
 
 from config.config import config
 from config.info import SHELL_NAME, USERNAME, HOSTNAME
-from utils.helpers import (
-    open_settings,
-    dump_layer_info,
-    get_absolute_wayland_widget_position,
-)
+from utils.helpers import open_settings, get_absolute_wayland_widget_position
 
 from gi.repository import GtkLayerShell, GLib  # type: ignore
 
@@ -68,7 +64,6 @@ class Pill(Window, Service):
             )
         if not IS_WAYLAND:
             self.set_role(self.WIN_ROLE)
-        dump_layer_info(self)
 
         self._current_compact_mode = None
         self._dock_is_visible = True
@@ -118,7 +113,7 @@ class Pill(Window, Service):
         self.stack = ElasticStack(
             name="pill-stack",
             transition_type="crossfade",
-            transition_duration=250,
+            transition_duration=150,
             interpolate_size=True,
             bounce=self._animations_enabled,
             children=[
