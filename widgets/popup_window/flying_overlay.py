@@ -271,6 +271,9 @@ class FlyingOverlay(Window, Service):
             self.set_visible(True)
         self.show_all()
 
+        if IS_WAYLAND:
+            GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.EXCLUSIVE)
+
         self._animate_to(
             start=(start_x, start_y, start_w, start_h),
             target=(target_x, target_y, target_w, target_h),
@@ -322,6 +325,9 @@ class FlyingOverlay(Window, Service):
         )
 
     def dismiss(self):
+        if IS_WAYLAND:
+            GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.NONE)
+
         if self.source_slot is None:
             return
 
