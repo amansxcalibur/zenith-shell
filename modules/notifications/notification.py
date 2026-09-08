@@ -179,31 +179,11 @@ class ActiveNotificationWidget(EventBox):
                     )
                 )
             else:
-                self._notification.shape = random.choice(self._SHAPES)
-                content_box.add(
-                    Box(
-                        name="img-expander",
-                        style_classes="expand",
-                        v_align="start",
-                        children=Box(
-                            name="notif-expressive-shape-container",
-                            h_expand=True,
-                            v_expand=True,
-                            children=ExpressiveShape(shape=self._notification.shape),
-                        ),
-                    )
-                )
+                self._add_image_fallback(content_box)
+
         except Exception as e:
             logger.error(f"Failed to resolve image_pixbuff: {e}")
-            self._notification.shape = random.choice(self._SHAPES)
-            content_box.add(
-                Box(
-                    name="img-expander",
-                    style_classes="expand",
-                    v_align="start",
-                    children=ExpressiveShape(shape=self._notification.shape),
-                )
-            )
+            self._add_image_fallback(content_box)
 
         # TODO: implement real Revealer with animations and Pango pixel length(?)
         self.revealer_btn_label = MaterialIconLabel(
@@ -348,6 +328,22 @@ class ActiveNotificationWidget(EventBox):
             )
             if self.urgency in [0, 1]
             else None
+        )
+
+    def _add_image_fallback(self, content_box):
+        self._notification.shape = random.choice(self._SHAPES)
+        content_box.add(
+            Box(
+                name="img-expander",
+                style_classes="expand",
+                v_align="start",
+                children=Box(
+                    name="notif-expressive-shape-container",
+                    h_expand=True,
+                    v_expand=True,
+                    children=ExpressiveShape(shape=self._notification.shape),
+                ),
+            )
         )
 
     def _on_notification_expanded(self, *_):

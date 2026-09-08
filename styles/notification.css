@@ -271,8 +271,8 @@
   margin-left: 26px;
 }
 #img-expander.expand {
-  min-width: 50px;
-  min-height: 50px;
+  min-width: 48px;
+  min-height: 48px;
 }
 #img-expander > * > * {
   background-color: var(--surface-semi-bright);

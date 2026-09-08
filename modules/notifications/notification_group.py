@@ -61,7 +61,7 @@ def _resolve_icon_asset(app_name: str, app_icon: str, has_pixbuf: bool, size: in
     return ("fallback", None)
 
 
-def _resolve_app_icon(notification, size: int = 28) -> Gtk.Widget:
+def _resolve_app_icon(notification: Notification, size: int = 28) -> Gtk.Widget:
     has_pixbuf = False
     try:
         pixbuf = notification.image_pixbuf
@@ -711,7 +711,7 @@ class NotificationGroup(AnimatedClippingBox):
     def _top_widget(self) -> NotificationWidget | None:
         return self._widgets[0] if self._widgets else None
 
-    def _sync_icon(self, notification, size: int = 28) -> None:
+    def _sync_icon(self, notification: Notification, size: int = 28) -> None:
         source_key = str(notification.id)
         if source_key == self._current_icon_source:
             return

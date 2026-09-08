@@ -7,7 +7,7 @@ class NotificationConfig:
     MAX_CHARS_PER_LINE = 27
     MAX_CHARS_PER_COLLAPSED_LINE = 33
     LINE_LIMIT = 3
-    IMAGE_SIZE = 50
+    IMAGE_SIZE = 48
     TIMEOUT = 5 * 1000  # 5 seconds
     TRANSITION_DURATION = 250
     REVEALER_TRANSITION_TYPE = "slide-down"
