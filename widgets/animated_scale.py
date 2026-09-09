@@ -1,7 +1,8 @@
 import gi
 import math
 import cairo
-from typing import Iterable, Literal, Tuple
+from typing import Literal
+from collections.abc import Iterable
 
 from fabric.widgets.scale import Scale
 from fabric.widgets.circularprogressbar import CircularProgressBar
@@ -11,7 +12,7 @@ from fabric.utils.helpers import clamp
 from services.animator import Animator
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, Gtk, GObject, GLib
+from gi.repository import Gdk, Gtk, GObject # type: ignore
 
 
 class AnimatedScale(Scale):
@@ -36,7 +37,6 @@ class AnimatedScale(Scale):
         self.animator.min_value = self.value
         self.animator.max_value = value
         self.animator.play()
-        return
 
 
 class CircularScale(CircularProgressBar):
@@ -227,7 +227,7 @@ class CircularScale(CircularProgressBar):
         slider_color: Gdk.RGBA,
         slider_thickness_angle: float,
         slider_height: float,
-        corner_radius: float | Tuple[float, float, float, float],
+        corner_radius: float | tuple[float, float, float, float],
     ) -> None:
         angle_rad = progress_angle
         sx = center_x + math.cos(angle_rad) * radius
@@ -312,7 +312,7 @@ class CircularScale(CircularProgressBar):
         y: float,
         width: float,
         height: float,
-        radius: float | Tuple[float, float, float, float],
+        radius: float | tuple[float, float, float, float],
     ) -> None:
         if isinstance(radius, (int, float)):
             rtl = rtr = rbr = rbl = float(radius)
@@ -492,7 +492,6 @@ class AnimatedCircularScale(FabricCircularScale):
         self.animator.min_value = self.value
         self.animator.max_value = value
         self.animator.play()
-        return
 
 
 class WigglyCircularScale(AnimatedCircularScale):

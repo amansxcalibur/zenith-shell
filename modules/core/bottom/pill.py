@@ -152,7 +152,7 @@ class Pill(Window, Service):
                 "notify::transition-running", self._on_transition_done
             )
 
-    def _on_transition_done(self, stack, pspec):
+    def _on_transition_done(self, stack: Stack, pspec):
         if stack.get_transition_running():
             return
         child = stack.get_visible_child()

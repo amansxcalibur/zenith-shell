@@ -14,6 +14,7 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 
 from widgets.material_label import MaterialIconLabel
 from widgets.clipping_box import ClippingBox, AnimatedClippingBox
+from services.animator import CubicBezierCurves
 
 import icons
 from config.info import DATA_DIR, CACHE_DIR
@@ -96,7 +97,11 @@ class AgendaItem(Gtk.ListBoxRow):
         self.label = Label(
             label=self.text, h_align="start", line_wrap="word-char", max_chars_width=30
         )
-        self.clipping_wrapper = AnimatedClippingBox(max_height=22)
+        self.clipping_wrapper = AnimatedClippingBox(
+            max_height=22,
+            contracting_bezier_curve=CubicBezierCurves.EMPHASIS,
+            expanding_bezier_curve=CubicBezierCurves.EMPHASIS,
+        )
         self.clipping_wrapper.add(self.label)
 
         self.check = CheckButton(name="agenda-check", v_align="start")
