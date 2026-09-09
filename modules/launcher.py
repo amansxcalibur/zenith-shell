@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 from typing import ClassVar
 
@@ -20,7 +21,7 @@ from widgets.material_label import MaterialIconLabel
 import icons
 from config.config import config
 
-from gi.repository import GLib, Gdk, Gtk  # type: ignore
+from gi.repository import GLib, Gdk, GdkPixbuf, Gtk  # type: ignore
 
 
 class AppCommands(Enum):
@@ -512,7 +513,7 @@ class AppLauncher(Box):
                 children=[
                     Image(
                         name="app-icon",
-                        pixbuf=app.get_icon_pixbuf(size=32),
+                        pixbuf=self._get_fixed_app_pixbuf(app, size=32),
                         h_align="start",
                     ),
                     Box(
@@ -541,6 +542,28 @@ class AppLauncher(Box):
             tooltip_text=app.description,
             on_clicked=lambda *_: (app.launch(), self.close_launcher()),
         )
+
+    def _get_fixed_app_pixbuf(
+        self, app: DesktopApp, size: int = 32
+    ) -> GdkPixbuf.Pixbuf | None:
+        icon_theme = Gtk.IconTheme.get_default()
+        flags = Gtk.IconLookupFlags.FORCE_REGULAR | Gtk.IconLookupFlags.FORCE_SIZE
+
+        if app.icon is not None:
+            icon_info = icon_theme.lookup_by_gicon(app.icon, size, flags)
+            if icon_info:
+                return icon_info.load_icon()
+
+        if (
+            app.icon_name
+            and os.path.isabs(app.icon_name)
+            and os.path.exists(app.icon_name)
+        ):
+            return GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                app.icon_name, size, size, True
+            )
+
+        return app.get_icon_pixbuf(size=size)
 
     def _create_command_slot(self, cmd_data: dict) -> Button:
         icon = cmd_data["icon"]

@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+from gi.repository import GLib  # type: ignore
+
 SHELL_NAME = "zenith"
 USERNAME = os.getlogin()
 HOSTNAME = os.uname().nodename
@@ -11,7 +13,7 @@ IS_WAYLAND = bool(WAYLAND_DISPLAY) or XDG_SESSION_TYPE == "wayland"
 
 TEMP_DIR = f"/tmp/{SHELL_NAME}-shell"
 HOME_DIR = os.path.expanduser("~")
-CACHE_DIR = os.path.expanduser(f"~/.cache/{SHELL_NAME}-shell")
+CACHE_DIR = os.path.expanduser(f"{GLib.get_user_cache_dir()}/{SHELL_NAME}-shell")
 ROOT_DIR = Path(__file__).resolve().parent.parent
 CONFIG_DIR = os.path.expanduser(f"{ROOT_DIR}/config/")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")

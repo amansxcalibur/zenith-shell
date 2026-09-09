@@ -25,9 +25,9 @@ from widgets.clipping_box import AnimatedClippingBox
 from widgets.shapes.expressive.morphing_shapes import ExpressiveShape
 from services.animator import CubicBezierCurves
 from utils.helpers import toggle_class
+from utils.icon_resolver import IconResolver
 import icons
 
-from .icon_resolver import IconResolver
 from .common import NotificationConfig
 
 import gi
@@ -49,9 +49,19 @@ def _get_icon_resolver() -> IconResolver:
 @lru_cache(maxsize=128)
 def _resolve_icon_asset(app_name: str, app_icon: str, has_pixbuf: bool, size: int):
     resolver = _get_icon_resolver()
+    theme = Gtk.IconTheme.get_default()
 
-    for candidate in filter(None, [app_icon, resolver.get_icon(app_name or "")]):
-        if candidate and candidate != "application-x-symbolic":
+    candidates = filter(None, [app_icon, resolver.get_icon(app_name or "")])
+
+    for candidate in candidates:
+        if candidate == "application-x-symbolic":
+            continue
+
+        if os.path.isabs(candidate) and os.path.exists(candidate):
+            return ("file_path", candidate)
+
+        # exists in GTK theme?
+        if theme.has_icon(candidate):
             return ("icon_name", candidate)
 
     if has_pixbuf:
@@ -80,6 +90,21 @@ def _resolve_app_icon(notification: Notification, size: int = 28) -> Gtk.Widget:
         img.show()
         return img
 
+    if asset_type == "file_path":
+        try:
+            file_pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                asset_value, size, size, True
+            )
+            img = RoundedImage(
+                pixbuf=file_pixbuf,
+                style=f"border-radius:{size // 4}px;",
+                v_align="center",
+            )
+            img.show()
+            return img
+        except Exception as e:
+            logger.error(f"Failed to resolve file_path app icon: {e}")
+
     if asset_type == "pixbuf" and pixbuf:
         try:
             scaled = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
@@ -97,6 +122,7 @@ def _resolve_app_icon(notification: Notification, size: int = 28) -> Gtk.Widget:
     fallback = MaterialIconLabel(
         name="notification-icon",
         icon_text=icons.blur.symbol(),
+        style=f"margin: 0px; font-size: {int(size * 0.8)}px",
         v_align="center",
     )
     fallback.show()

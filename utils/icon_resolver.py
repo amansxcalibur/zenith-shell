@@ -5,19 +5,18 @@ import re
 import json
 from loguru import logger
 
+from config.info import CACHE_DIR
+
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib # type: ignore
+from gi.repository import GLib  # type: ignore
 
 
-#TODO WIP
-
-
-CACHE_DIR = str(GLib.get_user_cache_dir()) + "/fabric"
 ICON_CACHE_FILE = CACHE_DIR + "/icons.json"
 if not os.path.exists(CACHE_DIR):
     os.makedirs(CACHE_DIR)
+
 
 class IconResolver:
     def __init__(self):
@@ -35,7 +34,9 @@ class IconResolver:
         if app_id in self._icon_dict:
             return self._icon_dict[app_id]
         new_icon = self._compositor_find_icon(app_id)
-        logger.info(f"[ICONS] found new icon: '{new_icon}' for app id: '{app_id}', storing...")
+        logger.info(
+            f"[ICONS] found new icon: '{new_icon}' for app id: '{app_id}', storing..."
+        )
         self._store_new_icon(app_id, new_icon)
         return new_icon
 
@@ -65,7 +66,9 @@ class IconResolver:
             data_dir = data_dir + "/applications/"
             if os.path.exists(data_dir):
                 files = os.listdir(data_dir)
-                matching = [s for s in files if "".join(app_id.lower().split()) in s.lower()]
+                matching = [
+                    s for s in files if "".join(app_id.lower().split()) in s.lower()
+                ]
                 if matching:
                     return data_dir + matching[0]
                 for word in list(filter(None, re.split(r"-|\.|_|\s", app_id))):
