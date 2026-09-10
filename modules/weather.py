@@ -17,6 +17,7 @@ from widgets.overrides import Svg
 from widgets.popup_window import SharedPopupWindow
 from widgets.loader import MaterialExpressiveLoader
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
+from services.theme import ThemeService
 
 import icons
 from svg import underscore, question_mark
@@ -439,10 +440,16 @@ class WeatherPill(Gtk.DrawingArea):
         self.connect("draw", self.on_draw)
 
         self.dark = dark
+        self._load_theme_colors()
+        self.theme_service = ThemeService()
 
         self.service = WeatherService()
         self._current_data = self.service.current_data
+        
         self.service.connect("value-changed", self.on_weather_update)
+        self.theme_service.connect(
+            "colors-changed", lambda *_: self._load_theme_colors()
+        )
 
         self.show()
 
@@ -456,9 +463,15 @@ class WeatherPill(Gtk.DrawingArea):
             self._svg_handle = None
         GLib.idle_add(self.queue_draw)
 
-    def _get_rgb_color(self, css_var: str) -> tuple[float, float, float]:
-        hex_color = get_css_variable(f"{ROOT_DIR}/styles/colors.css", css_var)
-        return hex_to_rgb01(hex_color)
+    def _load_theme_colors(self):
+        css_path = f"{ROOT_DIR}/styles/colors.css"
+        self._primary_rgb = hex_to_rgb01(get_css_variable(css_path, "--primary"))
+        self._on_primary_rgb = hex_to_rgb01(get_css_variable(css_path, "--on-primary"))
+        self._on_secondary_rgb = hex_to_rgb01(
+            get_css_variable(css_path, "--on-secondary")
+        )
+        self._foreground_rgb = hex_to_rgb01(get_css_variable(css_path, "--foreground"))
+        self.queue_draw()
 
     def _draw_circle(self, ctx: cairo.Context, cx: float, cy: float, radius: float):
         ctx.arc(cx, cy, radius, 0, 2 * math.pi)
@@ -471,8 +484,8 @@ class WeatherPill(Gtk.DrawingArea):
         height = self.get_allocated_height()
         base_radius = min(width, height) / 2.35
 
-        circle_color = "--on-secondary" if self.dark else "--primary"
-        ctx.set_source_rgb(*self._get_rgb_color(circle_color))
+        circle_color = self._on_secondary_rgb if self.dark else self._primary_rgb
+        ctx.set_source_rgb(*circle_color)
         ctx.set_line_width(0)
 
         # top circle
@@ -491,8 +504,8 @@ class WeatherPill(Gtk.DrawingArea):
         self._draw_circle(ctx, bottom_cx, bottom_cy, base_radius)
 
         # draw temperature text
-        text_color = "--foreground" if self.dark else "--on-primary"
-        ctx.set_source_rgb(*self._get_rgb_color(text_color))
+        text_color = self._foreground_rgb if self.dark else self._on_primary_rgb
+        ctx.set_source_rgb(*text_color)
 
         layout = PangoCairo.create_layout(ctx)
         layout.set_text(str(self._current_data.temp), -1)

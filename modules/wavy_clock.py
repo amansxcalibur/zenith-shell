@@ -4,6 +4,7 @@ import datetime
 from typing import ClassVar
 
 from config.info import ROOT_DIR
+from services.theme import ThemeService
 from utils.colors import get_css_variable, hex_to_rgb01
 
 import gi
@@ -55,7 +56,11 @@ class WavyClock(Gtk.DrawingArea):
         self._dynamic_font_size_px = None
 
         self._load_theme_colors()
-        self.connect("style-updated", lambda *_: self._load_theme_colors())
+        self.theme_service = ThemeService()
+        self.theme_service.connect(
+            "colors-changed", lambda *_: self._load_theme_colors()
+        )
+
         self.connect("draw", self.on_draw)
 
         GLib.timeout_add_seconds(1, self.on_tick)
@@ -67,6 +72,7 @@ class WavyClock(Gtk.DrawingArea):
         self._primary_rgb = hex_to_rgb01(get_css_variable(css_path, "--primary"))
         self._on_primary_rgb = hex_to_rgb01(get_css_variable(css_path, "--on-primary"))
         self._tertiary_rgb = hex_to_rgb01(get_css_variable(css_path, "--tertiary"))
+        self.queue_draw()
 
     def _ensure_size_dependent_state(self, width, height):
         if width == self._cached_width and height == self._cached_height:
