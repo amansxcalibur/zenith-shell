@@ -6,13 +6,16 @@ from loguru import logger
 from dataclasses import dataclass
 
 from fabric.widgets.box import Box
+from fabric.widgets.stack import Stack
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
+from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 from fabric.core.service import Service, Signal, Property
 
 from widgets.overrides import Svg
 from widgets.popup_window import SharedPopupWindow
+from widgets.loader import MaterialExpressiveLoader
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
 
 import icons
@@ -28,7 +31,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 gi.require_version("PangoCairo", "1.0")
-from gi.repository import Gtk, GLib, Pango, PangoCairo, Rsvg # type: ignore
+from gi.repository import Gdk, Gtk, GLib, Pango, PangoCairo, Rsvg  # type: ignore
 
 
 @dataclass
@@ -125,6 +128,9 @@ class WeatherService(Service):
     @Signal
     def value_changed(self, weather_data: object) -> None: ...
 
+    @Signal
+    def is_loading(self, loading: bool) -> None: ...
+
     @Property(object, "readable")
     def current_data(self) -> WeatherData:
         return self._current_data
@@ -142,12 +148,19 @@ class WeatherService(Service):
         super().__init__()
         self._initialized = True
         self._current_data = WeatherData()
+        self._is_fetching = False
 
         # update every hour
         GLib.timeout_add_seconds(self.UPDATE_INTERVAL_SECONDS, self._fetch_weather)
         self._fetch_weather()  # init
 
     def _fetch_weather(self, *_):
+        if self._is_fetching:
+            return
+
+        self._is_fetching = True
+        self.is_loading(True)
+
         GLib.Thread.new("weather-fetch", self._fetch_weather_thread, None)
         return True
 
@@ -177,7 +190,14 @@ class WeatherService(Service):
             weather_data = WeatherData.error_state()
             self._current_data = weather_data
 
+        GLib.idle_add(self._on_fetch_complete, weather_data)
+
+    def _on_fetch_complete(self, weather_data: WeatherData):
+        self._current_data = weather_data
+        self._is_fetching = False
         self.value_changed(weather_data)
+        self.is_loading(False)
+        return False
 
 
 class WeatherMini(EventBox):
@@ -196,20 +216,43 @@ class WeatherMini(EventBox):
         )
 
         self.emoji_svg = Svg(
-            name="weather-emoji", size=(20, 20), svg_string=initial_data.get_emoji(self.dark)
+            name="weather-emoji",
+            size=(20, 20),
+            svg_string=initial_data.get_emoji(self.dark),
         )
 
-        self.children = Button(
-            name="weather-refresh-btn",
-            child=Box(spacing=2, children=[self.emoji_svg, self.temperature]),
+        self.refresh_btn = Button(
+            name="weather-mini",
+            child=MaterialIconLabel(
+                name="weather-refresh-label", icon_text=icons.refresh.symbol()
+            ),
             on_clicked=self.service._fetch_weather,
         )
+        self.weather_box = Box(
+            name="weather-mini", spacing=2, children=[self.emoji_svg, self.temperature]
+        )
 
-        add_hover_cursor(self)
+        self.stack = Stack(
+            transition_type="crossfade",
+            transition_duration=150,
+            children=[self.weather_box, self.refresh_btn],
+        )
 
+        self.children = Box(children=self.stack)
+
+        self.connect("enter-notify-event", self._on_hover, True)
+        self.connect("leave-notify-event", self._on_hover, False)
         self.service.connect("value-changed", self._on_weather_update)
 
         self.build_popup_win()
+
+        add_hover_cursor(self)
+
+    def _on_hover(self, _source, event, reveal: bool):
+        if event.detail != Gdk.NotifyType.INFERIOR:
+            self.stack.set_visible_child(
+                self.refresh_btn if reveal else self.weather_box
+            )
 
     def build_popup_win(self):
         self.popup_win = SharedPopupWindow()
@@ -286,53 +329,83 @@ class WeatherCard(Box):
             max_chars_width=15,
         )
 
+        self.main_tile = Box(
+            name="weather-tile",
+            style_classes=["card"],
+            spacing=20,
+            children=[
+                Box(
+                    orientation="v",
+                    children=[
+                        self.emoji_svg,
+                        Box(v_expand=True, children=self.temperature_label),
+                    ],
+                ),
+                Box(
+                    orientation="v",
+                    children=[
+                        Box(
+                            orientation="v",
+                            v_align="start",
+                            h_align="end",
+                            children=[self.location, self.description],
+                        ),
+                        Box(
+                            v_expand=True,
+                            h_align="end",
+                            v_align="end",
+                            orientation="v",
+                            children=[
+                                self._create_metric_row(
+                                    self.humidity_label, icons.humidity.symbol()
+                                ),
+                                self._create_metric_row(
+                                    self.wind_label, icons.wind.symbol()
+                                ),
+                                self._create_metric_row(
+                                    self.pressure_label, icons.pressure.symbol()
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+        )
+
+        self.loader = MaterialExpressiveLoader(name="weather-loader", size=100)
+        self.loader.set_visible(False)
+        self.loader_container = Box(
+            name="weather-loader-overlay",
+            style_classes="active",
+            h_expand=True,
+            v_expand=True,
+            children=self.loader,
+            all_visible=True,
+        )
+
+        self.overlay = Overlay(
+            h_expand=True,
+            v_expand=True,
+            child=self.main_tile,
+            overlays=[self.loader_container],
+        )
+
         self.children = [
             self.last_updated_label,
-            Box(
-                name="weather-tile",
-                style_classes=["card"],
-                spacing=20,
-                children=[
-                    Box(
-                        orientation="v",
-                        children=[
-                            self.emoji_svg,
-                            Box(v_expand=True, children=self.temperature_label),
-                        ],
-                    ),
-                    Box(
-                        orientation="v",
-                        children=[
-                            Box(
-                                orientation="v",
-                                v_align="start",
-                                h_align="end",
-                                children=[self.location, self.description],
-                            ),
-                            Box(
-                                v_expand=True,
-                                h_align="end",
-                                v_align="end",
-                                orientation="v",
-                                children=[
-                                    self._create_metric_row(
-                                        self.humidity_label, icons.humidity.symbol()
-                                    ),
-                                    self._create_metric_row(
-                                        self.wind_label, icons.wind.symbol()
-                                    ),
-                                    self._create_metric_row(
-                                        self.pressure_label, icons.pressure.symbol()
-                                    ),
-                                ],
-                            ),
-                        ],
-                    ),
-                ],
-            ),
+            self.overlay,
         ]
 
         self.service.connect("value-changed", self.update_weather)
+        self.service.connect("is-loading", lambda _, loading: self.set_loading(loading))
+
+    def set_loading(self, is_loading: bool):
+        if is_loading:
+            self.loader.reset()
+            self.loader.set_visible(True)
+            self.loader_container.add_style_class("active")
+        else:
+            self.loader.set_visible(False)
+            self.loader_container.remove_style_class("active")
 
     def _create_metric_row(self, label: Label, icon_symbol: str) -> Box:
         return Box(
@@ -346,7 +419,7 @@ class WeatherCard(Box):
             ],
         )
 
-    def update_weather(self, source, data: WeatherData):
+    def update_weather(self, source, data):
         self.temperature_label.set_label(data.temp)
         self.location.set_label(data.location)
         self.emoji_svg.set_from_string(data.get_emoji(self.dark))
@@ -355,6 +428,8 @@ class WeatherCard(Box):
         self.pressure_label.set_label(data.pressure)
         self.description.set_label(data.description)
         self.last_updated_label.set_label(f"Last updated: {time.strftime('%I:%M %p')}")
+
+        self.set_loading(False)
 
 
 class WeatherPill(Gtk.DrawingArea):

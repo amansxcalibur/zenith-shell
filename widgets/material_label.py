@@ -142,4 +142,4 @@ class MaterialFontLabel(BaseMaterialLabel):
         for k, v in self.VARIATION_DEFAULTS.items():
             kwargs.setdefault(k, v)
 
-        super().__init__(text=text, **kwargs) 
+        super().__init__(text=text, **kwargs)

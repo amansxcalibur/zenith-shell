@@ -174,12 +174,12 @@ class Metrics(Box):
                 children=Overlay(
                     h_expand=True,
                     child=ExpressiveShape(
-                        style="background-color: var(--surface-bright);",
+                        style="color: var(--surface-bright);",
                         shape=cookie_12,
                         child=Box(
                             style="padding: 2px;",
                             children=ExpressiveShape(
-                                style="background-color: var(--surface-semi-bright);",
+                                style="color: var(--surface-semi-bright);",
                                 shape=cookie_12,
                                 child=Box(children=[self.cpu_circular_graph]),
                             ),

@@ -248,7 +248,7 @@
 }
 
 #settings-shapes-morph {
-  background-color: var(--primary);
+  color: var(--primary);
 }
 
 #settings-shapes-flowbox {

@@ -264,6 +264,7 @@
 }
 #notif-expressive-shape-container {
   padding: 2px;
+  color: var(--surface-semi-bright);
 }
 #img-expander.contract {
   min-width: 24px;

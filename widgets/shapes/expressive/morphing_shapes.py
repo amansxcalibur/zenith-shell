@@ -1,6 +1,7 @@
 import cairo
 import threading
-from typing import Literal, Iterable
+from typing import Literal
+from collections.abc import Iterable
 
 from expressive_shapes.morph.bezier_morph import Morph
 from expressive_shapes.geometry.rounded_polygon import RoundedPolygon
@@ -9,7 +10,7 @@ from expressive_shapes.shapes.shape_presets import (
     gem,
     bun,
     pill,
-    star,
+    star,  # noqa: F401
     oval,
     arch,
     boom,
@@ -44,7 +45,7 @@ from fabric.widgets.container import Container
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib, Gdk
+from gi.repository import Gtk, GLib, Gdk # type: ignore
 
 
 class ExpressiveShape(Gtk.Bin, Container):
@@ -112,11 +113,11 @@ class ExpressiveShape(Gtk.Bin, Container):
 
         style_context = self.get_style_context()
         state = self.get_state_flags()
-        background_color = style_context.get_background_color(state)
+        color = style_context.get_color(state)
 
         ctx.save()
 
-        Gdk.cairo_set_source_rgba(ctx, background_color)
+        Gdk.cairo_set_source_rgba(ctx, color)
 
         side = min(width, height)
         ctx.translate((width - side) / 2, (height - side) / 2)
@@ -274,56 +275,96 @@ class BezierShapeMorph(Gtk.DrawingArea):
 
 
 class AnimateShapeMorph(Gtk.DrawingArea):
-    def __init__(self, name: str):
+    # Changed parameters to rely on time (seconds) instead of arbitrary speed/frames
+    def __init__(self, name: str, presets=None, morph_duration: float = 0.52, pause_duration: float = 0.33):
+        if presets is None:
+            presets = [
+                circle,
+                square,
+                slanted,
+                arch,
+                semicircle,
+                oval,
+                pill,
+                triangle,
+                arrow,
+                fan,
+                diamond,
+                clamshell,
+                pentagon,
+                gem,
+                very_sunny,
+                sunny,
+                cookie_4,
+                cookie_8,
+                cookie_12,
+                leaf_clover_4,
+                leaf_clover_8,
+                boom,
+                puffy_diamond,
+                flower,
+                ghost_ish,
+                pixel_circle,
+                pixel_triangle,
+                bun,
+                heart,
+                organic_blob,
+                shield,
+            ]
+
         super().__init__(name=name)
         self.set_hexpand(True)
         self.set_vexpand(True)
 
-        self.presets = [
-            circle,
-            square,
-            slanted,
-            arch,
-            semicircle,
-            oval,
-            pill,
-            triangle,
-            arrow,
-            fan,
-            diamond,
-            clamshell,
-            pentagon,
-            gem,
-            very_sunny,
-            sunny,
-            cookie_4,
-            cookie_8,
-            cookie_12,
-            leaf_clover_4,
-            leaf_clover_8,
-            boom,
-            puffy_diamond,
-            flower,
-            ghost_ish,
-            pixel_circle,
-            pixel_triangle,
-            bun,
-            heart,
-            organic_blob,
-            shield,
-        ]
+        self.presets = presets
         self.current_idx = 0
 
         self.progress = 0.0
-        self.animation_speed = 0.032
-        self.pause_frames = 20
-        self.pause_counter = 0
+        
+        # seconds
+        self.morph_duration = morph_duration  # time it takes to complete one morph
+        self.pause_duration = pause_duration  # time to pause between morphs
+        self.current_pause_time = 0.0
+        self.last_frame_time = 0              # timestamp of the previous frame
 
         self._prepare_next_morph()
 
         self.connect("draw", self.on_draw)
-        GLib.timeout_add(16, self.update_animation)  # ~60 fps
+        self.tick_id = self.add_tick_callback(self.on_tick)
         self.show_all()
+
+    def reset(self):
+        self.current_idx = 0
+        self.progress = 0.0
+        self.current_pause_time = 0.0
+        self.last_frame_time = 0
+        self._prepare_next_morph()
+        self.queue_draw()
+
+    def on_tick(self, widget, frame_clock):
+        current_time = frame_clock.get_frame_time()
+        
+        if self.last_frame_time == 0:
+            self.last_frame_time = current_time
+            return True
+
+        dt = (current_time - self.last_frame_time) / 1_000_000.0
+        self.last_frame_time = current_time
+
+        if self.current_pause_time > 0:
+            self.current_pause_time -= dt
+            return True
+
+        self.progress += dt / self.morph_duration
+
+        if self.progress >= 1.0:
+            self.progress = 0.0
+            self.current_idx = (self.current_idx + 1) % len(self.presets)
+            self.current_pause_time = self.pause_duration
+            self._prepare_next_morph()
+
+        self.queue_draw()
+        return True
 
     def _prepare_next_morph(self):
         next_idx = (self.current_idx + 1) % len(self.presets)
@@ -387,23 +428,6 @@ class AnimateShapeMorph(Gtk.DrawingArea):
         else:
             return 0.2 + self._m3_ease_out((t - 0.4) / 0.6) * 0.8
 
-    def update_animation(self):
-        # handle the pause between shapes
-        if self.pause_counter > 0:
-            self.pause_counter -= 1
-            return True
-
-        self.progress += self.animation_speed
-
-        if self.progress >= 1.0:
-            self.progress = 0.0
-            self.current_idx = (self.current_idx + 1) % len(self.presets)
-            self.pause_counter = self.pause_frames
-            self._prepare_next_morph()
-
-        self.queue_draw()
-        return True
-
     def create_rounded_polygon(self, unit_data):
         verts = []
         per_vertex = []
@@ -419,9 +443,9 @@ class AnimateShapeMorph(Gtk.DrawingArea):
 
         style_context = self.get_style_context()
         state = self.get_state_flags()
-        background_color = style_context.get_background_color(state)
+        color = style_context.get_color(state)
 
-        Gdk.cairo_set_source_rgba(ctx, background_color)
+        Gdk.cairo_set_source_rgba(ctx, color)
 
         side = min(width, height)
         ctx.translate((width - side) / 2, (height - side) / 2)
@@ -439,10 +463,6 @@ class AnimateShapeMorph(Gtk.DrawingArea):
             ctx.curve_to(c.p1.x, c.p1.y, c.p2.x, c.p2.y, c.p3.x, c.p3.y)
 
         ctx.close_path()
-
-        ctx.set_line_width(0)
-        ctx.stroke_preserve()
-
         ctx.fill()
 
         return False
