@@ -22,6 +22,9 @@ arrow_forward: str = "\ue5e1"
 arrow_backward: str = "\ue2ea"
 
 add_material: str = "\ue145"
+add_circle: str = "\ue147"
+
+folder_open: str = "\ue2c8"
 
 device_thermostat: str = "\ue1ff"
 

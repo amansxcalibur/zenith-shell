@@ -68,10 +68,6 @@
   margin-right: 10px;
 }
 
-#search-entry-walls.vertical {
-  min-width: 490px;
-}
-
 #matugen-switcher {
   min-width: 40px;
   min-height: 20px;
@@ -102,10 +98,6 @@
 #mat-label {
   font-size: 24px;
   margin-left: 4px;
-}
-
-#scheme-dropdown {
-  margin-right: 10px;
 }
 
 
@@ -158,4 +150,8 @@
   color: var(--on-primary);
   font-weight: bold;
   margin-bottom: -4px;
+}
+
+#wallpaper-choose-dir-dialog{
+  background-color: var(--surface-bright);
 }

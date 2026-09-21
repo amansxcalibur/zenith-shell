@@ -1,22 +1,28 @@
 import os
 import shutil
 import subprocess
-from PIL import Image
 from pathlib import Path
-from loguru import logger
 from concurrent.futures import ThreadPoolExecutor
+
+from PIL import Image
+from loguru import logger
+from expressive_shapes.shapes import sunny, pill
 
 from fabric.widgets.box import Box
 from fabric.widgets.entry import Entry
 from fabric.widgets.label import Label
+from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
 from fabric.widgets.overlay import Overlay
+from fabric.widgets.eventbox import EventBox
+from fabric.widgets.revealer import Revealer
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialFontLabel, MaterialIconLabel
+from widgets.shapes.expressive.morphing_shapes import InteractiveMorphShape
 
 import icons
 from config.config import config
@@ -33,7 +39,6 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import GdkPixbuf, Gtk, GLib, Gio, Gdk  # type: ignore
 
-
 # paths
 WP_CACHE = Path(CACHE_DIR) / "wallpapers"
 WP_THUMBS_DIR = WP_CACHE / "thumbs"
@@ -41,6 +46,8 @@ WP_PREVIEW_DIR = WP_CACHE / "previews"
 WP_HISTORY = Path(CACHE_DIR) / "current_wallpaper.txt"
 WP_PREVIEW_FILE = WP_PREVIEW_DIR / "low_rez.png"
 WP_PREVIEW_TEMP = WP_PREVIEW_DIR / "low_rez.tmp.png"
+
+IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp")
 
 
 def ensure_wallpaper_dirs():
@@ -55,7 +62,7 @@ def get_thumbnail_cache_path(file_path: str) -> Path:
 
 def generate_wallpaper_preview(image_path: str | Path) -> Path | None:
     try:
-        WP_PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
+        ensure_wallpaper_dirs()
 
         with Image.open(image_path) as img:
             img.thumbnail((400, 200))
@@ -68,6 +75,11 @@ def generate_wallpaper_preview(image_path: str | Path) -> Path | None:
     except Exception as e:
         logger.error(f"Preview generation failed for {image_path}: {e}")
         return None
+
+
+def save_wallpaper_history(full_path: str) -> None:
+    WP_HISTORY.parent.mkdir(parents=True, exist_ok=True)
+    WP_HISTORY.write_text(full_path)
 
 
 class WallpaperService(Service):
@@ -113,14 +125,11 @@ class WallpaperService(Service):
                 else generate_wallpaper_preview(full_path)
             )
 
-            self._apply_wallpaper(full_path)
+            self.apply_wallpaper(full_path)
 
-            # update path refs
-            self._wallpaper_path = full_path
-            self._preview_path = str(preview_path) if preview_path else None
+            self._set_state(full_path, preview_path)
 
             if preview_path:
-                # emit
                 self.wallpaper_changed(full_path, str(preview_path))
 
             logger.info(f"Restored wallpaper: {full_path}")
@@ -128,7 +137,11 @@ class WallpaperService(Service):
         except Exception as e:
             logger.error(f"Failed to initialize wallpaper: {e}")
 
-    def _apply_wallpaper(self, full_path: str):
+    def _set_state(self, full_path: str, preview_path: Path | str | None):
+        self._wallpaper_path = full_path
+        self._preview_path = str(preview_path) if preview_path else None
+
+    def apply_wallpaper(self, full_path: str):
         if IS_WAYLAND:
             swaybg_bin = shutil.which("swaybg")
             if not swaybg_bin:
@@ -159,9 +172,7 @@ class WallpaperService(Service):
             exec_shell_command_async(f"{feh_bin} --zoom fill --bg-fill '{full_path}'")
 
     def set_wallpaper_path(self, full_path: str, preview_path: str | None):
-        self._wallpaper_path = full_path
-        if preview_path:
-            self._preview_path = preview_path
+        self._set_state(full_path, preview_path)
         self.wallpaper_changed(full_path, preview_path)
 
     def get_wallpaper_path(self) -> str | None:
@@ -184,8 +195,8 @@ class WallpaperSelector(Box):
     COLUMNS: int = 7
     IMG_THUMB_SIZE: int = 96
 
-    def __init__(self, pill, **kwargs):
-        self._pill = pill
+    def __init__(self, window, **kwargs):
+        self._pill = window
 
         super().__init__(
             name="wallpapers",
@@ -197,39 +208,25 @@ class WallpaperSelector(Box):
         )
         self.wallpaper_service = WallpaperService()
 
-        self.files = []
         self.thumbnails_map = {}
         self._visible_children = []
-        self._wallpaper_bindings_config = config.bindings.modules.wallpaper
+        self._scan_generation = 0
+        self.file_monitor = None
+        bindings = config.get("bindings.modules.wallpaper")
         self._cached_binds = {
-            "scheme_prev": Gtk.accelerator_parse(
-                self._wallpaper_bindings_config["wallpaper.scheme_prev"]
-            ),
-            "scheme_next": Gtk.accelerator_parse(
-                self._wallpaper_bindings_config["wallpaper.scheme_next"]
-            ),
-            "scheme_open": Gtk.accelerator_parse(
-                self._wallpaper_bindings_config["wallpaper.scheme_open"]
-            ),
-            "move_up": Gtk.accelerator_parse(
-                self._wallpaper_bindings_config["wallpaper.move_up"]
-            ),
-            "move_down": Gtk.accelerator_parse(
-                self._wallpaper_bindings_config["wallpaper.move_down"]
-            ),
-            "move_left": Gtk.accelerator_parse(
-                self._wallpaper_bindings_config["wallpaper.move_left"]
-            ),
-            "move_right": Gtk.accelerator_parse(
-                self._wallpaper_bindings_config["wallpaper.move_right"]
-            ),
-            "activate": Gtk.accelerator_parse(
-                self._wallpaper_bindings_config["wallpaper.activate"]
-            ),
+            name: Gtk.accelerator_parse(bindings[f"wallpaper.{name}"])
+            for name in (
+                "scheme_prev",
+                "scheme_next",
+                "scheme_open",
+                "move_up",
+                "move_down",
+                "move_left",
+                "move_right",
+                "activate",
+            )
         }
         self.executor = ThreadPoolExecutor(max_workers=5)
-
-        self.executor.submit(self._perform_scan_and_clean)
 
         self.viewport = Gtk.FlowBox()
         self.viewport.set_name("wallpaper-flowbox")
@@ -265,6 +262,9 @@ class WallpaperSelector(Box):
             notify_text=lambda entry, *_: self.arrange_viewport(entry.get_text()),
             on_key_press_event=self.on_search_entry_key_press,
         )
+        # override gtk entry 150px internal min width
+        self.search_entry.set_width_chars(1)
+        self.search_entry.set_size_request(20, -1)
         self.search_entry.props.xalign = 0.5
         self.search_entry.connect("focus-out-event", self.on_search_entry_focus_out)
 
@@ -289,12 +289,71 @@ class WallpaperSelector(Box):
 
         self.mat_icon = Label(name="mat-label", markup=icons.palette.markup())
 
+        self.wall_dir_path_label = Label(
+            style="color: var(--foreground); font-size: 14px",
+            ellipsization="middle",
+            max_chars_width=35,
+            h_align="start",
+        )
+        self.launch_options_list = Box(
+            spacing=5,
+            name="launch-options-box",
+            style="padding: 0 8px;",
+            children=Box(
+                orientation="v",
+                children=[
+                    Label(
+                        label="Current folder:",
+                        h_align="start",
+                        style="color: var(--outline); font-size: 13px; margin-bottom: -4px",
+                    ),
+                    self.wall_dir_path_label,
+                ],
+            ),
+        )
+        self.launcher_options_revealer = Revealer(
+            child=self.launch_options_list,
+            transition_type="slide-left",
+            transition_duration=150,
+        )
+        self.launch_mode = Box(
+            name="launch-mode-box",
+            children=[
+                Button(
+                    style_classes="launch-mode-btn",
+                    child=MaterialIconLabel(
+                        icon_text=icons.folder_open.symbol(),
+                        FILL=1,
+                        style="font-size: 20px; color: var(--primary)",
+                    ),
+                    on_clicked=lambda *_: self.prompt_for_path(),
+                    tooltip_text="Open directory",
+                ),
+                self.launcher_options_revealer,
+            ],
+        )
+
+        self.launch_mode_event_box = EventBox(
+            name="launch-mode-event-container", child=self.launch_mode, events="all"
+        )
+        self.launch_mode_event_box.connect("enter-notify-event", self._on_hover_enter)
+        self.launch_mode_event_box.connect("leave-notify-event", self._on_hover_leave)
         self.header_box = Box(
             name="header-box",
             orientation="h",
             h_expand=True,
+            spacing=8,
             children=[
-                self.search_entry,
+                Box(
+                    name="search-container",
+                    h_expand=True,
+                    spacing=4,
+                    children=[
+                        self.launch_mode_event_box,
+                        Box(name="search-container-item-seperator"),
+                        self.search_entry,
+                    ],
+                ),
                 self.scheme_dropdown,
                 Button(
                     name="close-button",
@@ -309,6 +368,57 @@ class WallpaperSelector(Box):
             ],
         )
 
+        self.dir_chooser_btn = Button(
+            style="margin: 18px; padding: 52px;",
+            child=MaterialIconLabel(
+                icon_text=icons.add_material.symbol(),
+                FILL=0,
+                style="font-size: 120px; color: var(--surface)",
+            ),
+            on_clicked=lambda *_: self.prompt_for_path(),
+        )
+        self.interactive_shape = InteractiveMorphShape(
+            clip=True, shape_start=pill, shape_end=sunny, child=self.dir_chooser_btn
+        )
+        self.dir_chooser = Box(
+            # name="wallpaper-choose-dir-dialog",
+            h_expand=True,
+            h_align="center",
+            v_align="center",
+            v_expand=True,
+            orientation="v",
+            style="color: var(--primary);",
+            children=[
+                self.interactive_shape,
+                MaterialFontLabel(
+                    text="Choose Wallpaper Directory",
+                    font_family="Google Sans Flex",
+                    style="color: var(--foreground); font-size: 20px",
+                ),
+            ],
+        )
+        self.dir_chooser_btn.connect(
+            "enter-notify-event", self.interactive_shape.play_forward
+        )
+        self.dir_chooser_btn.connect(
+            "leave-notify-event", self.interactive_shape.play_backward
+        )
+
+        self.stack = Stack(
+            v_expand=True,
+            children=[self.dir_chooser, self.scrolled_window],
+            interpolate_size=True,
+        )
+        self.stack.set_homogeneous(False)
+        if os.path.isdir(config.WALLPAPERS_DIR):
+            self.stack.set_visible_child(self.scrolled_window)
+            self._set_wall_dir_label(str(config.WALLPAPERS_DIR))
+            self.executor.submit(self._perform_scan_and_clean)
+        else:
+            self.stack.set_visible_child(self.dir_chooser)
+            self._set_wall_dir_label(None)
+            self.set_header_controls_state(False)
+
         box_shadow_overlay = Box(name="wallpaper-overlay")
         self.overlay = Overlay(
             v_expand=True,
@@ -316,53 +426,132 @@ class WallpaperSelector(Box):
                 name="wallpaper-selector",
                 spacing=10,
                 orientation="v",
-                children=[self.scrolled_window, self.header_box],
+                children=[self.stack, self.header_box],
             ),
             overlays=box_shadow_overlay,
         )
         self.overlay.set_overlay_pass_through(box_shadow_overlay, True)
 
-        self.add(self.overlay)
+        self.temp_label = Label(label="Choosing Wallpaper", style="padding: 20px 30px;")
+        self.view_stack = Stack(
+            transition_type="crossfade",
+            transition_duration=150,
+            children=[self.overlay, self.temp_label],
+            interpolate_size=True,
+        )
+        self.view_stack.set_homogeneous(False)
+
+        self.add(self.view_stack)
 
         self.setup_file_monitor()
         self.show_all()
 
         def grab_initial_focus(widget):
             widget.set_text("")
-            widget.grab_focus()
+            if widget.get_sensitive():
+                widget.grab_focus()
             return False
 
         self.search_entry.connect("map", grab_initial_focus)
 
+    def _on_hover_enter(self, widget, event):
+        if event.detail != Gdk.NotifyType.INFERIOR:
+            self.launcher_options_revealer.set_reveal_child(True)
+        return False
+
+    def _on_hover_leave(self, widget, event):
+        if event.detail != Gdk.NotifyType.INFERIOR:
+            self.launcher_options_revealer.set_reveal_child(False)
+        # self._refocus_search_entry()
+        return False
+
+    def set_header_controls_state(self, active: bool):
+        self.search_entry.set_sensitive(active)
+        self.scheme_dropdown.set_sensitive(active)
+        opacity = 1.0 if active else 0.5
+        if not active:
+            self._set_wall_dir_label(None)
+        self.search_entry.set_opacity(opacity)
+        self.scheme_dropdown.set_opacity(opacity)
+
+    def _set_wall_dir_label(self, path: str | None):
+        if path is None:
+            self.wall_dir_path_label.set_label("None")
+            self.wall_dir_path_label.set_tooltip_text(None)
+            return
+
+        self.wall_dir_path_label.set_label(str(path))
+        if len(self.wall_dir_path_label.get_text()) > 35:
+            self.wall_dir_path_label.set_tooltip_text(str(path))
+        else:
+            self.wall_dir_path_label.set_tooltip_text(None)
+
+    def prompt_for_path(self):
+        win = self.get_toplevel()
+        
+        if isinstance(win, Gtk.Window):
+            self.view_stack.set_visible_child(self.temp_label)
+            dialog = Gtk.FileChooserNative.new(
+                "Select a Directory",
+                win,
+                Gtk.FileChooserAction.SELECT_FOLDER,
+                "Choose",
+                "Cancel",
+            )
+
+            # blocking
+            response = dialog.run()
+
+            if response == Gtk.ResponseType.ACCEPT:
+                selected_path = str(dialog.get_filename())
+                config.WALLPAPERS_DIR = selected_path
+                self.set_header_controls_state(True)
+                self._set_wall_dir_label(str(config.WALLPAPERS_DIR))
+                self.setup_file_monitor()
+                self.stack.set_visible_child(self.scrolled_window)
+                self.executor.submit(self._perform_scan_and_clean)
+                logger.info(f"New wallpaper directory selected: {selected_path}")
+            elif response == Gtk.ResponseType.CANCEL:
+                logger.info("Wallpaper directory selection canceled.")
+
+            dialog.destroy()
+            self.view_stack.set_visible_child(self.overlay)
+        else:
+            logger.error("WallpaperSelector not attached to a Gtk.Window.")
+
+    def _clear_wallpapers(self):
+        def _clear():
+            for child in self.viewport.get_children():
+                self.viewport.remove(child)
+            self.thumbnails_map.clear()
+            self._visible_children = []
+            self.viewport.unselect_all()
+            return False
+
+        GLib.idle_add(_clear)
+
     def _perform_scan_and_clean(self):
         ensure_wallpaper_dirs()
-        Path(config.WALLPAPERS_DIR).mkdir(parents=True, exist_ok=True)
 
-        # process and rename old wallpapers
-        with os.scandir(config.WALLPAPERS_DIR) as entries:
-            for entry in entries:
-                if entry.is_file() and self._is_image(entry.name):  # noqa: SIM102
-                    if entry.name != entry.name.lower() or " " in entry.name:
-                        new_name = entry.name.lower().replace(" ", "-")
-                        full_path = os.path.join(config.WALLPAPERS_DIR, entry.name)
-                        new_full_path = os.path.join(config.WALLPAPERS_DIR, new_name)
-                        try:
-                            os.rename(full_path, new_full_path)
-                        except Exception as e:
-                            logger.error(f"Error renaming {entry.name}: {e}")
+        self._scan_generation += 1
+        generation = self._scan_generation
+        self._clear_wallpapers()
 
-        # refresh the file list after potential renaming
-        all_files = sorted(
-            [f for f in os.listdir(config.WALLPAPERS_DIR) if self._is_image(f)]
-        )
+        try:
+            all_files = sorted(
+                f for f in os.listdir(config.WALLPAPERS_DIR) if self._is_image(f)
+            )
+        except OSError as e:
+            logger.error(f"Failed to list wallpapers dir: {e}")
+            return
 
-        self.files = all_files
+        for file_name in all_files:
+            if generation != self._scan_generation:
+                return
+            self.executor.submit(self._process_thumbnail_task, file_name, generation)
 
-        # start thumbnail generation jobs
-        for file_name in self.files:
-            self.executor.submit(self._process_thumbnail_task, file_name)
-
-    def _process_thumbnail_task(self, file_name):
+    def _process_thumbnail_task(self, file_name: str, generation: int | None = None):
+        generation = self._scan_generation if generation is None else generation
         try:
             full_path = os.path.join(config.WALLPAPERS_DIR, file_name)
             cache_path = get_thumbnail_cache_path(full_path)
@@ -385,12 +574,15 @@ class WallpaperSelector(Box):
             with open(cache_path, "rb") as f:
                 image_bytes = f.read()
 
-            GLib.idle_add(self._add_thumbnail_to_ui, file_name, image_bytes)
+            GLib.idle_add(self._add_thumbnail_to_ui, file_name, image_bytes, generation)
 
         except Exception as e:
             logger.error(f"Thumbnail task failed for {file_name}: {e}")
 
-    def _add_thumbnail_to_ui(self, file_name, image_bytes):
+    def _add_thumbnail_to_ui(self, file_name, image_bytes, generation):
+        if generation != self._scan_generation:
+            return
+
         try:
             # create stream from bytes (Memory operation, very fast)
             stream = Gio.MemoryInputStream.new_from_bytes(GLib.Bytes.new(image_bytes))
@@ -406,12 +598,19 @@ class WallpaperSelector(Box):
                 child.show_all()
 
                 self.update_badge_visibility()
-                GLib.idle_add(self.arrange_viewport, self.search_entry.get_text())
+
+            GLib.idle_add(self.arrange_viewport, self.search_entry.get_text())
 
         except Exception as e:
             logger.error(f"Error creating pixbuf for {file_name}: {e}")
 
     def setup_file_monitor(self):
+        if not os.path.isdir(config.WALLPAPERS_DIR):
+            return
+
+        if self.file_monitor is not None and not self.file_monitor.is_cancelled():
+            self.file_monitor.cancel()
+
         gfile = Gio.File.new_for_path(config.WALLPAPERS_DIR)
         self.file_monitor = gfile.monitor_directory(Gio.FileMonitorFlags.NONE, None)
         self.file_monitor.connect("changed", self.on_directory_changed)
@@ -512,14 +711,10 @@ class WallpaperSelector(Box):
 
         selected_scheme = self.scheme_dropdown.get_active_id()
 
-        self.wallpaper_service._apply_wallpaper(full_path)
-
-        def save_history():
-            WP_HISTORY.parent.mkdir(parents=True, exist_ok=True)
-            WP_HISTORY.write_text(full_path)
+        self.wallpaper_service.apply_wallpaper(full_path)
 
         # generate
-        self.executor.submit(save_history)
+        self.executor.submit(save_wallpaper_history, full_path)
         future = self.executor.submit(generate_wallpaper_preview, full_path)
         self.executor.submit(self._generate_theme, full_path, selected_scheme)
         self.executor.submit(generate_lockscreen_image, full_path)
@@ -541,11 +736,8 @@ class WallpaperSelector(Box):
 
     def update_badge_visibility(self, target_file_name: str | None = None):
         if target_file_name is None:
-            try:
-                current_path = self.wallpaper_service.get_wallpaper_path() or ""
-                target_file_name = os.path.basename(current_path)
-            except Exception:
-                target_file_name = ""
+            current_path = self.wallpaper_service.get_wallpaper_path()
+            target_file_name = os.path.basename(current_path) if current_path else ""
 
         def _ui_sync():
             for child in self.viewport.get_children():
@@ -561,6 +753,15 @@ class WallpaperSelector(Box):
     def on_scheme_changed(self, combo):
         selected_scheme = combo.get_active_id()
         logger.info(f"Color scheme selected: {selected_scheme}")
+
+    def _cycle_scheme(self, delta: int) -> None:
+        schemes_list = list(self.schemes.keys())
+        current_id = self.scheme_dropdown.get_active_id()
+        current_index = (
+            schemes_list.index(current_id) if current_id in schemes_list else 0
+        )
+        new_index = (current_index + delta) % len(schemes_list)
+        self.scheme_dropdown.set_active(new_index)
 
     def on_search_entry_key_press(self, widget, event):
         # ignores CapsLock, NumLock, etc.
@@ -580,23 +781,11 @@ class WallpaperSelector(Box):
 
         # scheme dropdown navigation with Shift
         if event.keyval == key_s_prev and core_modifiers == mask_s_prev:
-            schemes_list = list(self.schemes.keys())
-            current_id = self.scheme_dropdown.get_active_id()
-            current_index = (
-                schemes_list.index(current_id) if current_id in schemes_list else 0
-            )
-            new_index = (current_index - 1) % len(schemes_list)
-            self.scheme_dropdown.set_active(new_index)
+            self._cycle_scheme(-1)
             return True
 
         elif event.keyval == key_s_next and core_modifiers == mask_s_next:
-            schemes_list = list(self.schemes.keys())
-            current_id = self.scheme_dropdown.get_active_id()
-            current_index = (
-                schemes_list.index(current_id) if current_id in schemes_list else 0
-            )
-            new_index = (current_index + 1) % len(schemes_list)
-            self.scheme_dropdown.set_active(new_index)
+            self._cycle_scheme(1)
             return True
 
         elif event.keyval == key_s_open and core_modifiers == mask_s_open:
@@ -649,8 +838,6 @@ class WallpaperSelector(Box):
             new_index = current_visible_index + self.COLUMNS
         elif keyval == Gdk.KEY_Up:
             new_index = current_visible_index - self.COLUMNS
-        else:
-            return
 
         # clamp to valid range
         new_index = max(0, min(new_index, len(self._visible_children) - 1))
@@ -663,9 +850,7 @@ class WallpaperSelector(Box):
 
     @staticmethod
     def _is_image(file_name: str) -> bool:
-        return file_name.lower().endswith(
-            (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp")
-        )
+        return file_name.lower().endswith(IMAGE_EXTENSIONS)
 
     def on_search_entry_focus_out(self, widget, event):
         if self.get_mapped():
@@ -696,3 +881,9 @@ class WallpaperSelector(Box):
             )
         except Exception as e:
             logger.exception(f"Matugen error: {e}")
+
+    def destroy(self):
+        self.executor.shutdown(wait=False, cancel_futures=True)
+        if self.file_monitor:
+            self.file_monitor.cancel()
+        super().destroy()

@@ -1,3 +1,4 @@
+import math
 import cairo
 import threading
 from typing import Literal
@@ -45,7 +46,7 @@ from fabric.widgets.container import Container
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib, Gdk # type: ignore
+from gi.repository import Gtk, GLib, Gdk  # type: ignore
 
 
 class ExpressiveShape(Gtk.Bin, Container):
@@ -274,9 +275,33 @@ class BezierShapeMorph(Gtk.DrawingArea):
         return False
 
 
-class AnimateShapeMorph(Gtk.DrawingArea):
+class AnimateShapeMorph(Gtk.Bin, Container):
     # Changed parameters to rely on time (seconds) instead of arbitrary speed/frames
-    def __init__(self, name: str, presets=None, morph_duration: float = 0.52, pause_duration: float = 0.33):
+    def __init__(
+        self,
+        name: str | None = None,
+        presets=None,
+        morph_duration: float = 0.52,
+        pause_duration: float = 0.33,
+        clip: bool = False,
+        child: Gtk.Widget | None = None,
+        visible: bool = True,
+        all_visible: bool = False,
+        style: str | None = None,
+        style_classes: Iterable[str] | str | None = None,
+        tooltip_text: str | None = None,
+        tooltip_markup: str | None = None,
+        h_align: Literal["fill", "start", "end", "center", "baseline"]
+        | Gtk.Align
+        | None = None,
+        v_align: Literal["fill", "start", "end", "center", "baseline"]
+        | Gtk.Align
+        | None = None,
+        h_expand: bool = False,
+        v_expand: bool = False,
+        size: Iterable[int] | int | None = None,
+        **kwargs,
+    ):
         if presets is None:
             presets = [
                 circle,
@@ -312,20 +337,38 @@ class AnimateShapeMorph(Gtk.DrawingArea):
                 shield,
             ]
 
-        super().__init__(name=name)
+        Gtk.DrawingArea.__init__(self)  # type: ignore
+        Container.__init__(
+            self,
+            child,
+            name,
+            visible,
+            all_visible,
+            style,
+            style_classes,
+            tooltip_text,
+            tooltip_markup,
+            h_align,
+            v_align,
+            h_expand,
+            v_expand,
+            size,
+            **kwargs,
+        )
         self.set_hexpand(True)
         self.set_vexpand(True)
 
+        self.clip = clip
         self.presets = presets
         self.current_idx = 0
 
         self.progress = 0.0
-        
+
         # seconds
         self.morph_duration = morph_duration  # time it takes to complete one morph
         self.pause_duration = pause_duration  # time to pause between morphs
         self.current_pause_time = 0.0
-        self.last_frame_time = 0              # timestamp of the previous frame
+        self.last_frame_time = 0  # timestamp of the previous frame
 
         self._prepare_next_morph()
 
@@ -343,7 +386,7 @@ class AnimateShapeMorph(Gtk.DrawingArea):
 
     def on_tick(self, widget, frame_clock):
         current_time = frame_clock.get_frame_time()
-        
+
         if self.last_frame_time == 0:
             self.last_frame_time = current_time
             return True
@@ -445,7 +488,7 @@ class AnimateShapeMorph(Gtk.DrawingArea):
         state = self.get_state_flags()
         color = style_context.get_color(state)
 
-        Gdk.cairo_set_source_rgba(ctx, color)
+        ctx.save()  # push state for scaling
 
         side = min(width, height)
         ctx.translate((width - side) / 2, (height - side) / 2)
@@ -455,14 +498,208 @@ class AnimateShapeMorph(Gtk.DrawingArea):
         alpha = self.material_easing(self.progress)
 
         curves = Morph.as_cubics(self.mappings, alpha)
+
+        if curves:
+            ctx.move_to(curves[0].p0.x, curves[0].p0.y)
+            for c in curves:
+                ctx.curve_to(c.p1.x, c.p1.y, c.p2.x, c.p2.y, c.p3.x, c.p3.y)
+            ctx.close_path()
+
+        # restore the 1:1 pixel grid
+        ctx.restore()
+
         if not curves:
+            return True
+
+        ctx.save()  # push state for clipping
+
+        Gdk.cairo_set_source_rgba(ctx, color)
+
+        if self.clip:
+            ctx.fill_preserve()
+            ctx.clip()
+        else:
+            ctx.fill()
+
+        if child := self.get_child():
+            self.propagate_draw(child, ctx)
+
+        ctx.restore()  # cleans up clip
+
+        return True
+
+
+class InteractiveMorphShape(Gtk.Bin, Container):
+    def __init__(
+        self,
+        shape_start=circle,
+        shape_end=square,
+        angle_start: float = 0.0,
+        angle_end: float = 90.0,
+        duration: float = 0.4,
+        clip: bool = False,
+        child: Gtk.Widget | None = None,
+        name: str | None = None,
+        visible: bool = True,
+        all_visible: bool = False,
+        style: str | None = None,
+        style_classes: Iterable[str] | str | None = None,
+        tooltip_text: str | None = None,
+        tooltip_markup: str | None = None,
+        h_align: Literal["fill", "start", "end", "center", "baseline"] | Gtk.Align | None = None,
+        v_align: Literal["fill", "start", "end", "center", "baseline"] | Gtk.Align | None = None,
+        h_expand: bool = False,
+        v_expand: bool = False,
+        size: Iterable[int] | int | None = None,
+        **kwargs,
+    ):
+        Gtk.Bin.__init__(self)
+        Container.__init__(
+            self, child, name, visible, all_visible, style, style_classes,
+            tooltip_text, tooltip_markup, h_align, v_align,
+            h_expand, v_expand, size, **kwargs,
+        )
+
+        self.set_hexpand(True)
+        self.set_vexpand(True)
+
+        self.clip = clip
+        self.duration = duration
+        self.angle_start = angle_start
+        self.angle_end = angle_end
+
+        poly_start = self.create_rounded_polygon(shape_start)
+        poly_end = self.create_rounded_polygon(shape_end)
+        self.mappings = Morph.match(poly_start, poly_end)
+
+        self._is_active = False
+        self.progress = 0.0
+        self._target_progress = 0.0
+        self._last_time = 0.0
+        self._tick_id = None
+
+        self.connect("draw", self.on_draw)
+        self.show_all()
+
+    @property
+    def is_active(self) -> bool:
+        """Returns the target state of the shape."""
+        return self._is_active
+
+    @is_active.setter
+    def is_active(self, value: bool):
+        """Set to True for hover/active state, False for unhover/default state."""
+        if self._is_active == value:
+            return
+            
+        self._is_active = value
+        self._target_progress = 1.0 if value else 0.0
+        self._last_time = 0.0
+        
+        # Start animation loop if it's not already running
+        if self._tick_id is None:
+            self._tick_id = self.add_tick_callback(self._on_tick)
+
+    def play_forward(self):
+        self.is_active = True
+
+    def play_backward(self):
+        self.is_active = False
+
+    def create_rounded_polygon(self, unit_data) -> RoundedPolygon:
+        verts = []
+        per_vertex = []
+        for (ux, uy), rounding_preset in unit_data:
+            verts.extend([ux, uy])
+            per_vertex.append(rounding_preset)
+        return RoundedPolygon.create(vertices=verts, per_vertex_rounding=per_vertex)
+
+    def _ease_in_out_cubic(self, t: float) -> float:
+        return 4 * t * t * t if t < 0.5 else 1 - math.pow(-2 * t + 2, 3) / 2
+
+    def _on_tick(self, widget, frame_clock):
+        now = frame_clock.get_frame_time()
+
+        if self._last_time == 0.0:
+            self._last_time = now
+            return True
+
+        dt = (now - self._last_time) / 1_000_000.0
+        self._last_time = now
+
+        # prevent giant leaps
+        dt = min(dt, 0.1)
+
+        step = dt / self.duration
+
+        if self._target_progress > self.progress:
+            self.progress = min(1.0, self.progress + step)
+        else:
+            self.progress = max(0.0, self.progress - step)
+
+        self.queue_draw()
+
+        if self.progress == self._target_progress:
+            self._tick_id = None
             return False
 
-        ctx.move_to(curves[0].p0.x, curves[0].p0.y)
+        return True
+
+    def on_draw(self, widget, ctx: cairo.Context):
+        width = self.get_allocated_width()
+        height = self.get_allocated_height()
+
+        style_context = self.get_style_context()
+        color = style_context.get_color(self.get_state_flags())
+
+        alpha = self._ease_in_out_cubic(self.progress)
+        current_angle = self.angle_start + (self.angle_end - self.angle_start) * alpha
+        curves = Morph.as_cubics(self.mappings, alpha)
+
+        if not curves:
+            return True
+
+        s = min(width, height) 
+        
+        cx = width / 2.0
+        cy = height / 2.0
+        rad = math.radians(current_angle)
+        cos_a = math.cos(rad)
+        sin_a = math.sin(rad)
+
+        def transform(pt):
+            # scale coordinates relative to center
+            px = (pt.x - 0.5) * s
+            py = (pt.y - 0.5) * s
+            # apply 2D rotation matrix
+            rx = px * cos_a - py * sin_a
+            ry = px * sin_a + py * cos_a
+            return cx + rx, cy + ry
+
+        start_pt = transform(curves[0].p0)
+        ctx.move_to(*start_pt)
+
         for c in curves:
-            ctx.curve_to(c.p1.x, c.p1.y, c.p2.x, c.p2.y, c.p3.x, c.p3.y)
+            pt1 = transform(c.p1)
+            pt2 = transform(c.p2)
+            pt3 = transform(c.p3)
+            ctx.curve_to(pt1[0], pt1[1], pt2[0], pt2[1], pt3[0], pt3[1])
 
         ctx.close_path()
-        ctx.fill()
+        ctx.save()
 
-        return False
+        Gdk.cairo_set_source_rgba(ctx, color)
+
+        if self.clip:
+            ctx.fill_preserve()
+            ctx.clip()
+        else:
+            ctx.fill()
+
+        if child := self.get_child():
+            self.propagate_draw(child, ctx)
+
+        ctx.restore()
+
+        # signal GTK that we manually handled drawing the children
+        return True
