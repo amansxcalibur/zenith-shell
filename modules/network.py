@@ -28,7 +28,7 @@ from utils.cursor import add_hover_cursor
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk # type: ignore
+from gi.repository import Gtk, Gdk  # type: ignore
 
 
 class UIConstants:
@@ -884,7 +884,7 @@ class Network(TileSimpleWithMenu):
         )
 
     def _keybindings(self):
-        wifi_bindings = config.bindings.modules.wifi
+        wifi_bindings = config.get("bindings.modules.wifi")
         return {
             format_accel_to_keybind(wifi_bindings["wifi.rescan"]): lambda *_: (
                 self.wifi_dev.scan()
@@ -950,7 +950,7 @@ class Network(TileSimpleWithMenu):
 
             # Save last successful state preferred by user
             # (Note: NetworkManager already restores WiFi state after sleep.)
-            config.network.wifi.enabled = enabled  # CHANGES THE CONFIG!!
+            config.set("network.wifi.enabled", enabled)
 
         except Exception as e:
             logger.error(f"Error toggling WiFi: {e}")
@@ -1047,9 +1047,7 @@ class Network(TileSimpleWithMenu):
                 self.password_dialog.destroy()
                 self.password_dialog = None
 
-    def _handle_network_connect(
-        self, ssid: str, password: str | None = None
-    ) -> None:
+    def _handle_network_connect(self, ssid: str, password: str | None = None) -> None:
         try:
             result = self.nm.get_wifi_device().connect_to_network(ssid, password)
 

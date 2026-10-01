@@ -1,11 +1,17 @@
+from __future__ import annotations
+
 import time
 from loguru import logger
+from typing import TYPE_CHECKING
 
 from fabric.widgets.box import Box
 from fabric.widgets.stack import Stack
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.x11 import X11WindowGeometry
+
+if TYPE_CHECKING:
+    from .pill import TopPill
 
 from widgets.clipping_box import ClippingBox
 from config.info import IS_WAYLAND
@@ -30,12 +36,14 @@ CLEANUP_DELAY = 350
 
 
 class TopBar(Window):
-    def __init__(self, pill, **kwargs):
+    def __init__(self, pill: TopPill, **kwargs):
+        pill_config_node = config.get_node("top_pill")
+
         if IS_WAYLAND:
             super().__init__(
                 layer="top",
-                title='zenith-top-bar',
-                anchor=f"{config.top_pill.POSITION.y} {config.top_pill.POSITION.x}",
+                title="zenith-top-bar",
+                anchor=f"{pill_config_node.get('POSITION.y')} {pill_config_node.get('POSITION.x')}",
                 exclusivity="none",
                 pass_through=False,
                 visible=True,
@@ -45,7 +53,7 @@ class TopBar(Window):
             super().__init__(
                 name="dock-bar",
                 layer="top",
-                geometry=f"{config.top_pill.POSITION.y}-{config.top_pill.POSITION.x}",
+                geometry=f"{pill_config_node.get('POSITION.y')}-{pill_config_node.get('POSITION.x')}",
                 type_hint="notification",
                 visible=True,
                 all_visible=True,
@@ -343,10 +351,11 @@ class TopBar(Window):
             ...
         else:
             for index, control in enumerate(controls):
+                pill_position_config = self._pill_ref.get_position_config()
                 try:
-                    if self._pill_ref._pos["x"] == "left":
+                    if pill_position_config["x"] == "left":
                         target = right
-                    elif self._pill_ref._pos["x"] == "right":
+                    elif pill_position_config["x"] == "right":
                         target = left
                     else:
                         target = left if index % 2 == 0 else right

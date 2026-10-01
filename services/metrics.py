@@ -30,7 +30,6 @@ class MetricsProvider(Service):
         if self._initialized:
             return
         super().__init__()
-        self._initialized = True
 
         self.cpu: float = 0.0
         self.mem: float = 0.0
@@ -41,6 +40,8 @@ class MetricsProvider(Service):
         self._cpu_brand: str = self._read_cpu_brand()
 
         GLib.timeout_add_seconds(1, self._update)
+
+        self._initialized = True
 
     @staticmethod
     def _read_cpu_brand() -> str:

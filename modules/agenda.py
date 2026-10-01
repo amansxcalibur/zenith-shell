@@ -17,7 +17,7 @@ from widgets.clipping_box import ClippingBox, AnimatedClippingBox
 from services.animator import CubicBezierCurves
 
 import icons
-from config.info import DATA_DIR, CACHE_DIR
+from config.info import DATA_DIR, CACHE_DIR, IS_WAYLAND
 
 import gi
 
@@ -274,8 +274,11 @@ class AgendaItem(Gtk.ListBoxRow):
             title="Select Background Image",
             parent=None,
             action=Gtk.FileChooserAction.OPEN,
+            use_header_bar=False,
         )
         dialog.get_style_context().add_class("agenda-file-chooser-dialog")
+        if IS_WAYLAND:
+            dialog.get_style_context().add_class("wayland")
         dialog.set_visual(dialog.get_screen().get_rgba_visual())
 
         for stock, response, extra_class in [

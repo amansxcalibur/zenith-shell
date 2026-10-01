@@ -1,5 +1,5 @@
 from loguru import logger
-from typing import Optional, Any
+from typing import Any
 
 from fabric.core.service import Service, Signal, Property
 
@@ -13,7 +13,7 @@ import gi
 
 try:
     gi.require_version("NM", "1.0")
-    from gi.repository import NM, GLib, GObject
+    from gi.repository import NM, GLib, GObject  # type: ignore
 except ValueError:
     logger.error("Failed to load NetworkManager bindings")
     raise
@@ -23,12 +23,10 @@ class NetworkService(Service):
     @Signal
     def primary_connection_change(self, device: object) -> None:
         """Emitted when primary connection status changes"""
-        ...
 
     @Signal
     def ethernet_change(self) -> None:
         """Emitted when available ethernet list updates"""
-        ...
 
     @Property(bool, default_value=False, flags="readable")
     def wifi_enabled(self) -> bool:
@@ -37,8 +35,8 @@ class NetworkService(Service):
     def __init__(self):
         super().__init__()
 
-        self.client: Optional[NM.Client] = None
-        self.wifi_dev: Optional[WifiDevice] = None
+        self.client: NM.Client | None = None
+        self.wifi_dev: WifiDevice | None = None
         self.ethernet_devs: dict[str, EthernetDevice] = {}
 
         self._init_client()
@@ -71,7 +69,7 @@ class NetworkService(Service):
 
     def _register_ethernet_device(
         self, device: NM.DeviceEthernet
-    ) -> Optional[EthernetDevice]:
+    ) -> EthernetDevice | None:
         if not device:
             return
         path = device.get_path()
@@ -95,13 +93,13 @@ class NetworkService(Service):
             logger.error(f"Failed to register Ethernet device: {e}")
             return None
 
-    def _unregister_ethernet_device(self, path: str) -> Optional[NM.DeviceEthernet]:
+    def _unregister_ethernet_device(self, path: str) -> NM.DeviceEthernet | None:
         dev_wrapper = self.ethernet_devs.pop(path, None)
         if dev_wrapper is not None:
             logger.info(f"Ethernet device unregistering: {dev_wrapper.get_iface()}")
             dev_wrapper.destroy()
 
-    def _init_wifi_device(self, device: NM.DeviceWifi) -> Optional[WifiDevice]:
+    def _init_wifi_device(self, device: NM.DeviceWifi) -> WifiDevice | None:
         if not device:
             logger.error("Cannot initialize: device is None")
             return
@@ -122,7 +120,7 @@ class NetworkService(Service):
 
     def _initialize_state(self) -> bool:
         self._on_primary_connection_changed(self.client, None)
-        self.toggle_wifi_radio(enabled=config.network.wifi.enabled)
+        self.toggle_wifi_radio(enabled=config.get("network.wifi.enabled"))
         return False  # don't repeat
 
     @staticmethod
@@ -167,7 +165,7 @@ class NetworkService(Service):
             f"Primary connection -> {self._conn_type_from_primary(primary_conn)}"
         )
 
-    def get_wifi_device(self) -> Optional[WifiDevice]:
+    def get_wifi_device(self) -> WifiDevice | None:
         return self.wifi_dev
 
     def get_ethernet_list(self) -> list[dict]:
@@ -183,7 +181,7 @@ class NetworkService(Service):
             for device in self.ethernet_devs.values()
         ]
 
-    def toggle_wifi_radio(self, enabled: Optional[bool] = None) -> bool:
+    def toggle_wifi_radio(self, enabled: bool | None = None) -> bool:
         # enabled: True(enable), False(disable), None(toggle)
         if not self.client:
             logger.error("Cannot toggle WiFi: no client")
@@ -245,8 +243,8 @@ class NetworkService(Service):
                 # detach signals and clear wrapper
                 try:
                     self.wifi_dev.destroy()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.error(f"Failed to destroy WifiDevice: {e}")
                 self.wifi_dev = None
                 logger.info("WiFi device removed")
 

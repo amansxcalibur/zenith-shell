@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .pill import TopPill
     from .bar import TopBar
+
 from services.animator import Animator
 
 import gi
@@ -114,9 +115,7 @@ class ShellTopWindowManager:
             target_x_name = min(x_targets, key=lambda k: abs(win_x - x_targets[k]))
             target_y_name = min(y_targets, key=lambda k: abs(win_y - y_targets[k]))
 
-            # CHANGES THE CONFIG!!
-            self.pill._pos["x"] = target_x_name
-            self.pill._pos["y"] = target_y_name
+            self.pill.set_position_config(target_x_name, target_y_name)
 
             target_x = x_targets[target_x_name]
             target_y = y_targets[target_y_name]
@@ -149,8 +148,9 @@ class ShellTopWindowManager:
             #     self.layer_choice_for_pill["disable"].append(GtkLayerShell.Edge.BOTTOM)
 
         else:
-            target_x_name = self.pill._pos["x"]
-            target_y_name = self.pill._pos["y"]
+            pill_position_config = self.pill.get_position_config()
+            target_x_name = pill_position_config["x"]
+            target_y_name = pill_position_config["y"]
 
             target_x = x_targets[target_x_name]
             target_y = y_targets[target_y_name]

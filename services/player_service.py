@@ -17,7 +17,7 @@ from config.info import TEMP_DIR, ROOT_DIR
 import gi
 
 gi.require_version("Playerctl", "2.0")
-from gi.repository import Playerctl, GLib, Gio # type: ignore
+from gi.repository import Playerctl, GLib, Gio  # type: ignore
 
 
 def check_shuffle_strictly(bus_name):
@@ -442,17 +442,18 @@ class PlayerManager(Service):
     @Signal
     def player_vanish(self, player_name: str) -> None: ...
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            logger.debug("Creating Singeton")
-            cls._instance._init_singleton()
-        else:
-            logger.debug("Sharing Singeton")
+            cls._instance = super().__new__(cls, *args, **kwargs)
+            cls._instance._initialized = False
         return cls._instance
 
-    def _init_singleton(self):
+    def __init__(self):
+        if getattr(self, "_initialized", False):
+            return
+
         super().__init__()
+
         self._manager = Playerctl.PlayerManager()
         self._services = {}  # map player_name -> PlayerService
         self._player_objects = {}  # map player_name -> Playerctl.Player
@@ -463,6 +464,8 @@ class PlayerManager(Service):
         )
         self.init_all_players()
         logger.info("PlayerManager initialized")
+
+        self._initialized = True
 
     def init_all_players(self):
         logger.info("Initializing all existing players")

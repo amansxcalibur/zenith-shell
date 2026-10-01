@@ -3,7 +3,7 @@ import colorsys
 from pathlib import Path
 from loguru import logger
 
-from config.config import config, _ConfigNode
+from config.config import config, ConfigNode
 from config.info import ROOT_DIR, SHELL_NAME, IS_WAYLAND
 from config.bindings import (
     KeyBinding,
@@ -80,7 +80,7 @@ def generate_i3_border_theme_config(hex_color: str | None = None, reload: bool =
         f"#   {ROOT_DIR}/config/config.json  OR",
         f"#   {ROOT_DIR}/config/i3/utils.py  OR",
         "",
-        f"{'' if (theme_available and config.i3.borders.matugen) else '# '}client.focused          {hex_color} {hex_color} {hex_color} {hex_color}",
+        f"{'' if (theme_available and config.get('i3.borders.matugen')) else '# '}client.focused          {hex_color} {hex_color} {hex_color} {hex_color}",
         "# client.focused_inactive #ff0000 #ff0000 #ff0000 #ff0000",
         "# client.unfocused        #ff0000 #ff0000 #ff0000 #ff0000",
         "# client.urgent           #ff0000 #ff0000 #ff0000 #ff0000",
@@ -173,7 +173,7 @@ def generate_i3_keybinds_config(reload: bool = False):
         ensure_i3_config_includes_glob_dir(main_config_path, CONFIG_GLOB_PATH)
 
         try:
-            i3_config_node: _ConfigNode = config.bindings.i3
+            i3_config_node: ConfigNode = config.get_node("bindings.i3")
             overrides = i3_config_node.get_all()
         except AttributeError:
             logger.error("Failed to load {}wm keybind overrides", WM)
@@ -201,23 +201,23 @@ def generate_i3_keybinds_config(reload: bool = False):
 def generate_i3_gaps_and_borders_config():
     lines = []
 
-    gaps_config = config.i3.gaps
-    if gaps_config.enabled:
+    gaps_config: ConfigNode = config.get_node("i3.gaps")
+    if gaps_config.get("enabled"):
         lines.append("# gaps")
-        for prop, val in gaps_config.props.get_all().items():
+        for prop, val in gaps_config.get_node("props").get_all().items():
             lines.append(f"gaps {prop} {val}px")
             if IS_WAYLAND:
                 exec_shell_command_async(f"swaymsg gaps {prop} all set {val}")
         lines.append("")
 
-    border_config = config.i3.borders
-    if border_config.enabled:
+    border_config = config.get_node("i3.borders")
+    if border_config.get("enabled"):
         lines.append("# borders")
-        lines.append(f"default_border pixel {border_config.props.border_width}")
+        lines.append(f"default_border pixel {border_config.get('props.border_width')}")
         lines.append("default_floating_border none")
         lines.append("")
 
-        if config.i3.borders.props.smart_borders:
+        if border_config.get("props.smart_borders"):
             lines.append("smart_borders on")
             lines.append("")
 

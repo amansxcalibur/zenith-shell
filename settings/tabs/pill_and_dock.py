@@ -125,7 +125,7 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
         pill_key = f"{pill_pos['y']}-{pill_pos['x']}"
 
         for item in pill_positions:
-            item["selected"] = item["text"] == pill_key
+            item["selected"] = item["value"] == pill_key
 
         bar_pos = state.get(["bar", "POSITION"])
 

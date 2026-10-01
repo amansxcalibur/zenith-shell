@@ -738,7 +738,7 @@ class NotificationManager:
             self._notification_sig_emittor.has_urgent_unread = False
 
     def _keybindings(self):
-        notif_bindings = config.bindings.modules.notifications
+        notif_bindings = config.get("bindings.modules.notifications")
         return {
             # "d": self.del_last_notif, # kill last
             format_accel_to_keybind(

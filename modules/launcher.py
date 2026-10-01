@@ -76,7 +76,7 @@ class AppLauncher(Box):
         },
     ]
 
-    def __init__(self, pill, **kwargs):
+    def __init__(self, window, **kwargs):
         super().__init__(
             name="app-launcher",
             visible=False,
@@ -84,10 +84,10 @@ class AppLauncher(Box):
             **kwargs,
         )
 
-        self._pill = pill
+        self._pill = window
         self._arranger_handler = 0
         self._all_apps: tuple[DesktopApp] = ()
-        self._launcher_bindings_config = config.bindings.modules.launcher
+        self._launcher_bindings_config = config.get("bindings.modules.launcher")
         self.current_mode = self.MODE_APP
         self.selected_index = -1
 

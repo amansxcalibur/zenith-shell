@@ -37,11 +37,13 @@ class TopPill(Window, Service):
     def child_changed(self, child_controls: object): ...
 
     def __init__(self, **kwargs):
+        pill_config_node = config.get_node("top_pill")
+        
         if IS_WAYLAND:
             super().__init__(
                 layer="overlay",
                 keyboard_mode="on-demand",
-                anchor=f"{config.top_pill.POSITION.y} {config.top_pill.POSITION.x}",
+                anchor=f"{pill_config_node.get('POSITION.y')} {pill_config_node.get('POSITION.x')}",
                 exclusivity="none",
                 margin=(0, 0, 0, 0),
                 visible=True,
@@ -68,7 +70,7 @@ class TopPill(Window, Service):
         self._current_compact_mode = None
         self._dock_is_visible = True
         # for custom geometry handle in ShellWindowManager
-        self._pos = config.top_pill.POSITION  # changes the config
+        self._pos = pill_config_node.get("POSITION")
         self.is_lift_enable = False
 
         self.notification_manager = NotificationManager()
@@ -319,6 +321,15 @@ class TopPill(Window, Service):
             GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, int(y))
         else:
             self.move(int(x), int(y))
+
+    def get_position_config(self) -> dict:
+        return config.get("top_pill.POSITION")
+
+    def set_position_config(self, x: str, y: str):
+        self._pos["x"] = x
+        self._pos["y"] = y
+        config.set("top_pill.POSITION", {"x": x, "y": y})
+        self.update_controls_positions()
 
     def get_drag_state(self):
         return self._drag_state

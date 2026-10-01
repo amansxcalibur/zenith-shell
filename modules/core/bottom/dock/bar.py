@@ -4,23 +4,18 @@ from fabric.widgets.box import Box
 from fabric.widgets.stack import Stack
 from fabric.widgets.eventbox import EventBox
 
+from config.config import config
 from config.info import IS_WAYLAND
 
-if IS_WAYLAND:
-    from fabric.widgets.wayland import WaylandWindow as Window
-else:
-    from widgets.overrides import PatchedX11Window as Window
-
-from modules.special import ActionButton
 from modules.special import DateTime
 from modules.systray import SystemTray
 from modules.weather import WeatherMini
+from modules.special import ActionButton
 from modules.controls import ControlsManager
 from modules.workspaces.workspaces import Workspaces
 from modules.power_profiles import PowerProfilesSelector
 from modules.metrics.metrics import MetricsSmall, Battery
 
-from config.config import config
 from utils.helpers import toggle_class
 from utils.cursor import add_hover_cursor
 
@@ -31,6 +26,11 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # type: ignore
+
+if IS_WAYLAND:
+    from fabric.widgets.wayland import WaylandWindow as Window
+else:
+    from widgets.overrides import PatchedX11Window as Window
 
 SPACING = 0
 
@@ -54,7 +54,7 @@ class DockBar(Window):
                 name="dock-bar",
                 layer="bottom",
                 title=self.WIN_ROLE,
-                geometry=config.bar["POSITION"],
+                geometry=config.get("bar.POSITION"),
                 type_hint="dock",
                 visible=True,
                 all_visible=True,
@@ -124,13 +124,13 @@ class DockBar(Window):
 
         self.user_modules_left = [
             mod
-            for m in config.bar.modules.left
+            for m in config.get("bar.modules.left")
             if (mod := safe_load_module(m)) is not None
         ]
         self.user_modules_right = reversed(
             [
                 mod
-                for m in config.bar.modules.right
+                for m in config.get("bar.modules.right")
                 if (mod := safe_load_module(m)) is not None
             ]
         )

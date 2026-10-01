@@ -27,7 +27,9 @@ from config.config import config
 from config.info import SHELL_NAME, USERNAME, HOSTNAME
 from utils.helpers import open_settings, get_absolute_wayland_widget_position
 
-from gi.repository import GtkLayerShell, GLib  # type: ignore
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, GtkLayerShell, GLib  # type: ignore
 
 
 class Pill(Window, Service):
@@ -40,12 +42,13 @@ class Pill(Window, Service):
     def on_drag_end(self, drag_state: object): ...
 
     def __init__(self, **kwargs):
+        pill_config = config.get_node("pill")
         if IS_WAYLAND:
             super().__init__(
                 # name="pill",
-                layer="top",
+                layer="overlay",
                 keyboard_mode="none",
-                anchor=f"{config.pill.POSITION.y} {config.pill.POSITION.x}",
+                anchor=f"{pill_config.get('POSITION.y')} {pill_config.get('POSITION.x')}",
                 exclusivity="none",
                 margin=(0, 0, 0, 0),
                 visible=True,
@@ -68,7 +71,7 @@ class Pill(Window, Service):
         self._current_compact_mode = None
         self._dock_is_visible = True
         # for custom geometry handle in ShellWindowManager
-        self._pos = config.pill.POSITION  # changes the config
+        self._pos = pill_config.get("POSITION")  # changes the config
         self._drag_state = {
             "dragging": False,
             "offset_x": 0,
@@ -103,9 +106,9 @@ class Pill(Window, Service):
 
         self.power_menu = PowerMenu()
         self.controls = ControlsManager()
-        self.launcher = AppLauncher(pill=self)
+        self.launcher = AppLauncher(window=self)
         self.player = PlayerContainer(window=self)
-        self.wallpaper = WallpaperSelector(pill=self)
+        self.wallpaper = WallpaperSelector(window=self)
         self.dashboard = Dashboard(controls=self.controls)
 
         self.lift_box = Box(style="min-height:36px;")  # 40-3-1
@@ -156,10 +159,14 @@ class Pill(Window, Service):
         if stack.get_transition_running():
             return
         child = stack.get_visible_child()
-        if child == self.launcher:
-            entry = getattr(child, "search_entry", None)
-            if entry and not entry.has_focus():
-                GLib.idle_add(entry.grab_focus)
+        match child:
+            case self.launcher:
+                entry = getattr(child, "search_entry", None)
+                if entry and not entry.has_focus():
+                    GLib.idle_add(entry.grab_focus)
+        
+            case self.wallpaper:
+                GLib.idle_add(self.wallpaper.focus_search)
 
     def _on_power_profile_changed(self, *_):
         self._animations_enabled = (
@@ -372,6 +379,14 @@ class Pill(Window, Service):
             GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, int(y))
         else:
             self.move(int(x), int(y))
+
+    def get_position_config(self) -> dict:
+        return config.get("pill.POSITION")
+
+    def set_position_config(self, x: str, y: str):
+        self._pos["x"] = x
+        self._pos["y"] = y
+        config.set("pill.POSITION", {"x": x, "y": y})
 
     def get_drag_state(self):
         return self._drag_state

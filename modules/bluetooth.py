@@ -194,7 +194,7 @@ class BluetoothConnections(Box):
             "notify::active", self.on_switch_toggled
         )
         self.bluetooth_toggle.set_visible(True)
-        self.bluetooth_toggle.set_active(config.bluetooth.enabled)
+        self.bluetooth_toggle.set_active(config.get("bluetooth.enabled"))
 
         self.client.connect("notify::enabled", self._do_toggle_bluetooth)
         self.client.connect("notify::scanning", self.set_scan_ui)
@@ -275,7 +275,7 @@ class BluetoothConnections(Box):
     def set_enabled(self, state: bool):
         if self.client.enabled != state:
             self.client.toggle_power()
-            config.bluetooth.enabled = state
+            config.set("bluetooth.enabled", state)
 
     def on_switch_toggled(self, switch, pspec):
         self.set_enabled(switch.get_active())

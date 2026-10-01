@@ -6,6 +6,7 @@ from fabric.widgets.eventbox import EventBox
 from config.config import config
 from widgets.material_label import MaterialIconLabel
 from widgets.animated_scale import AnimatedScale, AnimatedCircularScale
+from services.brightness_service import BrightnessService
 
 import icons
 import subprocess
@@ -30,7 +31,7 @@ BACKLIGHT_SUPPORTED = supports_backlight()
 
 
 class BrightnessSlider(AnimatedScale):
-    def __init__(self, device: str, service_instance, **kwargs):
+    def __init__(self, device: str, service_instance: BrightnessService, **kwargs):
         super().__init__(
             name="control-slider",
             orientation="h" if not config.VERTICAL else "v",

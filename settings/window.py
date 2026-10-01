@@ -379,7 +379,7 @@ class SettingsWindow(Window):
 
         except KeybindingValidationError as e:
             logger.warning(f"Failed to save: {e}")
-            exec_shell_command_async(f"notify-send 'Keybinding Error' '{e}'")
+            exec_shell_command_async(f"notify-send 'Keybinding Error' -u critical '{e}'")
 
         except Exception as e:
             logger.error(f"Failed to save: {e}")

@@ -81,14 +81,18 @@ class VolumeService(Service):
         self, new_value: float, max_value: float, is_muted: bool
     ) -> None: ...
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._init_singleton()
+            cls._instance = super().__new__(cls, *args, **kwargs)
+            cls._instance._initialized = False
         return cls._instance
 
-    def _init_singleton(self):
+    def __init__(self):
+        if getattr(self, "_initialized", False):
+            return
+
         super().__init__()
+
         self._pulse = None
         self._current_device_name = "__"
         self._stop_monitoring = threading.Event()
@@ -97,6 +101,8 @@ class VolumeService(Service):
         self._source = AudioDevice()
 
         self._start_monitoring()
+        
+        self._initialized = True
 
     def _start_monitoring(self):
         threading.Thread(target=self._monitor_volume, daemon=True).start()

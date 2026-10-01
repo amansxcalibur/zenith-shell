@@ -1,4 +1,11 @@
+from __future__ import annotations
+
 from loguru import logger
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .pill import Pill
+    from .dock.bar import DockBar
 
 from services.animator import Animator
 
@@ -11,7 +18,7 @@ from gi.repository import Gtk, Gdk, GLib  # type: ignore
 class ShellWindowManager:
     DOCK_HEIGHT = 43
 
-    def __init__(self, pill, dockBar):
+    def __init__(self, pill: Pill, dockBar: DockBar):
         if not pill or not dockBar:
             raise ValueError(
                 "ShellWindowManager requires both 'pill' and 'dockBar' instances."
@@ -136,9 +143,7 @@ class ShellWindowManager:
             target_x_name = min(x_targets, key=lambda k: abs(win_x - x_targets[k]))
             target_y_name = min(y_targets, key=lambda k: abs(win_y - y_targets[k]))
 
-            # CHANGES THE CONFIG!!
-            self.pill._pos["x"] = target_x_name
-            self.pill._pos["y"] = target_y_name
+            self.pill.set_position_config(target_x_name, target_y_name)
 
             target_x = x_targets[target_x_name]
             target_y = y_targets[target_y_name]

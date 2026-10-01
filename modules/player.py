@@ -883,7 +883,7 @@ class PlayerContainer(Box):
         GLib.idle_add(_update_buttons)
 
     def _keybindings(self):
-        player_bindings = config.bindings.modules.player
+        player_bindings = config.get("bindings.modules.player")
         return {
             format_accel_to_keybind(
                 player_bindings["player.play_pause"]

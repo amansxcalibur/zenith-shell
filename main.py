@@ -1,7 +1,7 @@
 import os
 import shutil
 import setproctitle
-from gi.repository import GLib # type: ignore
+from gi.repository import GLib  # type: ignore
 
 from fabric import Application
 from fabric.widgets.x11 import X11Window as Window
@@ -30,8 +30,8 @@ if IS_WAYLAND:
     from modules.core.bottom.shell_wm_wayland import ShellWindowManager
     from modules.core.top.shell_wm_wayland import ShellTopWindowManager
 else:
-    from modules.core.bottom.shell_window_x11 import ShellWindowManager
-    from modules.core.top.shell_window_x11 import ShellTopWindowManager
+    from modules.core.bottom.shell_wm_x11 import ShellWindowManager
+    from modules.core.top.shell_wm_x11 import ShellTopWindowManager
 
 
 def normalize_path():
@@ -102,8 +102,8 @@ if __name__ == "__main__":
     top_window_manager = ShellTopWindowManager(pill=top_pill, dockBar=top_bar)
 
     corners = None
-    if config.screen_corners.enabled:
-        corners = Corners(config.screen_corners.props.radius)
+    if config.get("screen_corners.enabled"):
+        corners = Corners(config.get("screen_corners.props.radius"))
 
     app_kwargs = {
         "pill": pill,

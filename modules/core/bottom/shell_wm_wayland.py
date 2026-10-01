@@ -147,9 +147,7 @@ class ShellWindowManager:
             target_x_name = min(x_targets, key=lambda k: abs(win_x - x_targets[k]))
             target_y_name = min(y_targets, key=lambda k: abs(win_y - y_targets[k]))
 
-            # CHANGES THE CONFIG!!
-            self.pill._pos["x"] = target_x_name
-            self.pill._pos["y"] = target_y_name
+            self.pill.set_position_config(target_x_name, target_y_name)
 
             target_x = x_targets[target_x_name]
             target_y = y_targets[target_y_name]

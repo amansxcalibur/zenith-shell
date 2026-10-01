@@ -1,6 +1,7 @@
 import os
 import copy
 import json
+import threading
 from pathlib import Path
 from loguru import logger
 
@@ -11,6 +12,8 @@ from .bindings import (
     build_resolved_binding_instances,
 )
 from .info import TEMP_DIR, CACHE_DIR, CONFIG_DIR, CONFIG_FILE
+
+from gi.repository import GLib  # type: ignore
 
 
 DEFAULTS = {
@@ -27,7 +30,7 @@ DEFAULTS = {
         "VERTICAL": False,
         "LOCKSCREEN": "i3lock",
         "WEATHER_LOCATION": "auto",
-        "BRIGHTNESS_DEV": "intel_backlight",
+        "BRIGHTNESS_DEV": "auto",
         "ALLOWED_PLAYERS": ["vlc", "cmus", "firefox", "spotify", "chromium"],
     },
     "paths": {"WALLPAPERS_DIR": "~/Pictures/Wallpapers/"},
@@ -59,107 +62,107 @@ DEFAULTS = {
     "bindings": {"i3": {}, "modules": {}},
 }
 
+# Keys under `paths` that are directories to be auto-created by _ensure_directories.
+# Anything not listed here (e.g. a future `paths.SOME_FILE`) is left alone.
+_DIRECTORY_PATH_KEYS = {}
+
+_SAVE_DEBOUNCE_SECONDS = 0.5  # (seconds)
+
 
 # TODO: Config shouldn't really create the 'paths'. It should point to the expected path.
 #       Something like that should be done during install. Perhaps a better architecture...
 
 
-class _ConfigNode:
-    """Represents any node in the config tree (can be a dict, list, or leaf value)"""
+class ConfigNode:
+    """A scoped proxy for reading/writing a specific branch of the config tree."""
 
-    def __init__(self, data, parent, key_path, root):
-        self._data = data
-        self._parent = parent
-        self._key_path = key_path  # full path like ['system', 'SILENT']
-        self._root = root  # ref to ConfigManager
+    def __init__(self, key_path: list[str], root: "ConfigManager"):
+        self._key_path = key_path  # Absolute path from root, e.g., ['bar', 'modules']
+        self._root = root
+        self._listeners: list = []
 
-        # If data is a dict, wrap children as ConfigNodes
-        if isinstance(data, dict):
-            for key, value in data.items():
-                if isinstance(value, dict):
-                    object.__setattr__(
-                        self, key, _ConfigNode(value, self, key_path + [key], root)
-                    )
+    def connect(self, callback):
+        """
+        Register `callback(relative_path: list[str], new_value) -> None` to be
+        called whenever a value at or under this node's path changes. Fires
+        only for changes within this branch, not the whole tree. Returns the
+        callback so it can be passed to disconnect().
+        """
+        self._listeners.append(callback)
+        return callback
 
-    def __getattr__(self, key):
-        if key.startswith("_"):
-            raise AttributeError(f"No attribute '{key}'")
+    def disconnect(self, callback):
+        try:
+            self._listeners.remove(callback)
+        except ValueError:
+            pass
 
-        if isinstance(self._data, dict) and key in self._data:
-            value = self._data[key]
+    def _dispatch(self, relative_path: list[str], value):
+        for cb in list(self._listeners):
+            try:
+                cb(relative_path, value)
+            except Exception as e:
+                logger.error(f"Error in config node listener for {self._key_path}: {e}")
 
-            # Auto-expand paths if the key path starts with 'paths'
-            if (
-                self._key_path
-                and self._key_path[0] == "paths"
-                and isinstance(value, str)
-            ):
-                return os.path.expanduser(value)
+    def _resolve_path(self, path) -> list[str]:
+        # supports "system.i3.gaps" and ["system", "i3", "gaps"].
+        if isinstance(path, str):
+            return path.split(".")
+        return list(path)
 
-            return value
+    def get(self, path, default=None):
+        keys = self._resolve_path(path)
+        current = self._root.get(self._key_path + keys, default)
 
-        raise AttributeError(
-            f"Config has no attribute '{'.'.join(self._key_path + [key])}'"
-        )
+        # auto-expand paths
+        if self._key_path and self._key_path[0] == "paths" and isinstance(current, str):
+            return os.path.expanduser(current)
 
-    def __setattr__(self, key, value):
-        if key.startswith("_"):
-            object.__setattr__(self, key, value)
-            return
+        return current
 
-        if isinstance(self._data, dict):
-            self._data[key] = value
+    def set(self, path, value):
+        keys = self._resolve_path(path)
 
-            # if dict, wrap it as a ConfigNode
-            if isinstance(value, dict):
-                object.__setattr__(
-                    self,
-                    key,
-                    _ConfigNode(value, self, self._key_path + [key], self._root),
-                )
+        # Delegate the actual setting to the root
+        absolute_path = self._key_path + keys
+        self._root.set(absolute_path, value)
 
-            # save and notify signal on root
-            if self._root:
-                self._root._on_change(self._key_path + [key], value)
-        else:
-            raise AttributeError("Cannot set attribute on non-dict config node")
-
-    def __getitem__(self, key):
-        """Support dict-like access: config['system']['SILENT']"""
-        return self._data[key]
-
-    def __setitem__(self, key, value):
-        """Support dict-like setting: config['system']['SILENT'] = True"""
-        self.__setattr__(key, value)
+    def get_node(self, path) -> "ConfigNode":
+        keys = self._resolve_path(path)
+        return self._root.get_node(self._key_path + keys)
 
     def get_all(self):
-        """Return the raw data"""
-        return self._data
+        live_data = self._root.get(self._key_path)
+        return copy.deepcopy(live_data)
 
 
 class ConfigManager(Service):
-    """Dynamic config manager with arbitrary nesting support."""
-
     @Signal
     def changed(self, key_path: object, new_value: object) -> None: ...
 
     def __init__(self):
         super().__init__()
         self._data = {}
-        self._root_node = None
-        self._modules = {}  # Store module nodes here
+        self._node_cache = {}
+        self.resolved_bindings = {}
+
+        # debounced-save machinery
+        self._save_lock = threading.RLock()
+        self._save_timer: threading.Timer | None = None
+        self._dirty = False
+
+        # reentrancy guard: prevents a `changed` handler from triggering
+        # a nested set() -> save() -> changed() loop on the same thread.
+        self._in_set = False
+
         self._load()
         self._ensure_directories()
 
-    def __getattr__(self, key):
-        """Allow access to top-level config modules like config.system"""
-        if key.startswith("_"):
-            raise AttributeError(f"No attribute '{key}'")
-
-        if key in self._modules:
-            return self._modules[key]
-
-        raise AttributeError(f"Config has no module '{key}'")
+    def _resolve_path(self, path: str | list[str]) -> list[str]:
+        # supports "system.i3.gaps" and ["system", "i3", "gaps"].
+        if isinstance(path, str):
+            return path.split(".")
+        return list(path)
 
     def _load(self):
         """Load config from file, merge with defaults"""
@@ -167,63 +170,89 @@ class ConfigManager(Service):
             try:
                 with open(CONFIG_FILE, "r") as f:
                     loaded_data = json.load(f)
-                    self._data = self._deep_merge(
-                        DEFAULTS.copy(), copy.deepcopy(loaded_data)
+                    self._data, needs_save = self._deep_merge(
+                        DEFAULTS, copy.deepcopy(loaded_data)
                     )
 
-                    hydrate_binding_config(self._data["bindings"])  # modifies in-place
+                    hydrate_binding_config(self._data.get("bindings", {}))
                     self.resolved_bindings = build_resolved_binding_instances(
-                        self._data["bindings"]
+                        self._data.get("bindings", {})
                     )
 
-                    # write missing config keys
-                    if self._data != loaded_data:
-                        self._save()
+                    if needs_save or self._data != loaded_data:
+                        self._save_now()
             except Exception as e:
                 logger.error(f"Error loading config.json: {e}")
-                self._data = DEFAULTS.copy()
+                self._data = copy.deepcopy(DEFAULTS)
         else:
-            self._data = DEFAULTS.copy()
-            self._save()
+            self._data = copy.deepcopy(DEFAULTS)
+            self._save_now()
 
-        # root node wrapper
-        self._root_node = _ConfigNode(self._data, None, [], self)
-
-        # store module nodes in a dict instead of as direct attributes
-        self._modules = {}
-        for key in self._data.keys():
-            if isinstance(self._data[key], dict):
-                # self._modules[key] = _ConfigNode(
-                #     self._data[key], self._root_node, [key], self
-                # )
-                self._modules[key] = getattr(self._root_node, key)
+        # fresh load invalidates any cached nodes from a previous state.
+        self._node_cache.clear()
 
     @staticmethod
-    def _deep_merge(base, updates):
-        """Recursively merge updates into base"""
-        for key, value in updates.items():
-            if key in base and isinstance(base[key], dict) and isinstance(value, dict):
-                base[key] = ConfigManager._deep_merge(base[key], value)
+    def _deep_merge(defaults, user_data):
+        """Recursively merges user data into defaults, tracking if missing keys were added."""
+        merged = copy.deepcopy(defaults)
+        needs_save = False
+
+        for key, value in user_data.items():
+            if (
+                key in merged
+                and isinstance(merged[key], dict)
+                and isinstance(value, dict)
+            ):
+                merged[key], sub_needs_save = ConfigManager._deep_merge(
+                    merged[key], value
+                )
+                needs_save = needs_save or sub_needs_save
             else:
-                base[key] = value
-        return base
+                if key not in merged or merged[key] != value:
+                    merged[key] = copy.deepcopy(value)
 
-    def _save(self):
-        """Save config to file"""
-        os.makedirs(CONFIG_DIR, exist_ok=True)
-        try:
-            with open(CONFIG_FILE, "w") as f:
-                json.dump(self._data, f, indent=4)
-        except Exception as e:
-            logger.error(f"Error saving config.json: {e}")
+        missing_keys = set(defaults.keys()) - set(user_data.keys())
+        if missing_keys:
+            needs_save = True
 
-    def _on_change(self, key_path, value):
-        """Called when any config value changes"""
-        self._save()
-        self.changed(key_path, value)
+        return merged, needs_save
+
+    def _save_now(self):
+        with self._save_lock:
+            os.makedirs(CONFIG_DIR, exist_ok=True)
+            try:
+                with open(CONFIG_FILE, "w") as f:
+                    json.dump(self._data, f, indent=4)
+                self._dirty = False
+            except Exception as e:
+                logger.error(f"Error saving config.json: {e}")
+
+    def _schedule_save(self):
+        with self._save_lock:
+            self._dirty = True
+            if self._save_timer is not None:
+                self._save_timer.cancel()
+            self._save_timer = threading.Timer(
+                _SAVE_DEBOUNCE_SECONDS, self._flush_if_dirty
+            )
+            self._save_timer.daemon = True
+            self._save_timer.start()
+
+    def _flush_if_dirty(self):
+        with self._save_lock:
+            if self._dirty:
+                self._save_now()
+
+    def flush(self):
+        """Force any pending debounced write to happen immediately. Call on shutdown."""
+        with self._save_lock:
+            if self._save_timer is not None:
+                self._save_timer.cancel()
+                self._save_timer = None
+            if self._dirty:
+                self._save_now()
 
     def _ensure_directories(self):
-        """Creates necessary system and configured directories if they don't exist."""
         # System/Cache Directories
         for directory in [TEMP_DIR, CACHE_DIR, CONFIG_DIR]:
             path = Path(directory).expanduser()
@@ -231,42 +260,125 @@ class ConfigManager(Service):
                 path.mkdir(parents=True, exist_ok=True)
                 logger.info(f"Created system directory: {path}")
 
-        # Config Directories
+        # Config Directories - only for keys explicitly known to hold a
+        # directory path, so a future paths.SOME_FILE isn't mkdir'd by mistake.
         user_paths = self._data.get("paths", {})
         for key, folder_path in user_paths.items():
-            if isinstance(folder_path, str):
-                path = Path(folder_path).expanduser()
-                if not path.exists():
-                    try:
-                        path.mkdir(parents=True, exist_ok=True)
-                        logger.info(f"Created configured directory: {path}")
-                    except Exception as e:
-                        logger.warning(f"Warning: Could not create {path}: {e}")
+            if key not in _DIRECTORY_PATH_KEYS:
+                continue
+            if not isinstance(folder_path, str):
+                continue
+            path = Path(folder_path).expanduser()
+            if not path.exists():
+                try:
+                    path.mkdir(parents=True, exist_ok=True)
+                    logger.info(f"Created configured directory: {path}")
+                except Exception as e:
+                    logger.warning(f"Could not create {path}: {e}")
 
-    def get(self, path: list):
-        """Get a value by path: config.get(['system', 'SILENT'])"""
-        data = self._data
-        for key in path:
-            data = data[key]
-        return data
+    def get(self, path: str | list[str], default=None):
+        """Get an absolute config value."""
+        keys = self._resolve_path(path)
+        current = self._data
 
-    def set(self, path: list, value):
-        """Set a value by path: config.set(path=['system', 'SILENT'], value=True)"""
-        data = self._data
-        for key in path[:-1]:
-            data = data[key]
-        data[path[-1]] = value
-        self._on_change(list(path), value)
+        try:
+            for key in keys:
+                current = current[key]
+        except (KeyError, TypeError):
+            return default
+
+        return current
+
+    def _default_at(self, keys: list[str]):
+        """Look up the corresponding value in DEFAULTS, if any, for type-checking."""
+        current = DEFAULTS
+        try:
+            for key in keys:
+                current = current[key]
+        except (KeyError, TypeError):
+            return None
+        return current
+
+    def set(self, path: str | list[str], value):
+        """Set an absolute config value and notify listeners."""
+        keys = self._resolve_path(path)
+        if not keys:
+            return
+
+        if self._in_set:
+            # A `changed` handler tried to call set() re-entrantly on the same
+            # thread. Log and proceed rather than deadlocking or corrupting
+            # state, but this almost always indicates a bug in the caller.
+            logger.warning(
+                f"Reentrant config.set() detected for path {keys}; "
+                "a `changed` handler is calling set() again on the same thread."
+            )
+
+        default_value = self._default_at(keys)
+        if default_value is not None and value is not None:  # noqa: SIM102
+            if type(value) is not type(default_value) and not (
+                isinstance(value, (int, float))
+                and isinstance(default_value, (int, float))
+            ):
+                logger.warning(
+                    f"config.set({'.'.join(keys)!r}, ...) type mismatch: "
+                    f"expected {type(default_value).__name__}, got {type(value).__name__}"
+                )
+
+        current = self._data
+        # second-to-last key
+        for key in keys[:-1]:
+            if key not in current or not isinstance(current[key], dict):
+                current[key] = {}
+            current = current[key]
+
+        current[keys[-1]] = value
+
+        self._schedule_save()
+
+        self._in_set = True
+        try:
+            self.changed(keys, value)
+            self._dispatch_to_nodes(keys, value)
+        finally:
+            self._in_set = False
+
+    def _dispatch_to_nodes(self, keys: list[str], value):
+        """Notify any cached ConfigNode whose scope contains the changed path."""
+        for node_path, node in list(self._node_cache.items()):
+            depth = len(node_path)
+            if tuple(keys[:depth]) == node_path:
+                GLib.idle_add(node._dispatch, keys[depth:], value)
+
+    def get_node(self, path: str | list[str]) -> ConfigNode:
+        """
+        Returns a scoped ConfigNode for the given path. This is a pure read —
+        it never writes to disk or mutates self._data. If the path doesn't
+        exist yet, the returned node simply proxies gets/sets to where that
+        data would live; the first real .set() on it (or on a descendant)
+        is what actually materializes and persists it.
+        """
+        keys = self._resolve_path(path)
+
+        cache_key = tuple(keys)
+        if cache_key in self._node_cache:
+            return self._node_cache[cache_key]
+
+        target_data = self.get(keys)
+        if target_data is not None and not isinstance(target_data, dict):
+            raise TypeError(
+                f"Cannot create ConfigNode: path {keys} is not a dictionary."
+            )
+
+        node = ConfigNode(keys, self)
+        self._node_cache[cache_key] = node
+        return node
 
     def reload(self):
-        """Reload config from disk"""
         self._load()
 
-    # since this is only a shallow copy, changes to nested children
-    # will affect the live config and not the "copy"
     def get_all(self):
-        """Get all config data as a dict"""
-        return self._data.copy()
+        return copy.deepcopy(self._data)
 
     def get_binding(self, scope: str, action: str) -> KeyBinding | None:
         return self.resolved_bindings.get(scope, {}).get(action)
@@ -278,51 +390,51 @@ class ConfigManager(Service):
 
     @property
     def SILENT(self):
-        return self.system.SILENT
+        return self.get("system.SILENT")
 
     @SILENT.setter
     def SILENT(self, value):
-        self.system.SILENT = value
+        self.set("system.SILENT", value)
 
     @property
     def VERTICAL(self):
-        return self.system.VERTICAL
+        return self.get("system.VERTICAL")
 
     @VERTICAL.setter
     def VERTICAL(self, value):
-        self.system.VERTICAL = value
+        self.set("system.VERTICAL", value)
 
     @property
     def BRIGHTNESS_DEV(self):
-        return self.system.BRIGHTNESS_DEV
+        return self.get("system.BRIGHTNESS_DEV")
 
     @BRIGHTNESS_DEV.setter
     def BRIGHTNESS_DEV(self, value):
-        self.system.BRIGHTNESS_DEV = value
+        self.set("system.BRIGHTNESS_DEV", value)
 
     @property
     def BAR_HEIGHT(self):
-        return self.bar.HEIGHT
+        return self.get("bar.HEIGHT")
 
     @BAR_HEIGHT.setter
     def BAR_HEIGHT(self, value):
-        self.bar.HEIGHT = value
+        self.set("bar.HEIGHT", value)
 
     @property
-    def WALLPAPERS_DIR(self):
-        return self.paths.WALLPAPERS_DIR
+    def WALLPAPERS_DIR(self) -> str:
+        return os.path.expanduser(self.get("paths.WALLPAPERS_DIR"))
 
     @WALLPAPERS_DIR.setter
     def WALLPAPERS_DIR(self, value):
-        self.paths.WALLPAPERS_DIR = value
+        self.set("paths.WALLPAPERS_DIR", value)
 
     @property
     def ALLOWED_PLAYERS(self):
-        return self.system.ALLOWED_PLAYERS
+        return self.get("system.ALLOWED_PLAYERS")
 
     @ALLOWED_PLAYERS.setter
     def ALLOWED_PLAYERS(self, value):
-        self.system.ALLOWED_PLAYERS = value
+        self.set("system.ALLOWED_PLAYERS", value)
 
 
 config = ConfigManager()

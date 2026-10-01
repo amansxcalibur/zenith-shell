@@ -22,7 +22,7 @@ LOCKSCREEN_BLURRED_IMG_FILE = LOCKSCREEN_RESOURCE_DIR / "lockscreen_blurred.png"
 def lock_screen():
     import os
 
-    if config.system.LOCKSCREEN == "zenith":
+    if config.get("system.LOCKSCREEN") == "zenith":
         current_env = os.environ.copy()
         current_env["PYTHONPATH"] = (
             str(ROOT_DIR) + os.pathsep + current_env.get("PYTHONPATH", "")

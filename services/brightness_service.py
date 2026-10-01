@@ -52,6 +52,8 @@ class BrightnessService(Service):
         except Exception as e:
             logger.error(f"Brightness device not found at {self.backlight_path}: {e}")
 
+        self._initialized = True
+
     def _get_backlight_device(self):
         if not os.path.exists(self.BACKLIGHT_BASE_DIR):
             return None
