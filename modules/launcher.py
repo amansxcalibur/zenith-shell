@@ -21,7 +21,7 @@ from widgets.material_label import MaterialIconLabel
 import icons
 from config.config import config
 
-from gi.repository import GLib, Gdk, GdkPixbuf, Gtk  # type: ignore
+from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk  # type: ignore
 
 
 class AppCommands(Enum):
@@ -109,12 +109,20 @@ class AppLauncher(Box):
             ),
         }
 
+        self._app_monitor = Gio.AppInfoMonitor.get()
+        self._app_monitor.connect("changed", self._on_apps_changed)
+
         self._reload_apps()
         self._build_mode_selector()
         self._build_search_interface()
         self._build_main_layout()
 
         self.show_all()
+
+    def _on_apps_changed(self, monitor):
+        self._reload_apps()
+        if self.get_mapped() and self.current_mode == self.MODE_APP:
+            self.arrange_viewport(self.search_entry.get_text())
 
     def _build_mode_selector(self):
         self.curr_launch_mode_btn = Button(
