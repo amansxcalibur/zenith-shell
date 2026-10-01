@@ -186,9 +186,11 @@ class AgendaItem(Gtk.ListBoxRow):
             children=[
                 Label(
                     name="text-editor",
-                    h_align="start",
                     label="Are you sure you wanna delete this?",
-                ),
+                )
+                .build()
+                .set_xalign(0.0)
+                .unwrap(),
                 del_actions,
             ],
         )
