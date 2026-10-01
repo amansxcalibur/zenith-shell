@@ -1,11 +1,12 @@
 import os
+import shlex
+import bisect
 import shutil
 import subprocess
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
-
-from PIL import Image
 from loguru import logger
+from PIL import Image, ImageOps
+from concurrent.futures import ThreadPoolExecutor
 from expressive_shapes.shapes import sunny, pill
 
 from fabric.widgets.box import Box
@@ -194,10 +195,26 @@ class WallpaperService(Service):
 class WallpaperSelector(Box):
     COLUMNS: int = 7
     IMG_THUMB_SIZE: int = 96
+    DEFAULT_SCHEME = "scheme-fidelity"
+    SCHEMES = {  # noqa: RUF012
+        "scheme-tonal-spot": "Tonal Spot",
+        "scheme-content": "Content",
+        "scheme-expressive": "Expressive",
+        "scheme-fidelity": "Fidelity",
+        "scheme-fruit-salad": "Fruit Salad",
+        "scheme-monochrome": "Monochrome",
+        "scheme-neutral": "Neutral",
+        "scheme-rainbow": "Rainbow",
+    }
+    # ignores CapsLock, NumLock, etc.
+    _CORE_MODS = (
+        Gdk.ModifierType.SHIFT_MASK
+        | Gdk.ModifierType.CONTROL_MASK
+        | Gdk.ModifierType.MOD1_MASK
+    )
 
     def __init__(self, window, **kwargs):
         self._pill = window
-
         super().__init__(
             name="wallpapers",
             spacing=10,
@@ -207,40 +224,41 @@ class WallpaperSelector(Box):
             **kwargs,
         )
         self.wallpaper_service = WallpaperService()
-
-        self.thumbnails_map = {}
-        self._visible_children = []
-        self._scan_generation = 0
-        self.file_monitor = None
-        bindings = config.get("bindings.modules.wallpaper")
-        self._cached_binds = {
-            name: Gtk.accelerator_parse(bindings[f"wallpaper.{name}"])
-            for name in (
-                "scheme_prev",
-                "scheme_next",
-                "scheme_open",
-                "move_up",
-                "move_down",
-                "move_left",
-                "move_right",
-                "activate",
-            )
-        }
         self.executor = ThreadPoolExecutor(max_workers=5)
+        self.file_monitor = None
+        self._scan_generation = 0
 
-        self.viewport = Gtk.FlowBox()
-        self.viewport.set_name("wallpaper-flowbox")
-        self.viewport.set_selection_mode(Gtk.SelectionMode.SINGLE)
-        self.viewport.set_activate_on_single_click(True)
-        self.viewport.set_column_spacing(5)
-        self.viewport.set_row_spacing(5)
-        self.viewport.set_homogeneous(True)
-        self.viewport.set_max_children_per_line(self.COLUMNS)
-        self.viewport.set_min_children_per_line(self.COLUMNS)
-        self.viewport.set_vexpand(False)
-        self.viewport.set_valign(Gtk.Align.START)
+        # main thread only. _names is kept sorted and mirrors FlowBox order,
+        # so get_children() order == display order.
+        self._children: dict[str, Gtk.FlowBoxChild] = {}
+        self._names: list[str] = []
 
-        self.viewport.connect("child-activated", self.on_wallpaper_selected)
+        self._build_viewport()
+        self._build_header()
+        self._build_dir_chooser()
+        self._build_layout()
+        self._build_keymap()
+
+        self.show_all()
+        self.search_entry.connect("map", lambda *_: self.reset_search())
+        self._refresh_dir_state()
+
+    def _build_viewport(self):
+        vp = self.viewport = Gtk.FlowBox()
+        vp.set_name("wallpaper-flowbox")
+        vp.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        vp.set_activate_on_single_click(True)
+        vp.set_column_spacing(5)
+        vp.set_row_spacing(5)
+        vp.set_homogeneous(True)
+        vp.set_max_children_per_line(self.COLUMNS)
+        vp.set_min_children_per_line(self.COLUMNS)
+        vp.set_vexpand(False)
+        vp.set_valign(Gtk.Align.START)
+        # focus stays in the search entry, selection is driven by code
+        vp.set_can_focus(False)
+        vp.set_filter_func(self._filter_func)
+        vp.connect("child-activated", self.on_wallpaper_selected)
 
         self.scrolled_window = ScrolledWindow(
             name="scrolled-window",
@@ -250,42 +268,33 @@ class WallpaperSelector(Box):
             style_classes="launcher",
             min_content_size=(5, 5),
             max_content_size=(5, 5),
-            child=self.viewport,
+            child=vp,
             h_scrollbar_policy="never",
         )
 
+    def _build_header(self):
         self.search_entry = Entry(
             name="search-entry-walls",
             placeholder="Search Wallpapers",
             h_expand=True,
-            style_classes="" if not config.VERTICAL else "vertical",
-            notify_text=lambda entry, *_: self.arrange_viewport(entry.get_text()),
+            style_classes="vertical" if config.VERTICAL else "",
             on_key_press_event=self.on_search_entry_key_press,
         )
         # override gtk entry 150px internal min width
         self.search_entry.set_width_chars(1)
         self.search_entry.set_size_request(20, -1)
         self.search_entry.props.xalign = 0.5
-        self.search_entry.connect("focus-out-event", self.on_search_entry_focus_out)
-
-        self.schemes = {
-            "scheme-tonal-spot": "Tonal Spot",
-            "scheme-content": "Content",
-            "scheme-expressive": "Expressive",
-            "scheme-fidelity": "Fidelity",
-            "scheme-fruit-salad": "Fruit Salad",
-            "scheme-monochrome": "Monochrome",
-            "scheme-neutral": "Neutral",
-            "scheme-rainbow": "Rainbow",
-        }
+        self.search_entry.connect("notify::text", self._on_search_changed)
 
         self.scheme_dropdown = Gtk.ComboBoxText()
         self.scheme_dropdown.set_name("scheme-dropdown")
         self.scheme_dropdown.set_tooltip_text("Select color scheme")
-        for key, display_name in self.schemes.items():
+        self._no_focus(self.scheme_dropdown)
+        for key, display_name in self.SCHEMES.items():
             self.scheme_dropdown.append(key, display_name)
-        self.scheme_dropdown.set_active_id("scheme-fidelity")
+        self.scheme_dropdown.set_active_id(self.DEFAULT_SCHEME)
         self.scheme_dropdown.connect("changed", self.on_scheme_changed)
+        self.scheme_dropdown.connect("notify::popup-shown", self._on_popup_shown)
 
         self.mat_icon = Label(name="mat-label", markup=icons.palette.markup())
 
@@ -295,49 +304,57 @@ class WallpaperSelector(Box):
             max_chars_width=35,
             h_align="start",
         )
-        self.launch_options_list = Box(
-            spacing=5,
-            name="launch-options-box",
-            style="padding: 0 8px;",
-            children=Box(
-                orientation="v",
-                children=[
-                    Label(
-                        label="Current folder:",
-                        h_align="start",
-                        style="color: var(--outline); font-size: 13px; margin-bottom: -4px",
-                    ),
-                    self.wall_dir_path_label,
-                ],
-            ),
-        )
         self.launcher_options_revealer = Revealer(
-            child=self.launch_options_list,
+            child=Box(
+                spacing=5,
+                name="launch-options-box",
+                style="padding: 0 8px;",
+                children=Box(
+                    orientation="v",
+                    children=[
+                        Label(
+                            label="Current folder:",
+                            h_align="start",
+                            style="color: var(--outline); font-size: 13px; margin-bottom: -4px",
+                        ),
+                        self.wall_dir_path_label,
+                    ],
+                ),
+            ),
             transition_type="slide-left",
             transition_duration=150,
         )
-        self.launch_mode = Box(
+        open_btn = Button(
+            style_classes="launch-mode-btn",
+            child=MaterialIconLabel(
+                icon_text=icons.folder_open.symbol(),
+                FILL=1,
+                style="font-size: 20px; color: var(--primary)",
+            ),
+            on_clicked=lambda *_: self.prompt_for_dir(),
+            tooltip_text="Open directory",
+        )
+        launch_mode = Box(
             name="launch-mode-box",
-            children=[
-                Button(
-                    style_classes="launch-mode-btn",
-                    child=MaterialIconLabel(
-                        icon_text=icons.folder_open.symbol(),
-                        FILL=1,
-                        style="font-size: 20px; color: var(--primary)",
-                    ),
-                    on_clicked=lambda *_: self.prompt_for_path(),
-                    tooltip_text="Open directory",
-                ),
-                self.launcher_options_revealer,
-            ],
+            children=[open_btn, self.launcher_options_revealer],
         )
+        launch_mode_event_box = EventBox(
+            name="launch-mode-event-container", child=launch_mode, events="all"
+        )
+        launch_mode_event_box.connect("enter-notify-event", self._on_hover_enter)
+        launch_mode_event_box.connect("leave-notify-event", self._on_hover_leave)
 
-        self.launch_mode_event_box = EventBox(
-            name="launch-mode-event-container", child=self.launch_mode, events="all"
+        close_btn = Button(
+            name="close-button",
+            child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
+            tooltip_text="Exit",
+            on_clicked=lambda *_: self._pill.stack.set_visible_child(
+                self._pill.launcher
+            ),
         )
-        self.launch_mode_event_box.connect("enter-notify-event", self._on_hover_enter)
-        self.launch_mode_event_box.connect("leave-notify-event", self._on_hover_leave)
+        for btn in (open_btn, close_btn):
+            self._no_focus(btn)
+
         self.header_box = Box(
             name="header-box",
             orientation="h",
@@ -349,39 +366,34 @@ class WallpaperSelector(Box):
                     h_expand=True,
                     spacing=4,
                     children=[
-                        self.launch_mode_event_box,
+                        launch_mode_event_box,
                         Box(name="search-container-item-seperator"),
                         self.search_entry,
                     ],
                 ),
                 self.scheme_dropdown,
-                Button(
-                    name="close-button",
-                    child=MaterialIconLabel(
-                        name="close-label", icon_text=icons.close.symbol()
-                    ),
-                    tooltip_text="Exit",
-                    on_clicked=lambda *_: self._pill.stack.set_visible_child(
-                        self._pill.launcher
-                    ),
-                ),
+                close_btn,
             ],
         )
 
-        self.dir_chooser_btn = Button(
+    def _build_dir_chooser(self):
+        btn = Button(
             style="margin: 18px; padding: 52px;",
             child=MaterialIconLabel(
                 icon_text=icons.add_material.symbol(),
                 FILL=0,
                 style="font-size: 120px; color: var(--surface)",
             ),
-            on_clicked=lambda *_: self.prompt_for_path(),
+            on_clicked=lambda *_: self.prompt_for_dir(),
         )
-        self.interactive_shape = InteractiveMorphShape(
-            clip=True, shape_start=pill, shape_end=sunny, child=self.dir_chooser_btn
+        self._no_focus(btn)
+        shape = InteractiveMorphShape(
+            clip=True, shape_start=pill, shape_end=sunny, child=btn
         )
+        btn.connect("enter-notify-event", shape.play_forward)
+        btn.connect("leave-notify-event", shape.play_backward)
+
         self.dir_chooser = Box(
-            # name="wallpaper-choose-dir-dialog",
             h_expand=True,
             h_align="center",
             v_align="center",
@@ -389,7 +401,7 @@ class WallpaperSelector(Box):
             orientation="v",
             style="color: var(--primary);",
             children=[
-                self.interactive_shape,
+                shape,
                 MaterialFontLabel(
                     text="Choose Wallpaper Directory",
                     font_family="Google Sans Flex",
@@ -397,29 +409,16 @@ class WallpaperSelector(Box):
                 ),
             ],
         )
-        self.dir_chooser_btn.connect(
-            "enter-notify-event", self.interactive_shape.play_forward
-        )
-        self.dir_chooser_btn.connect(
-            "leave-notify-event", self.interactive_shape.play_backward
-        )
 
+    def _build_layout(self):
         self.stack = Stack(
             v_expand=True,
             children=[self.dir_chooser, self.scrolled_window],
             interpolate_size=True,
         )
         self.stack.set_homogeneous(False)
-        if os.path.isdir(config.WALLPAPERS_DIR):
-            self.stack.set_visible_child(self.scrolled_window)
-            self._set_wall_dir_label(str(config.WALLPAPERS_DIR))
-            self.executor.submit(self._perform_scan_and_clean)
-        else:
-            self.stack.set_visible_child(self.dir_chooser)
-            self._set_wall_dir_label(None)
-            self.set_header_controls_state(False)
 
-        box_shadow_overlay = Box(name="wallpaper-overlay")
+        shadow = Box(name="wallpaper-overlay")
         self.overlay = Overlay(
             v_expand=True,
             child=Box(
@@ -428,9 +427,9 @@ class WallpaperSelector(Box):
                 orientation="v",
                 children=[self.stack, self.header_box],
             ),
-            overlays=box_shadow_overlay,
+            overlays=shadow,
         )
-        self.overlay.set_overlay_pass_through(box_shadow_overlay, True)
+        self.overlay.set_overlay_pass_through(shadow, True)
 
         self.temp_label = Label(label="Choosing Wallpaper", style="padding: 20px 30px;")
         self.view_stack = Stack(
@@ -440,19 +439,53 @@ class WallpaperSelector(Box):
             interpolate_size=True,
         )
         self.view_stack.set_homogeneous(False)
-
         self.add(self.view_stack)
 
-        self.setup_file_monitor()
-        self.show_all()
+    def _build_keymap(self):
+        binds = config.get("bindings.modules.wallpaper")
 
-        def grab_initial_focus(widget):
-            widget.set_text("")
-            if widget.get_sensitive():
-                widget.grab_focus()
-            return False
+        def key(name):
+            keyval, mods = Gtk.accelerator_parse(binds[f"wallpaper.{name}"])
+            return keyval, int(mods)
 
-        self.search_entry.connect("map", grab_initial_focus)
+        C = self.COLUMNS
+        self._keymap = {
+            key("scheme_prev"): lambda: self._cycle_scheme(-1),
+            key("scheme_next"): lambda: self._cycle_scheme(1),
+            key("scheme_open"): lambda: self.scheme_dropdown.popup(),
+            key("move_up"): lambda: self._move_selection(-C),
+            key("move_down"): lambda: self._move_selection(C),
+            key("move_left"): lambda: self._move_selection(-1),
+            key("move_right"): lambda: self._move_selection(1),
+            key("activate"): self._activate_selected,
+        }
+
+    # Policy: the search entry is the only focusable widget in this view.
+    # Everything else is can_focus=False / focus_on_click=False, so focus
+    # never leaves and no focus-out handler is needed. The two things that
+    # can still steal focus (the scheme popup, the dir dialog) hand it back
+    # explicitly through focus_search().
+
+    @staticmethod
+    def _no_focus(widget):
+        widget.set_can_focus(False)
+        if hasattr(widget, "set_focus_on_click"):
+            widget.set_focus_on_click(False)
+
+    def focus_search(self):
+        entry = self.search_entry
+        if entry.get_sensitive() and self.get_mapped():
+            # plain grab_focus() selects all text, so the next keystroke
+            # would replace the query
+            entry.grab_focus_without_selecting()
+
+    def reset_search(self):
+        self.search_entry.set_text("")
+        self.focus_search()
+
+    def _on_popup_shown(self, combo, _pspec):
+        if not combo.get_property("popup-shown"):
+            self.focus_search()
 
     def _on_hover_enter(self, widget, event):
         if event.detail != Gdk.NotifyType.INFERIOR:
@@ -462,152 +495,158 @@ class WallpaperSelector(Box):
     def _on_hover_leave(self, widget, event):
         if event.detail != Gdk.NotifyType.INFERIOR:
             self.launcher_options_revealer.set_reveal_child(False)
-        # self._refocus_search_entry()
         return False
 
     def set_header_controls_state(self, active: bool):
-        self.search_entry.set_sensitive(active)
-        self.scheme_dropdown.set_sensitive(active)
         opacity = 1.0 if active else 0.5
-        if not active:
-            self._set_wall_dir_label(None)
-        self.search_entry.set_opacity(opacity)
-        self.scheme_dropdown.set_opacity(opacity)
+        for w in (self.search_entry, self.scheme_dropdown):
+            w.set_sensitive(active)
+            w.set_opacity(opacity)
 
     def _set_wall_dir_label(self, path: str | None):
-        if path is None:
-            self.wall_dir_path_label.set_label("None")
-            self.wall_dir_path_label.set_tooltip_text(None)
+        label = self.wall_dir_path_label
+        label.set_label(path or "None")
+        label.set_tooltip_text(path if path and len(path) > 35 else None)
+
+    def _refresh_dir_state(self):
+        """Single place that syncs UI + monitor + scan with config.WALLPAPERS_DIR."""
+        has_dir = os.path.isdir(config.WALLPAPERS_DIR)
+        self.stack.set_visible_child(
+            self.scrolled_window if has_dir else self.dir_chooser
+        )
+        self.set_header_controls_state(has_dir)
+        self._set_wall_dir_label(str(config.WALLPAPERS_DIR) if has_dir else None)
+        if has_dir:
+            self.setup_file_monitor()
+            self.executor.submit(self._perform_scan_and_clean)
+
+    def _build_dir_dialog(self, parent: Gtk.Window) -> Gtk.FileChooserDialog:
+        dialog = Gtk.FileChooserDialog(
+            "Select a Directory",
+            parent,
+            Gtk.FileChooserAction.SELECT_FOLDER,
+            use_header_bar=False,
+        )
+        if IS_WAYLAND:
+            dialog.get_style_context().add_class("wayland")
+        for stock, response, extra in (
+            (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, None),
+            (Gtk.STOCK_OPEN, Gtk.ResponseType.OK, "bright"),
+        ):
+            ctx = dialog.add_button(stock, response).get_style_context()
+            ctx.add_class("settings-btn")
+            if extra:
+                ctx.add_class(extra)
+        return dialog
+
+    def prompt_for_dir(self):
+        win = self.get_toplevel()
+        if not isinstance(win, Gtk.Window):
+            logger.error("WallpaperSelector not attached to a Gtk.Window.")
             return
 
-        self.wall_dir_path_label.set_label(str(path))
-        if len(self.wall_dir_path_label.get_text()) > 35:
-            self.wall_dir_path_label.set_tooltip_text(str(path))
-        else:
-            self.wall_dir_path_label.set_tooltip_text(None)
-
-    def prompt_for_path(self):
-        win = self.get_toplevel()
-        
-        if isinstance(win, Gtk.Window):
-            self.view_stack.set_visible_child(self.temp_label)
-            dialog = Gtk.FileChooserNative.new(
-                "Select a Directory",
-                win,
-                Gtk.FileChooserAction.SELECT_FOLDER,
-                "Choose",
-                "Cancel",
-            )
-
+        self.view_stack.set_visible_child(self.temp_label)
+        dialog = self._build_dir_dialog(win)
+        try:
             # blocking
             response = dialog.run()
-
-            if response == Gtk.ResponseType.ACCEPT:
-                selected_path = str(dialog.get_filename())
-                config.WALLPAPERS_DIR = selected_path
-                self.set_header_controls_state(True)
-                self._set_wall_dir_label(str(config.WALLPAPERS_DIR))
-                self.setup_file_monitor()
-                self.stack.set_visible_child(self.scrolled_window)
-                self.executor.submit(self._perform_scan_and_clean)
-                logger.info(f"New wallpaper directory selected: {selected_path}")
-            elif response == Gtk.ResponseType.CANCEL:
-                logger.info("Wallpaper directory selection canceled.")
-
+            path = dialog.get_filename() if response == Gtk.ResponseType.OK else None
+        finally:
             dialog.destroy()
             self.view_stack.set_visible_child(self.overlay)
+
+        if path:
+            config.WALLPAPERS_DIR = path
+            self._refresh_dir_state()
+            logger.info(f"New wallpaper directory selected: {path}")
         else:
-            logger.error("WallpaperSelector not attached to a Gtk.Window.")
+            logger.info("Wallpaper directory selection canceled.")
+        self.focus_search()
 
     def _clear_wallpapers(self):
-        def _clear():
-            for child in self.viewport.get_children():
-                self.viewport.remove(child)
-            self.thumbnails_map.clear()
-            self._visible_children = []
-            self.viewport.unselect_all()
-            return False
-
-        GLib.idle_add(_clear)
+        for child in self.viewport.get_children():
+            self.viewport.remove(child)
+        self._children.clear()
+        self._names.clear()
+        self.viewport.unselect_all()
+        return False
 
     def _perform_scan_and_clean(self):
         ensure_wallpaper_dirs()
 
         self._scan_generation += 1
         generation = self._scan_generation
-        self._clear_wallpapers()
+        GLib.idle_add(self._clear_wallpapers)
 
         try:
-            all_files = sorted(
+            files = sorted(
                 f for f in os.listdir(config.WALLPAPERS_DIR) if self._is_image(f)
             )
         except OSError as e:
             logger.error(f"Failed to list wallpapers dir: {e}")
             return
 
-        for file_name in all_files:
+        for file_name in files:
             if generation != self._scan_generation:
                 return
             self.executor.submit(self._process_thumbnail_task, file_name, generation)
 
     def _process_thumbnail_task(self, file_name: str, generation: int | None = None):
+        """Worker thread. Does all disk IO, hands bytes to the UI thread."""
         generation = self._scan_generation if generation is None else generation
         try:
-            full_path = os.path.join(config.WALLPAPERS_DIR, file_name)
-            cache_path = get_thumbnail_cache_path(full_path)
-
-            # generate thumbs if missing
-            if not cache_path.exists():
-                with Image.open(full_path) as img:
-                    width, height = img.size
-                    side = min(width, height)
-                    left = (width - side) // 2
-                    top = (height - side) // 2
-                    img_cropped = img.crop((left, top, left + side, top + side))
-                    img_cropped.thumbnail(
-                        (self.IMG_THUMB_SIZE, self.IMG_THUMB_SIZE),
-                        Image.Resampling.LANCZOS,
-                    )
-                    img_cropped.save(cache_path, "PNG")
-
-            # READ BYTES here, so UI thread doesn't have to touch disk
-            with open(cache_path, "rb") as f:
-                image_bytes = f.read()
-
-            GLib.idle_add(self._add_thumbnail_to_ui, file_name, image_bytes, generation)
-
+            src = os.path.join(config.WALLPAPERS_DIR, file_name)
+            cache = get_thumbnail_cache_path(src)
+            # regenerate when missing or older than the source
+            if not cache.exists() or cache.stat().st_mtime < os.path.getmtime(src):
+                self._write_thumbnail(src, cache)
+            image_bytes = cache.read_bytes()
         except Exception as e:
             logger.error(f"Thumbnail task failed for {file_name}: {e}")
+            return
+        GLib.idle_add(self._add_thumbnail_to_ui, file_name, image_bytes, generation)
+
+    @classmethod
+    def _write_thumbnail(cls, src, cache):
+        size = (cls.IMG_THUMB_SIZE, cls.IMG_THUMB_SIZE)
+        with Image.open(src) as img:
+            # center square crop + resize in one step
+            ImageOps.fit(img, size, Image.Resampling.LANCZOS).save(cache, "PNG")
 
     def _add_thumbnail_to_ui(self, file_name, image_bytes, generation):
         if generation != self._scan_generation:
-            return
-
+            return False
         try:
-            # create stream from bytes (Memory operation, very fast)
             stream = Gio.MemoryInputStream.new_from_bytes(GLib.Bytes.new(image_bytes))
             pixbuf = GdkPixbuf.Pixbuf.new_from_stream(stream, None)
-
-            self.thumbnails_map[file_name] = pixbuf
-
-            # pass through current filter and adding
-            current_filter = self.search_entry.get_text().lower()
-            if current_filter in file_name.lower():
-                child = self._create_flowbox_child(pixbuf, file_name)
-                self.viewport.add(child)
-                child.show_all()
-
-                self.update_badge_visibility()
-
-            GLib.idle_add(self.arrange_viewport, self.search_entry.get_text())
-
-        except Exception as e:
+        except GLib.Error as e:
             logger.error(f"Error creating pixbuf for {file_name}: {e}")
+            return False
+
+        self._remove_child(file_name)  # file changed on disk: replace, don't duplicate
+        child = self._create_flowbox_child(
+            pixbuf, file_name, is_current=file_name == self._current_name()
+        )
+        # sorted insert: threads finish in arbitrary order
+        pos = bisect.bisect(self._names, file_name)
+        self._names.insert(pos, file_name)
+        self._children[file_name] = child
+        self.viewport.insert(child, pos)
+        child.show_all()
+
+        self._ensure_selection()
+        return False
+
+    def _remove_child(self, file_name: str):
+        child = self._children.pop(file_name, None)
+        if child is None:
+            return
+        self._names.remove(file_name)
+        self.viewport.remove(child)
 
     def setup_file_monitor(self):
         if not os.path.isdir(config.WALLPAPERS_DIR):
             return
-
         if self.file_monitor is not None and not self.file_monitor.is_cancelled():
             self.file_monitor.cancel()
 
@@ -616,32 +655,24 @@ class WallpaperSelector(Box):
         self.file_monitor.connect("changed", self.on_directory_changed)
 
     def on_directory_changed(self, monitor, file, other_file, event_type):
-        self.executor.submit(self._handle_file_change, file, event_type)
-
-    def _handle_file_change(self, file, event_type):
+        # runs on the main thread, so widget/state access here is safe
         file_name = file.get_basename()
         if not file_name or not self._is_image(file_name):
             return
 
-        if event_type == Gio.FileMonitorEvent.DELETED:
-            if file_name in self.thumbnails_map:
-                del self.thumbnails_map[file_name]
-                GLib.idle_add(self._remove_child_by_name, file_name)
+        if event_type in (
+            Gio.FileMonitorEvent.DELETED,
+            Gio.FileMonitorEvent.MOVED_OUT,
+        ):
+            self._remove_child(file_name)
+        elif event_type in (
+            Gio.FileMonitorEvent.CHANGES_DONE_HINT,
+            Gio.FileMonitorEvent.MOVED_IN,
+        ):
+            self.executor.submit(self._process_thumbnail_task, file_name)
 
-        # handles creation and change
-        elif event_type == Gio.FileMonitorEvent.CHANGES_DONE_HINT:
-            self._process_thumbnail_task(file_name)
-
-    def _remove_child_by_name(self, file_name):
-        for child in self.viewport.get_children():
-            if child.file_name == file_name:
-                self.viewport.remove(child)
-                break
-
-    def _create_flowbox_child(self, pixbuf, file_name):
-        image = Gtk.Image.new_from_pixbuf(pixbuf)
-        image.set_name("wallpaper-thumbnail")
-
+    @staticmethod
+    def _build_badge() -> Box:
         badge = Box(
             name="badge-container",
             visible=False,
@@ -665,7 +696,14 @@ class WallpaperSelector(Box):
             ],
         )
         badge.set_no_show_all(True)
-        badge.hide()
+        badge.set_visible(False)
+        return badge
+
+    def _create_flowbox_child(self, pixbuf, file_name, is_current=False):
+        image = Gtk.Image.new_from_pixbuf(pixbuf)
+        image.set_name("wallpaper-thumbnail")
+        badge = self._build_badge()
+        badge.set_visible(is_current)
 
         box = ClippingBox(
             name="wallpaper-thumbnail-clipper",
@@ -673,189 +711,122 @@ class WallpaperSelector(Box):
             children=Overlay(child=image, overlays=badge),
             spacing=4,
         )
-
         child = Gtk.FlowBoxChild()
         child.set_name("wallpaper-thumbnail-container")
         child.add(box)
+        child.set_can_focus(False)
         child.file_name = file_name
-        child.set_can_focus(True)
         child.badge = badge
-
         return child
 
-    def arrange_viewport(self, query: str):
-        query = query.lower()
-        first_visible = None
-        self._visible_children = []
+    def _query(self) -> str:
+        return self.search_entry.get_text().lower()
 
-        # hiding > destroying/recreating widgets
-        for child in self.viewport.get_children():
-            visible = query in child.file_name.lower()
-            child.set_visible(visible)
+    def _filter_func(self, child) -> bool:
+        return self._query() in child.file_name.lower()
 
-            if visible:
-                self._visible_children.append(child)
-                if first_visible is None:
-                    first_visible = child
+    def _visible_children(self) -> list:
+        q = self._query()
+        return [c for c in self.viewport.get_children() if q in c.file_name.lower()]
 
-        # select first item
-        if first_visible:
-            self.viewport.select_child(first_visible)
-            # first_visible.grab_focus()
+    def _on_search_changed(self, entry, *_):
+        self.arrange_viewport()
+
+    def arrange_viewport(self, *_):
+        """Re-filter and select the first match. Filtering hides, never recreates."""
+        self.viewport.invalidate_filter()
+        visible = self._visible_children()
+        if visible:
+            self._select(visible[0])
         else:
             self.viewport.unselect_all()
+
+    def _ensure_selection(self):
+        """Used while thumbnails stream in, so we don't clobber user navigation."""
+        if self.viewport.get_selected_children():
+            return
+        visible = self._visible_children()
+        if visible:
+            self.viewport.select_child(visible[0])
+
+    def _select(self, child):
+        self.viewport.select_child(child)
+        self._scroll_to(child)
+
+    def _scroll_to(self, child):
+        # scroll via the adjustment, no grab_focus() so focus stays in the entry
+        coords = child.translate_coordinates(self.viewport, 0, 0)
+        if coords is None:
+            return
+        _, y = coords
+        self.scrolled_window.get_vadjustment().clamp_page(
+            y, y + child.get_allocated_height()
+        )
+
+    def _move_selection(self, delta: int):
+        visible = self._visible_children()
+        if not visible:
+            return
+        selected = self.viewport.get_selected_children()
+        if not selected or selected[0] not in visible:
+            self._select(visible[0] if delta > 0 else visible[-1])
+            return
+        idx = visible.index(selected[0]) + delta
+        self._select(visible[max(0, min(idx, len(visible) - 1))])
+
+    def _activate_selected(self):
+        selected = self.viewport.get_selected_children()
+        if selected:
+            self.on_wallpaper_selected(self.viewport, selected[0])
+
+    def _current_name(self) -> str:
+        path = self.wallpaper_service.get_wallpaper_path()
+        return os.path.basename(path) if path else ""
 
     def on_wallpaper_selected(self, flowbox, child):
         file_name = child.file_name
         full_path = os.path.join(config.WALLPAPERS_DIR, file_name)
-
-        selected_scheme = self.scheme_dropdown.get_active_id()
+        scheme = self.scheme_dropdown.get_active_id()
 
         self.wallpaper_service.apply_wallpaper(full_path)
 
-        # generate
         self.executor.submit(save_wallpaper_history, full_path)
-        future = self.executor.submit(generate_wallpaper_preview, full_path)
-        self.executor.submit(self._generate_theme, full_path, selected_scheme)
+        self.executor.submit(self._generate_theme, full_path, scheme)
         self.executor.submit(generate_lockscreen_image, full_path)
-
-        # callback
-        def _on_preview_ready(fut):
-            preview_path = fut.result()
-            if not preview_path:
-                return
-
-            self.wallpaper_service.set_wallpaper_path(
-                full_path,
-                str(preview_path),
-            )
-
-        future.add_done_callback(_on_preview_ready)
+        future = self.executor.submit(generate_wallpaper_preview, full_path)
+        future.add_done_callback(lambda fut: self._on_preview_ready(full_path, fut))
 
         self.update_badge_visibility(target_file_name=file_name)
+        self.focus_search()
+
+    def _on_preview_ready(self, full_path, fut):
+        try:
+            preview_path = fut.result()
+        except Exception as e:
+            logger.error(f"Preview generation failed: {e}")
+            return
+        if preview_path:
+            self.wallpaper_service.set_wallpaper_path(full_path, str(preview_path))
 
     def update_badge_visibility(self, target_file_name: str | None = None):
         if target_file_name is None:
-            current_path = self.wallpaper_service.get_wallpaper_path()
-            target_file_name = os.path.basename(current_path) if current_path else ""
+            target_file_name = self._current_name()
 
-        def _ui_sync():
-            for child in self.viewport.get_children():
-                if hasattr(child, "badge"):
-                    if child.file_name == target_file_name:
-                        child.badge.show()
-                    else:
-                        child.badge.hide()
+        def _sync():
+            for name, child in self._children.items():
+                child.badge.set_visible(name == target_file_name)
             return False
 
-        GLib.idle_add(_ui_sync)
+        GLib.idle_add(_sync)
 
     def on_scheme_changed(self, combo):
-        selected_scheme = combo.get_active_id()
-        logger.info(f"Color scheme selected: {selected_scheme}")
+        logger.info(f"Color scheme selected: {combo.get_active_id()}")
 
-    def _cycle_scheme(self, delta: int) -> None:
-        schemes_list = list(self.schemes.keys())
-        current_id = self.scheme_dropdown.get_active_id()
-        current_index = (
-            schemes_list.index(current_id) if current_id in schemes_list else 0
-        )
-        new_index = (current_index + delta) % len(schemes_list)
-        self.scheme_dropdown.set_active(new_index)
-
-    def on_search_entry_key_press(self, widget, event):
-        # ignores CapsLock, NumLock, etc.
-        core_modifiers = event.state & (
-            Gdk.ModifierType.SHIFT_MASK
-            | Gdk.ModifierType.CONTROL_MASK
-            | Gdk.ModifierType.MOD1_MASK
-        )
-        key_s_prev, mask_s_prev = self._cached_binds["scheme_prev"]
-        key_s_next, mask_s_next = self._cached_binds["scheme_next"]
-        key_s_open, mask_s_open = self._cached_binds["scheme_open"]
-        key_up, mask_up = self._cached_binds["move_up"]
-        key_down, mask_down = self._cached_binds["move_down"]
-        key_left, mask_left = self._cached_binds["move_left"]
-        key_right, mask_right = self._cached_binds["move_right"]
-        key_activate, mask_activate = self._cached_binds["activate"]
-
-        # scheme dropdown navigation with Shift
-        if event.keyval == key_s_prev and core_modifiers == mask_s_prev:
-            self._cycle_scheme(-1)
-            return True
-
-        elif event.keyval == key_s_next and core_modifiers == mask_s_next:
-            self._cycle_scheme(1)
-            return True
-
-        elif event.keyval == key_s_open and core_modifiers == mask_s_open:
-            self.scheme_dropdown.popup()
-            return True
-
-        # Arrow key navigation in FlowBox
-        if (
-            (event.keyval == key_up and core_modifiers == mask_up)
-            or (event.keyval == key_down and core_modifiers == mask_down)
-            or (event.keyval == key_left and core_modifiers == mask_left)
-            or (event.keyval == key_right and core_modifiers == mask_right)
-        ):
-            self.move_selection_2d(event.keyval)
-            return True
-
-        # Enter key to activate selection
-        elif event.keyval == key_activate and core_modifiers == mask_activate:
-            selected = self.viewport.get_selected_children()
-            if selected:
-                self.on_wallpaper_selected(self.viewport, selected[0])
-            return True
-
-        return False
-
-    def move_selection_2d(self, keyval):
-        if not self._visible_children:
-            return
-
-        selected = self.viewport.get_selected_children()
-        if not selected or selected[0] not in self._visible_children:
-            # no selection, select first or last
-            new_child = (
-                self._visible_children[0]
-                if keyval in (Gdk.KEY_Down, Gdk.KEY_Right)
-                else self._visible_children[-1]
-            )
-            self.viewport.select_child(new_child)
-            # new_child.grab_focus()
-            return
-
-        current_child = selected[0]
-        current_visible_index = self._visible_children.index(current_child)
-
-        if keyval == Gdk.KEY_Right:
-            new_index = current_visible_index + 1
-        elif keyval == Gdk.KEY_Left:
-            new_index = current_visible_index - 1
-        elif keyval == Gdk.KEY_Down:
-            new_index = current_visible_index + self.COLUMNS
-        elif keyval == Gdk.KEY_Up:
-            new_index = current_visible_index - self.COLUMNS
-
-        # clamp to valid range
-        new_index = max(0, min(new_index, len(self._visible_children) - 1))
-
-        if new_index != current_visible_index:
-            new_child = self._visible_children[new_index]
-            self.viewport.select_child(new_child)
-            # scrolls to view
-            new_child.grab_focus()
-
-    @staticmethod
-    def _is_image(file_name: str) -> bool:
-        return file_name.lower().endswith(IMAGE_EXTENSIONS)
-
-    def on_search_entry_focus_out(self, widget, event):
-        if self.get_mapped():
-            widget.grab_focus()
-        return False
+    def _cycle_scheme(self, delta: int):
+        ids = list(self.SCHEMES)
+        current = self.scheme_dropdown.get_active_id()
+        idx = ids.index(current) if current in ids else 0
+        self.scheme_dropdown.set_active((idx + delta) % len(ids))
 
     def _generate_theme(self, image_path, scheme):
         matugen_bin = shutil.which("matugen")
@@ -866,9 +837,20 @@ class WallpaperSelector(Box):
             )
             return
 
-        config_path = f"{CONFIG_DIR}/matugen/config.toml"
-        command = f"{matugen_bin} image '{image_path}' -t {scheme} -c '{config_path}' --source-color-index 0"
-
+        # shlex.quote: filenames containing ' broke the original command
+        command = " ".join(
+            [
+                shlex.quote(matugen_bin),
+                "image",
+                shlex.quote(str(image_path)),
+                "-t",
+                shlex.quote(scheme),
+                "-c",
+                shlex.quote(f"{CONFIG_DIR}/matugen/config.toml"),
+                "--source-color-index",
+                "0",
+            ]
+        )
         try:
             process, _ = exec_shell_command_async(command)
             process.wait_check_async(
@@ -882,7 +864,20 @@ class WallpaperSelector(Box):
         except Exception as e:
             logger.exception(f"Matugen error: {e}")
 
+    def on_search_entry_key_press(self, widget, event):
+        mods = int(event.state & self._CORE_MODS)
+        handler = self._keymap.get((event.keyval, mods))
+        if handler is None:
+            return False
+        handler()
+        return True
+
+    @staticmethod
+    def _is_image(file_name: str) -> bool:
+        return file_name.lower().endswith(IMAGE_EXTENSIONS)
+
     def destroy(self):
+        self._scan_generation += 1  # invalidate queued idle callbacks
         self.executor.shutdown(wait=False, cancel_futures=True)
         if self.file_monitor:
             self.file_monitor.cancel()

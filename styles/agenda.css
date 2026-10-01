@@ -133,6 +133,9 @@ filechooser {
   padding: 10px;
 }
 
+dialog.wayland {
+  background-color: var(--surface);}
+
 filechooser > box {
   background-color: var(--shadow);
   border-radius: 20px;
