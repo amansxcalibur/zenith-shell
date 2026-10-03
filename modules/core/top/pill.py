@@ -11,8 +11,8 @@ from widgets.elastic.elastic_stack import ElasticStack
 from config.info import IS_WAYLAND
 
 if IS_WAYLAND:
-    from fabric.widgets.wayland import WaylandWindow as Window
     from gi.repository import GtkLayerShell  # type: ignore
+    from fabric.widgets.wayland import WaylandWindow as Window
 else:
     from widgets.overrides import PatchedX11Window as Window
 
@@ -38,7 +38,7 @@ class TopPill(Window, Service):
 
     def __init__(self, **kwargs):
         pill_config_node = config.get_node("top_pill")
-        
+
         if IS_WAYLAND:
             super().__init__(
                 layer="overlay",

@@ -4,25 +4,24 @@ from fabric.widgets.box import Box
 from fabric.widgets.stack import Stack
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.revealer import Revealer
-from config.info import IS_WAYLAND
-
-if IS_WAYLAND:
-    from fabric.widgets.wayland import WaylandWindow as Window
-else:
-    from widgets.overrides import PatchedX11Window as Window
-
 
 from widgets.clipping_box import ClippingBox
 from services.animator import Animator
 from services.power_profiles import power_profiles_service
 from utils.helpers import get_absolute_wayland_widget_position
-from config.info import SHELL_NAME
+from config.info import SHELL_NAME, IS_WAYLAND
 
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("GLib", "2.0")
-from gi.repository import GtkLayerShell, Gdk, GLib, Gtk  # type: ignore
+from gi.repository import Gdk, GLib, Gtk  # type: ignore
+
+if IS_WAYLAND:
+    from gi.repository import GtkLayerShell  # type: ignore
+    from fabric.widgets.wayland import WaylandWindow as Window
+else:
+    from widgets.overrides import PatchedX11Window as Window
 
 
 class SharedPopupWindow(Window):
@@ -299,7 +298,9 @@ class SharedPopupWindow(Window):
             target_y = root_y + widget_alloc.y - win_alloc.height - self.POPUP_OFFSET
 
             if IS_WAYLAND:
-                success, x, y = get_absolute_wayland_widget_position(self.pointing_widget)
+                success, x, y = get_absolute_wayland_widget_position(
+                    self.pointing_widget
+                )
                 if success:
                     target_x, target_y = target_x + x, target_y + y
 
@@ -326,7 +327,7 @@ class SharedPopupWindow(Window):
         w = width if width is not None else self.get_allocation().width
         return max(self.POPUP_OFFSET, min(x, screen.get_width() - w))
 
-    def _clamp_y(self, y: int, height: int = None) -> int:
+    def _clamp_y(self, y: int, height: int | None = None) -> int:
         screen = self.get_screen()
         if screen is None:
             return y

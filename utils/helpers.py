@@ -8,7 +8,7 @@ from loguru import logger
 from collections.abc import Callable
 
 from fabric.utils.helpers import bulk_replace
-from config.info import ROOT_DIR
+from config.info import ROOT_DIR, IS_WAYLAND
 
 from gi.repository import Gdk, Gio, GLib  # type: ignore
 
@@ -146,6 +146,9 @@ def bind_group_toggle(switch, targets):
 
 def get_absolute_wayland_widget_position(widget):
     """Compute widget's current absolute (x, y) screen position."""
+    if not IS_WAYLAND:
+        return False, 0, 0
+
     from gi.repository import GtkLayerShell  # type: ignore
 
     toplevel = widget.get_toplevel()

@@ -2,17 +2,10 @@ import cairo
 
 from fabric.widgets.box import Box
 from fabric.widgets.stack import Stack
-
-from config.info import IS_WAYLAND
-
-if IS_WAYLAND:
-    from fabric.widgets.wayland import WaylandWindow as Window
-else:
-    from widgets.overrides import PatchedX11Window as Window
-
 from fabric.core.service import Signal, Service
 
 from services.animator import Animator
+from config.info import IS_WAYLAND
 
 import gi
 
@@ -20,7 +13,13 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 gi.require_version("GLib", "2.0")
 gi.require_version("GObject", "2.0")
-from gi.repository import Gtk, GtkLayerShell, Gdk, GLib  # type: ignore
+from gi.repository import Gtk, Gdk, GLib  # type: ignore
+
+if IS_WAYLAND:
+    from gi.repository import GtkLayerShell  # type: ignore
+    from fabric.widgets.wayland import WaylandWindow as Window
+else:
+    from widgets.overrides import PatchedX11Window as Window
 
 
 class PopSlot(Box):

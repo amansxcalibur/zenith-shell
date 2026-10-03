@@ -5,10 +5,11 @@ from config.info import IS_WAYLAND
 
 if IS_WAYLAND:
     from fabric.widgets.wayland import WaylandWindow as Window
+    from gi.repository import GtkLayerShell  # type: ignore
 else:
     from widgets.overrides import PatchedX11Window as Window
 
-from gi.repository import GtkLayerShell, Gdk  # type: ignore
+from gi.repository import Gdk  # type: ignore
 
 
 class MyCorner(Box):
@@ -32,7 +33,7 @@ class Corners(Window):
                 anchor="top bottom left right",
                 exclusivity="none",
                 margin=(0, 0, 0, 0),
-                pass_through = True,
+                pass_through=True,
                 visible=True,
                 all_visible=True,
             )

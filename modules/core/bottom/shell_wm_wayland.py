@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .pill import Pill
     from .dock.bar import DockBar
+
 from services.animator import Animator
 
 import gi

@@ -10,16 +10,9 @@ from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.x11 import X11WindowGeometry
 
-if TYPE_CHECKING:
-    from .pill import TopPill
-
 from widgets.clipping_box import ClippingBox
 from config.info import IS_WAYLAND
 
-if IS_WAYLAND:
-    from fabric.widgets.wayland import WaylandWindow as Window
-else:
-    from widgets.overrides import PatchedX11Window as Window
 from utils.helpers import toggle_class
 from utils.cursor import add_hover_cursor
 from config.config import config
@@ -27,7 +20,16 @@ from config.config import config
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib, Gdk, GtkLayerShell  # type: ignore
+from gi.repository import Gtk, GLib, Gdk  # type: ignore
+
+if TYPE_CHECKING:
+    from .pill import TopPill
+
+if IS_WAYLAND:
+    from gi.repository import GtkLayerShell  # type: ignore
+    from fabric.widgets.wayland import WaylandWindow as Window
+else:
+    from widgets.overrides import PatchedX11Window as Window
 
 SPACING = 0
 CONTROLS_SPACING = 5

@@ -6,12 +6,6 @@ from fabric.utils.helpers import exec_shell_command_async
 
 from widgets.clipping_box import ClippingBox
 from widgets.elastic.elastic_stack import ElasticStack
-from config.info import IS_WAYLAND
-
-if IS_WAYLAND:
-    from fabric.widgets.wayland import WaylandWindow as Window
-else:
-    from widgets.overrides import PatchedX11Window as Window
 
 from services.power_profiles import power_profiles_service
 
@@ -24,12 +18,19 @@ from modules.launcher import AppLauncher, AppCommands
 from modules.workspaces.workspaces import ActiveWindow
 
 from config.config import config
-from config.info import SHELL_NAME, USERNAME, HOSTNAME
+from config.info import SHELL_NAME, USERNAME, HOSTNAME, IS_WAYLAND
 from utils.helpers import open_settings, get_absolute_wayland_widget_position
 
 import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GtkLayerShell, GLib  # type: ignore
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import GLib  # type: ignore
+
+if IS_WAYLAND:
+    from gi.repository import GtkLayerShell  # type: ignore
+    from fabric.widgets.wayland import WaylandWindow as Window
+else:
+    from widgets.overrides import PatchedX11Window as Window
 
 
 class Pill(Window, Service):
@@ -164,7 +165,7 @@ class Pill(Window, Service):
                 entry = getattr(child, "search_entry", None)
                 if entry and not entry.has_focus():
                     GLib.idle_add(entry.grab_focus)
-        
+
             case self.wallpaper:
                 GLib.idle_add(self.wallpaper.focus_search)
 
