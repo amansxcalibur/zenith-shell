@@ -47,7 +47,7 @@ class Pill(Window, Service):
         if IS_WAYLAND:
             super().__init__(
                 # name="pill",
-                layer="overlay",
+                layer="top",
                 keyboard_mode="none",
                 anchor=f"{pill_config.get('POSITION.y')} {pill_config.get('POSITION.x')}",
                 exclusivity="none",

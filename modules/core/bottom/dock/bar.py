@@ -41,7 +41,7 @@ class DockBar(Window):
     def __init__(self, pill, **kwargs):
         if IS_WAYLAND:
             super().__init__(
-                layer="top",
+                layer="bottom",
                 title=self.WIN_ROLE,
                 anchor="bottom left right",
                 exclusivity="auto",
