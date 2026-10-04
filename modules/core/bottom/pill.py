@@ -18,7 +18,7 @@ from modules.launcher import AppLauncher, AppCommands
 from modules.workspaces.workspaces import ActiveWindow
 
 from config.config import config
-from config.info import SHELL_NAME, USERNAME, HOSTNAME, IS_WAYLAND
+from config.info import SHELL_NAME, USERNAME, HOSTNAME, IS_WAYLAND, IPC_UTIL
 from utils.helpers import open_settings, get_absolute_wayland_widget_position
 
 import gi
@@ -178,12 +178,12 @@ class Pill(Window, Service):
     def focus_pill(self):
         if IS_WAYLAND:
             GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.EXCLUSIVE)
-        exec_shell_command_async(f'i3-msg [window_role="^{self.WIN_ROLE}$"] focus')
+        exec_shell_command_async(f'{IPC_UTIL} [window_role="^{self.WIN_ROLE}$"] focus')
 
     def unfocus_pill(self):
         if IS_WAYLAND:
             GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.NONE)
-        exec_shell_command_async("i3-msg focus mode_toggle")
+        exec_shell_command_async(f"{IPC_UTIL} focus mode_toggle")
 
     def lift_pill(self):
         if self._dock_is_visible and (

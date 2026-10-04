@@ -21,7 +21,7 @@ from utils.helpers import get_absolute_wayland_widget_position
 
 import icons
 from config.config import config
-from config.info import SHELL_NAME, IS_WAYLAND
+from config.info import SHELL_NAME, IS_WAYLAND, IPC_UTIL
 
 
 class TopPill(Window, Service):
@@ -137,13 +137,13 @@ class TopPill(Window, Service):
         if IS_WAYLAND:
             GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.EXCLUSIVE)
             return
-        exec_shell_command_async(f'i3-msg [window_role="^{self.WIN_ROLE}$"] focus')
+        exec_shell_command_async(f'{IPC_UTIL} [window_role="^{self.WIN_ROLE}$"] focus')
 
     def unfocus_pill(self):
         if IS_WAYLAND:
             GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.NONE)
             return
-        exec_shell_command_async("i3-msg focus mode_toggle")
+        exec_shell_command_async(f"{IPC_UTIL} focus mode_toggle")
 
     def lift_pill(self):
         if not self.is_lift_enable:

@@ -8,7 +8,7 @@ from widgets.material_label import MaterialIconLabel
 from utils.lock import lock_screen
 
 import icons
-from config.info import SHELL_NAME
+from config.info import SHELL_NAME, IPC_UTIL
 
 
 class PowerMenu(Box):
@@ -62,7 +62,7 @@ class PowerMenu(Box):
     def logout(self, *_):
         print("Logging out...")
         self.close_power_menu()
-        exec_shell_command_async("i3-msg exit")
+        exec_shell_command_async(f"{IPC_UTIL} exit")
 
     def reboot(self, *_):
         print("Rebooting...")

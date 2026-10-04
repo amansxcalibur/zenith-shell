@@ -10,6 +10,9 @@ HOSTNAME = os.uname().nodename
 WAYLAND_DISPLAY = os.environ.get("WAYLAND_DISPLAY")
 XDG_SESSION_TYPE = os.environ.get("XDG_SESSION_TYPE", "").lower()
 IS_WAYLAND = bool(WAYLAND_DISPLAY) or XDG_SESSION_TYPE == "wayland"
+IPC_UTIL = (
+    "swaymsg" if IS_WAYLAND else "i3-msg"
+)  # here till fabric i3 reconnection is fixed
 
 TEMP_DIR = f"/tmp/{SHELL_NAME}-shell"
 HOME_DIR = os.path.expanduser("~")
