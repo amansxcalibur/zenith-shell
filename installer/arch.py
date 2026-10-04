@@ -3,11 +3,17 @@
 import json
 import shutil
 import tempfile
+import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
 
 from common import Backend, InstallError, Plan, Problem, capture, have, info, run, warn
+
+Classified = tuple[list[str], list[str], list[str], bool]
+
+SYNC_DIR = Path("/var/lib/pacman/sync")
+STALE_DB_DAYS = 14
 
 
 class ArchBackend(Backend):
@@ -16,8 +22,6 @@ class ArchBackend(Backend):
     REMOVE_CMD = "sudo pacman -Rns"
     VENV_SYSTEM_SITE = True  # python-gobject comes from pacman
 
-    # One flat list: each name is resolved to "official repo" or "AUR" automatically,
-    # so you never maintain two lists (and a package moving repos can't break the installer).
     PACKAGES = {  # noqa: RUF012
         "core": [
             "base-devel",
@@ -41,14 +45,27 @@ class ArchBackend(Backend):
         "wayland": ["swaybg", "wl-clipboard", "gtk-layer-shell", "gtk-session-lock"],
     }
 
+    # `pacman -T` only follows "provides" one way: matugen-bin provides matugen, but an
+    # installed matugen does not satisfy matugen-bin (and the two conflict, so installing
+    # the -bin on top would fail under --noconfirm). Treat these as already satisfied.
+    ALTERNATIVES = {"matugen-bin": ["matugen"]}  # noqa: RUF012
+
     def __init__(self) -> None:
-        self._classified: tuple[list[str], list[str], list[str], bool] | None = None
+        self._classified: dict[tuple[str, ...], Classified] = {}
 
     # ---- queries -------------------------------------------------------------
+    def _satisfied(self, pkg: str) -> bool:
+        return capture(["pacman", "-T", pkg])[0] == 0
+
     def missing_pkgs(self, pkgs: list[str]) -> list[str]:
         # `pacman -T` prints the unsatisfied ones (and honours "provides")
         rc, out = capture(["pacman", "-T", *pkgs])
-        return out.split() if rc != 0 else []
+        missing = out.split() if rc != 0 else []
+        return [
+            p
+            for p in missing
+            if not any(self._satisfied(alt) for alt in self.ALTERNATIVES.get(p, []))
+        ]
 
     def _aur_lookup(self, names: list[str]) -> set[str]:
         query = "&".join(f"arg[]={urllib.parse.quote(name)}" for name in names)
@@ -58,12 +75,11 @@ class ArchBackend(Backend):
             data = json.load(response)
         return {item["Name"] for item in data.get("results", [])}
 
-    def _classify(
-        self, pkgs: list[str]
-    ) -> tuple[list[str], list[str], list[str], bool]:
-        """-> (official, aur, unknown, aur_lookup_worked)"""
-        if self._classified is not None:
-            return self._classified
+    def _classify(self, pkgs: list[str]) -> Classified:
+        """-> (official, aur, unknown, aur_lookup_worked). Cached per package list."""
+        key = tuple(pkgs)
+        if key in self._classified:
+            return self._classified[key]
         repo = [p for p in pkgs if capture(["pacman", "-Si", p])[0] == 0]
         rest = [p for p in pkgs if p not in repo]
         aur: list[str] = []
@@ -76,10 +92,28 @@ class ArchBackend(Backend):
                 found, worked = set(rest), False
             aur = [p for p in rest if p in found]
             unknown = [p for p in rest if p not in found]
-        self._classified = (repo, aur, unknown, worked)
-        return self._classified
+        self._classified[key] = (repo, aur, unknown, worked)
+        return self._classified[key]
 
     # ---- pre-flight ----------------------------------------------------------
+    def prepare(self) -> None:
+        # No `-Sy` here: refreshing the db without upgrading is an unsupported partial
+        # upgrade on Arch. A stale db is only a problem for classification and for
+        # downloads, so just tell the user.
+        dbs = list(SYNC_DIR.glob("*.db"))
+        if not dbs:
+            warn(
+                "pacman sync databases are missing. Run `sudo pacman -Syu` first, "
+                "otherwise repo packages may be reported as not found."
+            )
+            return
+        age_days = (time.time() - max(p.stat().st_mtime for p in dbs)) / 86400
+        if age_days > STALE_DB_DAYS:
+            warn(
+                f"pacman databases were last synced {int(age_days)} days ago. "
+                "Consider `sudo pacman -Syu` first to avoid 404s and misclassified packages."
+            )
+
     def check_packages(self, missing: list[str]) -> list[Problem]:
         _, _, unknown, _ = self._classify(missing)
         if not unknown:
@@ -108,28 +142,50 @@ class ArchBackend(Backend):
     def extra_hosts(self, plan: Plan) -> list[str]:
         return ["https://aur.archlinux.org"] if plan.missing_pkgs else []
 
+    def plan_notes(self, plan: Plan) -> list[str]:
+        """Extra lines for the Plan panel: say which packages come from the AUR."""
+        if not plan.missing_pkgs:
+            return []
+        _, aur, _, _ = self._classify(plan.missing_pkgs)
+        if not aur:
+            return []
+        return [
+            f"AUR        : {' '.join(aur)}",
+            "             built from community PKGBUILDs, installed without review (--noconfirm)",
+        ]
+
     # ---- install -------------------------------------------------------------
     def _ensure_helper(self) -> str:
         for helper in ("paru", "yay"):
             if have(helper):
                 return helper
-        info("No AUR helper found – building yay-bin.")
+        info("No AUR helper found. Building yay-bin.")
         tmp = Path(tempfile.mkdtemp(prefix="zenith-yay-"))
         try:
+            src = tmp / "yay-bin"
             run(
                 [
                     "git",
                     "clone",
                     "--depth=1",
                     "https://aur.archlinux.org/yay-bin.git",
-                    tmp / "yay-bin",
+                    src,
                 ],
                 label="Cloning yay-bin",
             )
+            run(["makepkg", "--noconfirm"], cwd=src, label="Building yay-bin")
+            rc, out = capture(["makepkg", "--packagelist"], cwd=src)
+            built = [
+                Path(line)
+                for line in out.splitlines()
+                if line and "-debug" not in Path(line).name and Path(line).exists()
+            ]
+            if rc != 0 or not built:
+                raise InstallError("makepkg produced no package for yay-bin.")
             run(
-                ["makepkg", "-si", "--noconfirm"],
-                cwd=tmp / "yay-bin",
-                label="Building yay-bin",
+                ["pacman", "-U", "--noconfirm", *built],
+                sudo=True,
+                label="Installing yay-bin",
             )
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
@@ -150,6 +206,6 @@ class ArchBackend(Backend):
         if aur:
             helper = self._ensure_helper()
             run(
-                [helper, "-S", "--needed", "--noconfirm", *aur],
+                [helper, "-S", "--needed", "--noconfirm", "--sudoflags=-n", *aur],
                 label=f"Installing {len(aur)} AUR packages ({helper})",
             )

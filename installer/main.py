@@ -121,7 +121,14 @@ case "${1:-}" in
     restart)
         shift
         pkill -f '^@TITLE@' || true
-        sleep 0.3
+        for _ in $(seq 50); do               # wait up to 5s for a clean exit
+            pgrep -f '^@TITLE@' >/dev/null || break
+            sleep 0.1
+        done
+        if pgrep -f '^@TITLE@' >/dev/null; then
+            pkill -9 -f '^@TITLE@' || true   # SIGTERM ignored: force it
+            sleep 0.2
+        fi
         ;;
 esac
 
@@ -583,13 +590,28 @@ def scan_wm_configs() -> tuple[list[Path], list[Path]]:
 
 
 def remove_tree(path: Path) -> None:
+    if not path.exists() and not path.is_symlink():
+        return
+    resolved, home = path.resolve(), c.HOME.resolve()
+    if resolved == home or resolved in home.parents:
+        raise InstallError(
+            f"Refusing to remove {path}: it is your home directory or above."
+        )
+    is_install_dir = (
+        resolved == c.INSTALL_DIR.resolve()
+        and (resolved / "installer" / "main.py").is_file()
+    )
+    if not (is_install_dir or path.name == c.SHELL_NAME):
+        raise InstallError(f"Refusing to remove {path}: not a Zenith Shell directory.")
     try:
         shutil.rmtree(path)
-    except FileNotFoundError:
-        pass
     except PermissionError:  # e.g. files left root-owned by `sudo ninja install`
         c.ensure_sudo()
-        run(["rm", "-rf", path], sudo=True, label=f"Removing {path} (root-owned files)")
+        run(
+            ["rm", "-rf", "--one-file-system", "--", resolved],
+            sudo=True,
+            label=f"Removing {path} (root-owned files)",
+        )
 
 
 def backup_config(config: Path) -> Path:
