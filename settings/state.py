@@ -42,16 +42,8 @@ class SettingsState:
         pprint.pprint(self.staged_data)
 
     def save_to_disk(self):
-        """Commits changes to config"""
-        self._apply_dict(self.staged_data, [])
-
-    def _apply_dict(self, data, path):
-        for key, value in data.items():
-            current_path = path + [key]
-            if isinstance(value, dict):
-                self._apply_dict(value, current_path)
-            else:
-                config.set(current_path, value=value)
+        config.update_bulk(self.staged_data, True)
+        self.staged_data.clear()
 
 
 state = SettingsState()

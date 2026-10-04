@@ -1,3 +1,5 @@
+import cairo
+
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
@@ -296,7 +298,7 @@ class ModulePill(EventBox):
         self.connect("button-press-event", self.on_button_press)
 
     def on_button_press(self, widget, event):
-        # Returning True here prevents the Window's DragHandler
+        # returning True here prevents the Window's DragHandler
         # from ever seeing this specific click.
         return True
 
@@ -311,9 +313,6 @@ class ModulePill(EventBox):
         self.set_opacity(1.0)
 
     def create_cairo_surface(self):
-        """Create a cairo surface for the drag icon."""
-        import cairo
-
         allocation = self.get_allocation()
         surface = cairo.ImageSurface(
             cairo.FORMAT_ARGB32, allocation.width, allocation.height
@@ -325,7 +324,7 @@ class ModulePill(EventBox):
         return surface
 
     def on_drag_data_get(self, widget, drag_context, data, info, time):
-        # Explicitly set the selection data as text
+        # explicitly set the selection data as text
         data.set_text(self.internal_key, -1)
 
 

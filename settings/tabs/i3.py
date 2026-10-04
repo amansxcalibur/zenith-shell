@@ -21,7 +21,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # type: ignore
 
-WM = ("SwayFX" if is_swayfx else "Sway") if IS_WAYLAND else "I3"
+WM = ("SwayFX" if is_swayfx() else "Sway") if IS_WAYLAND else "I3"
 
 
 class I3Tab(BaseWidget, SectionBuilderMixin):

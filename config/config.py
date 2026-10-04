@@ -343,6 +343,19 @@ class ConfigManager(Service):
         finally:
             self._in_set = False
 
+    def update_bulk(self, staged_data: dict, sync: bool = True):
+        def walk(updates: dict, path: list[str]):
+            for key, value in updates.items():
+                if isinstance(value, dict) and value:
+                    walk(value, path + [key])
+                else:
+                    self.set(path + [key], value)
+
+        walk(staged_data, [])
+
+        if sync:
+            self.flush()
+
     def _dispatch_to_nodes(self, keys: list[str], value):
         """Notify any cached ConfigNode whose scope contains the changed path."""
         for node_path, node in list(self._node_cache.items()):

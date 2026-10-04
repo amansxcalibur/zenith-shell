@@ -109,7 +109,7 @@ class SettingsWindow(Window):
                 ),
                 TabConfig(
                     "i3wm",
-                    ("SwayFX" if is_swayfx else "Sway") if IS_WAYLAND else "I3",
+                    ("SwayFX" if is_swayfx() else "Sway") if IS_WAYLAND else "I3",
                     icons.bento.symbol(),
                     lambda: I3Tab().get_widget(),
                     "Appearance",
@@ -379,7 +379,9 @@ class SettingsWindow(Window):
 
         except KeybindingValidationError as e:
             logger.warning(f"Failed to save: {e}")
-            exec_shell_command_async(f"notify-send 'Keybinding Error' -u critical '{e}'")
+            exec_shell_command_async(
+                f"notify-send 'Keybinding Error' -u critical '{e}'"
+            )
 
         except Exception as e:
             logger.error(f"Failed to save: {e}")
