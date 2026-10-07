@@ -33,7 +33,7 @@ from gi.repository import Gtk, Gdk  # type: ignore
 
 class UIConstants:
     WINDOW_MAX_WIDTH = 250
-    WINDOW_MAX_HEIGHT = 250
+    WINDOW_MAX_HEIGHT = 260
     MAX_SSID_DISPLAY_LENGTH = 8
     DIALOG_DEFAULT_WIDTH = 350
     UPDATE_DIALOG_WIDTH = 350
@@ -133,8 +133,8 @@ class PasswordDialog(BaseDialog):
         self.password_entry = Entry(
             name="password-dialog-entry",
             placeholder_text="New Password" if self.update_mode else "Password",
-            visibility=False,
             activates_default=True,
+            password=True,
         )
         content_box.add(self.password_entry)
 

@@ -21,7 +21,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # type: ignore
 
 WINDOW_MAX_WIDTH = 250
-WINDOW_MAX_HEIGHT = 250
+WINDOW_MAX_HEIGHT = 270
 MAX_SSID_DISPLAY_LENGTH = 8
 DIALOG_DEFAULT_WIDTH = 350
 UPDATE_DIALOG_WIDTH = 350

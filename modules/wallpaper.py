@@ -348,9 +348,7 @@ class WallpaperSelector(Box):
             name="close-button",
             child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
             tooltip_text="Exit",
-            on_clicked=lambda *_: self._pill.stack.set_visible_child(
-                self._pill.launcher
-            ),
+            on_clicked=lambda *_: self._pill.open(),
         )
         for btn in (open_btn, close_btn):
             self._no_focus(btn)
@@ -431,11 +429,21 @@ class WallpaperSelector(Box):
         )
         self.overlay.set_overlay_pass_through(shadow, True)
 
-        self.temp_label = Label(label="Choosing Wallpaper", style="padding: 20px 30px;")
+        self.dir_picker_indicator = Box(
+            style="padding: 20px 30px;",
+            spacing=8,
+            children=[
+                MaterialIconLabel(icon_text=icons.wallpaper.symbol()),
+                MaterialFontLabel(
+                    font_family="Google Sans Flex",
+                    text="Choosing Wallpaper Folder...",
+                ),
+            ],
+        )
         self.view_stack = Stack(
             transition_type="crossfade",
             transition_duration=150,
-            children=[self.overlay, self.temp_label],
+            children=[self.overlay, self.dir_picker_indicator],
             interpolate_size=True,
         )
         self.view_stack.set_homogeneous(False)
@@ -545,7 +553,8 @@ class WallpaperSelector(Box):
             logger.error("WallpaperSelector not attached to a Gtk.Window.")
             return
 
-        self.view_stack.set_visible_child(self.temp_label)
+        if IS_WAYLAND:
+            self.view_stack.set_visible_child(self.dir_picker_indicator)
         dialog = self._build_dir_dialog(win)
         try:
             # blocking
@@ -553,7 +562,8 @@ class WallpaperSelector(Box):
             path = dialog.get_filename() if response == Gtk.ResponseType.OK else None
         finally:
             dialog.destroy()
-            self.view_stack.set_visible_child(self.overlay)
+            if IS_WAYLAND:
+                self.view_stack.set_visible_child(self.overlay)
 
         if path:
             config.WALLPAPERS_DIR = path
