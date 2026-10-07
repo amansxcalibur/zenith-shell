@@ -5,7 +5,6 @@ import re
 from common import (
     BIN_DIR,
     CARGO_BIN,
-    VENDOR_DIR,
     Backend,
     Plan,
     Problem,
@@ -24,6 +23,10 @@ APT = [
     "-o",
     "DPkg::Lock::Timeout=300",
 ]
+
+FABRIC_CLI_URL = "https://github.com/Fabric-Development/fabric-cli.git"
+GRAY_URL = "https://github.com/Fabric-Development/gray.git"
+GTK_SESSION_LOCK_URL = "https://github.com/Cu3PO42/gtk-session-lock.git"
 
 GTK_SESSION_LOCK_TYPELIBS = (
     "/usr/lib/girepository-1.0/GtkSessionLock-*.typelib",
@@ -161,23 +164,10 @@ class UbuntuBackend(Backend):
             label=f"Installing {len(plan.missing_pkgs)} packages (apt)",
         )
 
-    def _vendor(self, name: str, url: str):
-        path = VENDOR_DIR / name
-        if not path.exists():
-            VENDOR_DIR.mkdir(parents=True, exist_ok=True)
-            run(["git", "clone", "--depth=1", url, path], label=f"Cloning {name}")
-        return path
-
-    def _meson_setup(self, path, *args: str) -> None:
-        cmd = ["meson", "setup", *args, "build"]
-        if (path / "build").exists():
-            cmd.insert(2, "--reconfigure")
-        run(cmd, cwd=path, label=f"Configuring {path.name}")
-
     def build_matugen(self) -> None:
         run(
             ["cargo", "install", "matugen", "--locked"],
-            label="Building matugen (cargo – takes a few minutes)",
+            label="Building matugen (cargo, takes a few minutes)",
         )
         # make sure the session (not just this installer) finds it
         BIN_DIR.mkdir(parents=True, exist_ok=True)
@@ -186,42 +176,22 @@ class UbuntuBackend(Backend):
             link.symlink_to(src)
 
     def build_fabric_cli(self) -> None:
-        path = self._vendor(
-            "fabric-cli", "https://github.com/Fabric-Development/fabric-cli.git"
-        )
-        self._meson_setup(path, "--buildtype=release", "--prefix=/usr")
-        run(
-            ["meson", "install", "-C", "build"],
-            sudo=True,
-            cwd=path,
-            label="Building & installing fabric-cli",
-        )
+        self.build_meson("fabric-cli", FABRIC_CLI_URL, "--buildtype=release")
 
     def build_gray(self) -> None:
-        path = self._vendor("gray", "https://github.com/Fabric-Development/gray.git")
-        self._meson_setup(path, "--prefix=/usr")
-        run(
-            ["ninja", "-C", "build", "install"],
-            sudo=True,
-            cwd=path,
-            label="Building & installing gray",
-        )
+        self.build_meson("gray", GRAY_URL)
 
     def build_gtk_session_lock(self) -> None:
-        path = self._vendor(
-            "gtk-session-lock", "https://github.com/Cu3PO42/gtk-session-lock.git"
+        # /usr prefix (set in build_meson) so GObject-introspection finds the typelib
+        self.build_meson(
+            "gtk-session-lock",
+            GTK_SESSION_LOCK_URL,
+            post_install=self._ldconfig,
         )
-        self._meson_setup(
-            path, "--prefix=/usr"
-        )  # /usr so GObject-introspection finds the typelib
-        run(["ninja", "-C", "build"], cwd=path, label="Compiling gtk-session-lock")
-        run(
-            ["ninja", "-C", "build", "install"],
-            sudo=True,
-            cwd=path,
-            label="Installing gtk-session-lock",
-        )
-        run(["ldconfig"], sudo=True, label="Refreshing linker cache")
+
+    @staticmethod
+    def _ldconfig(check: bool = True) -> None:
+        run(["ldconfig"], sudo=True, check=check, label="Refreshing linker cache")
 
     # ---- uninstall -----------------------------------------------------------
     def uninstall_tools(self, names: list[str]) -> None:
@@ -237,14 +207,6 @@ class UbuntuBackend(Backend):
                 if link.is_symlink():
                     link.unlink()
                 continue
-            path = VENDOR_DIR / name
-            if (path / "build").exists():
-                run(
-                    ["ninja", "-C", "build", "uninstall"],
-                    sudo=True,
-                    cwd=path,
-                    check=False,
-                    label=f"Removing {name}",
-                )
+            self.uninstall_meson(name)
         if "gtk-session-lock" in names:
-            run(["ldconfig"], sudo=True, check=False, label="Refreshing linker cache")
+            self._ldconfig(check=False)

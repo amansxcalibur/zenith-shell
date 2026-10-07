@@ -8,12 +8,24 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from common import Backend, InstallError, Plan, Problem, capture, have, info, run, warn
+from common import (
+    Backend,
+    InstallError,
+    Plan,
+    Problem,
+    Tool,
+    capture,
+    have,
+    info,
+    run,
+    warn,
+)
 
 Classified = tuple[list[str], list[str], list[str], bool]
 
 SYNC_DIR = Path("/var/lib/pacman/sync")
 STALE_DB_DAYS = 14
+GRAY_URL = "https://github.com/Fabric-Development/gray.git"
 
 
 class ArchBackend(Backend):
@@ -22,6 +34,8 @@ class ArchBackend(Backend):
     REMOVE_CMD = "sudo pacman -Rns"
     VENV_SYSTEM_SITE = True  # python-gobject comes from pacman
 
+    # One flat list: each name is resolved to "official repo" or "AUR" automatically,
+    # so you never maintain two lists (and a package moving repos can't break the installer).
     PACKAGES = {  # noqa: RUF012
         "core": [
             "base-devel",
@@ -39,11 +53,28 @@ class ArchBackend(Backend):
             "libnotify",
             "matugen-bin",
             "fabric-cli-git",
-            "gray-git",
+            # build dependencies for gray (built from source, see TOOLS)
+            "meson",
+            "ninja",
+            "vala",
         ],
         "x11": ["feh", "picom"],
         "wayland": ["swaybg", "wl-clipboard", "gtk-layer-shell", "gtk-session-lock"],
     }
+
+    # gray-git (AUR) installs straight into /usr instead of $pkgdir and breaks without a
+    # terminal, so it is built from upstream instead, like on Ubuntu. Its build tools come
+    # from PACKAGES above, which are installed before tools are built.
+    TOOLS = [  # noqa: RUF012
+        Tool(
+            "gray",
+            cmd="",
+            feature="core",
+            build="build_gray",
+            hosts=("https://github.com",),
+            files=("/usr/lib/girepository-1.0/Gray-0.1.typelib",),
+        ),
+    ]
 
     # `pacman -T` only follows "provides" one way: matugen-bin provides matugen, but an
     # installed matugen does not satisfy matugen-bin (and the two conflict, so installing
@@ -209,3 +240,11 @@ class ArchBackend(Backend):
                 [helper, "-S", "--needed", "--noconfirm", "--sudoflags=-n", *aur],
                 label=f"Installing {len(aur)} AUR packages ({helper})",
             )
+
+    # ---- tools built from source ---------------------------------------------
+    def build_gray(self) -> None:
+        self.build_meson("gray", GRAY_URL)
+
+    def uninstall_tools(self, names: list[str]) -> None:
+        for name in names:
+            self.uninstall_meson(name)

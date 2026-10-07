@@ -645,3 +645,50 @@ class Backend:
         if plan.missing_pkgs:
             problems += self.check_packages(plan.missing_pkgs)
         return problems
+
+    def vendor(self, name: str, url: str) -> Path:
+        """Clone (or fast-forward) a source tree into the vendors directory."""
+        path = VENDOR_DIR / name
+        if (path / ".git").is_dir():
+            run(
+                ["git", "-C", path, "pull", "--ff-only", "--quiet"],
+                label=f"Updating {name}",
+                check=False,  # offline or diverged: build what we already have
+            )
+        else:
+            VENDOR_DIR.mkdir(parents=True, exist_ok=True)
+            run(["git", "clone", "--depth=1", url, path], label=f"Cloning {name}")
+        return path
+
+    def build_meson(
+        self,
+        name: str,
+        url: str,
+        *setup_args: str,
+        post_install: Callable[[], None] | None = None,
+    ) -> None:
+        """Clone, configure, compile as the user, install as root."""
+        path = self.vendor(name, url)
+        cmd = ["meson", "setup", "build", "--prefix=/usr", *setup_args]
+        if (path / "build").exists():
+            cmd.append("--reconfigure")
+        run(cmd, cwd=path, label=f"Configuring {name}")
+        run(["ninja", "-C", "build"], cwd=path, label=f"Building {name}")
+        run(
+            ["meson", "install", "-C", "build", "--no-rebuild"],
+            sudo=True,
+            cwd=path,
+            label=f"Installing {name}",
+        )
+        if post_install:
+            post_install()
+
+    def uninstall_meson(self, name: str) -> None:
+        build = VENDOR_DIR / name / "build"
+        if build.is_dir():
+            run(
+                ["ninja", "-C", build, "uninstall"],
+                sudo=True,
+                check=False,
+                label=f"Removing {name}",
+            )
