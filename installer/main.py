@@ -105,31 +105,44 @@ def step_fonts() -> None:
 
 LAUNCHER = r"""#!/usr/bin/env bash
 # zenith-shell                start the shell
-# zenith-shell restart        stop the running shell and start it again
 # zenith-shell setup <cmd>    install | sync | update | doctor | uninstall   (zenith-shell setup --help)
+# TODO: zenith-shell restart        stop the running shell and start it again
 cd "@INSTALL_DIR@" || exit 1
 
 case "${1:-}" in
+    -h|--help|help)
+        cat <<- 'EOF'
+        Usage:
+        zenith-shell                  start the shell
+        zenith-shell setup <cmd>      install | sync | update | doctor | uninstall
+                                        (zenith-shell setup --help for details)
+        zenith-shell -h, --help       show this message
+EOF
+# no spaces before EOF please uWu
+        exit 0
+        ;;
     setup)
         shift
         export ZENITH_PROG="zenith-shell setup"
         py="@VENV@/bin/python"
         [[ -x "$py" ]] || py=python3
-        [[ $# -gt 0 ]] || set -- --help   # a bare `setup` must never start an install
+        case "${1:-}" in
+            ""|-*) [[ "${1:-}" == -h || "${1:-}" == --help ]] || set -- --help ;;
+        esac
         exec "$py" installer/main.py "$@"
         ;;
-    restart)
-        shift
-        pkill -f '^@TITLE@' || true
-        for _ in $(seq 50); do               # wait up to 5s for a clean exit
-            pgrep -f '^@TITLE@' >/dev/null || break
-            sleep 0.1
-        done
-        if pgrep -f '^@TITLE@' >/dev/null; then
-            pkill -9 -f '^@TITLE@' || true   # SIGTERM ignored: force it
-            sleep 0.2
-        fi
-        ;;
+    # restart)
+    #     shift
+    #     pkill -f '^@TITLE@' || true
+    #     for _ in $(seq 50); do               # wait up to 5s for a clean exit
+    #         pgrep -f '^@TITLE@' >/dev/null || break
+    #         sleep 0.1
+    #     done
+    #     if pgrep -f '^@TITLE@' >/dev/null; then
+    #         pkill -9 -f '^@TITLE@' || true   # SIGTERM ignored: force it
+    #         sleep 0.2
+    #     fi
+    #     ;;
 esac
 
 "@VENV@/bin/python" main.py "$@" &
@@ -782,6 +795,8 @@ def main() -> int:
     parser.add_argument("--notify", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--after-pull", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.purge and args.command != "uninstall":
+        parser.error("--purge only applies to the uninstall command")
     c.OPTS.yes, c.OPTS.dry_run = args.yes, args.dry_run
 
     try:
