@@ -2,6 +2,7 @@
   background-color: var(--surface-bright);
   padding: 2px;
   border-radius: 20px;
+  min-width: 60px;
 }
 
 #systray-clipper{

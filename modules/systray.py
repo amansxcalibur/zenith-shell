@@ -48,26 +48,15 @@ class NotificationIndicator(Box):
             overlays=self.overlayed_widget,
         )
         self.overlay.set_overlay_pass_through(self.overlayed_widget, True)
-        self.children = Box(
-            children=[
-                add_hover_cursor(
-                    Button(
-                        name="systray-notif-btn",
-                        child=self.overlay,
-                        on_clicked=lambda: exec_shell_command_async(
-                            'fabric-cli exec zenith "top_pill.toggle_notification()"'
-                        ),
-                    )
+
+        self.children = add_hover_cursor(
+            Button(
+                name="systray-notif-btn",
+                child=self.overlay,
+                on_clicked=lambda: exec_shell_command_async(
+                    'fabric-cli exec zenith "top_pill.toggle_notification()"'
                 ),
-                # spacer
-                Box(
-                    style=""
-                    "background-color:var(--surface-semi-bright); "
-                    "min-width: 2px; "
-                    "margin: 3px 4px 3px 0px; "
-                    "border-radius: 4px;"
-                ),
-            ]
+            )
         )
 
     def _on_unread_notification_prop_change(self, *_):
@@ -87,31 +76,40 @@ class SystemTray(Box):
             orientation=("v" if config.VERTICAL else "h"),
             **kwargs,
         )
-        self.set_visible(False)  # Initially hidden when empty.
         self.pixel_size = pixel_size
         self.watcher = Gray.Watcher()
-        self.watcher.connect("item-added", self.on_item_added)
+        # self.watcher.connect("item-added", self.on_item_added)
+
         self.clipper = ClippingBox(
             name="systray-clipper",
             spacing=1,
             orientation=("v" if config.VERTICAL else "h"),
         )
         self.clipper.add(NotificationIndicator())
-        self.add(self.clipper)
 
-    def _update_visibility(self):
-        # Update visibility based on the number of child widgets.
-        self.set_visible(len(self.get_children()) > 0)
+        self.spacer = Box(
+            style=""
+            "background-color:var(--surface-semi-bright); "
+            "min-width: 2px; "
+            "margin: 3px 4px 3px 0px; "
+            "border-radius: 4px;",
+        )
+        self.clipper.add(self.spacer)
+
+        self.add(self.clipper)
 
     def on_item_added(self, _, identifier: str):
         item = self.watcher.get_item_for_identifier(identifier)
         item_button = self.do_bake_item_button(item)
-        item.connect(
-            "removed", lambda *args: (item_button.destroy(), self._update_visibility())
-        )
+        item.connect("removed", lambda *args: self.on_item_removed(item_button))
         self.clipper.add(item_button)
         item_button.show_all()
-        self._update_visibility()
+        # self.spacer.set_visible(True)
+
+    def on_item_removed(self, item_button):
+        item_button.destroy()
+        # if len(self.clipper.get_children()) <= 2:
+        #     self.spacer.set_visible(False)
 
     def do_bake_item_button(self, item: Gray.Item) -> Gtk.Button:
         button = Gtk.Button()
