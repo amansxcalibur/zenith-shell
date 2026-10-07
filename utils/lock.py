@@ -62,9 +62,6 @@ def get_cached_lockscreen(
 def _lock_with_external_locker() -> None:
     from modules.wallpaper import WallpaperService
 
-    wallpaper = Path(WallpaperService().get_wallpaper_path())
-    cached_img = get_cached_lockscreen(wallpaper)
-
     lock_app = "swaylock" if IS_WAYLAND else "i3lock"
     if not shutil.which(lock_app):
         logger.error(f"'{lock_app}' binary not found.")
@@ -73,10 +70,13 @@ def _lock_with_external_locker() -> None:
         )
         return
 
-    subprocess.Popen(
-        [lock_app, "-i", str(cached_img)],
-        start_new_session=True,
-    )
+    wallpaper = WallpaperService().get_wallpaper_path()
+    if wallpaper is None:
+        subprocess.Popen([lock_app], start_new_session=True)
+        return
+
+    cached_img = get_cached_lockscreen(Path(wallpaper))
+    subprocess.Popen([lock_app, "-i", str(cached_img)], start_new_session=True)
 
 
 def get_available_external_locker() -> str | None:

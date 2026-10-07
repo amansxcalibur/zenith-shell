@@ -92,7 +92,9 @@ class LockSurface(Window):
                 f"background-image: url('{wallpaper_path}');"
                 "background-position: center;"
                 "background-size: cover;"
-            ),
+            )
+            if wallpaper_path is not None
+            else "background-color: var(--outline)",
             children=[self.center_box],
             h_expand=True,
             v_expand=True,
