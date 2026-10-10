@@ -294,7 +294,7 @@ def cmd_doctor(args, backend) -> int:
         GREEN if healthy and c.VENV_DIR.exists() else YELLOW,
     )
     if not healthy:
-        target = "both" if len(wms) > 1 else wms[0]
+        target = "all" if len(wms) > 1 else wms[0]
         info(f"Fix with:  zenith-shell setup sync --wm {target}")
     return 0 if healthy else 1
 
@@ -355,7 +355,7 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
     wms = c.resolve_wms(args.wm)
     if not wms:
         raise InstallError(
-            "Could not detect i3 or sway. Re-run with --wm i3|sway|both."
+            "Could not detect i3 or sway. Re-run with --wm i3|sway|all."
         )
 
     if command == "install":
@@ -780,7 +780,7 @@ def main() -> int:
         default="install",
         choices=["install", "sync", "update", "doctor", "uninstall"],
     )
-    parser.add_argument("--wm", default="auto", choices=["auto", "i3", "sway", "both"])
+    parser.add_argument("--wm", default="auto", choices=["auto", "i3", "sway", "all"])
     parser.add_argument(
         "--distro", choices=["arch", "ubuntu"], default=os.environ.get("ZENITH_DISTRO")
     )
