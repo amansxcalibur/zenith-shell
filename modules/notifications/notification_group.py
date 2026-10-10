@@ -557,6 +557,7 @@ class NotificationGroup(AnimatedClippingBox):
         self._count_label.set_no_show_all(True)
 
         self._toggle_icon = MaterialIconLabel(
+            style_classes="notif-toggle-arrow",
             icon_text=icons.arrow_forward.symbol(),
             angle=-90,  # pointing down = collapsed
         )
@@ -571,8 +572,8 @@ class NotificationGroup(AnimatedClippingBox):
             child=Box(
                 spacing=4,
                 children=[
-                    Label(label="Clear"),
-                    MaterialIconLabel(icon_text=icons.mop.symbol()),
+                    Label(label="Clear", style="color: var(--foreground)"),
+                    MaterialIconLabel(icon_text=icons.mop.symbol(), style="color: var(--foreground)"),
                 ],
             ),
             tooltip_text="Dismiss all",

@@ -115,7 +115,7 @@
 
 .action-button {
   border-radius: 16px;
-  background-color: var(--surface);
+  background-color: var(--surface-semi-bright);
   padding: 5px;
   border: 1px solid var(--surface-semi-bright);
 }
@@ -156,9 +156,13 @@
 #notif-expander-btn,
 #notif-group-toggle-btn {
   border-radius: 10px;
-  background-color: var(--surface-bright);
+  background-color: var(--surface-semi-bright);
   padding: 0 6px;
   /* margin: 0 2px; */
+}
+#notif-expander-btn:hover,
+#notif-group-toggle-btn:hover {
+  background-color: var(--surface-bright);
 }
 
 #notif-expander-btn {
@@ -168,7 +172,8 @@
 #notif-expander-btn.critical {
   background-color: var(--primary);
 }
-#notif-expander-btn > * {
+#notif-expander-btn > *,
+.notif-toggle-arrow {
   color: var(--foreground);
 }
 #notif-expander-btn.critical > * {
@@ -181,7 +186,7 @@
   background-color: var(--primary);
 }
 #notif-group-toggle-btn.critical > * > *,
-#notif-expander-btn.critical > * > * {
+#notif-expander-btn.critical .notif-toggle-arrow {
   color: var(--background);
 }
 

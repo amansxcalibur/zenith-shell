@@ -78,7 +78,7 @@ class SystemTray(Box):
         )
         self.pixel_size = pixel_size
         self.watcher = Gray.Watcher()
-        # self.watcher.connect("item-added", self.on_item_added)
+        self.watcher.connect("item-added", self.on_item_added)
 
         self.clipper = ClippingBox(
             name="systray-clipper",
