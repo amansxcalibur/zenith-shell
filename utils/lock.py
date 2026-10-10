@@ -20,20 +20,13 @@ LOCKSCREEN_BLURRED_IMG_FILE = LOCKSCREEN_RESOURCE_DIR / "lockscreen_blurred.png"
 
 
 def lock_screen():
-    import os
-
     if config.get("system.LOCKSCREEN") == "zenith":
-        current_env = os.environ.copy()
-        current_env["PYTHONPATH"] = (
-            str(ROOT_DIR) + os.pathsep + current_env.get("PYTHONPATH", "")
-        )
-
         lock_path = ROOT_DIR / "lock"
 
         if lock_path.exists():
             subprocess.Popen(
                 [sys.executable, "-m", "lock"],
-                env=current_env,
+                cwd=ROOT_DIR,
                 start_new_session=True,
             )
     else:
