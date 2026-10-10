@@ -622,15 +622,13 @@ class AppLauncher(Box):
             self.selected_index = -1
 
     def _scroll_to_selected(self, button):
-        def scroll_to_allocation(allocation):
-            adj = self.scrolled_window.get_vadjustment()
-            visible_top = adj.get_value()
-            visible_bottom = visible_top + adj.get_page_size()
+        MARGIN_TOP = 12
 
-            if allocation.y < visible_top:
-                adj.set_value(allocation.y)
-            elif allocation.y + allocation.height > visible_bottom:
-                adj.set_value(allocation.y + allocation.height - adj.get_page_size())
+        def scroll_to_allocation(allocation):
+            vadjustment = self.scrolled_window.get_vadjustment()
+            vadjustment.clamp_page(
+                allocation.y - MARGIN_TOP, allocation.y + allocation.height
+            )
 
         allocation = button.get_allocation()
         if allocation.height > 0 and allocation.y >= 0:

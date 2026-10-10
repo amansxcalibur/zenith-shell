@@ -689,12 +689,12 @@ class WallpaperSelector(Box):
             all_visible=False,
             orientation="v",
             children=[
-                Box(name="bade-hole", h_expand=True, v_expand=True),
+                Box(name="badge-hole", h_expand=True, v_expand=True),
                 Box(
-                    name="bade-label-container",
+                    name="badge-label-container",
                     h_expand=True,
                     children=MaterialFontLabel(
-                        name="bade-label",
+                        name="badge-label",
                         h_expand=True,
                         h_align="center",
                         v_align="end",
@@ -768,9 +768,11 @@ class WallpaperSelector(Box):
         coords = child.translate_coordinates(self.viewport, 0, 0)
         if coords is None:
             return
+
+        TOP_MARGIN = 12
         _, y = coords
         self.scrolled_window.get_vadjustment().clamp_page(
-            y, y + child.get_allocated_height()
+            y - TOP_MARGIN, y + child.get_allocated_height()
         )
 
     def _move_selection(self, delta: int):

@@ -11,7 +11,7 @@
 }
 
 #wallpaper-overlay {
-  box-shadow: inset 0px 12px 5px 0px var(--shadow);
+  box-shadow: inset 0px 10px 5px 0px var(--shadow);
 }
 
 #wallpaper-thumbnail-clipper {
@@ -134,19 +134,19 @@
   padding: 8px;
 }
 
-/* Wallpaper image bade */
+/* wallpaper image badge */
 #badge-container{
   border: 4px solid var(--primary);
   border-radius: 10px;
 }
-#bade-hole{
+#badge-hole{
   border: 2px solid var(--on-primary);
   box-shadow: 0px 12px 0px 0px var(--primary);
   border-radius: 6px;
 }
-#bade-label-container{
+#badge-label-container{
   background-color: var(--primary);}
-#bade-label{
+#badge-label{
   color: var(--on-primary);
   font-weight: bold;
   margin-bottom: -4px;
