@@ -1,10 +1,21 @@
-<h1 align="center">
-  <img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/sparkles.gif" alt="Sparkles" width="25" height="25" />
-  <b>ZENITH</b>
-  <img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/sparkles.gif" alt="Sparkles" width="25" height="25" />
-</h1>
+<h3 align="center">
+  <img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/logos/all-logo.png" alt="Zenith Logo" width="60%"/>
+</h3>
 
-A SOSS shell for **i3wm** and **sway** (including **swayFX**), crafted using [fabric](https://github.com/Fabric-Development/fabric). Zenith features a plethora of widgets in an easily configurable, modular system. I've had a **LOT** of fun working with fabric and building this. I hope you do too!
+<div align="center">
+  <p>A SOSS shell for <b>i3wm</b> and <b>sway</b> (including <b>swayFX</b>), crafted using <a href="https://github.com/Fabric-Development/fabric">fabric</a>.</p>
+</div>
+<div align="center">
+     <a href="https://ko-fi.com/amansxcalibur">
+          <img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/badges/kofi.svg">
+     </a>
+     <br>
+     <sub>Donations through Ko-Fi are welcome!
+</div>
+
+---
+
+I've had a **LOT** of fun working with fabric and building this. I hope you do too :)
 
 > [!WARNING]
 > Zenith is nearing its first **stable release**. Installers are available, but some breaking changes may still occur. :)
@@ -109,7 +120,7 @@ If Zenith does not start as expected, run `zenith-shell setup doctor` to check f
 | --- | --- |
 | `zenith-shell` | Start the shell. |
 | `zenith-shell setup update` | Fetch the latest changes and install any new dependencies. |
-| `zenith-shell setup sync` | Install only what's missing for the configured window manager. |
+| `zenith-shell setup sync` | Install missing dependencies for the configured window manager. |
 | `zenith-shell setup doctor` | Show which dependencies are present or missing. |
 | `zenith-shell setup uninstall` | Remove Zenith Shell. |
 
@@ -215,9 +226,7 @@ On i3, check that the version of picom available through apt is v12 or newer (se
 <table align="center">
   <tr>
     <td align="center">
-      <img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/sparkles.gif" alt="Sparkles" width="16" height="16" />
-      <b> sᴜᴘᴘᴏʀᴛ ᴛʜᴇ ᴘʀᴏᴊᴇᴄᴛ ~ ᴅʀᴏᴘ ᴀ ⭐️ </b>
-      <img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/sparkles.gif" alt="Sparkles" width="16" height="16" />
+      <b> sᴜᴘᴘᴏʀᴛ ᴛʜᴇ ᴘʀᴏᴊᴇᴄᴛ ~ ᴅʀᴏᴘ ᴀ ⭐️ ᴏʀ ᴀ <a href="https://ko-fi.com/amansxcalibur">☕</a></b>
     </td>
   </tr>
   <tr>
