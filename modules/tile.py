@@ -112,7 +112,7 @@ class TileSimple(ClippingBox):
             self.remove_style_class("off")
         else:
             self.add_style_class("off")
-            self.add_style_class("on")
+            self.remove_style_class("on")
 
     def handle_state_toggle(self, *_):
         # overriden

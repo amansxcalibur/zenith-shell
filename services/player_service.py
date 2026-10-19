@@ -12,7 +12,7 @@ from fabric import Fabricator
 from fabric.core.service import Service, Signal, Property
 
 from config.config import config
-from config.info import TEMP_DIR, ROOT_DIR
+from config.info import TEMP_DIR
 
 import gi
 
@@ -320,8 +320,8 @@ class PlayerService(Service):
                     "matugen",
                     "image",
                     self._current_artwork_path,
-                    "-c",
-                    f"{ROOT_DIR}/config/matugen/player_runtime.toml",
+                    # "-c",
+                    # f"{ROOT_DIR}/config/matugen/player_runtime.toml",
                     "-j",
                     "hex",
                     "-t",

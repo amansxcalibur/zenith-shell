@@ -1,5 +1,4 @@
 import os
-import shlex
 import bisect
 import shutil
 import subprocess
@@ -27,7 +26,8 @@ from widgets.shapes.expressive.morphing_shapes import InteractiveMorphShape
 
 import icons
 from config.config import config
-from config.info import CONFIG_DIR, CACHE_DIR, IS_WAYLAND
+from config.info import CACHE_DIR, IS_WAYLAND
+from services.theme import ThemeService
 from utils.helpers import hash_file
 from utils.lock import (
     generate_lockscreen_image,
@@ -224,6 +224,7 @@ class WallpaperSelector(Box):
             **kwargs,
         )
         self.wallpaper_service = WallpaperService()
+        self.theme_service = ThemeService()
         self.executor = ThreadPoolExecutor(max_workers=5)
         self.file_monitor = None
         self._scan_generation = 0
@@ -803,7 +804,7 @@ class WallpaperSelector(Box):
         self.wallpaper_service.apply_wallpaper(full_path)
 
         self.executor.submit(save_wallpaper_history, full_path)
-        self.executor.submit(self._generate_theme, full_path, scheme)
+        self.executor.submit(self.theme_service.generate_theme, full_path, scheme)
         self.executor.submit(generate_lockscreen_image, full_path)
         future = self.executor.submit(generate_wallpaper_preview, full_path)
         future.add_done_callback(lambda fut: self._on_preview_ready(full_path, fut))
@@ -840,41 +841,7 @@ class WallpaperSelector(Box):
         idx = ids.index(current) if current in ids else 0
         self.scheme_dropdown.set_active((idx + delta) % len(ids))
 
-    def _generate_theme(self, image_path, scheme):
-        matugen_bin = shutil.which("matugen")
-        if not matugen_bin:
-            logger.error("'matugen' not found.")
-            exec_shell_command_async(
-                "notify-send 'Zenith Shell' '\"matugen\" not found. Theme not updated.'"
-            )
-            return
-
-        # shlex.quote: filenames containing ' broke the original command
-        command = " ".join(
-            [
-                shlex.quote(matugen_bin),
-                "image",
-                shlex.quote(str(image_path)),
-                "-t",
-                shlex.quote(scheme),
-                "-c",
-                shlex.quote(f"{CONFIG_DIR}/matugen/config.toml"),
-                "--source-color-index",
-                "0",
-            ]
-        )
-        try:
-            process, _ = exec_shell_command_async(command)
-            process.wait_check_async(
-                None,
-                lambda p, r: (
-                    logger.info("Theme updated")
-                    if p.wait_check_finish(r)
-                    else logger.error("Theme failed")
-                ),
-            )
-        except Exception as e:
-            logger.exception(f"Matugen error: {e}")
+    
 
     def on_search_entry_key_press(self, widget, event):
         mods = int(event.state & self._CORE_MODS)

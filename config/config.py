@@ -33,6 +33,7 @@ DEFAULTS = {
         "BRIGHTNESS_DEV": "auto",
         "ALLOWED_PLAYERS": ["vlc", "cmus", "firefox", "spotify", "chromium"],
     },
+    "theme": {"mode": "dark", "scheme": "fidelity"},
     "paths": {"WALLPAPERS_DIR": "~/Pictures/Wallpapers/"},
     "dashboard": {
         "WIDGETS_ENABLED": ["clock", "weather"],
@@ -331,6 +332,9 @@ class ConfigManager(Service):
             if key not in current or not isinstance(current[key], dict):
                 current[key] = {}
             current = current[key]
+
+        if keys[-1] in current and current[keys[-1]] == value:
+            return
 
         current[keys[-1]] = value
 

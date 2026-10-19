@@ -1,7 +1,7 @@
 import os
 import shutil
 import setproctitle
-from gi.repository import GLib  # type: ignore
+from gi.repository import Gio, GLib  # type: ignore
 
 from fabric import Application
 from fabric.widgets.x11 import X11Window as Window
@@ -115,7 +115,14 @@ if __name__ == "__main__":
 
     app = Application(SHELL_NAME, **app_kwargs)
 
-    def set_css(*args):
+    def set_css(monitor_file, file, other_file, event_type):
+        # event_name = event_type.value_nick.upper() if hasattr(event_type, 'value_nick') else str(event_type)
+        # logger.debug(f"set_css triggered by event: {event_name}")
+
+        # no unnecessary bombardment in this house
+        if event_type != Gio.FileMonitorEvent.CHANGES_DONE_HINT:
+            return
+
         app.set_stylesheet_from_file(
             get_relative_path("./main.css"),
             # feast on juggad
@@ -142,6 +149,6 @@ if __name__ == "__main__":
 
     app.style_monitor = monitor_file(get_relative_path("./styles"))
     app.style_monitor.connect("changed", set_css)
-    set_css()
+    set_css(None, None, None, Gio.FileMonitorEvent.CHANGES_DONE_HINT)
 
     app.run()

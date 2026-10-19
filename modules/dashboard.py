@@ -5,12 +5,13 @@ from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
 from fabric.widgets.centerbox import CenterBox
 
+from modules.tile import TileSpecial
 from modules.network import Network
 from modules.agenda import AgendaApp
 from modules.weather import WeatherPill
 from modules.bluetooth import Bluetooth
 from modules.wavy_clock import WavyClock
-from modules.tile import TileSpecial, TileSimple
+from modules.theme import ThemeSwitchTile
 from modules.player_mini import PlayerContainerMini
 from modules.notifications.notification import NotificationTile
 from widgets.material_label import MaterialIconLabel
@@ -88,12 +89,7 @@ class Dashboard(Box):
 
         self.update_dots()
 
-        self.dark_theme_tile = TileSimple(
-            markup=icons.contrast.symbol(),
-            label="Dark Theme",
-            style="border-radius:20px",
-        )
-        self.dark_theme_tile.set_active_style(True)
+        self.dark_theme_tile = ThemeSwitchTile()
 
         self.tiles = Box(
             spacing=3,
