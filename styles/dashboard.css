@@ -22,6 +22,7 @@
 }
 .light .tile.on .tile-clipper {
   background-color: var(--true-surface-bright);
+  color: var(--foreground);
 }
 .tile.simple.on .tile-clipper,
 .tile.mini.on {
@@ -32,6 +33,7 @@
 .tile.simple.off .tile-clipper {
   background-color: var(--surface-bright);
 }
+.light .tile.off .tile-clipper,
 .light .tile.simple.off .tile-clipper {
   background-color: var(--true-surface-bright);
 }
