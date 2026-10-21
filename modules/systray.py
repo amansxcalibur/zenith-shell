@@ -9,6 +9,7 @@ from modules.notifications.notification import NotificationNotifier
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
 from utils.cursor import add_hover_cursor
+from utils.colors import bind_theme
 from config.config import config
 import icons
 
@@ -42,6 +43,7 @@ class NotificationIndicator(Box):
 
         self.overlay = Overlay(
             child=MaterialIconLabel(
+                name="systray-notif-icon",
                 font_size=18,
                 icon_text=icons.notifications.symbol(),
             ),
@@ -87,13 +89,7 @@ class SystemTray(Box):
         )
         self.clipper.add(NotificationIndicator())
 
-        self.spacer = Box(
-            style=""
-            "background-color:var(--surface-semi-bright); "
-            "min-width: 2px; "
-            "margin: 3px 4px 3px 0px; "
-            "border-radius: 4px;",
-        )
+        self.spacer = Box(name="systray-spacer")
         self.clipper.add(self.spacer)
 
         self.add(self.clipper)
@@ -173,6 +169,7 @@ class SystemTray(Box):
             menu = item.get_menu()
             if menu:
                 menu.set_name("system-tray-menu")
+                bind_theme(menu)
                 menu.popup_at_widget(
                     button,
                     Gdk.Gravity.SOUTH,

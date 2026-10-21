@@ -2,6 +2,9 @@
   background-color: var(--surface-bright);
   border-radius: 18px;
 }
+.light #weather-mini-container {
+  background-color: var(--outline-variant);
+}
 
 #weather-mini {
   padding-left: 7px;
@@ -16,6 +19,9 @@
   padding: 15px;
   background-color: var(--surface-bright);
   border-radius: 20px;
+}
+.light #weather-tile {
+  background-color: var(--true-surface-bright);
 }
 
 #weather-tile.updated-time-label {
@@ -49,6 +55,14 @@
 .weather-icons {
   font-size: 20px;
   color: var(--primary);
+}
+.light #weather-desc,
+.light #weather-pressure,
+.light #weather-wind,
+.light #weather-humidity,
+.light #weather-temp,
+.light #weather-refresh-label {
+  color: var(--foreground);
 }
 
 #weather-loader-overlay {

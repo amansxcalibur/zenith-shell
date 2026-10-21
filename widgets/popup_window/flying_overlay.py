@@ -5,6 +5,7 @@ from fabric.widgets.stack import Stack
 from fabric.core.service import Signal, Service
 
 from services.animator import Animator
+from utils.colors import bind_theme
 from config.info import IS_WAYLAND
 
 import gi
@@ -111,6 +112,8 @@ class FlyingOverlay(Window, Service):
                 visible=False,
                 all_visible=False,
             )
+
+        bind_theme(self)
 
         # recomputed every pop
         display = Gdk.Display.get_default()

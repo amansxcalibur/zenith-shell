@@ -16,6 +16,7 @@ from modules.workspaces.workspaces import Workspaces
 from modules.power_profiles import PowerProfilesSelector
 from modules.metrics.metrics import MetricsSmall, Battery
 
+from utils.colors import bind_theme
 from utils.helpers import toggle_class
 from utils.cursor import add_hover_cursor
 
@@ -48,6 +49,7 @@ class DockBar(Window):
                 pass_through=False,
                 visible=True,
                 all_visible=True,
+                **kwargs,
             )
         else:
             super().__init__(
@@ -64,6 +66,8 @@ class DockBar(Window):
             )
 
         self._pill_ref = pill
+
+        bind_theme(self)
 
         self.is_open = False
         self._pill_is_docked = True
@@ -257,7 +261,7 @@ class DockBar(Window):
             ]
         )
         self.compact = Box(
-            style="min-width:1px; min-height:1px; background-color:black"
+            style="min-width:1px; min-height:1px; background-color: var(--shadow)"
         )
         self.stack = Stack(
             transition_duration=300,

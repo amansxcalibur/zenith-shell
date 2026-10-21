@@ -4,10 +4,8 @@ from fabric.widgets.stack import Stack
 from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
-from widgets.clipping_box import ClippingBox
-from widgets.elastic.elastic_stack import ElasticStack
-
-from services.power_profiles import power_profiles_service
+from config.config import config
+from config.info import SHELL_NAME, USERNAME, HOSTNAME, IS_WAYLAND, IPC_UTIL
 
 from modules.dashboard import Dashboard
 from modules.power_menu import PowerMenu
@@ -17,9 +15,14 @@ from modules.wallpaper import WallpaperSelector
 from modules.launcher import AppLauncher, AppCommands
 from modules.workspaces.workspaces import ActiveWindow
 
-from config.config import config
-from config.info import SHELL_NAME, USERNAME, HOSTNAME, IS_WAYLAND, IPC_UTIL
+from services.power_profiles import power_profiles_service
+
+from utils.colors import bind_theme
 from utils.helpers import open_settings, get_absolute_wayland_widget_position
+
+from widgets.clipping_box import ClippingBox
+from widgets.elastic.elastic_stack import ElasticStack
+
 
 import gi
 
@@ -68,6 +71,8 @@ class Pill(Window, Service):
             )
         if not IS_WAYLAND:
             self.set_role(self.WIN_ROLE)
+
+        bind_theme(self)
 
         self._current_compact_mode = None
         self._dock_is_visible = True

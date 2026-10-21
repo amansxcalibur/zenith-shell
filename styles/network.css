@@ -1,7 +1,7 @@
-#connection-container {
-  /* padding: 5px; */
-  /* background-color: var(--surface); */
-}
+/* #connection-container {
+  padding: 5px;
+  background-color: var(--surface);
+} */
 
 #ap-button.active {
   background-color: var(--surface);
@@ -18,9 +18,12 @@
   background-color: var(--surface);
   min-height: 40px;
 }
-
-#ap-label {
+.light #ap-button {
+  color: var(--foreground);
 }
+
+/* #ap-label {
+} */
 
 #subsection-heading-label {
   font-size: 16px;
@@ -37,8 +40,8 @@
   margin: -10px 0px; /* material icons have some inherent padding */
 }
 
-#network-scrolled-window {
-}
+/* #network-scrolled-window {
+} */
 
 #network-scrolled-window-container {
   border-radius: 17px;
@@ -53,6 +56,9 @@
   background-color: var(--surface);
   border-radius: 20px;
   padding: 10px;
+}
+.light #password-dialog-box {
+  color: var(--foreground);
 }
 
 #dialog-btn {
@@ -72,18 +78,18 @@
 }
 
 #show-password-check check {
-    border: 1px solid var(--surface-bright);
-    border-radius: 8px;
-    min-height: 20px;
-    min-width: 20px;
+  border: 1px solid var(--surface-bright);
+  border-radius: 8px;
+  min-height: 20px;
+  min-width: 20px;
 }
 
 #show-password-check check:checked {
-    background-color: var(--surface-bright);
-    -gtk-icon-source: -gtk-icontheme('object-select-symbolic');
-    color: var(--foreground);
+  background-color: var(--surface-bright);
+  -gtk-icon-source: -gtk-icontheme("object-select-symbolic");
+  color: var(--foreground);
 }
 
 #show-password-check label {
-    margin-left: 6px;
+  margin-left: 6px;
 }

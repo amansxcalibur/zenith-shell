@@ -12,9 +12,10 @@ from fabric.widgets.revealer import Revealer
 from fabric.widgets.checkbutton import CheckButton
 from fabric.widgets.scrolledwindow import ScrolledWindow
 
+from services.animator import CubicBezierCurves
 from widgets.material_label import MaterialIconLabel
 from widgets.clipping_box import ClippingBox, AnimatedClippingBox
-from services.animator import CubicBezierCurves
+from utils.colors import bind_theme
 
 import icons
 from config.info import DATA_DIR, CACHE_DIR, IS_WAYLAND
@@ -278,6 +279,7 @@ class AgendaItem(Gtk.ListBoxRow):
             action=Gtk.FileChooserAction.OPEN,
             use_header_bar=False,
         )
+        bind_theme(dialog)
         dialog.get_style_context().add_class("agenda-file-chooser-dialog")
         if IS_WAYLAND:
             dialog.get_style_context().add_class("wayland")

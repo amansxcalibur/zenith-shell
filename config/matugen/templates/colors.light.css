@@ -1,89 +1,90 @@
 :vars {
-  --background: {{colors.background.default.hex}};
-  --on-background: {{colors.on_background.default.hex}};
-  --foreground: {{colors.on_background.default.hex}};
-  --cursor: {{colors.on_background.default.hex}};
+  --background: {{colors.background.light.hex}};
+  --on-background: {{colors.on_background.light.hex}};
+  --foreground: {{colors.on_background.light.hex}};
+  --cursor: {{colors.on_background.light.hex}};
 
   /* M3 Surface Tones */
-  --surface-dim: {{colors.surface_dim.default.hex}};
-  --surface-dull: {{colors.surface.default.hex | lighten: -2.5}};
-  --surface: {{colors.surface.default.hex}};
-  --surface-bright: {{colors.surface_bright.default.hex}};
-  --surface-semi-bright: {{colors.surface_bright.default.hex | lighten: -9.0}};
+  --surface-dim: {{colors.surface_dim.light.hex}};
+  --surface-dull: {{colors.surface.light.hex | lighten: -2.5}};
+  --surface: {{colors.surface.light.hex}};
+  --surface-bright: {{colors.outline.light.hex | lighten: 25.0}}; /* change here */
+  --true-surface-bright: {{colors.surface_bright.light.hex | lighten: 25.0}}; /* change here */
+  --surface-semi-bright: {{colors.surface_bright.light.hex | lighten: -9.0}};
 
   /* M3 Surface Containers */
-  --surface-container-lowest: {{colors.surface_container_lowest.default.hex}};
-  --surface-container-low: {{colors.surface_container_low.default.hex}};
-  --surface-container: {{colors.surface_container.default.hex}};
-  --surface-container-high: {{colors.surface_container_high.default.hex}};
-  --surface-container-highest: {{colors.surface_container_highest.default.hex}};
+  --surface-container-lowest: {{colors.surface_container_lowest.light.hex}};
+  --surface-container-low: {{colors.surface_container_low.light.hex}};
+  --surface-container: {{colors.surface_container.light.hex}};
+  --surface-container-high: {{colors.surface_container_high.light.hex}};
+  --surface-container-highest: {{colors.surface_container_highest.light.hex}};
 
   /* Variants & Outlines */
-  --surface-variant: {{colors.surface_variant.default.hex}};
-  --on-surface: {{colors.on_surface.default.hex}};
-  --on-surface-variant: {{colors.on_surface_variant.default.hex}};
-  --outline: {{colors.outline.default.hex}};
-  --outline-variant: {{colors.outline_variant.default.hex}};
+  --surface-variant: {{colors.surface_variant.light.hex}};
+  --on-surface: {{colors.on_surface.light.hex}};
+  --on-surface-variant: {{colors.on_surface_variant.light.hex}};
+  --outline: {{colors.outline.light.hex | lighten: 25}};
+  --outline-variant: {{colors.outline_variant.light.hex}};
 
   /* Primary */
-  --primary: {{colors.primary.default.hex | set_saturation: 50.0}};
-  --on-primary: {{colors.on_primary.default.hex}};
-  --primary-container: {{colors.primary_container.default.hex}};
-  --on-primary-container: {{colors.on_primary_container.default.hex}};
-  --primary-fixed: {{colors.primary_fixed.default.hex}};
-  --primary-fixed-dim: {{colors.primary_fixed_dim.default.hex}};
-  --on-primary-fixed: {{colors.on_primary_fixed.default.hex}};
-  --on-primary-fixed-variant: {{colors.on_primary_fixed_variant.default.hex}};
+  --primary: {{colors.primary.light.hex | set_saturation: 50.0}};
+  --on-primary: {{colors.on_primary.light.hex}};
+  --primary-container: {{colors.primary_container.light.hex}};
+  --on-primary-container: {{colors.on_primary_container.light.hex}};
+  --primary-fixed: {{colors.primary_fixed.light.hex}};
+  --primary-fixed-dim: {{colors.primary_fixed_dim.light.hex}};
+  --on-primary-fixed: {{colors.on_primary_fixed.light.hex}};
+  --on-primary-fixed-variant: {{colors.on_primary_fixed_variant.light.hex}};
 
   /* Secondary */
-  --secondary: {{colors.secondary.default.hex}};
-  --on-secondary: {{colors.on_secondary.default.hex}};
-  --secondary-container: {{colors.secondary_container.default.hex}};
-  --on-secondary-container: {{colors.on_secondary_container.default.hex}};
-  --secondary-fixed: {{colors.secondary_fixed.default.hex}};
-  --secondary-fixed-dim: {{colors.secondary_fixed_dim.default.hex}};
-  --on-secondary-fixed: {{colors.on_secondary_fixed.default.hex}};
-  --on-secondary-fixed-variant: {{colors.on_secondary_fixed_variant.default.hex}};
+  --secondary: {{colors.secondary.light.hex}};
+  --on-secondary: {{colors.on_secondary.light.hex}};
+  --secondary-container: {{colors.secondary_container.light.hex}};
+  --on-secondary-container: {{colors.on_secondary_container.light.hex}};
+  --secondary-fixed: {{colors.secondary_fixed.light.hex}};
+  --secondary-fixed-dim: {{colors.secondary_fixed_dim.light.hex}};
+  --on-secondary-fixed: {{colors.on_secondary_fixed.light.hex}};
+  --on-secondary-fixed-variant: {{colors.on_secondary_fixed_variant.light.hex}};
 
   /* Tertiary */
-  --tertiary: {{colors.tertiary.default.hex}};
-  --on-tertiary: {{colors.on_tertiary.default.hex}};
-  --tertiary-container: {{colors.tertiary_container.default.hex}};
-  --on-tertiary-container: {{colors.on_tertiary_container.default.hex}};
-  --tertiary-fixed: {{colors.tertiary_fixed.default.hex}};
-  --tertiary-fixed-dim: {{colors.tertiary_fixed_dim.default.hex}};
-  --on-tertiary-fixed: {{colors.on_tertiary_fixed.default.hex}};
-  --on-tertiary-fixed-variant: {{colors.on_tertiary_fixed_variant.default.hex}};
+  --tertiary: {{colors.tertiary.light.hex}};
+  --on-tertiary: {{colors.on_tertiary.light.hex}};
+  --tertiary-container: {{colors.tertiary_container.light.hex}};
+  --on-tertiary-container: {{colors.on_tertiary_container.light.hex}};
+  --tertiary-fixed: {{colors.tertiary_fixed.light.hex}};
+  --tertiary-fixed-dim: {{colors.tertiary_fixed_dim.light.hex}};
+  --on-tertiary-fixed: {{colors.on_tertiary_fixed.light.hex}};
+  --on-tertiary-fixed-variant: {{colors.on_tertiary_fixed_variant.light.hex}};
 
   /* Error */
-  --error: {{colors.error.default.hex}};
-  --error-dim: {{colors.error.default.hex | lighten: -10.0}};
-  --on-error: {{colors.on_error.default.hex}};
-  --error-container: {{colors.error_container.default.hex}};
-  --on-error-container: {{colors.on_error_container.default.hex}};
+  --error: {{colors.error.light.hex}};
+  --error-dim: {{colors.error.light.hex | lighten: -10.0}};
+  --on-error: {{colors.on_error.light.hex}};
+  --error-container: {{colors.error_container.light.hex}};
+  --on-error-container: {{colors.on_error_container.light.hex}};
 
   /* Inverse */
-  --inverse-surface: {{colors.inverse_surface.default.hex}};
-  --inverse-on-surface: {{colors.inverse_on_surface.default.hex}};
-  --inverse-primary: {{colors.inverse_primary.default.hex}};
+  --inverse-surface: {{colors.inverse_surface.light.hex}};
+  --inverse-on-surface: {{colors.inverse_on_surface.light.hex}};
+  --inverse-primary: {{colors.inverse_primary.light.hex}};
 
   /* Effects */
-  --shadow: {{colors.outline.default.hex | lighten: 20.0}}; /* change here */
-  --scrim: {{colors.scrim.default.hex}};
+  --shadow: {{colors.surface_bright.light.hex}};
+  --scrim: {{colors.scrim.light.hex}};
 
-  --red: {{colors.red.default.hex}};
-  --red-dim: {{colors.red.default.hex | lighten: -10.0}};
-  --green: {{colors.green.default.hex}};
-  --green-dim: {{colors.green.default.hex | lighten: -10.0}};
-  --yellow: {{colors.yellow.default.hex}};
-  --yellow-dim: {{colors.yellow.default.hex | lighten: -10.0}};
-  --blue: {{colors.blue.default.hex}};
-  --blue-dim: {{colors.blue.default.hex | lighten: -10.0}};
-  --magenta: {{colors.magenta.default.hex}};
-  --magenta-dim: {{colors.magenta.default.hex | lighten: -10.0}};
-  --cyan: {{colors.cyan.default.hex}};
-  --cyan-dim: {{colors.cyan.default.hex | lighten: -10.0}};
-  --white: {{colors.white.default.hex}};
-  --pink: {{colors.pink.default.hex}};
-  --light-pink: {{colors.light_pink.default.hex}};
+  --red: {{colors.red.light.hex}};
+  --red-dim: {{colors.red.light.hex | lighten: -10.0}};
+  --green: {{colors.green.light.hex}};
+  --green-dim: {{colors.green.light.hex | lighten: -10.0}};
+  --yellow: {{colors.yellow.light.hex}};
+  --yellow-dim: {{colors.yellow.light.hex | lighten: -10.0}};
+  --blue: {{colors.blue.light.hex}};
+  --blue-dim: {{colors.blue.light.hex | lighten: -10.0}};
+  --magenta: {{colors.magenta.light.hex}};
+  --magenta-dim: {{colors.magenta.light.hex | lighten: -10.0}};
+  --cyan: {{colors.cyan.light.hex}};
+  --cyan-dim: {{colors.cyan.light.hex | lighten: -10.0}};
+  --white: {{colors.white.light.hex}};
+  --pink: {{colors.pink.light.hex}};
+  --light-pink: {{colors.light_pink.light.hex}};
 }

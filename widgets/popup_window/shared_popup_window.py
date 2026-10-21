@@ -5,11 +5,14 @@ from fabric.widgets.stack import Stack
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.revealer import Revealer
 
-from widgets.clipping_box import ClippingBox
+from config.info import SHELL_NAME, IS_WAYLAND
+
 from services.animator import Animator
 from services.power_profiles import power_profiles_service
+
+from utils.colors import bind_theme
 from utils.helpers import get_absolute_wayland_widget_position
-from config.info import SHELL_NAME, IS_WAYLAND
+from widgets.clipping_box import ClippingBox
 
 import gi
 
@@ -73,6 +76,8 @@ class SharedPopupWindow(Window):
             )
         self._initialized = True
         self.set_role(f"{SHELL_NAME}-popup")
+
+        bind_theme(self)
 
         self.pointing_widget = None
         self.pointing_widget_size_alloc_hook = None

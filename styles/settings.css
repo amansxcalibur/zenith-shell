@@ -36,6 +36,9 @@
   padding: 12px;
   border: 2px solid var(--surface-bright);
 }
+.light #settings {
+  color: var(--foreground);
+}
 
 #settings-header {
   border-radius: 25px 25px 0px 0px;
@@ -46,6 +49,9 @@
   background-color: var(--shadow);
   padding: 12px;
   border-radius: 25px;
+}
+.light #settings-content {
+  background-color: var(--true-surface-bright);
 }
 
 #settings-footer {
@@ -73,10 +79,16 @@
 .settings-option-btn:hover {
   background-color: var(--surface);
 }
+.light .settings-option-btn:hover {
+  background-color: var(--surface-variant);
+}
 
 .settings-option-btn.checked {
   background-color: var(--surface-bright);
   border-radius: 25px;
+}
+.light .settings-option-btn.checked {
+  background-color: var(--surface-semi-bright);
 }
 
 /* .settings-option-btn.checked > * > * {
@@ -95,7 +107,7 @@
 
 #settings-tab {
   all: unset;
-  background-color: black;
+  background-color: var(--shadow);
 }
 
 .settings-btn {
@@ -109,11 +121,18 @@
   background-color: var(--surface-bright);
   color: var(--on-primary);
 }
+.light .settings-btn.bright {
+  background-color: var(--primary);
+}
 
 .settings-btn:hover,
 .settings-btn:hover > * {
   background-color: var(--primary);
   color: var(--on-primary);
+}
+.light .settings-btn:hover,
+.light .settings-btn:hover > * {
+  background-color: var(--on-surface-variant);
 }
 
 /* .settings-section-container {
@@ -135,10 +154,18 @@
   padding: 10px 15px;
   border-radius: 20px;
 }
+.light .settings-value {
+  background-color: var(--primary);
+  color: var(--on-primary);
+}
 
 #settings-entry-container.hovered-entry,
 #settings-entry-container:hover {
   background-color: var(--on-primary);
+}
+.light #settings-entry-container.hovered-entry,
+.light #settings-entry-container:hover {
+  background-color: var(--on-surface-variant);
 }
 
 .section-heading {
@@ -147,6 +174,9 @@
 
 .section-subheading {
   color: var(--outline);
+}
+.light .section-subheading {
+  color: var(--primary);
 }
 
 #shapes-box {
@@ -169,6 +199,9 @@
   color: var(--primary);
   background-color: var(--surface-semi-bright);
   padding: 8px 12px;
+}
+.light #config-path-box {
+  color: var(--foreground);
 }
 
 #settings-button-group-btn {

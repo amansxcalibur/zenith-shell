@@ -10,9 +10,11 @@ from fabric.utils.helpers import exec_shell_command_async
 
 import icons
 from config.info import SHELL_NAME
+from services.theme import ThemeMode, ThemeService
+
 from utils.cursor import add_hover_cursor
-from widgets.clipping_box import ClippingBox, TrueClippingBox
 from widgets.material_label import MaterialIconLabel
+from widgets.clipping_box import ClippingBox, TrueClippingBox
 
 import gi
 
@@ -261,8 +263,8 @@ class TileSimpleWithMenu(ClippingBox):
                         ],
                     ),
                     Box(
+                        name="tile-menu-separator",
                         h_align="center",
-                        style="min-width: 170px; min-height: 4px; border-radius: 10px; background-color:var(--surface); margin: 10px 0; ",
                     ),
                 ]
                 + (
@@ -371,7 +373,10 @@ class Tile(ClippingBox):
         on_toggle: Callable | None = None,
         **kwargs,
     ):
+        self.theme_service = ThemeService()
         default_classes = ["tile", "off"]
+        if self.theme_service.theme == ThemeMode.LIGHT:
+            default_classes += ["light"]
         extra_classes = kwargs.pop("style_classes", [])
         merged_classes = default_classes + extra_classes
         markup_styles = kwargs.pop("markup_style", "")
@@ -472,8 +477,8 @@ class Tile(ClippingBox):
                         ],
                     ),
                     Box(
+                        name="tile-menu-separator",
                         h_align="center",
-                        style="min-width: 170px; min-height: 4px; border-radius: 10px; background-color:var(--surface); margin: 10px 0; ",
                     ),
                 ]
                 + ([menu_children] if menu_children else [Label(label="Options")])

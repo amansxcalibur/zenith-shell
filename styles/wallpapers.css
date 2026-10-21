@@ -6,7 +6,7 @@
   min-width: 637px; /* image-widths (96*6) + scrollbar-width (22+8+6) + image-spacing(5*5) */
 }
 
-#wallpaper-flowbox{
+#wallpaper-flowbox {
   padding-top: 12px;
 }
 
@@ -42,6 +42,9 @@
   border: transparent 1px solid;
   border-radius: 16px;
   padding: 5px;
+}
+.light #scheme-dropdown > * > * {
+  color: var(--foreground);
 }
 
 #scheme-dropdown > * > *:hover,
@@ -100,7 +103,6 @@
   margin-left: 4px;
 }
 
-
 /* Scrolled window */
 
 #scrolled-window {
@@ -120,6 +122,9 @@
   padding: 4px;
   margin-top: 12px; /* to balance padding after viewport clipping */
 }
+.light #scrolled-window scrollbar {
+  background-color: var(--surface-semi-bright);
+}
 
 #scrolled-window slider {
   border-radius: 6px;
@@ -135,23 +140,24 @@
 }
 
 /* wallpaper image badge */
-#badge-container{
+#badge-container {
   border: 4px solid var(--primary);
   border-radius: 10px;
 }
-#badge-hole{
+#badge-hole {
   border: 2px solid var(--on-primary);
   box-shadow: 0px 12px 0px 0px var(--primary);
   border-radius: 6px;
 }
-#badge-label-container{
-  background-color: var(--primary);}
-#badge-label{
+#badge-label-container {
+  background-color: var(--primary);
+}
+#badge-label {
   color: var(--on-primary);
   font-weight: bold;
   margin-bottom: -4px;
 }
 
-#wallpaper-choose-dir-dialog{
+#wallpaper-choose-dir-dialog {
   background-color: var(--surface-bright);
 }

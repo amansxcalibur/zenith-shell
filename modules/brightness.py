@@ -103,7 +103,6 @@ class BrightnessMaterial3(BaseBrightnessSlider):
             h_expand=True,
             has_origin=True,
             inverted=orientation != "h",
-            style_classes="" if orientation == "h" else "vertical",
             **kwargs,
         )
 

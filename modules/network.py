@@ -12,18 +12,21 @@ from fabric.widgets.checkbutton import CheckButton
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.utils.helpers import exec_shell_command_async
 
-from modules.tile import TileSimpleWithMenu
-from widgets.clipping_box import ClippingBox
-from widgets.material_label import MaterialIconLabel
-from utils.helpers import format_accel_to_keybind
-
 import icons
+from config.config import config
+from modules.tile import TileSimpleWithMenu
+
 from services.network.wifi import WifiDevice
 from services.network.ethernet import EthernetDevice
 from services.network.common import ConnectionResult, DeviceStatus
 from services.network.network_service import NetworkService, ConnectionType
-from config.config import config
+
+from utils.colors import bind_theme
 from utils.cursor import add_hover_cursor
+from utils.helpers import format_accel_to_keybind
+
+from widgets.clipping_box import ClippingBox
+from widgets.material_label import MaterialIconLabel
 
 import gi
 
@@ -49,6 +52,7 @@ class BaseDialog(Gtk.Dialog):
         super().__init__(
             title=title, transient_for=parent_widget.get_toplevel(), modal=True
         )
+        bind_theme(self)
         self.set_default_size(width, -1)
         self.set_visual(self.get_screen().get_rgba_visual())
         self.set_position(Gtk.WindowPosition.CENTER)

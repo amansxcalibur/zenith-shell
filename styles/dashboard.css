@@ -1,7 +1,10 @@
 #dashboard {
-  background-color: black;
+  background-color: var(--shadow);
   border-radius: 25px;
   padding: 13px;
+}
+.light #dashboard {
+  background-color: var(--surface-variant);
 }
 
 .tile {
@@ -17,6 +20,9 @@
 .tile.on .tile-clipper {
   background-color: var(--surface-bright);
 }
+.light .tile.on .tile-clipper {
+  background-color: var(--true-surface-bright);
+}
 .tile.simple.on .tile-clipper,
 .tile.mini.on {
   background-color: var(--primary);
@@ -26,14 +32,23 @@
 .tile.simple.off .tile-clipper {
   background-color: var(--surface-bright);
 }
+.light .tile.simple.off .tile-clipper {
+  background-color: var(--true-surface-bright);
+}
 .tile.simple.on .tile-overlay {
   box-shadow: inset -16px 0 5px 0px var(--primary);
 }
 .tile.simple.off .tile-overlay {
   box-shadow: inset -16px 0 5px 0px var(--surface-bright);
 }
+.light .tile.simple.off .tile-overlay {
+  box-shadow: inset -16px 0 5px 0px var(--true-surface-bright);
+}
 .tile:not(.simple) .tile-overlay {
   box-shadow: inset -16px 0 5px 0px var(--surface-bright);
+}
+.light .tile:not(.simple) .tile-overlay {
+  box-shadow: inset -16px 0 5px 0px var(--true-surface-bright);
 }
 
 .tile.off .tile-clipper,
@@ -45,12 +60,14 @@
 .tile.simple.on .desc-label,
 .tile.simple.on .tile-label,
 .tile.on .tile-icon {
-  color: var(--shadow);
+  color: var(--background);
   transition: all;
 }
 .tile.off .desc-label,
 .tile.off .tile-label,
-.tile.off .tile-icon {
+.tile.off .tile-icon,
+.light.tile.on .tile-label,
+.light.tile.on .desc-label {
   color: var(--foreground);
   transition: all;
 }
@@ -98,7 +115,10 @@
   background-color: var(--surface-bright);
   padding: 10px;
   border-radius: 30px;
-  /* margin: 2px; */
+}
+.light .tile-menu {
+  background-color: var(--surface-variant);
+  color: var(--foreground);
 }
 
 #menu-header {
@@ -132,4 +152,23 @@
   background-color: var(--primary);
   min-width: 20px;
   border-radius: 4px;
+}
+
+#dashabord-center-tile {
+  background-color: var(--surface-bright);
+  border-radius: 20px;
+}
+.light #dashabord-center-tile {
+  background-color: var(--true-surface-bright);
+}
+
+#tile-menu-separator {
+  min-width: 170px;
+  min-height: 4px;
+  border-radius: 10px;
+  background-color: var(--surface);
+  margin: 10px 0;
+}
+.light #tile-menu-separator {
+  background-color: var(--outline-variant);
 }

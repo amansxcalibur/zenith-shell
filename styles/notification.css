@@ -88,6 +88,9 @@
   font-size: 18px;
   color: var(--outline);
 }
+.light #notification-clear-label {
+  color: var(--foreground);
+}
 .trash-icon-adjust {
   /* font-size: 25px; */
   margin-bottom: -3px;
@@ -119,6 +122,9 @@
   padding: 5px;
   border: 1px solid var(--surface-semi-bright);
 }
+.light .action-button {
+  color: var(--foreground);
+}
 
 .action-button:focus,
 .action-button:hover {
@@ -131,6 +137,9 @@
   font-family: Roboto Flex;
   margin-bottom: -4px;
 }
+.light .timestamp {
+  color: var(--foreground);
+}
 
 .notif-dot-separator {
   background-color: var(--outline);
@@ -139,14 +148,23 @@
   border-radius: 100%;
   margin-bottom: -2px;
 }
+.light .notif-dot-separator {
+  background-color: var(--foreground);
+}
 
 .app-name {
   color: var(--outline);
   font-size: 15px;
 }
+.light .app-name {
+  color: var(--foreground);
+}
 
 .summary {
   font-weight: 600;
+}
+.light .summary {
+  color: var(--foreground);
 }
 
 .body {
@@ -216,10 +234,16 @@
   border-radius: 10px;
   color: var(--foreground);
 }
+.light .notif-group-count {
+  color: var(--foreground);
+}
 
 #notif-group-clear-btn {
   border-radius: 14px;
   padding: 0 10px;
+  background-color: var(--surface-semi-bright);
+}
+.light #notif-group-clear-btn {
   background-color: var(--surface-semi-bright);
 }
 #notif-group-clear-btn:hover {
@@ -253,6 +277,9 @@
   font-family: Roboto Flex;
   /* margin-bottom: -4px; */
 }
+.light .notif-timestamp {
+  color: var(--foreground);
+}
 
 .notif-body {
   color: var(--foreground);
@@ -267,9 +294,15 @@
   background-position: center;
   border-radius: 12px;
 }
+.light #img-expander {
+  background-color: var(--surface-semi-bright);
+}
 #notif-expressive-shape-container {
   padding: 2px;
   color: var(--surface-semi-bright);
+}
+.light #notif-expressive-shape-container {
+  color: var(--surface-dull);
 }
 #img-expander.contract {
   min-width: 24px;

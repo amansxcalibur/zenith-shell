@@ -2,6 +2,7 @@
   background-color: var(--surface-semi-bright);
   border-radius: 30px;
   padding: 6px;
+  color: var(--foreground);
 }
 
 #text-view {
@@ -35,8 +36,11 @@
   border-radius: 20px;
   margin-top: 2px;
 }
+.light #agenda-btn {
+  background-color: var(--surface-variant);
+}
 #agenda-btn:hover {
-  background-color: var(--surface-bright);
+  background-color: var(--outline-variant);
 }
 .agenda-icon {
   font-size: 20px;
@@ -47,6 +51,9 @@
   background-color: var(--surface);
   border-radius: 20px;
   padding: 8px;
+}
+.light #text-editor {
+  background-color: var(--surface-variant);
 }
 #text-editor selection {
   background-color: var(--primary);
@@ -84,6 +91,10 @@
   background-color: var(--surface);
   padding: 8px;
   border-radius: 20px;
+  font-size: 15px;
+}
+.light #editor-btn {
+  background-color: var(--surface-variant);
 }
 #editor-btn:hover {
   background-color: var(--surface-semi-bright);
@@ -111,6 +122,12 @@
   background-blend-mode: multiply;
   border-radius: 20px;
 }
+.light #display-box {
+  padding: 8px;
+  background-color: rgba(250, 250, 250, 0.5);
+  background-blend-mode: hue;
+  border-radius: 20px;
+}
 
 #agenda-scrolled-clipper {
   border-radius: 24px;
@@ -127,19 +144,29 @@
   border-radius: 25px;
   border: 2px solid var(--surface-bright);
 }
+.agenda-file-chooser-dialog.light {
+  color: var(--foreground);
+}
 
 filechooser {
   background-color: transparent;
   padding: 10px;
 }
+.light filechooser {
+  color: var(--foreground);
+}
 
 dialog.wayland {
-  background-color: var(--surface);}
+  background-color: var(--surface);
+}
 
 filechooser > box {
   background-color: var(--shadow);
   border-radius: 20px;
   padding: 10px;
+}
+.light filechooser > box {
+  background-color: var(--surface-semi-bright);
 }
 
 filechooser paned > box {
@@ -178,6 +205,9 @@ filechooser .sidebar {
   margin: 10px;
   border-radius: 15px;
 }
+.light #pathbarbox {
+  background-color: var(--surface-semi-bright);
+}
 
 /* Pathbar Buttons */
 pathbar button,
@@ -197,9 +227,15 @@ pathbar button:hover,
   padding: 0 6px;
   margin: 0 2px;
 }
+.light .path-bar > .toggle {
+  background-color: var(--surface);
+}
 
 .path-bar > .toggle:hover {
   background-color: var(--surface-bright);
+}
+.light .path-bar > .toggle:hover {
+  background-color: var(--outline-variant);
 }
 
 /* Pathbar Icons and Internal Boxes */

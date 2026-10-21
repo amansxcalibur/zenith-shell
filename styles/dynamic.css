@@ -11,7 +11,7 @@
 }
 
 .material-label {
-    font-family: "Material Symbols Rounded";
+  font-family: "Material Symbols Rounded";
 }
 
 #collapsed.vertical {
@@ -41,9 +41,8 @@
 }
 
 #pill {
-  background-color: black;
+  background-color: var(--shadow);
 }
-
 
 #close-button-small {
   background-color: var(--surface-semi-bright);

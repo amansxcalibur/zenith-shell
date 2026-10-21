@@ -37,8 +37,8 @@ class PowerProfilesSelector(EventBox):
 
             btn = Button(
                 name=f"battery-{profile}",
+                style_classes="power-profile-btn",
                 child=MaterialIconLabel(
-                    style_classes="power-profile-btn",
                     icon_text=icon.symbol(),
                 ),
                 tooltip_text=f"{profile.replace('-', ' ').title()} mode",

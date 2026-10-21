@@ -96,9 +96,17 @@
 #button-volume.muted highlight,
 #button-volume.muted slider,
 #button-mic.muted highlight,
-#button-mic.muted slider{
+#button-mic.muted slider {
   background-color: var(--outline);
   border: 3px solid;
+}
+.light #button-volume.muted highlight,
+.light #button-volume.muted trough,
+.light #button-volume.muted slider,
+.light #button-mic.muted highlight,
+.light #button-mic.muted trough,
+.light #button-mic.muted slider {
+  background-color: var(--on-surface-variant);
 }
 
 #button-volume slider,
@@ -130,6 +138,12 @@
 #mic-label,
 #brightness-label {
   font-size: 24px;
+  color: white;
+}
+.light #vol-label,
+.light #mic-label,
+.light #brightness-label {
+  color: var(--foreground);
 }
 
 #vol-label {
@@ -142,9 +156,12 @@
 }
 
 #vol-label.muted,
-#mic-label.muted,
 #mic-label.muted {
   color: var(--outline);
+}
+.light #vol-label.muted,
+.light #mic-label.muted {
+  color: var(--on-surface-variant);
 }
 
 #button-bar-vol,
@@ -164,10 +181,10 @@
   padding: 9px;
 }
 
-#brightness-label,
+/* #brightness-label,
 #vol-label {
-  /* color: var(--foreground); */
-}
+  color: var(--foreground);
+} */
 
 /* #control-slider-mui {
   margin-bottom: 10px;
@@ -184,6 +201,9 @@ highlight {
   background-color: var(--surface-bright);
   min-height: 10px;
 }
+.light #control-slider-mui.dashboard trough {
+  background-color: var(--shadow);
+}
 
 #control-slider-mui slider {
   margin-top: -3px;
@@ -193,19 +213,25 @@ highlight {
   min-height: 40px;
   border-radius: 10px;
   min-width: 4px;
-  /* border: 4px black solid; */
-  box-shadow: 0 0 0 4px black;
+  /* border: 4px var(--shadow) solid; */
+  box-shadow: 0 0 0 4px var(--shadow);
+}
+.light #control-slider-mui.dashboard slider {
+  box-shadow: 0 0 0 4px var(--surface-variant);
 }
 
 #control-slider-mui:hover slider {
   min-width: 2px;
-  box-shadow: 1px 0 0 4px black;
+  box-shadow: 1px 0 0 4px var(--shadow);
 }
 
 #control-slider-mui highlight {
   background-color: var(--primary);
   border-radius: 0 4px 4px 0;
-  box-shadow: 4px 0 0 4px black;
+  box-shadow: 4px 0 0 4px var(--shadow);
+}
+.light #control-slider-mui.dashboard highlight {
+  box-shadow: 4px 0 0 4px var(--surface-variant);
 }
 
 #control-slider-mui trough {
@@ -227,18 +253,18 @@ highlight {
   min-width: 40px;
   border-radius: 10px;
   min-height: 4px;
-  /* box-shadow: 0 0 0 4px black; */
+  /* box-shadow: 0 0 0 4px var(--shadow); */
 }
 
 #control-slider-mui.vertical:hover slider {
   min-height: 2px;
-  box-shadow: 0 -1px 0 4px black;
+  box-shadow: 0 -1px 0 4px var(--shadow);
 }
 
 #control-slider-mui.vertical highlight {
   background-color: var(--primary);
   border-radius: 4px 4px 12px 12px;
-  box-shadow: 0 -4px 0 4px black;
+  box-shadow: 0 -4px 0 4px var(--shadow);
 }
 
 #control-slider-mui.vertical trough {
@@ -250,6 +276,11 @@ highlight {
 #control-slider-mui.vertical.mute highlight,
 #control-slider-mui.vertical.mute slider {
   background-color: var(--outline);
+}
+.light #control-slider-mui.vertical.mute highlight,
+.light #control-slider-mui.vertical.mute trough,
+.light #control-slider-mui.vertical.mute slider {
+  background-color: var(--on-surface-variant);
 }
 
 #control-slider-mui.vertical.vol-overflow-slider highlight,

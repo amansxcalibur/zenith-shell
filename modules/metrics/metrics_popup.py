@@ -6,12 +6,14 @@ from fabric.widgets.label import Label
 from fabric.widgets.scale import Scale
 from fabric.widgets.overlay import Overlay
 
+import icons
+
+from services.metrics import MetricsProvider
+
 from widgets.clipping_box import ClippingBox
 from widgets.graphs import AnimatedBarGraph, CircularGraph
 from widgets.shapes.expressive.morphing_shapes import ExpressiveShape
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
-from services.metrics import MetricsProvider
-import icons
 
 from gi.repository import GLib  # type: ignore
 
@@ -40,24 +42,19 @@ class Metrics(Box):
         )
 
     def _build_widgets(self):
-        self.cpu_graph = AnimatedBarGraph(
-            bar_width=4, history_seconds=HISTORY_DEF
-        )
-        self.mem_graph = AnimatedBarGraph(
-            bar_width=4, history_seconds=HISTORY_DEF
-        )
+        self.cpu_graph = AnimatedBarGraph(bar_width=4, history_seconds=HISTORY_DEF)
+        self.mem_graph = AnimatedBarGraph(bar_width=4, history_seconds=HISTORY_DEF)
         self.cpu_circular_graph = CircularGraph(bar_count=psutil.cpu_count())
 
         self.cpu_label = MaterialFontLabel(
             text="--",
             v_align="center",
-            style="font-size: 30px;",
+            style_classes="metrics-main-label",
             font_family="Google Sans Flex",
         )
         self.disk_label = MaterialFontLabel(
             text="--",
-            style_classes="roboto",
-            style="font-size: 30px",
+            style_classes="metrics-main-label",
             font_family="Google Sans Flex",
             h_expand=True,
             v_expand=True,
@@ -130,6 +127,7 @@ class Metrics(Box):
                 spacing=5,
                 children=[
                     Box(
+                        style_classes = "metrics-sub-text",
                         h_expand=True,
                         v_expand=True,
                         h_align="center",
@@ -167,7 +165,7 @@ class Metrics(Box):
             size=(250, 250),
             h_expand=True,
             v_align="center",
-            style="background-color: black; border-radius: 999px",
+            style="background-color: var(--shadow); border-radius: 999px",
             children=Box(
                 h_expand=True,
                 style="margin: -10px;",
@@ -179,7 +177,7 @@ class Metrics(Box):
                         child=Box(
                             style="padding: 2px;",
                             children=ExpressiveShape(
-                                style="color: var(--surface-semi-bright);",
+                                name="metrics-radial-inner-shape",
                                 shape=cookie_12,
                                 child=Box(children=[self.cpu_circular_graph]),
                             ),
@@ -221,7 +219,7 @@ class Metrics(Box):
             return Overlay(
                 name="metric-graph-container",
                 child=ClippingBox(
-                    style="background-color: black; border-radius: 20px", children=graph
+                    style="background-color: var(--shadow); border-radius: 20px", children=graph
                 ),
                 overlays=[overlay_content],
             )

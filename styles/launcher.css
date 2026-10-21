@@ -87,6 +87,9 @@
   transition: all 0.1s linear;
   background-color: var(--surface);
 }
+.light #app-slot-btn {
+  background-color: var(--surface-variant);
+}
 #app-slot-btn.selected,
 #app-slot-btn:hover,
 #app-slot-btn:focus {
@@ -112,6 +115,9 @@
 #app-desc {
   color: var(--outline);
   font-size: 14px;
+}
+.light #app-desc {
+  color: var(--on-surface);
 }
 
 #app-slot-btn:hover #app-label,

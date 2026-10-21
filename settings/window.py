@@ -4,25 +4,24 @@ from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
-from config.info import IS_WAYLAND
-
-if IS_WAYLAND:
-    from fabric.widgets.window import Window
-else:
-    from fabric.widgets.x11 import X11Window as Window
 
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.utils.helpers import exec_shell_command_async
 
-from modules.wiggle_bar import WigglyArrow
-from widgets.material_label import MaterialIconLabel, MaterialFontLabel
-from widgets.shapes.expressive.morphing_shapes import AnimateShapeMorph
-
 import icons
+
+from config.info import IS_WAYLAND
 from config.i3.utils import is_swayfx
-from utils.cursor import add_hover_cursor
 from config.info import CONFIG_FILE, SHELL_NAME
 from config.bindings import KeybindingValidationError
+
+from modules.wiggle_bar import WigglyArrow
+
+from utils.colors import bind_theme
+from utils.cursor import add_hover_cursor
+
+from widgets.material_label import MaterialIconLabel, MaterialFontLabel
+from widgets.shapes.expressive.morphing_shapes import AnimateShapeMorph
 
 from .state import state
 from .base import TabConfig
@@ -35,6 +34,11 @@ from .tabs import (
     ShapesTab,
     I3Tab,
 )
+
+if IS_WAYLAND:
+    from fabric.widgets.window import Window
+else:
+    from fabric.widgets.x11 import X11Window as Window
 
 import gi
 
@@ -87,6 +91,8 @@ class SettingsWindow(Window):
                 sticky=False,
                 all_visible=True,
             )
+
+        bind_theme(self)
 
         self.buttons = {}
         self.stack = None

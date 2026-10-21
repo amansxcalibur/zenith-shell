@@ -8,9 +8,9 @@
   transition: border-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 
-#vert-top {
-  /* background-color: red; */
-}
+/* #vert-top {
+  background-color: red;
+} */
 
 #vert-top.expand {
   min-height: 40px;
@@ -167,5 +167,7 @@
   color: var(--outline);
   margin: -5px -4px;
   font-size: 25px;
-  /* background-color: red; */
+}
+.light #close-control-label {
+  color: var(--foreground);
 }

@@ -4,9 +4,8 @@
   border-radius: 20px;
   font-size: 20px;
 }
-
-.power-profile-btn.active {
-  background-color: var(--primary);
+.light .power-profile-btn {
+  color: var(--foreground);
 }
 
 #power-profiles-container {
@@ -21,6 +20,9 @@
   border-radius: 999px;
   background: var(--on-primary);
 }
+.light #power-profile-slider {
+  background: var(--primary);
+}
 
 #power-profile-spacer-left {
   transition: min-width 0.25s cubic-bezier(0.5, 0.25, 0, 1);
@@ -33,6 +35,9 @@
   font-size: 20px;
   background-color: var(--shadow);
 }
+.light #profile-label {
+  background-color: var(--background);
+}
 
 #power-profile-icon {
   min-width: 65px;
@@ -40,4 +45,7 @@
   border-radius: 20px;
   font-size: 22px;
   color: var(--primary);
+}
+.light #power-profile-icon {
+  background-color: var(--outline-variant);
 }

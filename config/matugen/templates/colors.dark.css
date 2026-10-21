@@ -1,89 +1,89 @@
 :vars {
-  --background: {{colors.background.default.hex}};
-  --on-background: {{colors.on_background.default.hex}};
-  --foreground: {{colors.on_background.default.hex}};
-  --cursor: {{colors.on_background.default.hex}};
+  --background: {{colors.background.dark.hex}};
+  --on-background: {{colors.on_background.dark.hex}};
+  --foreground: {{colors.on_background.dark.hex}};
+  --cursor: {{colors.on_background.dark.hex}};
 
   /* M3 Surface Tones */
-  --surface-dim: {{colors.surface_dim.default.hex}};
-  --surface-dull: {{colors.surface.default.hex | lighten: -2.5}};
-  --surface: {{colors.surface.default.hex}};
-  --surface-bright: {{colors.surface_bright.default.hex}};
-  --surface-semi-bright: {{colors.surface_bright.default.hex | lighten: -9.0}};
+  --surface-dim: {{colors.surface_dim.dark.hex}};
+  --surface-dull: {{colors.surface.dark.hex | lighten: -2.5}};
+  --surface: {{colors.surface.dark.hex}};
+  --surface-bright: {{colors.surface_bright.dark.hex}};
+  --surface-semi-bright: {{colors.surface_bright.dark.hex | lighten: -9.0}};
 
   /* M3 Surface Containers */
-  --surface-container-lowest: {{colors.surface_container_lowest.default.hex}};
-  --surface-container-low: {{colors.surface_container_low.default.hex}};
-  --surface-container: {{colors.surface_container.default.hex}};
-  --surface-container-high: {{colors.surface_container_high.default.hex}};
-  --surface-container-highest: {{colors.surface_container_highest.default.hex}};
+  --surface-container-lowest: {{colors.surface_container_lowest.dark.hex}};
+  --surface-container-low: {{colors.surface_container_low.dark.hex}};
+  --surface-container: {{colors.surface_container.dark.hex}};
+  --surface-container-high: {{colors.surface_container_high.dark.hex}};
+  --surface-container-highest: {{colors.surface_container_highest.dark.hex}};
 
   /* Variants & Outlines */
-  --surface-variant: {{colors.surface_variant.default.hex}};
-  --on-surface: {{colors.on_surface.default.hex}};
-  --on-surface-variant: {{colors.on_surface_variant.default.hex}};
-  --outline: {{colors.outline.default.hex}};
-  --outline-variant: {{colors.outline_variant.default.hex}};
+  --surface-variant: {{colors.surface_variant.dark.hex}};
+  --on-surface: {{colors.on_surface.dark.hex}};
+  --on-surface-variant: {{colors.on_surface_variant.dark.hex}};
+  --outline: {{colors.outline.dark.hex}};
+  --outline-variant: {{colors.outline_variant.dark.hex}};
 
   /* Primary */
-  --primary: {{colors.primary.default.hex}};
-  --on-primary: {{colors.on_primary.default.hex}};
-  --primary-container: {{colors.primary_container.default.hex}};
-  --on-primary-container: {{colors.on_primary_container.default.hex}};
-  --primary-fixed: {{colors.primary_fixed.default.hex}};
-  --primary-fixed-dim: {{colors.primary_fixed_dim.default.hex}};
-  --on-primary-fixed: {{colors.on_primary_fixed.default.hex}};
-  --on-primary-fixed-variant: {{colors.on_primary_fixed_variant.default.hex}};
+  --primary: {{colors.primary.dark.hex}};
+  --on-primary: {{colors.on_primary.dark.hex}};
+  --primary-container: {{colors.primary_container.dark.hex}};
+  --on-primary-container: {{colors.on_primary_container.dark.hex}};
+  --primary-fixed: {{colors.primary_fixed.dark.hex}};
+  --primary-fixed-dim: {{colors.primary_fixed_dim.dark.hex}};
+  --on-primary-fixed: {{colors.on_primary_fixed.dark.hex}};
+  --on-primary-fixed-variant: {{colors.on_primary_fixed_variant.dark.hex}};
 
   /* Secondary */
-  --secondary: {{colors.secondary.default.hex}};
-  --on-secondary: {{colors.on_secondary.default.hex}};
-  --secondary-container: {{colors.secondary_container.default.hex}};
-  --on-secondary-container: {{colors.on_secondary_container.default.hex}};
-  --secondary-fixed: {{colors.secondary_fixed.default.hex}};
-  --secondary-fixed-dim: {{colors.secondary_fixed_dim.default.hex}};
-  --on-secondary-fixed: {{colors.on_secondary_fixed.default.hex}};
-  --on-secondary-fixed-variant: {{colors.on_secondary_fixed_variant.default.hex}};
+  --secondary: {{colors.secondary.dark.hex}};
+  --on-secondary: {{colors.on_secondary.dark.hex}};
+  --secondary-container: {{colors.secondary_container.dark.hex}};
+  --on-secondary-container: {{colors.on_secondary_container.dark.hex}};
+  --secondary-fixed: {{colors.secondary_fixed.dark.hex}};
+  --secondary-fixed-dim: {{colors.secondary_fixed_dim.dark.hex}};
+  --on-secondary-fixed: {{colors.on_secondary_fixed.dark.hex}};
+  --on-secondary-fixed-variant: {{colors.on_secondary_fixed_variant.dark.hex}};
 
   /* Tertiary */
-  --tertiary: {{colors.tertiary.default.hex}};
-  --on-tertiary: {{colors.on_tertiary.default.hex}};
-  --tertiary-container: {{colors.tertiary_container.default.hex}};
-  --on-tertiary-container: {{colors.on_tertiary_container.default.hex}};
-  --tertiary-fixed: {{colors.tertiary_fixed.default.hex}};
-  --tertiary-fixed-dim: {{colors.tertiary_fixed_dim.default.hex}};
-  --on-tertiary-fixed: {{colors.on_tertiary_fixed.default.hex}};
-  --on-tertiary-fixed-variant: {{colors.on_tertiary_fixed_variant.default.hex}};
+  --tertiary: {{colors.tertiary.dark.hex}};
+  --on-tertiary: {{colors.on_tertiary.dark.hex}};
+  --tertiary-container: {{colors.tertiary_container.dark.hex}};
+  --on-tertiary-container: {{colors.on_tertiary_container.dark.hex}};
+  --tertiary-fixed: {{colors.tertiary_fixed.dark.hex}};
+  --tertiary-fixed-dim: {{colors.tertiary_fixed_dim.dark.hex}};
+  --on-tertiary-fixed: {{colors.on_tertiary_fixed.dark.hex}};
+  --on-tertiary-fixed-variant: {{colors.on_tertiary_fixed_variant.dark.hex}};
 
   /* Error */
-  --error: {{colors.error.default.hex}};
-  --error-dim: {{colors.error.default.hex | lighten: -10.0}};
-  --on-error: {{colors.on_error.default.hex}};
-  --error-container: {{colors.error_container.default.hex}};
-  --on-error-container: {{colors.on_error_container.default.hex}};
+  --error: {{colors.error.dark.hex}};
+  --error-dim: {{colors.error.dark.hex | lighten: -10.0}};
+  --on-error: {{colors.on_error.dark.hex}};
+  --error-container: {{colors.error_container.dark.hex}};
+  --on-error-container: {{colors.on_error_container.dark.hex}};
 
   /* Inverse */
-  --inverse-surface: {{colors.inverse_surface.default.hex}};
-  --inverse-on-surface: {{colors.inverse_on_surface.default.hex}};
-  --inverse-primary: {{colors.inverse_primary.default.hex}};
+  --inverse-surface: {{colors.inverse_surface.dark.hex}};
+  --inverse-on-surface: {{colors.inverse_on_surface.dark.hex}};
+  --inverse-primary: {{colors.inverse_primary.dark.hex}};
 
   /* Effects */
-  --shadow: {{colors.shadow.default.hex}};
-  --scrim: {{colors.scrim.default.hex}};
+  --shadow: {{colors.shadow.dark.hex}};
+  --scrim: {{colors.scrim.dark.hex}};
 
-  --red: {{colors.red.default.hex}};
-  --red-dim: {{colors.red.default.hex | lighten: -10.0}};
-  --green: {{colors.green.default.hex}};
-  --green-dim: {{colors.green.default.hex | lighten: -10.0}};
-  --yellow: {{colors.yellow.default.hex}};
-  --yellow-dim: {{colors.yellow.default.hex | lighten: -10.0}};
-  --blue: {{colors.blue.default.hex}};
-  --blue-dim: {{colors.blue.default.hex | lighten: -10.0}};
-  --magenta: {{colors.magenta.default.hex}};
-  --magenta-dim: {{colors.magenta.default.hex | lighten: -10.0}};
-  --cyan: {{colors.cyan.default.hex}};
-  --cyan-dim: {{colors.cyan.default.hex | lighten: -10.0}};
-  --white: {{colors.white.default.hex}};
-  --pink: {{colors.pink.default.hex}};
-  --light-pink: {{colors.light_pink.default.hex}};
+  --red: {{colors.red.dark.hex}};
+  --red-dim: {{colors.red.dark.hex | lighten: -10.0}};
+  --green: {{colors.green.dark.hex}};
+  --green-dim: {{colors.green.dark.hex | lighten: -10.0}};
+  --yellow: {{colors.yellow.dark.hex}};
+  --yellow-dim: {{colors.yellow.dark.hex | lighten: -10.0}};
+  --blue: {{colors.blue.dark.hex}};
+  --blue-dim: {{colors.blue.dark.hex | lighten: -10.0}};
+  --magenta: {{colors.magenta.dark.hex}};
+  --magenta-dim: {{colors.magenta.dark.hex | lighten: -10.0}};
+  --cyan: {{colors.cyan.dark.hex}};
+  --cyan-dim: {{colors.cyan.dark.hex | lighten: -10.0}};
+  --white: {{colors.white.dark.hex}};
+  --pink: {{colors.pink.dark.hex}};
+  --light-pink: {{colors.light_pink.dark.hex}};
 }

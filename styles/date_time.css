@@ -1,26 +1,26 @@
-#date-time{
-    all:unset;
-    padding: 0px 8px;
-    margin: 0px;
-    font-family: Google Sans Flex;
-    font-weight: 600;
-    margin-bottom: -2px;
+#date-time {
+  all: unset;
+  padding: 0px 8px;
+  margin: 0px;
+  font-family: Google Sans Flex;
+  font-weight: 600;
+  margin-bottom: -2px;
 }
 
-label{
-    color: white;
-    font-size: 15px;
+/* label {
+  color: white;
+  font-size: 15px;
+} */
+
+#date-time > label {
+  color: var(--foreground);
+  font-size: 17px;
 }
 
-#date-time > label{
-    color: white;
-    font-size: 17px;
-}
-
-#date-time-container{
-    margin: 0px;
-    padding: 0px;
-    padding-left: 0px;
-    border-radius: 17px;
-    background-color: black;
+#date-time-container {
+  margin: 0px;
+  padding: 0px;
+  padding-left: 0px;
+  border-radius: 17px;
+  background-color: var(--shadow);
 }

@@ -1,5 +1,5 @@
-#slider-mui{
-    min-height: 44px;
+#slider-mui {
+  min-height: 44px;
 }
 
 #slider-mui trough {
@@ -8,6 +8,9 @@
   border-radius: 5px;
   padding-right: 12px; /* counter slider negative margins */
 }
+.light #slider-mui trough {
+  background-color: var(--outline);
+}
 
 #slider-mui slider {
   margin: -20px 0px -20px 12px;
@@ -15,7 +18,9 @@
   min-width: 4px;
   min-height: 40px;
   border-radius: 10px;
-  box-shadow: 0 0 0 4px var(--surface);
+  box-shadow:
+    4px 0 0 0 var(--surface),
+    -4px 0 0 0 var(--surface);
 }
 
 #slider-mui highlight {
@@ -28,6 +33,9 @@
   background-color: var(--surface-bright);
   min-width: 10px;
   min-height: 300px;
+}
+.light #slider-mui.vertical trough {
+  background-color: var(--surface-dim);
 }
 
 #slider-mui.vertical slider {

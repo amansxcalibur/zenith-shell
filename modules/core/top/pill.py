@@ -4,24 +4,24 @@ from fabric.widgets.button import Button
 from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
+import icons
+
+from config.config import config
+from config.info import SHELL_NAME, IS_WAYLAND, IPC_UTIL
+
+from modules.notifications.notification import NotificationManager
+
+from utils.colors import bind_theme
+from utils.helpers import get_absolute_wayland_widget_position
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
 from widgets.elastic.elastic_stack import ElasticStack
-
-from config.info import IS_WAYLAND
 
 if IS_WAYLAND:
     from gi.repository import GtkLayerShell  # type: ignore
     from fabric.widgets.wayland import WaylandWindow as Window
 else:
     from widgets.overrides import PatchedX11Window as Window
-
-from modules.notifications.notification import NotificationManager
-from utils.helpers import get_absolute_wayland_widget_position
-
-import icons
-from config.config import config
-from config.info import SHELL_NAME, IS_WAYLAND, IPC_UTIL
 
 
 class TopPill(Window, Service):
@@ -60,6 +60,8 @@ class TopPill(Window, Service):
                 all_visible=True,
             )
         self.set_role(self.WIN_ROLE)
+
+        bind_theme(self)
 
         self._drag_state = {
             "dragging": False,

@@ -1,12 +1,12 @@
 #flying-tile {
   transition: background-color 0.3s linear;
-  background-color: alpha(var(--shadow), 0);
+  background-color: alpha(black, 0);
 }
 #flying-tile.darken {
-  background-color: alpha(var(--shadow), 0.4);
+  background-color: alpha(black, 0.4);
 }
 
 .fade-out {
-    opacity: 0;
-    transition: opacity 200ms ease-out;
+  opacity: 0;
+  transition: opacity 200ms ease-out;
 }

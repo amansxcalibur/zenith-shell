@@ -10,13 +10,17 @@ from widgets.overrides import Svg
 
 from modules.wiggle_bar import WigglyScale
 from modules.wallpaper import WallpaperService
+
 from services.volume_service import VolumeService
+from services.theme import ThemeMode, ThemeService
+from services.player_service import PlayerManager, PlayerService
+
+from utils.colors import get_css_variable
+from utils.helpers import format_accel_to_keybind
+
 from widgets.material_label import MaterialIconLabel
 from widgets.popup_window import PopSlot, FlyingOverlay
 from widgets.animated_scale import AnimatedScale
-from services.player_service import PlayerManager, PlayerService
-from utils.colors import get_css_variable
-from utils.helpers import format_accel_to_keybind
 
 import svg
 import icons
@@ -92,7 +96,7 @@ class PlayerSource(Button):
         )
         self.audio_device_label = Label(
             label=device_name,
-            style="color: var(--shadow); font-size: 13px;",
+            style="font-size: 13px;",
             max_chars_width=MAX_AUDIO_DEVICE_NAME_CHARS,
             ellipsization="end",
         )
@@ -103,7 +107,6 @@ class PlayerSource(Button):
                 MaterialIconLabel(
                     icon_text=icons.headphones.symbol(),
                     wght=600,
-                    style="color: var(--shadow);",
                 ),
                 self.audio_device_label,
             ],
@@ -122,7 +125,7 @@ class PlayerSource(Button):
         )
         self.menu_spacer = Box(
             h_expand=True,
-            style="min-height: 2px; border-radius: 10px; background-color:grey;",
+            style="min-height: 2px; border-radius: 10px; background-color: grey;",
         )
         self.song = Label(
             name="song",
@@ -219,27 +222,39 @@ class PlayerSource(Button):
         self.toggle = False
         self.audio_source_stack.set_visible_child(self.audio_source)
 
-    def update_theme(self, theme_json):
+    def update_theme(self, theme_json, mode: ThemeMode):
         if theme_json:
-            primary_color = theme_json["colors"]["primary"]["dark"]["color"]
+            primary_color = theme_json["colors"]["primary"][mode.value]["color"]
+            primary_color_dark = theme_json["colors"]["primary"]["dark"]["color"]
             surface_container_high_color = theme_json["colors"][
                 "surface_container_high"
-            ]["dark"]["color"]
-            surface_bright_color = theme_json["colors"]["surface_bright"]["dark"][
+            ][mode.value]["color"]
+            surface_bright_color = (
+                theme_json["colors"]["surface_bright"]["dark"]["color"]
+                if mode == ThemeMode.DARK
+                else theme_json["colors"]["outline_variant"]["light"]["color"]
+            )
+            surface_color = theme_json["colors"]["surface"][mode.value]["color"]
+            foreground_color = theme_json["colors"]["on_background"][mode.value][
                 "color"
             ]
-            surface_color = theme_json["colors"]["surface"]["dark"]["color"]
         else:
             colors_path = f"{ROOT_DIR}/styles/colors.css"
             primary_color = get_css_variable(colors_path, "--primary")
+            primary_color_dark = primary_color
             surface_container_high_color = get_css_variable(
                 colors_path, "--surface-semi-bright"
             )
             surface_bright_color = get_css_variable(colors_path, "--surface-bright")
             surface_color = get_css_variable(colors_path, "--surface")
+            foreground_color = get_css_variable(colors_path, "--foreground")
 
-        self.audio_source.set_style(f"background-color: {primary_color}")
-        self.player_menu.set_style(f"background-color: {surface_container_high_color}")
+        self.audio_source.set_style(f"background-color: {primary_color_dark}")
+        self.player_menu.set_style(
+            f"background-color: {surface_container_high_color}; color: {foreground_color}"
+        )
+        self.artist.set_style(f"color: {foreground_color}")
+        self.song.set_style(f"color: {foreground_color}")
         self.menu_spacer.set_style(
             f"min-height: 2px; border-radius: 10px; background-color:{surface_bright_color};"
         )
@@ -283,6 +298,7 @@ class Player(Box):
         if not config.VERTICAL:
             self.remove_style_class("vertical")
 
+        self._theme_service = ThemeService()
         self._volume_service = VolumeService()
         self._wallpaper_service = WallpaperService()
 
@@ -500,6 +516,7 @@ class Player(Box):
         self._player_service.connect("track-position", self.on_update_track_position)
         self._player_service.connect("theme-change", self._apply_theme)
         self._player_service.connect("artwork-change", self._apply_artwork)
+        self._theme_service.connect("theme-changed", self._switch_theme_mode)
 
         self._volume_service.connect(
             "speaker-device-changed", self.on_audio_device_changed
@@ -518,9 +535,11 @@ class Player(Box):
             self._apply_artwork(self._player_service, current_artwork)
         current_theme = self._player_service.get_theme()
         if current_theme:
-            self._apply_theme(self._player_service, current_theme)
+            self._apply_theme(
+                self._player_service, current_theme, self._theme_service.theme
+            )
         else:
-            self.audio_source.update_theme({})
+            self.audio_source.update_theme({}, self._theme_service.theme)
 
     def on_update_track_position(self, sender, pos, dur):
         if dur == 0:
@@ -567,15 +586,21 @@ class Player(Box):
 
         GLib.idle_add(lambda art_path: apply(art_path), art_path)
 
-    def _apply_theme(self, source, theme_json):
+    def _apply_theme(self, source, theme_json, mode: ThemeMode | None = None):
+        if mode is None:
+            mode = self._theme_service.theme
         primary_color = theme_json["colors"]["primary"]["dark"]["color"]
 
         def _apply():
             self.play_pause_button.set_style(f"background-color: {primary_color}")
             self.player_icon.set_style(f"color: {primary_color}")
-            self.audio_source.update_theme(theme_json)
+            self.audio_source.update_theme(theme_json, mode)
 
         GLib.idle_add(_apply)
+
+    def _switch_theme_mode(self, service: ThemeService, mode: ThemeMode):
+        theme_json = self._player_service.get_theme()
+        self._apply_theme(self._player_service, theme_json, mode)
 
     def _update_playback_status(self):
         if (

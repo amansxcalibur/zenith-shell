@@ -17,7 +17,7 @@ from widgets.overrides import Svg
 from widgets.popup_window import SharedPopupWindow
 from widgets.loader import MaterialExpressiveLoader
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
-from services.theme import ThemeService
+from services.theme import ThemeMode, ThemeService
 
 import icons
 from svg import underscore, question_mark
@@ -207,11 +207,13 @@ class WeatherMini(EventBox):
         self.dark = dark
 
         self.service = WeatherService()
-        initial_data: WeatherData = self.service.current_data
+        self.theme_service = ThemeService()
+
+        self.current_data: WeatherData = self.service.current_data
 
         self.temperature = MaterialFontLabel(
             name="weather-temp",
-            text=initial_data.temp,
+            text=self.current_data.temp,
             font_family="Google Sans Flex",
             wght=500,
         )
@@ -219,7 +221,7 @@ class WeatherMini(EventBox):
         self.emoji_svg = Svg(
             name="weather-emoji",
             size=(20, 20),
-            svg_string=initial_data.get_emoji(self.dark),
+            svg_string=self.current_data.get_emoji(self.dark),
         )
 
         self.refresh_btn = Button(
@@ -244,6 +246,9 @@ class WeatherMini(EventBox):
         self.connect("enter-notify-event", self._on_hover, True)
         self.connect("leave-notify-event", self._on_hover, False)
         self.service.connect("value-changed", self._on_weather_update)
+        self.theme_service.connect(
+            "theme-changed", lambda _, mode: self._update_emoji(mode)
+        )
 
         self.build_popup_win()
 
@@ -260,8 +265,19 @@ class WeatherMini(EventBox):
         self.popup_win.add_child(pointing_widget=self, child=WeatherCard())
 
     def _on_weather_update(self, source, data: WeatherData):
+        self.current_data = data
         self.temperature.set_label(data.temp)
-        self.emoji_svg.set_from_string(data.get_emoji(self.dark))
+        self._update_emoji()
+
+    def _update_emoji(self, mode: ThemeMode | None = None):
+        if mode is None:
+            mode = self.theme_service.theme
+
+        self.emoji_svg.set_from_string(
+            self.current_data.get_emoji(
+                self.dark if mode == ThemeMode.DARK else not self.dark
+            )
+        )
 
 
 class WeatherCard(Box):
@@ -270,7 +286,9 @@ class WeatherCard(Box):
         self.dark = dark
 
         self.service = WeatherService()
-        initial_data = self.service.current_data
+        self.theme_service = ThemeService()
+
+        self.current_data: WeatherData = self.service.current_data
 
         self.last_updated_label = Label(
             name="weather-tile",
@@ -284,7 +302,7 @@ class WeatherCard(Box):
             name="weather-temp",
             style_classes=["card"],
             v_align="end",
-            text=initial_data.temp,
+            text=self.current_data.temp,
             font_family="Google Sans Flex",
             wght=500,
         )
@@ -297,7 +315,11 @@ class WeatherCard(Box):
             h_expand=True,
             v_expand=True,
             size=(50, 50),
-            svg_string=initial_data.get_emoji(self.dark),
+            svg_string=self.current_data.get_emoji(
+                self.dark
+                if self.theme_service.theme == ThemeMode.DARK
+                else not self.dark
+            ),
         )
 
         # location
@@ -305,27 +327,31 @@ class WeatherCard(Box):
             name="weather-location",
             style_classes=["card"],
             h_align="end",
-            label=initial_data.location,
+            label=self.current_data.location,
         )
 
         # weather metrics
         self.humidity_label = Label(
-            name="weather-humidity", style_classes=["card"], label=initial_data.humidity
+            name="weather-humidity",
+            style_classes=["card"],
+            label=self.current_data.humidity,
         )
 
         self.pressure_label = Label(
-            name="weather-pressure", style_classes=["card"], label=initial_data.pressure
+            name="weather-pressure",
+            style_classes=["card"],
+            label=self.current_data.pressure,
         )
 
         self.wind_label = Label(
-            name="weather-wind", style_classes=["card"], label=initial_data.wind
+            name="weather-wind", style_classes=["card"], label=self.current_data.wind
         )
 
         self.description = Label(
             name="weather-desc",
             style_classes=["card"],
             h_align="end",
-            label=initial_data.description,
+            label=self.current_data.description,
             line_wrap="word-char",
             max_chars_width=15,
         )
@@ -398,6 +424,9 @@ class WeatherCard(Box):
 
         self.service.connect("value-changed", self.update_weather)
         self.service.connect("is-loading", lambda _, loading: self.set_loading(loading))
+        self.theme_service.connect(
+            "theme-changed", lambda _, mode: self._update_emoji(mode)
+        )
 
     def set_loading(self, is_loading: bool):
         if is_loading:
@@ -421,9 +450,11 @@ class WeatherCard(Box):
         )
 
     def update_weather(self, source, data):
+        self.current_data = data
+        
         self.temperature_label.set_label(data.temp)
         self.location.set_label(data.location)
-        self.emoji_svg.set_from_string(data.get_emoji(self.dark))
+        self._update_emoji()
         self.humidity_label.set_label(data.humidity)
         self.wind_label.set_label(data.wind)
         self.pressure_label.set_label(data.pressure)
@@ -431,6 +462,16 @@ class WeatherCard(Box):
         self.last_updated_label.set_label(f"Last updated: {time.strftime('%I:%M %p')}")
 
         self.set_loading(False)
+
+    def _update_emoji(self, mode: ThemeMode | None = None):
+        if mode is None:
+            mode = self.theme_service.theme
+
+        self.emoji_svg.set_from_string(
+            self.current_data.get_emoji(
+                self.dark if mode == ThemeMode.DARK else not self.dark
+            )
+        )
 
 
 class WeatherPill(Gtk.DrawingArea):
@@ -445,7 +486,7 @@ class WeatherPill(Gtk.DrawingArea):
 
         self.service = WeatherService()
         self._current_data = self.service.current_data
-        
+
         self.service.connect("value-changed", self.on_weather_update)
         self.theme_service.connect(
             "colors-changed", lambda *_: self._load_theme_colors()
@@ -455,7 +496,9 @@ class WeatherPill(Gtk.DrawingArea):
 
     def on_weather_update(self, source, data: WeatherData):
         self._current_data = data
-        svg_string = data.get_emoji(self.dark)
+        svg_string = data.get_emoji(
+            self.dark if self.theme_service.theme == ThemeMode.DARK else not self.dark
+        )
         try:
             self._svg_handle = Rsvg.Handle.new_from_data(svg_string.encode())
         except Exception as e:

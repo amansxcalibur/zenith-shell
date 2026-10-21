@@ -68,8 +68,15 @@
 
 #disk-icon,
 #cpu-icon,
-#ram-icon {
-  /* color: var(--foreground); */
+#ram-icon,
+#bat-icon {
+  color: white;
+}
+.light #disk-icon,
+.light #cpu-icon,
+.light #ram-icon,
+.light #bat-icon {
+  color: var(--foreground);
 }
 
 #metrics-icon.alert {
@@ -79,6 +86,9 @@
 #metrics-level {
   font-weight: bold;
   margin: 0 4px;
+}
+.light #metrics-level {
+  color: var(--foreground);
 }
 
 #metrics-sep {
@@ -166,7 +176,7 @@
   }
   50% {
     background-color: white;
-    color: black;
+    color: var(--shadow);
     border: red;
   }
   100% {
@@ -199,18 +209,24 @@
   padding: 10px;
   border-radius: 20px;
 }
+.light #metrics {
+  color: var(--foreground);
+}
 
 .metrics-storage-circle {
   border: 1.5px solid var(--surface-bright);
-  background-color: black;
+  background-color: var(--shadow);
 }
 
 .metrics-storage-circle.active {
   background-color: var(--surface-semi-bright);
 }
+.light .metrics-storage-circle.active {
+  background-color: var(--primary);
+}
 
 .metrics-desc-box {
-  background-color: black;
+  background-color: var(--shadow);
   border-radius: 20px;
   padding: 0 12px;
 }
@@ -219,13 +235,44 @@
   color: var(--outline);
   font-size: 14px;
 }
+.light .metrics-sub-text {
+  color: var(--background);
+}
 
 #slider-mui.metrics-popup highlight {
   box-shadow: 4px 0 0 4px var(--shadow);
 }
 #slider-mui.metrics-popup slider {
-  box-shadow: 0 0 0 4px var(--shadow);
+  box-shadow:
+    -4px 0 0 0 var(--shadow),
+    4px 0 0 0 var(--shadow);
 }
 #slider-mui.metrics-popup:hover slider {
-  box-shadow: 1px 0 0 4px var(--shadow);
+  min-width: 2px;
+  margin: -20px 1px -20px 13px;
+  box-shadow:
+    -3px 0 0 2px var(--shadow),
+    3px 0 0 2px var(--shadow);
+}
+
+#cpu-expressive-shape {
+  background-color: var(--surface-bright);
+}
+.light #cpu-expressive-shape {
+  background-color: var(--primary);
+}
+
+#metrics-radial-inner-shape {
+  color: var(--surface-semi-bright);
+}
+.light #metrics-radial-inner-shape {
+  color: var(--primary);
+}
+
+.metrics-main-label {
+  font-size: 30px;
+  color: white;
+}
+.light .metrics-main-label {
+  color: var(--on-primary);
 }

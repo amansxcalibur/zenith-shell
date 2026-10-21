@@ -190,8 +190,6 @@ class ActionButton(EventBox):
             on_clicked=lambda b, *_: self.toggle_power_menu(),
         )
 
-        # self.children = self.restart_btn
-
         self.mapping = {
             self.start_power_btn: {"label": "Open Power Menu", "action": "power"},
             self.toggle_vrt_btn: {

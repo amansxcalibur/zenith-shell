@@ -5,11 +5,16 @@ menu {
   background-color: var(--surface-bright);
   padding: 6px;
 }
-
+menu.light {
+  background-color: var(--shadow);
+}
 
 menu > menuitem {
   border-radius: 10px;
   padding: 6px 10px;
+}
+menu.light > menuitem > * {
+  color: var(--foreground);
 }
 
 menu > menuitem:hover {
@@ -45,9 +50,4 @@ tooltip {
 tooltip > * {
   padding: 6px 10px;
   border-radius: 10px;
-}
-
-.solid-csd{
-  /* background-color: red; */
-  /* border-radius: 10px; */
 }

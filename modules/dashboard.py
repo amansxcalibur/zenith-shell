@@ -5,6 +5,10 @@ from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
 from fabric.widgets.centerbox import CenterBox
 
+import icons
+
+from config.config import config
+
 from modules.tile import TileSpecial
 from modules.network import Network
 from modules.agenda import AgendaApp
@@ -14,13 +18,12 @@ from modules.wavy_clock import WavyClock
 from modules.theme import ThemeSwitchTile
 from modules.player_mini import PlayerContainerMini
 from modules.notifications.notification import NotificationTile
-from widgets.material_label import MaterialIconLabel
-from widgets.popup_window import PopSlot, FlyingOverlay
 
-import icons
-from config.config import config
 from utils.helpers import open_settings
 from utils.cursor import add_hover_cursor
+
+from widgets.material_label import MaterialIconLabel
+from widgets.popup_window import PopSlot, FlyingOverlay
 
 
 class Dashboard(Box):
@@ -44,6 +47,7 @@ class Dashboard(Box):
 
         self.controls = controls
         self.brightness_revealer_mui = self.controls.get_brightness_slider_mui()
+        self.brightness_revealer_mui.add_style_class("dashboard")
 
         self.wavy_clock = Box(
             orientation="v",
@@ -98,8 +102,8 @@ class Dashboard(Box):
                 Box(
                     spacing=3,
                     children=[
-                        PopSlot (self.wifi, overlay=self.flying_overlay),
-                        PopSlot (self.bluetooth, overlay=self.flying_overlay),
+                        PopSlot(self.wifi, overlay=self.flying_overlay),
+                        PopSlot(self.bluetooth, overlay=self.flying_overlay),
                         self.mini_player_tile,
                     ],
                 ),
@@ -108,7 +112,7 @@ class Dashboard(Box):
                     children=[
                         self.silent,
                         CenterBox(
-                            style="background-color:var(--surface-bright); border-radius:20px;",
+                            name="dashabord-center-tile",
                             h_expand=True,
                             center_children=Label(
                                 label="~", style="font-size:25px; color: var(--outline)"

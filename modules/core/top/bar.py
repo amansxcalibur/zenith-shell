@@ -10,12 +10,14 @@ from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.x11 import X11WindowGeometry
 
-from widgets.clipping_box import ClippingBox
 from config.info import IS_WAYLAND
+from config.config import config
 
+from utils.colors import bind_theme
 from utils.helpers import toggle_class
 from utils.cursor import add_hover_cursor
-from config.config import config
+
+from widgets.clipping_box import ClippingBox
 
 import gi
 
@@ -62,6 +64,8 @@ class TopBar(Window):
                 **kwargs,
             )
         self._pill_ref = pill
+
+        bind_theme(self)
 
         self.is_open = False
         self._pill_is_docked = True

@@ -1,5 +1,5 @@
 #power-menu {
-  background-color: black;
+  background-color: var(--shadow);
   padding: 10px;
   border-radius: 25px;
   min-height: 30px;
@@ -11,13 +11,20 @@
   border-radius: 17px;
   border: none;
 }
+.light .menu-item {
+  color: var(--foreground);
+}
 
 .menu-item:hover,
 .menu-item:focus {
   background-color: var(--surface-bright);
 }
+.light .menu-item:hover,
+.light .menu-item:focus {
+  background-color: var(--primary);
+  color: var(--background);
+}
 
 .menu-label {
   font-size: 24px;
 }
-
