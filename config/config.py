@@ -119,6 +119,9 @@ class ConfigNode:
         if self._key_path and self._key_path[0] == "paths" and isinstance(current, str):
             return os.path.expanduser(current)
 
+        if isinstance(current, (dict, list)):
+            return copy.deepcopy(current)
+
         return current
 
     def set(self, path, value):
