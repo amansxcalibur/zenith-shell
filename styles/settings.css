@@ -119,7 +119,6 @@
 
 .settings-btn.bright {
   background-color: var(--surface-bright);
-  color: var(--on-primary);
 }
 .light .settings-btn.bright {
   background-color: var(--primary);

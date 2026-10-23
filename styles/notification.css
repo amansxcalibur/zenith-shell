@@ -41,12 +41,18 @@
 #notification-source {
   color: var(--outline);
 }
+.light #notification-source{
+  color: var(--on-surface-variant);
+}
 
 #notification-icon {
   font-size: 36px;
   margin-right: 7px;
   margin-left: 7px;
   color: var(--surface-bright);
+}
+.light #notification-icon{
+  color: var(--on-surface-variant);
 }
 #notification-icon.critical {
   color: var(--surface);
@@ -341,3 +347,8 @@
 /* #notif-carousal-scroller {
   background-color: green;
 } */
+
+
+.light #notif-low-bat-msg{
+  color: var(--foreground);
+}

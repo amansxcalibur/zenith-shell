@@ -3,20 +3,20 @@ from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
 
-from widgets.material_label import MaterialIconLabel
-
+import icons
+from config.config import config
 from config.info import IS_WAYLAND
+
+from modules.controls import ControlsManager
+from services.metrics import MetricsProvider
+
+from utils.colors import bind_theme
+from widgets.material_label import MaterialIconLabel
 
 if IS_WAYLAND:
     from fabric.widgets.wayland import WaylandWindow as Window
 else:
     from widgets.overrides import PatchedX11Window as Window
-
-from modules.controls import ControlsManager
-from services.metrics import MetricsProvider
-
-import icons
-from config.config import config
 
 
 class LowBatteryBanner(Revealer):
@@ -37,7 +37,7 @@ class LowBatteryBanner(Revealer):
         self.provider.connect("battery-changed", self.check_low_bat)
 
         self.dismissed = False
-        self.low_bat_msg = Label(label="Low Battery fam (<15%)")
+        self.low_bat_msg = Label(name="notif-low-bat-msg", label="Low Battery fam (<15%)")
 
         self.content_box = Box(
             orientation="v",
@@ -117,6 +117,8 @@ class TransientWindow(Window):
                 visible=False,
                 **kwargs,
             )
+
+        bind_theme(self)
 
         self.controls = ControlsManager()
 

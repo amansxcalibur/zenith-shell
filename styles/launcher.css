@@ -50,6 +50,9 @@
 .launch-mode-btn:hover {
   background-color: var(--surface-bright);
 }
+.light .launch-mode-btn:hover {
+  background-color: var(--surface-dull);
+}
 .launch-mode-btn > * {
   font-size: 24px;
   color: var(--primary);
@@ -96,6 +99,11 @@
   background-color: var(--surface-bright);
   padding-left: 24px;
 }
+.light #app-slot-btn.selected,
+.light #app-slot-btn:hover,
+.light #app-slot-btn:focus {
+  background-color: var(--surface-semi-bright);
+}
 #app-slot-btn:active {
   background-color: var(--primary);
 }
@@ -105,6 +113,9 @@
 }
 #app-icon.command {
   font-size: 24px;
+}
+.light #app-icon.command {
+  color: var(--foreground);
 }
 
 #app-label {
