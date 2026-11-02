@@ -23,6 +23,61 @@ else:
     from widgets.overrides import PatchedX11Window as Window
 
 
+# The slot (dashboard) and the overlay are separate surfaces. Moving the widget
+# between them leaves a gap where neither has painted it yet (the overlay needs
+# a configure roundtrip on first show; the slot must re-layout and repaint), so
+# a snapshot "ghost" stays on the *old* surface until the *new* one has painted.
+HANDOFF_FRAMES = 2  # 1 paint + 1 frame of margin for the compositor
+HANDOFF_TIMEOUT_MS = 150  # fallback if the receiving window never paints
+
+
+def snapshot_widget(widget: Gtk.Widget) -> Gtk.Image | None:
+    """Render `widget` as it looks now into a same-sized Gtk.Image."""
+    if not widget.get_mapped():
+        return None
+    alloc = widget.get_allocation()
+    if alloc.width <= 0 or alloc.height <= 0:
+        return None
+    scale = widget.get_scale_factor()
+    surface = cairo.ImageSurface(
+        cairo.FORMAT_ARGB32, alloc.width * scale, alloc.height * scale
+    )
+    surface.set_device_scale(scale, scale)
+    widget.draw(cairo.Context(surface))
+    ghost = Gtk.Image.new_from_surface(surface)
+    ghost.set_size_request(alloc.width, alloc.height)
+    ghost.show()
+    return ghost
+
+
+def after_frames(widget: Gtk.Widget, callback, frames: int = HANDOFF_FRAMES):
+    """Call `callback` once `widget`'s window has painted `frames` times."""
+    clock = widget.get_frame_clock()
+    if clock is None:  # not realized: nothing will paint, don't wait
+        callback()
+        return
+
+    state = {"left": frames, "done": False}
+
+    def finish():
+        if state["done"]:
+            return
+        state["done"] = True
+        clock.disconnect(paint_id)
+        callback()
+
+    def on_after_paint(_clock):
+        state["left"] -= 1
+        if state["left"] <= 0:
+            finish()
+        else:
+            widget.queue_draw()  # an idle window won't paint again on its own
+
+    paint_id = clock.connect("after-paint", on_after_paint)
+    GLib.timeout_add(HANDOFF_TIMEOUT_MS, lambda: finish() and False)
+    widget.queue_draw()  # make sure a paint actually happens
+
+
 class PopSlot(Box):
     def __init__(self, children, overlay=None, target_size=(320, 200), **kwargs):
         super().__init__(**kwargs)
@@ -63,10 +118,16 @@ class PopSlot(Box):
         self.pack_start(ghost_widget, True, True, 0)
         ghost_widget.show()
 
+    def clear_ghost(self, ghost_widget=None):
+        """Remove the ghost (only if it's still `ghost_widget`, when given)."""
+        ghost = getattr(self, "_ghost", None)
+        if ghost is None or (ghost_widget is not None and ghost is not ghost_widget):
+            return
+        self.remove(ghost)
+        self._ghost = None
+
     def restore(self, widget):
-        if getattr(self, "_ghost", None) is not None:
-            self.remove(self._ghost)
-            self._ghost = None
+        self.clear_ghost()
         self.pack_start(widget, True, True, 0)
         widget.show()
         self.set_size_request(-1, -1)
@@ -164,6 +225,7 @@ class FlyingOverlay(Window, Service):
         self.expanded_widget = None
         self._size_watch_handle = None
         self._pending_resize = None
+        self._handing_off = False  # pop-in ghost is up, waiting for the slot to paint
         self.add_keybinding("Escape", lambda *_: self.dismiss())
         self.connect("focus-out-event", lambda *_: self.dismiss())
 
@@ -261,7 +323,12 @@ class FlyingOverlay(Window, Service):
         return True, win_x, win_y
 
     def _begin_flight(self, start_x, start_y, start_w, start_h, target_size) -> bool:
-        self.source_widget = self.source_slot.release()
+        slot = self.source_slot
+        # keep the slot looking unchanged until the overlay has painted the tile
+        ghost = snapshot_widget(slot.child)
+        self.source_widget = slot.release()
+        if ghost is not None:
+            slot.show_ghost(ghost)
         self.content_stack.add_named(self.source_widget, "collapsed")
         self.content_stack.set_visible_child_name("collapsed")
         self.set_pass_through(False)
@@ -296,6 +363,9 @@ class FlyingOverlay(Window, Service):
             target=(target_x, target_y, target_w, target_h),
             on_complete=self._land,
         )
+        if ghost is not None:
+            # the overlay has now shown the tile; the slot can become a hole
+            after_frames(self, lambda: slot.clear_ghost(ghost))
         return False
 
     def _land(self):
@@ -345,8 +415,8 @@ class FlyingOverlay(Window, Service):
         if IS_WAYLAND:
             GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.NONE)
 
-        if self.source_slot is None:
-            return
+        if self.source_slot is None or self._handing_off:
+            return  # nothing popped, or already landing back in the slot
 
         def start_shrink():
             if hasattr(self.source_slot, "on_flight_begin_restored"):
@@ -385,41 +455,46 @@ class FlyingOverlay(Window, Service):
     def _finish_dismiss(self):
         slot = self.source_slot
         self._unwatch_content_size()
+        # must be cleared synchronously: _on_animation_finished checks it right
+        # after this callback and would start a retarget animation on a window
+        # that's about to hide
+        self._pending_resize = None
 
-        self.remove_style_class("fade-out")
-
-        gdk_window = self.source_widget.get_window()
-        # TODO: this shit doesn't work :(
-        if gdk_window is not None:
-            # Snapshot the flying widget's current appearance before we
-            # tear its GdkWindow down for reparenting. This lets us paint
-            # a stand-in in the slot's place during the unrealize/realize
-            # gap.
-            alloc = self.source_widget.get_allocation()
-            surface = gdk_window.create_similar_surface(
-                cairo.CONTENT_COLOR_ALPHA, alloc.width, alloc.height
+        # Pop-in handoff: the overlay keeps showing a ghost of the tile at the
+        # slot's position until the slot has painted the real one. Skipped when
+        # the slot isn't on screen (seek/fade-out case): nothing to hand off to.
+        ghost = snapshot_widget(self.source_widget) if slot.get_mapped() else None
+        if ghost is not None:
+            self._handing_off = True
+            self.content_stack.add_named(ghost, "ghost")
+            self.content_stack.set_visible_child_full(
+                "ghost", Gtk.StackTransitionType.NONE
             )
-            cr = cairo.Context(surface)
-            self.source_widget.draw(cr)
-
-            ghost = Gtk.Image.new_from_surface(surface)
-            ghost.set_size_request(alloc.width, alloc.height)
-            slot.show_ghost(ghost)  # slot packs `ghost` while widget is mid-reparent
+        else:
+            self.remove_style_class("fade-out")
 
         if self.expanded_widget is not None:
             self.content_stack.remove(self.expanded_widget)
             self.expanded_widget = None
         self.content_stack.remove(self.source_widget)
-        slot.restore(self.source_widget)  # swaps ghost out for the real widget
-        self.hide()
+        slot.restore(self.source_widget)
 
-        self.source_slot = None
-        self.source_widget = None
-        self.expanded_factory = None
-        self._pending_resize = None
+        def complete():
+            self.hide()
+            if ghost is not None:
+                self.content_stack.remove(ghost)
+            self.remove_style_class("fade-out")
+            self.source_slot = None
+            self.source_widget = None
+            self.expanded_factory = None
+            self._pending_resize = None
+            self._handing_off = False
+            self.flight_restored(slot)
 
-        # emit
-        self.flight_restored(slot)
+        if ghost is not None:
+            after_frames(slot, complete)
+        else:
+            complete()
 
     def _animate_to(self, start, target, on_complete=None):
         self._anim_start = start
