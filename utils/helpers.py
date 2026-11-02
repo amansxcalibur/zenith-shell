@@ -8,7 +8,7 @@ from loguru import logger
 from collections.abc import Callable
 
 from fabric.utils.helpers import bulk_replace
-from config.info import ROOT_DIR, IS_WAYLAND
+from config.info import ROOT_DIR, IS_WAYLAND, SHELL_NAME
 
 from gi.repository import Gdk, Gio, GLib  # type: ignore
 
@@ -37,6 +37,18 @@ def open_settings():
 
     _settings_process = subprocess.Popen(
         [sys.executable, "-m", "settings"], cwd=ROOT_DIR
+    )
+
+
+def sync_settings_theme(is_light: bool) -> None:
+    if _settings_process is None or _settings_process.poll() is not None:
+        return
+
+    from fabric.utils.helpers import exec_shell_command_async
+
+    exec_shell_command_async(
+        f"fabric-cli exec {SHELL_NAME}-settings "
+        f"'win.set_light_theme({is_light})'"
     )
 
 

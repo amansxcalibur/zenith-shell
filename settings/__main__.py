@@ -1,10 +1,12 @@
+import builtins
+
 from fabric import Application
 from fabric.utils import get_relative_path, monitor_file
 
 from config.info import SHELL_NAME, ROOT_DIR
-from settings.window import SettingsWindow
+from .window import SettingsWindow
 
-from gi.repository import GLib  # type: ignore
+from gi.repository import Gio, GLib  # type: ignore
 
 
 def main():
@@ -16,10 +18,17 @@ def main():
     app = Application(f"{SHELL_NAME}-settings", open_inspector=False)
 
     win = SettingsWindow()
+    # `fabric-cli exec` evaluates in the outermost frame's globals, which under
+    # `python -m settings` is runpy's, so expose via builtins to make it visible.
+    builtins.settings_window = win
     win.show_all()
     app.add_window(win)
 
-    def load_css(*args):
+    def load_css(monitor_file, file, other_file, event_type):
+        # no unnecessary bombardment in this house
+        if event_type != Gio.FileMonitorEvent.CHANGES_DONE_HINT:
+            return
+
         app.set_stylesheet_from_file(
             get_relative_path("../main.css"),
             # feast on juggad
@@ -44,7 +53,7 @@ def main():
 
     app.style_monitor = monitor_file(get_relative_path("../styles"))
     app.style_monitor.connect("changed", load_css)
-    load_css()
+    load_css(None, None, None, Gio.FileMonitorEvent.CHANGES_DONE_HINT)
 
     app.run()
 

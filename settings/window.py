@@ -4,16 +4,15 @@ from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
-
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.utils.helpers import exec_shell_command_async
-
-import icons
 
 from config.info import IS_WAYLAND
 from config.i3.utils import is_swayfx
 from config.info import CONFIG_FILE, SHELL_NAME
 from config.bindings import KeybindingValidationError
+
+import icons
 
 from modules.wiggle_bar import WigglyArrow
 
@@ -102,6 +101,12 @@ class SettingsWindow(Window):
 
         self._build_ui()
         self._setup_events()
+
+    def set_light_theme(self, enabled: bool) -> None:
+        if enabled:
+            self.add_style_class("light")
+        else:
+            self.remove_style_class("light")
 
     def _register_tabs(self) -> dict:
         return {

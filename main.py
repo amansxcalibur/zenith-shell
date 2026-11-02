@@ -4,15 +4,13 @@ import setproctitle
 from gi.repository import Gio, GLib  # type: ignore
 
 from fabric import Application
-from fabric.widgets.x11 import X11Window as Window
-
-Window.toggle_visibility = lambda self: self.set_visible(not self.is_visible())
-
 from fabric.utils import get_relative_path, monitor_file
 
 from modules.corners import Corners
 from modules.core.top.bar import TopBar
 from modules.core.top.pill import TopPill
+from services.theme import ThemeMode, ThemeService
+from utils.helpers import sync_settings_theme
 from modules.core.bottom.pill import Pill
 from modules.wallpaper import WallpaperService
 from modules.core.bottom.dock.bar import DockBar
@@ -30,6 +28,10 @@ if IS_WAYLAND:
     from modules.core.bottom.shell_wm_wayland import ShellWindowManager
     from modules.core.top.shell_wm_wayland import ShellTopWindowManager
 else:
+    from fabric.widgets.x11 import X11Window as Window
+
+    Window.toggle_visibility = lambda self: self.set_visible(not self.is_visible())
+
     from modules.core.bottom.shell_wm_x11 import ShellWindowManager
     from modules.core.top.shell_wm_x11 import ShellTopWindowManager
 
@@ -146,6 +148,11 @@ if __name__ == "__main__":
         )
         # reloads i3wm
         generate_i3_border_theme_config(reload=True)
+
+    ThemeService().connect(
+        "theme-changed",
+        lambda _, mode: sync_settings_theme(mode == ThemeMode.LIGHT),
+    )
 
     app.style_monitor = monitor_file(get_relative_path("./styles"))
     app.style_monitor.connect("changed", set_css)
