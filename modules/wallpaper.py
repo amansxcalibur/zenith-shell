@@ -28,6 +28,7 @@ import icons
 from config.config import config
 from config.info import CACHE_DIR, IS_WAYLAND
 from services.theme import ThemeService
+from utils.colors import bind_theme
 from utils.helpers import hash_file
 from utils.lock import (
     generate_lockscreen_image,
@@ -431,7 +432,7 @@ class WallpaperSelector(Box):
         self.overlay.set_overlay_pass_through(shadow, True)
 
         self.dir_picker_indicator = Box(
-            style="padding: 20px 30px;",
+            style="padding: 20px 30px; color: var(--foreground)",
             spacing=8,
             children=[
                 MaterialIconLabel(icon_text=icons.wallpaper.symbol()),
@@ -529,25 +530,6 @@ class WallpaperSelector(Box):
             self.setup_file_monitor()
             self.executor.submit(self._perform_scan_and_clean)
 
-    def _build_dir_dialog(self, parent: Gtk.Window) -> Gtk.FileChooserDialog:
-        dialog = Gtk.FileChooserDialog(
-            "Select a Directory",
-            parent,
-            Gtk.FileChooserAction.SELECT_FOLDER,
-            use_header_bar=False,
-        )
-        if IS_WAYLAND:
-            dialog.get_style_context().add_class("wayland")
-        for stock, response, extra in (
-            (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, None),
-            (Gtk.STOCK_OPEN, Gtk.ResponseType.OK, "bright"),
-        ):
-            ctx = dialog.add_button(stock, response).get_style_context()
-            ctx.add_class("settings-btn")
-            if extra:
-                ctx.add_class(extra)
-        return dialog
-
     def prompt_for_dir(self):
         win = self.get_toplevel()
         if not isinstance(win, Gtk.Window):
@@ -573,6 +555,28 @@ class WallpaperSelector(Box):
         else:
             logger.info("Wallpaper directory selection canceled.")
         self.focus_search()
+
+    def _build_dir_dialog(self, parent: Gtk.Window) -> Gtk.FileChooserDialog:
+        dialog = Gtk.FileChooserDialog(
+            "Select a Directory",
+            parent,
+            Gtk.FileChooserAction.SELECT_FOLDER,
+            use_header_bar=False,
+        )
+        bind_theme(dialog)  # adds "light", which the filechooser styles key off
+        dialog.get_style_context().add_class("file-chooser-dialog")
+        if IS_WAYLAND:
+            dialog.get_style_context().add_class("wayland")
+        dialog.set_visual(dialog.get_screen().get_rgba_visual())  # rounded corners
+        for stock, response, extra in (
+            (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, None),
+            (Gtk.STOCK_OPEN, Gtk.ResponseType.OK, "bright"),
+        ):
+            ctx = dialog.add_button(stock, response).get_style_context()
+            ctx.add_class("settings-btn")
+            if extra:
+                ctx.add_class(extra)
+        return dialog
 
     def _clear_wallpapers(self):
         for child in self.viewport.get_children():
@@ -840,8 +844,6 @@ class WallpaperSelector(Box):
         current = self.scheme_dropdown.get_active_id()
         idx = ids.index(current) if current in ids else 0
         self.scheme_dropdown.set_active((idx + delta) % len(ids))
-
-    
 
     def on_search_entry_key_press(self, widget, event):
         mods = int(event.state & self._CORE_MODS)

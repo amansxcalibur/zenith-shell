@@ -1,9 +1,12 @@
 import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import GLib, Gdk, Gtk
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gdk, Gtk  # type: ignore
+
 
 def add_hover_cursor(widget: Gtk.Widget, cursor_name="pointer"):
     """Wraps Widget and sets custom cursor."""
+
     def on_enter(w, event):
         window = w.get_window()
         if window:

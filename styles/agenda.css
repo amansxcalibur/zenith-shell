@@ -137,14 +137,14 @@
   padding-bottom: 64px;
 }
 
-/* file chooser dialog styles */
+/* file chooser dialog styles (agenda background + wallpaper directory) */
 
-.agenda-file-chooser-dialog {
+.file-chooser-dialog {
   background-color: var(--surface);
   border-radius: 25px;
   border: 2px solid var(--surface-bright);
 }
-.agenda-file-chooser-dialog.light {
+.file-chooser-dialog.light {
   color: var(--foreground);
 }
 

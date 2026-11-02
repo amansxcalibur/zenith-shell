@@ -37,4 +37,7 @@ def bind_theme(widget):
             remove_fn("light")
 
     apply_theme(theme_service.theme)
-    theme_service.connect("theme-changed", lambda _, mode: apply_theme(mode))
+    handler_id = theme_service.connect(
+        "theme-changed", lambda _, mode: apply_theme(mode)
+    )
+    widget.connect("destroy", lambda *_: theme_service.disconnect(handler_id))

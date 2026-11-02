@@ -363,7 +363,7 @@ class AgendaItem(Gtk.ListBoxRow):
             use_header_bar=False,
         )
         bind_theme(dialog)
-        dialog.get_style_context().add_class("agenda-file-chooser-dialog")
+        dialog.get_style_context().add_class("file-chooser-dialog")
         if IS_WAYLAND:
             dialog.get_style_context().add_class("wayland")
         dialog.set_visual(dialog.get_screen().get_rgba_visual())
