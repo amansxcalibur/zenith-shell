@@ -13,13 +13,15 @@ from fabric.widgets.revealer import Revealer
 from fabric.widgets.checkbutton import CheckButton
 from fabric.widgets.scrolledwindow import ScrolledWindow
 
-from services.animator import CubicBezierCurves
-from widgets.material_label import MaterialIconLabel
-from widgets.clipping_box import ClippingBox, AnimatedClippingBox
-from utils.colors import bind_theme
-
 import icons
 from config.info import DATA_DIR, CACHE_DIR, IS_WAYLAND
+from services.animator import CubicBezierCurves
+
+from utils.colors import bind_theme
+from utils.text_view import add_undo, keep_cursor_visible
+
+from widgets.material_label import MaterialIconLabel
+from widgets.clipping_box import ClippingBox, AnimatedClippingBox
 
 import gi
 
@@ -66,6 +68,7 @@ def _make_text_view(name="text-editor") -> Gtk.TextView:
     tv = Gtk.TextView(name=name)
     tv.set_wrap_mode(Gtk.WrapMode.WORD)
     tv.set_pixels_above_lines(2)
+    add_undo(tv)  # ctrl+z / ctrl+shift+z
     return tv
 
 
@@ -117,13 +120,18 @@ class AgendaItem(Gtk.ListBoxRow):
 
     def _build_editor(self):
         self.text_view = _make_text_view()
+        # nested in the agenda list's ScrolledWindow, so GTK won't follow the cursor
+        keep_cursor_visible(self.text_view)
 
         def force_focus(widget, event):
             widget.grab_focus()
-            return True  # stops event from bubbling up to the EventBox/Stack
+            return True  # stops event from bubbling up to the EventBox/Pill
 
-        self.text_view.connect("button-press-event", force_focus)
-        self.text_view.connect("button-release-event", force_focus)
+        # connect_after, not connect: the TextView places the cursor / starts a
+        # selection in its class handler (its click gesture). A plain connect
+        # handler runs first and returning True would cancel that entirely.
+        self.text_view.connect_after("button-press-event", force_focus)
+        self.text_view.connect_after("button-release-event", force_focus)
 
         editor_actions = Box(
             spacing=5,
@@ -308,6 +316,7 @@ class AgendaItem(Gtk.ListBoxRow):
 
     def _on_edit_requested(self, _widget):
         self.text_view.get_buffer().set_text(self.label.get_text())
+        self.text_view.undo.reset()  # loading the note isn't an undoable edit
         self.action_revealer.set_reveal_child(False)
         self.stack.set_visible_child_name("edit")
         self.text_view.grab_focus()
@@ -408,6 +417,7 @@ class AgendaApp(Box):
         )
 
         self.new_text_view = Gtk.TextView(name="text-editor")
+        add_undo(self.new_text_view)
         self.new_text_view.set_wrap_mode(Gtk.WrapMode.WORD)
         self.scrolled_window = ScrolledWindow(
             h_scrollbar_policy="never",
@@ -652,6 +662,7 @@ class AgendaApp(Box):
         # add to the beginning
         self.listbox.prepend(self._make_item(text))
         buf.set_text("")
+        self.new_text_view.undo.reset()
         self.input_stack.set_visible_child_name("trigger")
         self.actions_stack.set_visible_child_name("pill")
         self.show_all()
