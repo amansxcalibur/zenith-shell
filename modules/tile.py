@@ -6,10 +6,8 @@ from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
 from fabric.widgets.overlay import Overlay
 from fabric.widgets.revealer import Revealer
-from fabric.utils.helpers import exec_shell_command_async
 
 import icons
-from config.info import SHELL_NAME
 from services.theme import ThemeMode, ThemeService
 
 from utils.cursor import add_hover_cursor
@@ -305,18 +303,15 @@ class TileSimpleWithMenu(ClippingBox):
             self.stack.set_visible_child(self.overlay)
             self.get_parent().get_parent().get_parent().get_parent().get_parent().dismiss()
             return
-        else:
-            self.toggle = True
-            self.stack.set_visible_child(self.menu)
-            self.menu.add_style_class("expand")
-            self.menu.remove_style_class("contract")
-            self.get_parent().pop_out()
+        # don't switch to the menu here: the tile is still in the dashboard and
+        # would resize it. PopSlot calls on_popped() once the tile has left.
+        self.get_parent().pop_out()
 
-        name = self.get_name()
-        if name:
-            exec_shell_command_async(
-                f"fabric-cli exec {SHELL_NAME} \"pill.dashboard.handle_tile_menu_expand('{name}', {self.toggle})\""
-            )
+    def on_popped(self):
+        self.toggle = True
+        self.stack.set_visible_child(self.menu)
+        self.menu.add_style_class("expand")
+        self.menu.remove_style_class("contract")
 
     def set_active_style(self, is_active: bool):
         if is_active:
@@ -520,17 +515,15 @@ class Tile(ClippingBox):
             self.stack.set_visible_child(self.overlay)
             self.get_parent().get_parent().get_parent().get_parent().get_parent().dismiss()
         else:
-            self.toggle = True
-            self.stack.set_visible_child(self.menu_box)
-            self.menu_box.add_style_class("expand")
-            self.menu_box.remove_style_class("contract")
+            # don't switch to the menu here: the tile is still in the dashboard
+            # and would resize it. PopSlot calls on_popped() once it has left.
             self.get_parent().pop_out()
 
-        name = self.get_name()
-        if name:
-            exec_shell_command_async(
-                f"fabric-cli exec {SHELL_NAME} \"pill.dashboard.handle_tile_menu_expand('{name}', {self.toggle})\""
-            )
+    def on_popped(self):
+        self.toggle = True
+        self.stack.set_visible_child(self.menu_box)
+        self.menu_box.add_style_class("expand")
+        self.menu_box.remove_style_class("contract")
 
     def close(self):
         self.toggle = False

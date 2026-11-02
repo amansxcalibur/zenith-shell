@@ -71,6 +71,12 @@ class PopSlot(Box):
         widget.show()
         self.set_size_request(-1, -1)
 
+    # called by FlyingOverlay, right after release(): the child is out of the
+    # slot, so it can now switch to its expanded look without resizing the host
+    def on_flight_begin(self):
+        if hasattr(self.child, "on_popped"):
+            self.child.on_popped()
+
     # called by FlyingOverlay
     def on_flight_landed(self): ...
 
@@ -265,7 +271,7 @@ class FlyingOverlay(Window, Service):
         target_x = (self.screen_width - target_w) // 2
         target_y = (self.screen_height - target_h) // 2
 
-        # Position content BEFORE mapping the window
+        # position content BEFORE mapping the window
         self.content_frame.set_size_request(int(start_w), int(start_h))
         self.fixed_canvas.move(self.content_frame, int(start_x), int(start_y))
 
@@ -275,6 +281,15 @@ class FlyingOverlay(Window, Service):
 
         if IS_WAYLAND:
             GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.EXCLUSIVE)
+
+        # Let the child grow (e.g. Tile -> menu) only now:
+        # - not before release(): the host (dashboard) would re-lay out with the
+        #   big child and release() would pin the slot at that inflated size
+        #   (under load, e.g. power-saver, this idle callback runs late enough)
+        # - not before show_all(): an unmapped GtkStack skips its transition and
+        #   jumps to full size, which also defeats the grow animation below
+        if hasattr(self.source_slot, "on_flight_begin"):
+            self.source_slot.on_flight_begin()
 
         self._animate_to(
             start=(start_x, start_y, start_w, start_h),

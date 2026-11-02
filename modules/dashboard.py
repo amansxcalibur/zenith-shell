@@ -229,35 +229,6 @@ class Dashboard(Box):
                 if hasattr(elem, "close"):
                     elem.close()
 
-    def handle_tile_menu_expand(self, tile: str, toggle: bool, close: bool = False):
-        ...
-        # if toggle:
-        #     self.notification_container.set_reveal_child(False)
-        # else:
-        #     self.notification_container.set_reveal_child(True)
-
-        # rows = self.tiles.get_children()
-        # for row in rows:
-        #     elems = row.get_children()
-        #     for elem in elems:
-        #         if elem.get_name() == tile:
-        #             continue
-
-        #         if toggle:
-        #             try:
-        #                 elem.mini_view()
-        #             except Exception as e:
-        #                 logger.error(
-        #                     f"Failed to switch {elem.get_name()} to mini view: {e}"
-        #                 )
-        #         else:
-        #             try:
-        #                 elem.maxi_view()
-        #             except Exception as e:
-        #                 logger.error(
-        #                     f"Failed to switch {elem.get_name()} to mini view: {e}"
-        #                 )
-
     def update_dots(self):
         current_widget = self.widget_stack.get_visible_child()
         widget_list = self.widget_stack.get_children()
