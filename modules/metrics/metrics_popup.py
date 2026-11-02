@@ -33,6 +33,10 @@ class Metrics(Box):
         self._build_layout()
 
         self.cpu_name_label.set_label(self.service.cpu_brand)
+        # fresh temp right away when shown, instead of up to 1s stale
+        self.connect(
+            "map", lambda *_: self.cpu_temp_label.set_label(self.service.get_cpu_temp())
+        )
         GLib.timeout_add_seconds(1, self._update_ui)
         GLib.timeout_add_seconds(
             1,
@@ -311,7 +315,10 @@ class Metrics(Box):
         used_mem, total_mem = self.service.get_mem_usage_gb()
         self.disk_ratio_label.set_label(f"{used_gb:.1f} / {total_gb:.1f} GB")
         self.mem_ratio_label.set_label(f"{used_mem:.1f} / {total_mem:.1f} GB")
-        self.cpu_temp_label.set_label(self.service.get_cpu_temp())
+        # temp is only shown here, so don't read sensors while hidden; the
+        # graphs above keep updating so their history has no gaps
+        if self.get_mapped():
+            self.cpu_temp_label.set_label(self.service.get_cpu_temp())
 
         margin = (1 - (disk / 100) ** 3) * RING_MARGIN_MAX
         style = self._ring_style(margin)

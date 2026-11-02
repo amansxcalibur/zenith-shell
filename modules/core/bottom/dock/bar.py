@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from loguru import logger
+from typing import TYPE_CHECKING
 
 from fabric.widgets.box import Box
 from fabric.widgets.stack import Stack
@@ -33,13 +36,16 @@ if IS_WAYLAND:
 else:
     from widgets.overrides import PatchedX11Window as Window
 
+if TYPE_CHECKING:
+    from ..pill import Pill
+
 SPACING = 0
 
 
 class DockBar(Window):
     WIN_ROLE = "zenith-dock"
 
-    def __init__(self, pill, **kwargs):
+    def __init__(self, pill: Pill, **kwargs):
         if IS_WAYLAND:
             super().__init__(
                 layer="bottom",
@@ -66,6 +72,7 @@ class DockBar(Window):
             )
 
         self._pill_ref = pill
+        pill.dock_bar = self  # lets the pill open/close us directly
 
         bind_theme(self)
 

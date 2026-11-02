@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from fabric.widgets.box import Box
 from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
@@ -22,6 +24,9 @@ if IS_WAYLAND:
     from fabric.widgets.wayland import WaylandWindow as Window
 else:
     from widgets.overrides import PatchedX11Window as Window
+
+if TYPE_CHECKING:
+    from .bar import TopBar
 
 
 class TopPill(Window, Service):
@@ -71,6 +76,9 @@ class TopPill(Window, Service):
         }
         self._current_compact_mode = None
         self._dock_is_visible = True
+        # set by the bar window itself; called directly, not through
+        # `fabric-cli exec` (a subprocess + D-Bus round trip back into us)
+        self.dock_bar: "TopBar | None" = None
         # for custom geometry handle in ShellWindowManager
         self._pos = pill_config_node.get("POSITION")
         self.is_lift_enable = False
@@ -163,10 +171,12 @@ class TopPill(Window, Service):
         )
 
     def open_dock(self):
-        exec_shell_command_async(f" fabric-cli exec {SHELL_NAME} 'top_bar.open()'")
+        if self.dock_bar is not None:
+            self.dock_bar.open()
 
     def close_dock(self):
-        exec_shell_command_async(f"fabric-cli exec {SHELL_NAME} 'top_bar.close()'")
+        if self.dock_bar is not None:
+            self.dock_bar.close()
 
     def toggle_notification(self):
         if self.stack.get_visible_child() != self.notification:

@@ -10,8 +10,8 @@ from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.x11 import X11WindowGeometry
 
-from config.info import IS_WAYLAND
 from config.config import config
+from config.info import IS_WAYLAND
 
 from utils.colors import bind_theme
 from utils.helpers import toggle_class
@@ -24,14 +24,14 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk  # type: ignore
 
-if TYPE_CHECKING:
-    from .pill import TopPill
-
 if IS_WAYLAND:
     from gi.repository import GtkLayerShell  # type: ignore
     from fabric.widgets.wayland import WaylandWindow as Window
 else:
     from widgets.overrides import PatchedX11Window as Window
+
+if TYPE_CHECKING:
+    from .pill import TopPill
 
 SPACING = 0
 CONTROLS_SPACING = 5
@@ -64,6 +64,7 @@ class TopBar(Window):
                 **kwargs,
             )
         self._pill_ref = pill
+        pill.dock_bar = self  # lets the pill open/close us directly
 
         bind_theme(self)
 

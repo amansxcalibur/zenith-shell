@@ -1,3 +1,4 @@
+import os
 import re
 import psutil
 from loguru import logger
@@ -5,6 +6,35 @@ from loguru import logger
 from fabric.core.service import Service, Signal
 
 from gi.repository import GLib  # type: ignore
+
+HWMON_DIR = "/sys/class/hwmon"
+CPU_TEMP_SENSORS = ("coretemp", "k10temp")  # Intel, AMD; in order of preference
+
+
+# I hate that this was causing frame drops for the Pill transitions...
+def _find_cpu_temp_input() -> str | None:
+    """Locate the CPU package temperature file (temp1 = "Package id 0"/Tctl).
+
+    psutil.sensors_temperatures() reads *every* hwmon sensor, and some drivers
+    are slow (an NVMe drive can take ~45ms). Called every second on the main
+    loop, that froze the shell (~60ms+) and dropped animation frames.
+    """
+    found = {}
+    try:
+        entries = sorted(os.listdir(HWMON_DIR))
+    except OSError:
+        return None
+    for entry in entries:
+        path = os.path.join(HWMON_DIR, entry)
+        try:
+            with open(os.path.join(path, "name")) as f:
+                name = f.read().strip()
+        except OSError:
+            continue
+        temp_input = os.path.join(path, "temp1_input")
+        if name in CPU_TEMP_SENSORS and name not in found and os.path.exists(temp_input):
+            found[name] = temp_input
+    return next((found[n] for n in CPU_TEMP_SENSORS if n in found), None)
 
 
 class MetricsProvider(Service):
@@ -83,14 +113,24 @@ class MetricsProvider(Service):
     def get_battery(self) -> tuple[float, bool | None]:
         return self.bat_percent, self.bat_charging
 
-    @staticmethod
-    def get_cpu_temp() -> str:
-        temps = psutil.sensors_temperatures()
-        if "coretemp" in temps:
-            return f"{temps['coretemp'][0].current:.0f}C"
-        if "k10temp" in temps:
-            return f"{temps['k10temp'][0].current:.0f}C"
-        return "N/A"
+    _cpu_temp_path: str | None = None
+    _cpu_temp_resolved = False
+
+    @classmethod
+    def get_cpu_temp(cls) -> str:
+        # resolve once; then a single tiny sysfs read per call (well under 1ms)
+        if not cls._cpu_temp_resolved:
+            cls._cpu_temp_path = _find_cpu_temp_input()
+            cls._cpu_temp_resolved = True
+            if cls._cpu_temp_path is None:
+                logger.warning("No coretemp/k10temp sensor found; CPU temp will be N/A")
+        if cls._cpu_temp_path is None:
+            return "N/A"
+        try:
+            with open(cls._cpu_temp_path) as f:
+                return f"{int(f.read()) / 1000:.0f}C"
+        except (OSError, ValueError):
+            return "N/A"
 
     @staticmethod
     def get_disk_usage_gb() -> tuple[float, float]:

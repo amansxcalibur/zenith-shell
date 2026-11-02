@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
@@ -5,7 +7,7 @@ from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
 from config.config import config
-from config.info import SHELL_NAME, USERNAME, HOSTNAME, IS_WAYLAND, IPC_UTIL
+from config.info import USERNAME, HOSTNAME, IS_WAYLAND, IPC_UTIL
 
 from modules.dashboard import Dashboard
 from modules.power_menu import PowerMenu
@@ -34,6 +36,9 @@ if IS_WAYLAND:
     from fabric.widgets.wayland import WaylandWindow as Window
 else:
     from widgets.overrides import PatchedX11Window as Window
+
+if TYPE_CHECKING:
+    from .dock.bar import DockBar
 
 
 class Pill(Window, Service):
@@ -76,6 +81,9 @@ class Pill(Window, Service):
 
         self._current_compact_mode = None
         self._dock_is_visible = True
+        # set by the dock window itself; called directly, not through
+        # `fabric-cli exec` (a subprocess + D-Bus round trip back into us)
+        self.dock_bar: "DockBar | None" = None
         # for custom geometry handle in ShellWindowManager
         self._pos = pill_config.get("POSITION")  # changes the config
         self._drag_state = {
@@ -183,11 +191,13 @@ class Pill(Window, Service):
     def focus_pill(self):
         if IS_WAYLAND:
             GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.EXCLUSIVE)
+            return
         exec_shell_command_async(f'{IPC_UTIL} [window_role="^{self.WIN_ROLE}$"] focus')
 
     def unfocus_pill(self):
         if IS_WAYLAND:
             GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.NONE)
+            return
         exec_shell_command_async(f"{IPC_UTIL} focus mode_toggle")
 
     def lift_pill(self):
@@ -204,10 +214,12 @@ class Pill(Window, Service):
         )
 
     def open_dock(self):
-        exec_shell_command_async(f" fabric-cli exec {SHELL_NAME} 'dockBar.open()'")
+        if self.dock_bar is not None:
+            self.dock_bar.open()
 
     def close_dock(self):
-        exec_shell_command_async(f"fabric-cli exec {SHELL_NAME} 'dockBar.close()'")
+        if self.dock_bar is not None:
+            self.dock_bar.close()
 
     def open(self):
         # opens launcher
