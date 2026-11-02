@@ -2,6 +2,15 @@
   all: unset;
 }
 
+/* text cursor in every entry/textview; --cursor is swapped per theme
+   (dark: light caret, light: dark caret) via colors.{dark,light}.css */
+entry,
+textview,
+textview text {
+  caret-color: var(--cursor);
+  -gtk-secondary-caret-color: var(--cursor);
+}
+
 .roboto {
   font-family: Roboto Flex;
 }
