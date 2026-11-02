@@ -1,14 +1,17 @@
 import cairo
-from typing import Iterable, Literal
-from typing import Callable
+from loguru import logger
+from typing import Literal
+from collections.abc import Callable, Iterable
+
 from fabric.core.service import Property
+
 from services.animator import Animator
 from .rotate_box import RotateBox
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GLib # type: ignore
 
 
 class ScaleBox(RotateBox):
@@ -68,6 +71,7 @@ class ScaleBox(RotateBox):
         self._scale_y = max(scale_y, 0.01)
         self._child = None
         self._offscreen_window = None
+        self._shrink_source_id: int | None = None
 
         super().__init__(
             clip=False,
@@ -141,9 +145,62 @@ class ScaleBox(RotateBox):
         child_alloc.height = child_h
 
         if self._offscreen_window and self.get_realized():
-            self._offscreen_window.move_resize(0, 0, child_w, child_h)
+            self._ensure_offscreen_capacity(child_w, child_h)
 
         self._child.size_allocate(child_alloc)
+
+    # offscreen surface management
+    # Resizing a GdkOffscreenWindow destroys and recreates its backing surface
+    # and invalidates all of it. With a size-interpolating child (e.g. a Gtk.Stack
+    # with interpolate_size=True) the natural size changes on every frame, so an
+    # exact-fit surface would be reallocated + fully repainted every frame.
+    # Instead the surface grows geometrically and only shrinks back to an exact
+    # fit once the child's size has been stable for a moment.
+
+    _GROWTH_FACTOR = 1.5
+    _SHRINK_DELAY_MS = 500
+
+    def _ensure_offscreen_capacity(self, need_w: int, need_h: int):
+        win = self._offscreen_window
+        cap_w, cap_h = win.get_width(), win.get_height()
+
+        if need_w > cap_w or need_h > cap_h:
+            new_w = max(need_w, int(cap_w * self._GROWTH_FACTOR)) if need_w > cap_w else cap_w
+            new_h = max(need_h, int(cap_h * self._GROWTH_FACTOR)) if need_h > cap_h else cap_h
+            win.move_resize(0, 0, new_w, new_h)
+            cap_w, cap_h = new_w, new_h
+
+        if (need_w, need_h) != (cap_w, cap_h):
+            self._schedule_offscreen_shrink()
+        else:
+            self._cancel_offscreen_shrink()
+
+    def _schedule_offscreen_shrink(self):
+        # restart the timer on every size change, so we only shrink once settled
+        self._cancel_offscreen_shrink()
+        self._shrink_source_id = GLib.timeout_add(
+            self._SHRINK_DELAY_MS, self._shrink_offscreen_to_fit
+        )
+
+    def _cancel_offscreen_shrink(self):
+        if self._shrink_source_id is not None:
+            GLib.source_remove(self._shrink_source_id)
+            self._shrink_source_id = None
+
+    def _shrink_offscreen_to_fit(self):
+        self._shrink_source_id = None
+        if not (self._offscreen_window and self.get_realized() and self._child):
+            return False
+        alloc = self._child.get_allocation()
+        w, h = max(alloc.width, 1), max(alloc.height, 1)
+        win = self._offscreen_window
+        if (win.get_width(), win.get_height()) != (w, h):
+            win.move_resize(0, 0, w, h)
+        return False
+
+    def do_unrealize(self):
+        self._cancel_offscreen_shrink()
+        return RotateBox.do_unrealize(self)
 
 
 class AnimatedScaleBox(ScaleBox):
@@ -223,8 +280,8 @@ class AnimatedScaleBox(ScaleBox):
         if self._done_handler_id is not None:
             try:
                 self._animator.disconnect(self._done_handler_id)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Failed to disconnect animator {e}")
             self._done_handler_id = None
 
         self._animator.min_value = start

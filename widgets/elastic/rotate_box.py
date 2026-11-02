@@ -1,14 +1,16 @@
-import gi
 import math
 import cairo
 from cffi import FFI
-from typing import Any, Self, Iterable, Literal, cast
-from collections.abc import Callable
+from typing import Any, Self, Literal, cast
+from collections.abc import Callable, Iterable
+
 from fabric.core.service import Property
 from fabric.widgets.container import Container
 
+import gi
+
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk  # type: ignore
 
 # import faulthandler
 # faulthandler.enable()
@@ -70,7 +72,6 @@ class RotateBox(Container):
         embedder_x_ptr[0], embedder_y_ptr[0] = self.do_transform_offscreen_to_parent(
             off_x, off_y
         )
-        return
 
     @ffi.callback("void(GdkWindow*, double, double, double*, double*, void*)")
     def from_embedder_callback(
@@ -85,7 +86,6 @@ class RotateBox(Container):
         off_x_ptr[0], off_y_ptr[0] = self.do_transform_offscreen_from_parent(
             emb_x, emb_y
         )
-        return
 
     @staticmethod
     def do_connect_ffi(
@@ -110,7 +110,6 @@ class RotateBox(Container):
         self.queue_resize()
         if self._offscreen_window:
             self._offscreen_window.geometry_changed()
-        return
 
     @Property(bool, "read-write", default_value=False)
     def clip(self) -> bool:
@@ -122,7 +121,6 @@ class RotateBox(Container):
         self.queue_resize()
         if self._offscreen_window:
             self._offscreen_window.geometry_changed()
-        return
 
     def __init__(
         self,
@@ -152,7 +150,7 @@ class RotateBox(Container):
         self._child: Gtk.Widget | None = None
         self._offscreen_window: Gdk.Window | None = None
         self._c_handle = ffi.new_handle(self)
-        
+
         Container.__init__(
             self,
             child,
@@ -170,8 +168,6 @@ class RotateBox(Container):
             size,
             **kwargs,
         )
-
-        
 
         self.clip = clip
         self.angle = angle
@@ -381,28 +377,39 @@ class RotateBox(Container):
             and self._child.get_visible()
         ):
             surface = Gdk.offscreen_window_get_surface(self._offscreen_window)
+            # clip to the child's area, not the surface: subclasses (ScaleBox) may
+            # keep the offscreen surface larger than the child to avoid reallocations
+            child_alloc = self._child.get_allocation()
+
+            if child_alloc.width <= 0 or child_alloc.height <= 0:
+                return False
 
             cr.transform(self.do_bake_transformation())
-            cr.rectangle(
-                0,
-                0,
-                self._offscreen_window.get_width(),
-                self._offscreen_window.get_height(),
-            )
+            cr.rectangle(0, 0, child_alloc.width, child_alloc.height)
             cr.clip()
-            cr.set_source_surface(surface, 0, 0)
+            # sample only the child's region: when scaled, filtering reads 1px past
+            # the edge, which must be transparent (as with an exact-fit surface),
+            # not stale pixels from a previously larger child
+            cr.set_source_surface(
+                surface.create_for_rectangle(
+                    0, 0, child_alloc.width, child_alloc.height
+                ),
+                0,
+                0,
+            )
             cr.paint()
 
         if not Gtk.cairo_should_draw_window(cr, self._offscreen_window):
             return False
 
+        child_alloc = self._child.get_allocation()
         Gtk.render_background(
             self.get_style_context(),
             cr,
             0,
             0,
-            self._offscreen_window.get_width(),
-            self._offscreen_window.get_height(),
+            child_alloc.width,
+            child_alloc.height,
         )
 
         if self._child:
@@ -441,4 +448,3 @@ class RotateBox(Container):
         *user_data,
     ):
         return callback(self._child, *user_data) if self._child else None
-
