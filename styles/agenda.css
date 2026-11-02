@@ -277,3 +277,52 @@ filechooser combobox {
   margin: 12px 0 0 0;
   border-radius: 14px;
 }
+
+/* copy / edit pill, bottom-left corner */
+#agenda-actions-pill {
+  background-color: var(--surface-bright);
+  border-radius: 24px;
+  padding: 4px;
+  box-shadow: 4px -4px 12px 4px var(--background);
+}
+#agenda-pill-btn {
+  background-color: transparent;
+  border-radius: 20px;
+  padding: 6px 10px;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+#agenda-pill-btn > * {
+  font-size: 22px;
+}
+#agenda-pill-btn:hover {
+  background-color: var(--outline-variant);
+}
+#agenda-pill-btn.active {
+  background-color: var(--primary);
+}
+#agenda-pill-btn.active > * {
+  color: var(--background);
+}
+.light #agenda-actions-pill {
+  background-color: var(--surface-variant);
+}
+
+/* re-arrange mode */
+#agenda-drag-handle {
+  border-radius: 20px;
+}
+#agenda-box.dragging {
+  opacity: 0.4;
+}
+
+/* drop slot shown while re-arranging */
+#agenda-drop-slot,
+#agenda-drop-slot:hover {
+  background-color: transparent;
+}
+#agenda-drop-placeholder {
+  min-height: 25px;
+  border-radius: 24px;
+  border: 2px dashed var(--primary);
+  background-color: alpha(var(--primary), 0.12);
+}

@@ -98,6 +98,9 @@ radar: str = "\uf04e"
 
 close: str = "\ue5cd"
 trash_material: str = "\ue872"
+content_copy: str = "\ue14d"
+check_material: str = "\ue5ca"
+drag_indicator: str = "\ue945"
 
 # player
 disc: str = "\ue019"

@@ -1,5 +1,6 @@
 import os
 import json
+import cairo
 from loguru import logger
 
 from fabric.widgets.box import Box
@@ -23,7 +24,9 @@ from config.info import DATA_DIR, CACHE_DIR, IS_WAYLAND
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk, Pango, GdkPixbuf  # type: ignore
+from gi.repository import Gtk, Gdk, Pango, GdkPixbuf, GLib  # type: ignore
+
+DND_TARGET = "agenda-row"
 
 
 DATA_FILE = os.path.join(DATA_DIR, "agenda.json")
@@ -202,7 +205,87 @@ class AgendaItem(Gtk.ListBoxRow):
         self.stack.add_named(self.event_box, "display")
         self.stack.add_named(self.edit_vbox, "edit")
         self.stack.add_named(self.del_box, "delete")
+        self.stack.add_named(self._build_drag_page(), "drag")
         self.add(self.stack)
+
+    def _build_drag_page(self) -> EventBox:
+        self.drag_label = Label(
+            label=self._mini_text(),
+            h_align="start",
+            h_expand=True,
+            ellipsization="end",
+            max_chars_width=30,
+        )
+        # ellipsizing alone still renders every "\n" line; force one line
+        self.drag_label.set_single_line_mode(True)
+        self.drag_handle = EventBox(
+            name="agenda-drag-handle",
+            child=Box(
+                name="display-box",
+                spacing=10,
+                children=[
+                    MaterialIconLabel(
+                        style_classes="agenda-icon",
+                        icon_text=icons.drag_indicator.symbol(),
+                    ),
+                    self.drag_label,
+                ],
+            ),
+        )
+        return self.drag_handle
+
+    def _mini_text(self) -> str:
+        return next((ln for ln in self.text.splitlines() if ln.strip()), self.text)
+
+    def set_reorder_mode(self, on: bool):
+        self.drag_label.set_label(self._mini_text())  # text may have been edited
+        self.stack.set_visible_child_name("drag" if on else "display")
+        if on:
+            self.action_revealer.set_reveal_child(False)
+
+    def setup_dnd(
+        self,
+        on_begin: callable,
+        on_drop: callable,
+        on_motion: callable,
+        on_end: callable,
+    ):
+        target = [Gtk.TargetEntry.new(DND_TARGET, Gtk.TargetFlags.SAME_APP, 0)]
+        # source: only the drag page (children of the display page would eat the press)
+        self.drag_handle.drag_source_set(
+            Gdk.ModifierType.BUTTON1_MASK, target, Gdk.DragAction.MOVE
+        )
+        self.drag_handle.connect("drag-begin", self._on_drag_begin, on_begin)
+        self.drag_handle.connect("drag-data-get", self._on_drag_data_get)
+        self.drag_handle.connect("drag-end", self._on_drag_end, on_end)
+        # Stop the press/release from bubbling up to the host window: the Pill
+        # moves itself on `button-press-event`, and since the DnD grab then
+        # swallows the release it never resets `_drag_state["dragging"]`.
+        # Connected *after* drag_source_set so GTK's source handler still runs.
+        for sig in ("button-press-event", "button-release-event"):
+            self.drag_handle.connect(sig, lambda _w, e: e.button == 1)
+        # dest: the whole row
+        self.drag_dest_set(Gtk.DestDefaults.ALL, target, Gdk.DragAction.MOVE)
+        self.connect("drag-data-received", lambda *_: on_drop(self))
+        self.connect("drag-motion", lambda w, ctx, x, y, t: on_motion(self, y) or True)
+
+    @staticmethod
+    def _on_drag_data_get(_widget, _ctx, data: Gtk.SelectionData, _info, _time):
+        # payload is irrelevant (the app tracks the dragged row), but it must be
+        # non-empty or GTK treats the drop as failed and skips the reorder
+        data.set(data.get_target(), 8, b"row")
+
+    def _on_drag_end(self, _widget, _ctx, on_end):
+        self.get_style_context().remove_class("dragging")
+        on_end()
+
+    def _on_drag_begin(self, _widget, ctx, on_begin):
+        on_begin(self)
+        self.get_style_context().add_class("dragging")
+        alloc = self.get_allocation()
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, alloc.width, alloc.height)
+        self.draw(cairo.Context(surface))
+        Gtk.drag_set_icon_surface(ctx, surface)
 
     def _on_click(self, _source, event):
         if event.button == 1:
@@ -305,7 +388,11 @@ class AgendaItem(Gtk.ListBoxRow):
 class AgendaApp(Box):
     def __init__(self, **kwargs):
         super().__init__(name="agenda-app", **kwargs)
+        self.reorder_mode = False
+        self._dragged: AgendaItem | None = None
+
         self._build_input_stack()
+        self._build_actions_pill()
         self._build_list()
         self._assemble()
         self.show_all()
@@ -356,15 +443,177 @@ class AgendaApp(Box):
         self.input_stack.set_homogeneous(False)
         self.input_stack.add_named(self.trigger_box, "trigger")
         self.input_stack.add_named(editor_box, "editor")
+        self.input_stack.add_named(Box(), "hidden")
         self.input_stack.set_visible_child_name("trigger")
+
+    def _build_actions_pill(self):
+        self.copy_icon = MaterialIconLabel(icon_text=icons.content_copy.symbol())
+        self.edit_icon = MaterialIconLabel(icon_text=icons.edit_material.symbol())
+        self.copy_btn = Button(
+            name="agenda-pill-btn",
+            child=self.copy_icon,
+            tooltip_text="Copy agenda data",
+            on_clicked=self._copy_data,
+        )
+        self.edit_btn = Button(
+            name="agenda-pill-btn",
+            child=self.edit_icon,
+            tooltip_text="Re-arrange items",
+            on_clicked=self._toggle_reorder,
+        )
+        self.actions_pill = Box(
+            name="agenda-actions-pill",
+            spacing=2,
+            children=[self.copy_btn, self.edit_btn],
+        )
+        # same show_all() reasoning as input_stack: hide via an empty child
+        self.actions_stack = Stack(
+            h_align="start",
+            v_align="end",
+            transition_duration=250,
+            transition_type="crossfade",
+        )
+        self.actions_stack.set_interpolate_size(True)
+        self.actions_stack.set_homogeneous(False)
+        self.actions_stack.add_named(self.actions_pill, "pill")
+        self.actions_stack.add_named(Box(), "hidden")
+        self.actions_stack.set_visible_child_name("pill")
+
+    def _copy_data(self, _widget):
+        self.save_to_disk()  # make sure the file reflects what's on screen
+        try:
+            with open(DATA_FILE) as f:
+                data = f.read()
+        except OSError as e:
+            logger.error(f"Failed to read agenda file for copying: {e}")
+            return
+        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        clipboard.set_text(data, -1)
+        clipboard.store()  # keep it after we lose focus (needs a clipboard manager)
+        self.copy_icon.set_text(icons.check_material.symbol())
+        GLib.timeout_add(
+            750, lambda: self.copy_icon.set_text(icons.content_copy.symbol()) and False
+        )
+
+    def _toggle_reorder(self, _widget):
+        self.reorder_mode = not self.reorder_mode
+        self._hide_placeholder()
+        for row in self._rows():
+            row.set_reorder_mode(self.reorder_mode)
+        self.edit_btn.set_tooltip_text(
+            "Done" if self.reorder_mode else "Re-arrange items"
+        )
+        if self.reorder_mode:
+            self.edit_btn.add_style_class("active")
+        else:
+            self.edit_btn.remove_style_class("active")
+        # adding notes while re-arranging makes no sense
+        self.input_stack.set_visible_child_name(
+            "hidden" if self.reorder_mode else "trigger"
+        )
+
+    def _rows(self) -> list[AgendaItem]:
+        return [r for r in self.listbox.get_children() if hasattr(r, "text")]
+
+    def _make_item(self, text: str, image: str | None = None) -> AgendaItem:
+        item = AgendaItem(text, self._remove_item, self.save_to_disk, image)
+        item.setup_dnd(
+            self._on_drag_begin, self._on_drop, self._on_drag_motion, self._on_drag_end
+        )
+        item.set_reorder_mode(self.reorder_mode)
+        return item
+
+    def _build_dashed_placeholder_slot(self):
+        self._placeholder_box = Box(name="agenda-drop-placeholder")
+        self._placeholder = Gtk.ListBoxRow(name="agenda-drop-slot")
+        self._placeholder.set_activatable(False)
+        self._placeholder.add(self._placeholder_box)
+        self._placeholder.show_all()
+        # a drop target too: once it's inserted, the pointer usually ends up over it
+        self._placeholder.drag_dest_set(
+            Gtk.DestDefaults.ALL,
+            [Gtk.TargetEntry.new(DND_TARGET, Gtk.TargetFlags.SAME_APP, 0)],
+            Gdk.DragAction.MOVE,
+        )
+        self._placeholder.connect("drag-data-received", lambda *_: self._on_drop())
+        self._placeholder.connect(
+            "drag-motion", lambda w, _c, _x, y, _t: self._autoscroll(w, y) or True
+        )
+        self._drop_index: int | None = None  # insertion index among real items
+
+    def _hide_placeholder(self):
+        if self._placeholder.get_parent() is self.listbox:
+            self.listbox.remove(self._placeholder)
+        self._drop_index = None
+
+    def _on_drag_begin(self, item: AgendaItem):
+        self._dragged = item
+        # match the slot to the dragged row so the list doesn't jump on drop
+        self._placeholder_box.set_size_request(-1, item.get_allocated_height())
+
+    def _on_drag_end(self):
+        self._hide_placeholder()
+        self._dragged = None
+
+    def _on_drop(self, _target: AgendaItem | None = None):
+        src, target = self._dragged, self._drop_index
+        self._hide_placeholder()
+        self._dragged = None
+        if src is None or target is None:
+            return
+
+        items = self._rows()
+        if items.index(src) < target:
+            target -= 1  # removing src shifts everything after it up by one
+        self.listbox.remove(src)
+        self.listbox.insert(src, target)
+        self.listbox.show_all()
+        self.save_to_disk()
+
+    def _on_drag_motion(self, row: AgendaItem, y: int):
+        self._autoscroll(row, y)
+        if self._dragged is None:
+            return
+
+        items = self._rows()
+        # top half of a row -> drop before it, bottom half -> after it
+        target = items.index(row) + (y > row.get_allocated_height() / 2)
+        src_i = items.index(self._dragged)
+
+        if target in (src_i, src_i + 1):  # would land where it already is
+            self._hide_placeholder()
+            return
+        if target == self._drop_index:  # already showing there; avoid churn
+            return
+
+        self._hide_placeholder()
+        # with the placeholder out, listbox children == items, so indexes line up
+        self.listbox.insert(self._placeholder, target)
+        self._drop_index = target
+
+    def _autoscroll(self, row: Gtk.Widget, y: int):
+        # auto-scroll when hovering near the top/bottom edge of the viewport
+        adj = self.scrolled.get_vadjustment()
+        coords = row.translate_coordinates(self.scrolled, 0, y)
+        if coords is None:  # not realized/mapped yet
+            return
+        _, vy = coords
+        edge, step = 30, 12
+        if vy < edge:
+            adj.set_value(max(adj.get_lower(), adj.get_value() - step))
+        elif vy > self.scrolled.get_allocated_height() - edge:
+            adj.set_value(
+                min(adj.get_upper() - adj.get_page_size(), adj.get_value() + step)
+            )
 
     def _build_list(self):
         self.listbox = Gtk.ListBox(name="agenda-list-box")
         self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
         self.listbox.set_header_func(self._update_header)
+        self._build_dashed_placeholder_slot()
 
     def _assemble(self):
-        scrolled = ScrolledWindow(
+        self.scrolled = scrolled = ScrolledWindow(
             min_content_size=(300, 220),
             max_content_size=(300, 220),
             h_expand=True,
@@ -379,15 +628,17 @@ class AgendaApp(Box):
                 v_expand=True,
                 children=scrolled,
             ),
-            overlays=self.input_stack,
+            overlays=[self.actions_stack, self.input_stack],
         )
 
     def _show_editor(self, _widget):
         self.input_stack.set_visible_child_name("editor")
+        self.actions_stack.set_visible_child_name("hidden")
         self.new_text_view.grab_focus()
 
     def _hide_editor(self, _widget):
         self.input_stack.set_visible_child_name("trigger")
+        self.actions_stack.set_visible_child_name("pill")
 
     def _update_header(self, row, before):
         if before:
@@ -399,9 +650,10 @@ class AgendaApp(Box):
         if not text:
             return
         # add to the beginning
-        self.listbox.prepend(AgendaItem(text, self._remove_item, self.save_to_disk))
+        self.listbox.prepend(self._make_item(text))
         buf.set_text("")
         self.input_stack.set_visible_child_name("trigger")
+        self.actions_stack.set_visible_child_name("pill")
         self.show_all()
         self.save_to_disk()
 
@@ -425,9 +677,7 @@ class AgendaApp(Box):
                 text = item if isinstance(item, str) else item.get("text")
                 img = None if isinstance(item, str) else item.get("image")
                 # add to the beginning
-                self.listbox.prepend(
-                    AgendaItem(text, self._remove_item, self.save_to_disk, img)
-                )
+                self.listbox.prepend(self._make_item(text, img))
             except Exception as e:
                 logger.error(f"Error loading agenda item ({item}): {e}")
 
