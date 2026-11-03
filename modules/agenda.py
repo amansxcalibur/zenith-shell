@@ -1,8 +1,11 @@
 import os
+import glob
 import json
+import uuid
 import cairo
 from loguru import logger
 
+from fabric.utils.helpers import exec_shell_command_async
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
@@ -33,6 +36,7 @@ DND_TARGET = "agenda-row"
 
 DATA_FILE = os.path.join(DATA_DIR, "agenda.json")
 AGENDA_CACHE_DIR = os.path.join(CACHE_DIR, "agenda")
+BACKGROUND_PREFIX = "bg_crop_"
 THUMB_W, THUMB_H = 500, 100
 
 os.makedirs(AGENDA_CACHE_DIR, exist_ok=True)
@@ -147,25 +151,45 @@ class AgendaItem(Gtk.ListBoxRow):
         )
 
     def _build_action_revealer(self):
+        self.remove_background_button = _make_icon_button(
+            icons.hide_image, "Remove Background Image", self._on_remove_background
+        )
+        self.remove_background_button.set_no_show_all(True)
+        self.background_button = _make_icon_button(
+            icons.wallpaper, "Set Background Image", self._on_select_background
+        )
+
         self.action_revealer = Revealer(
             transition_type="slide-left",
             transition_duration=200,
             child=Box(
-                spacing=2,
+                spacing=4,
                 style="padding-right: 2px",
                 children=[
-                    _make_icon_button(
-                        icons.edit_material, "Edit Task", self._on_edit_requested
+                    Box(
+                        name="agenda-btn-group",
+                        children=[
+                            _make_icon_button(
+                                icons.edit_material,
+                                "Edit Task",
+                                self._on_edit_requested,
+                            ),
+                            self.background_button,
+                        ],
                     ),
-                    _make_icon_button(
-                        icons.wallpaper,
-                        "Set Background Image",
-                        self._on_select_background,
-                    ),
-                    _make_icon_button(
-                        icons.trash_material,
-                        "Delete Task",
-                        lambda: self.stack.set_visible_child_name("delete"),
+                    Box(
+                        name="agenda-btn-group",
+                        children=[
+                            self.remove_background_button,
+                            _make_icon_button(
+                                icons.trash_material,
+                                "Delete Task",
+                                lambda: self.stack.set_visible_child_name("delete"),
+                            )
+                            .build()
+                            .add_style_class("delete-btn")
+                            .unwrap(),
+                        ],
                     ),
                 ],
             ),
@@ -339,8 +363,14 @@ class AgendaItem(Gtk.ListBoxRow):
             self._process_and_cache_image(dialog.get_filename())
         dialog.destroy()
 
+    def _on_remove_background(self, _widget):
+        self.image_path = None
+        self.apply_background()
+        self.on_save()
+
     def apply_background(self):
-        if self.image_path and os.path.exists(self.image_path):
+        has_image = bool(self.image_path and os.path.exists(self.image_path))
+        if has_image:
             self.display_box.set_style(
                 f"background-image: url('file://{self.image_path}');"
                 "background-size: cover; background-position: center;"
@@ -348,14 +378,17 @@ class AgendaItem(Gtk.ListBoxRow):
         else:
             self.display_box.set_style("")
 
+        self.remove_background_button.set_visible(has_image)
+        self.background_button.set_tooltip_text(
+            "Change Background Image" if has_image else "Set Background Image"
+        )
+
     def _process_and_cache_image(self, original_path: str):
         try:
             cropped = _crop_pixbuf(
                 GdkPixbuf.Pixbuf.new_from_file(original_path), THUMB_W, THUMB_H
             )
-            cache_name = (
-                f"bg_crop_{hash(self.text)}_{os.path.basename(original_path)}.png"
-            )
+            cache_name = f"{BACKGROUND_PREFIX}{uuid.uuid4().hex}.png"
             target_path = os.path.join(AGENDA_CACHE_DIR, cache_name)
             cropped.savev(target_path, "png", [], [])
             self.image_path = target_path
@@ -399,6 +432,7 @@ class AgendaApp(Box):
         super().__init__(name="agenda-app", **kwargs)
         self.reorder_mode = False
         self._dragged: AgendaItem | None = None
+        self._load_failed = False
 
         self._build_input_stack()
         self._build_actions_pill()
@@ -679,8 +713,10 @@ class AgendaApp(Box):
         try:
             with open(DATA_FILE) as f:
                 data = json.load(f)
+            if not isinstance(data, list):
+                raise TypeError("expected a list of items")
         except Exception as e:
-            logger.error(f"Failed to read or parse agenda file: {e}")
+            self._on_load_failed(f"Failed to read or parse agenda file: {e}")
             return
 
         for item in reversed(data):
@@ -690,16 +726,47 @@ class AgendaApp(Box):
                 # add to the beginning
                 self.listbox.prepend(self._make_item(text, img))
             except Exception as e:
-                logger.error(f"Error loading agenda item ({item}): {e}")
+                self._on_load_failed(f"Error loading agenda item ({item}): {e}")
 
         self.show_all()
 
+    def _on_load_failed(self, reason: str):
+        # What's on disk is more than what we hold, so saving would lose the rest.
+        logger.error(reason)
+        if self._load_failed:
+            return
+        self._load_failed = True
+        body = GLib.markup_escape_text(
+            f"Could not read {DATA_FILE}. Changes won't be saved until "
+            "it's fixed and the shell is restarted."
+        )
+        exec_shell_command_async(
+            ["notify-send", "-u", "critical", "Agenda not loaded", body]
+        )
+
     def save_to_disk(self):
+        if self._load_failed:
+            logger.warning("Not saving the agenda, as it failed to load")
+            return
+
         os.makedirs(DATA_DIR, exist_ok=True)
-        items = [
-            {"text": row.text, "image": row.image_path}
-            for row in self.listbox.get_children()
-            if hasattr(row, "text")
-        ]
-        with open(DATA_FILE, "w") as f:
+        rows = self._rows()
+        items = [{"text": row.text, "image": row.image_path} for row in rows]
+
+        # atomic, so a crash mid-write can't leave a file that fails to load
+        temp_path = f"{DATA_FILE}.tmp"
+        with open(temp_path, "w") as f:
             json.dump(items, f, indent=4)
+        os.replace(temp_path, DATA_FILE)
+
+        self._delete_unused_backgrounds(rows)
+
+    def _delete_unused_backgrounds(self, rows: list[AgendaItem]):
+        used = {row.image_path for row in rows}
+        pattern = os.path.join(glob.escape(AGENDA_CACHE_DIR), f"{BACKGROUND_PREFIX}*")
+        for path in glob.glob(pattern):
+            if path not in used:
+                try:
+                    os.remove(path)
+                except OSError as e:
+                    logger.warning(f"Failed to delete unused background: {e}")

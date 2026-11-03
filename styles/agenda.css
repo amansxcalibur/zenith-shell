@@ -30,17 +30,29 @@
   margin-left: 6px;
 }
 
-#agenda-btn {
+#agenda-btn-group {
   background-color: var(--surface);
-  padding: 6px 10px;
   border-radius: 20px;
   margin-top: 2px;
 }
-.light #agenda-btn {
+.light #agenda-btn-group {
   background-color: var(--surface-variant);
+}
+#agenda-btn {
+  background-color: transparent;
+  padding: 6px 7px;
+  border-radius: 20px;
 }
 #agenda-btn:hover {
   background-color: var(--outline-variant);
+}
+#agenda-btn.delete-btn:hover {
+  background-color: var(--error-container);
+  color: var(--error);
+}
+.light #agenda-btn.delete-btn:hover {
+  background-color: var(--error);
+  color: var(--on-error);
 }
 .agenda-icon {
   font-size: 20px;
@@ -100,13 +112,22 @@
   background-color: var(--surface-semi-bright);
 }
 #editor-btn.delete-btn {
-  background-color: var(--error-dim);
+  background-color: var(--error-container);
 }
 #editor-btn.delete-btn > :first-child {
-  color: var(--shadow);
+  color: var(--error);
 }
 #editor-btn.delete-btn:hover {
+  background-color: shade(var(--error-container), 1.25);
+}
+.light #editor-btn.delete-btn {
   background-color: var(--error);
+}
+.light #editor-btn.delete-btn > :first-child {
+  color: var(--on-error);
+}
+.light #editor-btn.delete-btn:hover {
+  background-color: shade(var(--error), 0.9);
 }
 
 #agenda-box {
