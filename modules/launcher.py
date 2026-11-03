@@ -30,6 +30,7 @@ class AppCommands(Enum):
     WALLPAPERS = 2
     PLAYER = 3
     SETTINGS = 4
+    CLIPBOARD = 5
 
 
 class AppLauncher(Box):
@@ -66,6 +67,13 @@ class AppLauncher(Box):
             "id": AppCommands.WALLPAPERS,
             "icon": icons.wallpaper,
             "keywords": ["wallpaper", "background", "theme"],
+        },
+        {
+            "title": "Clipboard",
+            "cmd": ":c",
+            "id": AppCommands.CLIPBOARD,
+            "icon": icons.content_copy,
+            "keywords": ["clipboard", "history", "copy", "paste"],
         },
         {
             "title": "Zenith Settings",

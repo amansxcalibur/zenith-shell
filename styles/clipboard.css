@@ -1,0 +1,201 @@
+/* header, search and labels reuse the launcher's ids (styles/launcher.css) */
+#clipboard {
+  background-color: var(--shadow);
+}
+
+#clipboard-overlay {
+  box-shadow: inset 0px 10px 5px 0px var(--shadow);
+}
+
+#clipboard-mode-icon {
+  min-width: 50px;
+  min-height: 34px;
+  font-size: 24px;
+  color: var(--primary);
+}
+
+/* empty state */
+#clipboard-empty-icon {
+  font-size: 32px;
+  color: var(--on-surface-variant);
+  background-color: var(--surface-container-high);
+  border-radius: 999px;
+  min-width: 64px;
+  min-height: 64px;
+  margin-bottom: 6px;
+}
+#clipboard-empty {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--on-surface);
+}
+
+/* clear history: icon only, "Clear all" slides out on hover */
+#clipboard-clear-btn {
+  background-color: var(--surface-semi-bright);
+  border-radius: 16px;
+  padding: 10px;
+  min-width: 38px;
+  color: var(--error-dim);
+  transition: background-color 0.15s linear, color 0.15s linear;
+}
+#clipboard-clear-icon {
+  font-size: 30px;
+  min-width: 38px;
+}
+#clipboard-clear-text {
+  font-weight: bold;
+  padding: 0 6px 0 2px;
+}
+#clipboard-clear-btn:hover {
+  background-color: var(--error-dim);
+  color: var(--surface-semi-bright);
+}
+#clipboard-clear-btn:active {
+  background-color: var(--error);
+}
+#clipboard-clear-btn:disabled {
+  opacity: 0.4;
+}
+
+/* rows: M3 expressive connected list
+   tight inner corners, big outer corners on the ends of the group, and the
+   hovered / selected row morphs to fully rounded */
+/* EventBox ignores padding: it lives on the inner box */
+#clipboard-row {
+  border-radius: 8px;
+  background-color: var(--surface-container);
+  transition: border-radius 0.15s cubic-bezier(0.2, 0, 0, 1),
+    background-color 0.15s linear;
+}
+#clipboard-row.first {
+  border-radius: 24px 24px 8px 8px;
+}
+#clipboard-row.last {
+  border-radius: 8px 8px 24px 24px;
+}
+#clipboard-row.first.last {
+  border-radius: 24px;
+}
+#clipboard-row.hover {
+  border-radius: 24px;
+  background-color: var(--surface-container-high);
+}
+/* neutral tone + shape for selection: wallpaper schemes (e.g. fidelity)
+   can make secondary-container read like the error red used for delete */
+#clipboard-row.selected {
+  border-radius: 28px;
+  background-color: var(--surface-container-highest);
+}
+#clipboard-row.pressed {
+  border-radius: 16px;
+  background-color: var(--surface-container-highest);
+}
+.light #clipboard-row {
+  background-color: var(--surface-container-high);
+}
+.light #clipboard-row.hover {
+  background-color: var(--surface-container-highest);
+}
+.light #clipboard-row.selected {
+  background-color: var(--surface-dim);
+}
+
+#clipboard-row-box {
+  padding: 12px 12px 12px 12px;
+}
+
+/* type: title + supporting text */
+#clipboard #app-label {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--on-surface);
+}
+#clipboard #app-desc {
+  font-size: 13px;
+  color: var(--on-surface-variant);
+}
+#clipboard-row.selected #app-label {
+  color: var(--primary);
+}
+
+#clipboard-image-preview {
+  border-radius: 16px;
+}
+
+/* row actions: top-right, only on the hovered / selected row */
+#clipboard-row-actions {
+  opacity: 0;
+  transition: opacity 0.15s linear;
+}
+#clipboard-row.hover #clipboard-row-actions,
+#clipboard-row.selected #clipboard-row-actions {
+  opacity: 1;
+}
+
+/* tonal icon buttons (rows + expanded toolbar) */
+#clipboard-icon-btn {
+  border-radius: 30px;
+  padding: 6px;
+  min-width: 30px;
+  min-height: 30px;
+  color: var(--on-surface-variant);
+  background-color: var(--surface-container-high);
+  transition: background-color 0.15s linear, color 0.15s linear,
+    border-radius 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+#clipboard-icon-btn > * {
+  font-size: 20px;
+}
+#clipboard-icon-btn:hover {
+  background-color: var(--primary-container);
+  color: var(--on-primary-container);
+  border-radius: 12px;
+}
+#clipboard-icon-btn.danger:hover {
+  background-color: var(--error-container);
+  color: var(--on-error-container);
+}
+#clipboard-icon-btn:active {
+  border-radius: 8px;
+}
+
+/* expanded entry */
+#clipboard-detail {
+  padding-top: 12px;
+}
+#clipboard-detail-toolbar {
+  padding: 0 2px;
+}
+#clipboard-detail-info {
+  color: var(--on-surface);
+  font-size: 15px;
+  font-weight: 500;
+  margin-left: 8px;
+}
+#clipboard-detail-scroll {
+  background-color: var(--surface-container-low);
+  border-radius: 28px;
+}
+.light #clipboard-detail-scroll {
+  background-color: var(--surface-container-high);
+}
+#clipboard-detail-text {
+  color: var(--on-surface);
+  padding: 18px 22px;
+  font-family: monospace;
+  font-size: 15px;
+}
+#clipboard-detail-text selection {
+  color: var(--on-primary);
+  background-color: var(--primary);
+}
+#clipboard-detail-image {
+  padding: 10px;
+}
+
+/* copied files (file manager references) */
+#clipboard-file-icon {
+  font-size: 20px;
+  color: var(--primary);
+}

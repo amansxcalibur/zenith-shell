@@ -258,6 +258,49 @@ LAUNCHER_KEYBINDINGS = [
     ),
 ]
 
+CLIPBOARD_KEYBINDINGS = [
+    KeyBinding(
+        action="clipboard.move_up",
+        key="Up",
+        command=None,
+        title="Move up",
+        scope="clipboard",
+        icon=icons.north.symbol(),
+    ),
+    KeyBinding(
+        action="clipboard.move_down",
+        key="Down",
+        command=None,
+        title="Move down",
+        scope="clipboard",
+        icon=icons.south.symbol(),
+    ),
+    KeyBinding(
+        action="clipboard.activate",
+        key="Return",
+        command=None,
+        title="Copy entry",
+        scope="clipboard",
+        icon=icons.content_copy.symbol(),
+    ),
+    KeyBinding(
+        action="clipboard.expand",
+        key="<Shift>Return",
+        command=None,
+        title="Expand / collapse entry",
+        scope="clipboard",
+        icon=icons.open_in_full.symbol(),
+    ),
+    KeyBinding(
+        action="clipboard.delete",
+        key="<Shift>Delete",
+        command=None,
+        title="Delete entry",
+        scope="clipboard",
+        icon=icons.trash_material.symbol(),
+    ),
+]
+
 NOTIFICATIONS_KEYBINDINGS = [
     KeyBinding(
         action="notifications.clear_all",
@@ -276,6 +319,7 @@ KEYBINDING_GROUPS: dict[str, list[KeyBinding]] = {
     "wifi": WIFI_KEYBINDINGS,
     "wallpaper": WALLPAPER_KEYBINDINGS,
     "launcher": LAUNCHER_KEYBINDINGS,
+    "clipboard": CLIPBOARD_KEYBINDINGS,
     "notifications": NOTIFICATIONS_KEYBINDINGS,
 }
 

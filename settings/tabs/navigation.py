@@ -78,6 +78,11 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
                         self._create_btn_binding_row,
                     ),
                     self.build_section(
+                        "Clipboard",
+                        config.get_all_scoped_bindings("clipboard"),
+                        self._create_btn_binding_row,
+                    ),
+                    self.build_section(
                         "Notifications",
                         config.get_all_scoped_bindings("notifications"),
                         self._create_btn_binding_row,
@@ -222,6 +227,11 @@ class LauncherTab(BaseWidget, SectionBuilderMixin):
             {"module": "Wallpaper", "text": ":w", "icon": icons.wallpaper.symbol()},
             {"module": "Player", "text": ":u", "icon": icons.disc.symbol()},
             {"module": "Power", "text": ":p", "icon": icons.power.symbol()},
+            {
+                "module": "Clipboard",
+                "text": ":c",
+                "icon": icons.content_copy.symbol(),
+            },
             {
                 "module": "Zenith Settings",
                 "text": ":s",

@@ -10,6 +10,7 @@ from config.config import config
 from config.info import USERNAME, HOSTNAME, IS_WAYLAND, IPC_UTIL
 
 from modules.dashboard import Dashboard
+from modules.clipboard import ClipboardHistory
 from modules.power_menu import PowerMenu
 from modules.player import PlayerContainer
 from modules.controls import ControlsManager
@@ -124,6 +125,7 @@ class Pill(Window, Service):
         self.player = PlayerContainer(window=self)
         self.wallpaper = WallpaperSelector(window=self)
         self.dashboard = Dashboard(controls=self.controls)
+        self.clipboard = ClipboardHistory(window=self)
 
         self.lift_box = Box(style="min-height:36px;")  # 40-3-1
 
@@ -140,6 +142,7 @@ class Pill(Window, Service):
                 self.player,
                 self.dashboard,
                 self.power_menu,
+                self.clipboard,
             ],
         )
         self.stack.get_inner_stack().set_homogeneous(False)
@@ -181,6 +184,9 @@ class Pill(Window, Service):
 
             case self.wallpaper:
                 GLib.idle_add(self.wallpaper.focus_search)
+
+            case self.clipboard:
+                GLib.idle_add(self.clipboard.focus_search)
 
     def _on_power_profile_changed(self, *_):
         self._animations_enabled = (
@@ -288,6 +294,10 @@ class Pill(Window, Service):
                 # Gtk.Stack moves focus into the new child itself (first
                 # focusable widget) when the old child had it; take it back
                 self.wallpaper.focus_search()
+            case AppCommands.CLIPBOARD:
+                self.stack.set_visible_child(self.clipboard)
+                # after the switch: Gtk.Stack moves focus into the new child
+                self.clipboard.open()
             case AppCommands.DASHBOARD:
                 self.stack.set_visible_child(self.dashboard)
             case AppCommands.POWER:
