@@ -111,11 +111,18 @@ case "${1:-}" in
         cat <<- 'EOF'
 Usage:
     zenith-shell                  start the shell
+    zenith-shell lock [-f]        lock the screen (-f: return once locked)
     zenith-shell setup <cmd>      install | sync | update | doctor | uninstall
                                   (zenith-shell setup --help for details)
     zenith-shell -h, --help       show this message
 EOF
         exit 0
+        ;;
+    lock)
+        # foreground + exec: xss-lock and swayidle -w watch this process,
+        # and xss-lock's sleep fd must reach the locker
+        shift
+        exec "@VENV@/bin/python" -m lock "$@"
         ;;
     setup)
         shift
