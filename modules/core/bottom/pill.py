@@ -35,7 +35,7 @@ if IS_WAYLAND:
     from gi.repository import GtkLayerShell  # type: ignore
     from fabric.widgets.wayland import WaylandWindow as Window
 else:
-    from widgets.overrides import PatchedX11Window as Window
+    from widgets.overrides import PinnedX11Window as Window
 
 if TYPE_CHECKING:
     from .dock.bar import DockBar
@@ -403,7 +403,7 @@ class Pill(Window, Service):
             GtkLayerShell.set_margin(self, GtkLayerShell.Edge.LEFT, int(x))
             GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, int(y))
         else:
-            self.move(int(x), int(y))
+            self.place(x, y)
 
     def get_position_config(self) -> dict:
         return config.get("pill.POSITION")
