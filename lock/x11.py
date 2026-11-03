@@ -1,617 +1,354 @@
-import time
-import threading
+import os
+import pwd
+
 from loguru import logger
-
-try:
-    from Xlib import X, XK
-    from Xlib.display import Display
-
-    XLIB_AVAILABLE = True
-
-except ImportError:
-    logger.warning("Install python-xlib for grabbing functionality.")
-    XLIB_AVAILABLE = False
-    display = None
+from Xlib import X
+from Xlib.display import Display
 
 from fabric import Application
 from fabric.widgets.box import Box
-from fabric.widgets.label import Label
-from fabric.widgets.stack import Stack
-from fabric.widgets.eventbox import EventBox
-from fabric.widgets.centerbox import CenterBox
-from fabric.widgets.x11 import X11Window as Window
 from fabric.utils.helpers import get_relative_path, monitor_file
 
-from widgets.shapes import Pill, Circle, WavyCircle, Ellipse, Pentagon
-from modules.weather import WeatherPill
-from modules.wavy_clock import WavyClock
-from config.info import USERNAME
-
 from .authenticator import Authenticator
+from .entry import PasswordEntry
+from .ui import LockContent
+from .xkb import KeyTranslator, enable_xkb
+from .supervisor import (
+    APP_NAME,
+    EXIT_UNLOCKED,
+    EXIT_LOCK_FAILED,
+    EXIT_ALREADY_RUNNING,
+    signal_locked,
+)
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib, Gdk  # type: ignore
+from gi.repository import GLib, Gdk, Gtk  # type: ignore
 
 # TODO:
-# - handle runtime keymap changes
-# - multi monitor setup as multiple windows instead of one window (dynamic changes/plug n plays)
-# - handle screen configuration change
-# - mlock for passwords (sweat cpython)
 # - dpms handle
 
-# WARNING: THIS SETUP IS NOT SECURE
+GRAB_TIMEOUT_MS = 3000
+GRAB_RETRY_MS = 5
 
 
-class InputGrabber:
-    """Handles X11 keyboard and pointer grabbing."""
+class DisplayWatch:
+    """Dispatch a python-xlib connection's events from the GLib main loop."""
 
-    def __init__(self, window, on_keypress_callback):
-        self.window = window
-        self.on_keypress = on_keypress_callback
-        self.display: Display | None = None
-        self.xwin = None
-        self._running = False
-        self._thread: threading.Thread | None = None
-
-        self.special_keys = {
-            XK.XK_Return: "Return",
-            XK.XK_KP_Enter: "Return",  # Numpad Enter
-            XK.XK_BackSpace: "BackSpace",
-            XK.XK_Escape: "Escape",
-            XK.XK_Delete: "Delete",
-            XK.XK_KP_Delete: "Delete",  # Numpad Delete
-        }
-
-        self.ignored_keys = {
-            XK.XK_Caps_Lock,
-            XK.XK_Shift_L,
-            XK.XK_Shift_R,
-            XK.XK_Control_L,
-            XK.XK_Control_R,
-            XK.XK_Alt_L,
-            XK.XK_Alt_R,
-            XK.XK_Meta_L,
-            XK.XK_Meta_R,
-            XK.XK_Super_L,
-            XK.XK_Super_R,
-            XK.XK_Hyper_L,
-            XK.XK_Hyper_R,
-            XK.XK_Num_Lock,
-            XK.XK_Scroll_Lock,
-        }
-
-    def setup(self) -> bool:
-        self.gdk_window = self.window.get_window()
-        if not self.gdk_window:
-            return False
-
-        xid = self.gdk_window.get_xid()
-        self.display = Display()
-        self.xwin = self.display.create_resource_object("window", xid)
-        self.root_win = self.display.screen().root
-
-        self.xwin.change_attributes(
-            override_redirect=True,
-            event_mask=(
-                X.KeyPressMask
-                | X.KeyReleaseMask
-                | X.VisibilityChangeMask
-                | X.StructureNotifyMask
-            ),
+    def __init__(self, display: Display, on_event, on_lost):
+        self.display = display
+        self.on_event = on_event
+        self.on_lost = on_lost
+        self._source = GLib.io_add_watch(
+            display.fileno(),
+            GLib.PRIORITY_HIGH,
+            GLib.IO_IN | GLib.IO_HUP | GLib.IO_ERR,
+            self._on_io,
         )
 
-        # hide cursor
-        display = self.gdk_window.get_display()
-        cursor = Gdk.Cursor.new_for_display(display, Gdk.CursorType.BLANK_CURSOR)
-        self.gdk_window.set_cursor(cursor)
+    def _on_io(self, _fd, condition):
+        if condition & (GLib.IO_HUP | GLib.IO_ERR):
+            logger.critical("Lost connection to the X server")
+            self._source = None
+            self.on_lost()
+            return False
+        return self.drain()
 
+    def drain(self) -> bool:
+        try:
+            while self.display.pending_events():
+                self.on_event(self.display.next_event())
+        except Exception as e:
+            logger.error(f"X event handling failed: {e}")
         return True
 
+    def stop(self):
+        if self._source is not None:
+            GLib.source_remove(self._source)
+            self._source = None
+
+
+class X11Guard:
+    """Input grabs, key translation and keep-on-top, on one X connection."""
+
+    def __init__(self, xid: int, on_key, on_lost):
+        self.on_key = on_key
+        self.xid = xid
+
+        self.display = Display()
+        enable_xkb(self.display)  # group/level info in key event state
+        self.root = self.display.screen().root
+        self.win = self.display.create_resource_object("window", xid)
+        self.translator = KeyTranslator()
+        self.cursor = self._blank_cursor()
+
+        self.keyboard_grabbed = False
+        self.pointer_grabbed = False
+
+        # raise whenever any top-level window maps/moves/restacks, and when we
+        # become obscured. Event masks are per connection, so they have to be
+        # selected on the connection that reads the events.
+        # we lowkey aggressive ;)
+        self.root.change_attributes(event_mask=X.SubstructureNotifyMask)
+        self.win.change_attributes(event_mask=X.VisibilityChangeMask)
+
+        self.watch = DisplayWatch(self.display, self._on_event, on_lost)
+        self.raise_window()
+
+    def _blank_cursor(self):
+        pixmap = self.root.create_pixmap(1, 1, 1)
+        gc = pixmap.create_gc(foreground=0, background=0)
+        pixmap.fill_rectangle(gc, 0, 0, 1, 1)
+        cursor = pixmap.create_cursor(pixmap, (0, 0, 0), (0, 0, 0), 0, 0)
+        gc.free()
+        pixmap.free()
+        return cursor
+
+    # grabs
+
+    def steal_focus(self):
+        # may close context menus that hold grabs
+        self.win.set_input_focus(X.RevertToParent, X.CurrentTime)
+        self.display.flush()
+
     def try_grab(self) -> bool:
-        """Attempt to grab keyboard and pointer input."""
+        if not self.pointer_grabbed:
+            result = self.root.grab_pointer(
+                False,
+                X.ButtonPressMask | X.ButtonReleaseMask | X.PointerMotionMask,
+                X.GrabModeAsync,
+                X.GrabModeAsync,
+                X.NONE,
+                self.cursor,
+                X.CurrentTime,
+            )
+            self.pointer_grabbed = result == X.GrabSuccess
 
-        # grab inputs
-        pointer_result = self.root_win.grab_pointer(
-            owner_events=False,
-            event_mask=X.ButtonPressMask | X.ButtonReleaseMask | X.PointerMotionMask,
-            pointer_mode=X.GrabModeAsync,
-            keyboard_mode=X.GrabModeAsync,
-            confine_to=X.NONE,
-            cursor=X.NONE,
-            time=X.CurrentTime,
-        )
-        keyboard_result = self.root_win.grab_keyboard(
-            owner_events=False,
-            pointer_mode=X.GrabModeAsync,
-            keyboard_mode=X.GrabModeAsync,
-            time=X.CurrentTime,
-        )
+        if not self.keyboard_grabbed:
+            result = self.root.grab_keyboard(
+                False, X.GrabModeAsync, X.GrabModeAsync, X.CurrentTime
+            )
+            self.keyboard_grabbed = result == X.GrabSuccess
 
-        if keyboard_result == X.GrabSuccess:
-            logger.info("Keyboard grab successful")
-            if pointer_result == X.GrabSuccess:
-                logger.info("Pointer grab successful")
-            else:
-                logger.warning(f"Pointer grab failed (result={pointer_result})")
-            self._start_event_loop()
-            self.display.sync()
-            return True
-        else:
-            logger.warning(f"Keyboard grab failed (result={keyboard_result})")
-            return False
+        # grab replies may have buffered events
+        GLib.idle_add(lambda: self.watch.drain() and False)
+        return self.keyboard_grabbed and self.pointer_grabbed
 
-    def _start_event_loop(self):
-        """Start the X11 event listener thread."""
-        self._running = True
-        self._thread = threading.Thread(target=self._event_loop, daemon=True)
-        self._thread.start()
-
-    def _event_loop(self):
-        """Captures X11 events directly (blocking)."""
-        while self._running and self.display:
-            try:
-                event = self.display.next_event()  # blocking
-                if event.type == X.KeyPress:
-                    self._process_keypress(event)
-            except Exception as e:
-                logger.error(f"Error in X event loop: {e}")
-                break
-
-    def _process_keypress(self, event):
-        """Process X11 KeyPress events using Xlib's built-in conversion."""
-        keycode = event.detail
-
-        # check modifier state
-        shift = bool(event.state & X.ShiftMask)
-        _ = bool(event.state & X.ControlMask)  # ctrl
-        _ = bool(event.state & X.Mod1Mask)  # alt
-        caps_lock = bool(event.state & X.LockMask)
-
-        keysym = self.display.keycode_to_keysym(keycode, 0)
-
-        # ignore modifier keys
-        if keysym in self.ignored_keys:
-            return
-
-        # handle special keys
-        if keysym in self.special_keys:
-            keyname = self.special_keys[keysym]
-            logger.debug(f"Special key: {keyname}")
-            GLib.idle_add(self.on_keypress, keyname)
-            return
-
+    def release(self):
+        self.watch.stop()
         try:
-            char = XK.keysym_to_string(keysym)
-            if char and len(char) == 1:
-                if char.isalpha():
-                    # XOR fyaa
-                    char = char.upper() if (caps_lock ^ shift) else char.lower()
-                elif shift:
-                    # for symbols/numbers
-                    shifted_keysym = self.display.keycode_to_keysym(keycode, 1)
-                    shifted_char = XK.keysym_to_string(shifted_keysym)
-                    if shifted_char and len(shifted_char) == 1:
-                        char = shifted_char
-
-                # only process printable characters
-                if char.isprintable():
-                    GLib.idle_add(self.on_keypress, char)
-                else:
-                    logger.debug(f"Non-printable character (ord={ord(char)})")
-            else:
-                keyname = XK.keysym_to_string(keysym)
-                logger.debug(f"Unhandled keysym: {keysym} (name={keyname})")
-
+            self.display.ungrab_keyboard(X.CurrentTime)
+            self.display.ungrab_pointer(X.CurrentTime)
+            self.display.flush()
+            self.display.close()
         except Exception as e:
-            logger.debug(f"Failed to convert keysym {keysym}: {e}")
+            logger.warning(f"Failed to release grabs cleanly: {e}")
+        self.keyboard_grabbed = self.pointer_grabbed = False
 
-    def cleanup(self):
-        """Release X11 grabs and cleanup resources."""
-        self._running = False
+    # stacking
 
-        if self._thread and self._thread.is_alive():
-            self._thread.join(timeout=1.0)
+    def raise_window(self):
+        self.win.configure(stack_mode=X.Above)
+        self.display.flush()
 
-        if self.display:
-            try:
-                self.display.ungrab_keyboard(X.CurrentTime)
-                self.display.ungrab_pointer(X.CurrentTime)
-                self.display.flush()
-                self.display.close()
-                logger.info("Input grabs released cleanly")
-            except Exception as e:
-                logger.warning(f"Failed to cleanup grabs: {e}")
-            finally:
-                self.display = None
+    def _on_event(self, event):
+        etype = event.type
+        if etype == X.KeyPress:
+            self._on_keypress(event)
+        elif etype in (X.MapNotify, X.ConfigureNotify, X.CirculateNotify):
+            # ignore our own restacks, we don't wanna loop forever
+            if event.window.id != self.xid:
+                self.raise_window()
+        elif etype == X.UnmapNotify:
+            # any client can unmap an override-redirect window; the root grab
+            # keeps input locked, but the desktop would be visible
+            if event.window.id == self.xid:
+                logger.warning("Lock window was unmapped externally; remapping")
+                self.win.map()
+                self.raise_window()
+        elif etype == X.VisibilityNotify and event.state != X.VisibilityUnobscured:
+            self.raise_window()
+
+    # keys
+
+    def _on_keypress(self, event):
+        keysym = self.translator.keysym(event.detail, event.state)
+        self.on_key(
+            keysym, self.translator.text(keysym), bool(event.state & X.ControlMask)
+        )
 
 
-class LockScreen(Window):
+class LockScreen(Gtk.Window):
     def __init__(self):
-        super().__init__(title="Lock Screen", layer="top", type_hint="splashscreen")
-
-        # self.fullscreen()
-        # self.set_app_paintable(True)
-
-        display = Gdk.Display.get_default()
-
-        monitor = display.get_primary_monitor()
-        geometry = monitor.get_geometry()
-
-        # geometry of just the main screen
-        self.mon_width = geometry.width
-        self.mon_height = geometry.height
-        self.mon_x = geometry.x
-        self.mon_y = geometry.y
-
+        # POPUP = override-redirect: the WM never manages or moves it, and it
+        # maps even while another window is fullscreen. Default (non-RGBA)
+        # visual so a compositor can never show the desktop through it.
+        super().__init__(type=Gtk.WindowType.POPUP, title="Lock Screen")
         self.set_decorated(False)
         self.set_resizable(False)
-        self.set_keep_above(True)
 
-        self.monitor_thread = None
-        self.grabber = InputGrabber(self, self.handle_keypress)
-        self.authenticator = Authenticator(USERNAME)
-
-        self.connect("map-event", self._on_mapped)
-        self.connect("destroy", self._on_destroy)
+        self.exit_code = EXIT_UNLOCKED
+        self.guard: X11Guard | None = None
+        self.authenticator = Authenticator(pwd.getpwuid(os.getuid()).pw_name)
 
         self.pad_left = Box()
         self.pad_right = Box()
         self.pad_top = Box(orientation="v")
         self.pad_bottom = Box(orientation="v")
+        for pad in (self.pad_left, self.pad_right, self.pad_top, self.pad_bottom):
+            # visibility is managed by _update_monitor_geometry, not show_all()
+            pad.set_no_show_all(True)
 
         self._build_ui()
         self._update_monitor_geometry()
-        self.force_window_map()
 
-        # react to monitor hotplug / layout changes
-        display = Gdk.Display.get_default()
-        display.connect("monitor-added", self._on_monitors_changed)
-        display.connect("monitor-removed", self._on_monitors_changed)
+        self.connect("map-event", self._on_mapped)
+        self.connect("destroy", lambda *_: self._finish(self.exit_code))
+
+        screen = self.get_screen()
+        screen.connect("monitors-changed", self._update_monitor_geometry)
+        screen.connect("size-changed", self._update_monitor_geometry)
+
+        self.realize()
+        self._set_bypass_compositor()
+        self.show_all()
+
+    # ui
 
     def _build_ui(self):
-        self.status_label = Label(
-            label="Enter password",
-            style="color: white; font-size: 14px;",
-            size_request=(250, -1),
+        self.center_box = LockContent()
+        self.entry = PasswordEntry(
+            self.center_box,
+            self.authenticator,
+            on_success=lambda: self._finish(EXIT_UNLOCKED),
         )
 
-        self.text = ""
-
-        self.shapes = Stack(
-            h_align="center",
-            children=[
-                Pill(dark=True),
-                Circle(dark=True),
-                WavyCircle(dark=True),
-                Ellipse(dark=True),
-                Pentagon(dark=True),
-            ],
-        )
-
-        self.center_box = CenterBox(
-            spacing=10,
-            center_children=[
-                Box(
-                    spacing=10,
-                    v_align="center",
-                    children=[
-                        WavyClock(size=(400, 400)),
-                        WeatherPill(size=(400, 400)),
-                    ],
-                ),
-            ],
-            end_children=Box(
-                orientation="v",
-                v_align="end",
-                spacing=10,
-                style="margin:20px;",
-                children=[EventBox(child=self.shapes)],
-            ),
-        )
         middle_row = Box(children=[self.pad_left, self.center_box, self.pad_right])
+        # opaque everywhere, including the pads over non-primary monitors
         main = Box(
-            orientation="v", children=[self.pad_top, middle_row, self.pad_bottom]
+            orientation="v",
+            style="background-color: var(--background);",
+            children=[self.pad_top, middle_row, self.pad_bottom],
         )
+        self.add(main)
 
-        self.children = main
+    def _set_bypass_compositor(self):
+        display = Display()
+        try:
+            xwin = display.create_resource_object("window", self.get_window().get_xid())
+            xwin.change_property(
+                display.intern_atom("_NET_WM_BYPASS_COMPOSITOR"),
+                display.intern_atom("CARDINAL"),
+                32,
+                [1],
+                X.PropModeReplace,
+            )
+            display.flush()
+        finally:
+            display.close()
 
-    def _get_primary_geometry(self):
+    # geometry
+
+    def _get_primary_geometry(self, root_width: int, root_height: int):
+        """(x, y, w, h) of the primary monitor. GDK falls back to monitor 0
+        itself; with zero monitors (mid hotplug/undock) cover the root."""
         display = Gdk.Display.get_default()
-        monitor = display.get_primary_monitor()
+        monitor = display.get_primary_monitor() or display.get_monitor(0)
         if monitor is None:
-            # fall back to monitor 0 if no primary is set
-            monitor = display.get_monitor(0)
-        return monitor.get_geometry()
+            return 0, 0, root_width, root_height
+        geom = monitor.get_geometry()
+        return geom.x, geom.y, geom.width, geom.height
+
+    def _get_root_size(self) -> tuple[int, int]:
+        display = Display()
+        try:
+            geom = display.screen().root.get_geometry()
+            return geom.width, geom.height
+        finally:
+            display.close()
 
     def _update_monitor_geometry(self, *_):
-        local_display = Display()
-        screen = local_display.screen()
-        root = screen.root
-        root_geom = root.get_geometry()
+        root_width, root_height = self._get_root_size()
+        mon_x, mon_y, mon_w, mon_h = self._get_primary_geometry(root_width, root_height)
 
-        self.root_width = root_geom.width
-        self.root_height = root_geom.height
-
-        geometry = self._get_primary_geometry()
-
-        self.mon_width = geometry.width
-        self.mon_height = geometry.height
-        self.mon_x = geometry.x
-        self.mon_y = geometry.y
-
-        pad_left_width = self.mon_x
-        pad_right_width = self.root_width - (self.mon_x + self.mon_width)
-        pad_top_height = self.mon_y
-        pad_bottom_height = self.root_height - (self.mon_y + self.mon_height)
-
-        self.pad_left.set_size_request(pad_left_width, -1)
-        self.pad_left.set_visible(pad_left_width > 0)
-        self.pad_left.queue_resize()
-
-        self.pad_right.set_size_request(pad_right_width, -1)
-        self.pad_right.set_visible(pad_right_width > 0)
-        self.pad_right.queue_resize()
-
-        self.pad_top.set_size_request(-1, pad_top_height)
-        self.pad_top.set_visible(pad_top_height > 0)
-        self.pad_top.queue_resize()
-
-        self.pad_bottom.set_size_request(-1, pad_bottom_height)
-        self.pad_bottom.set_visible(pad_bottom_height > 0)
-        self.pad_bottom.queue_resize()
-
-        self.center_box.set_size_request(self.mon_width, self.mon_height)
-        self.center_box.queue_resize()
-
-        self.set_size_request(self.root_width, self.root_height)
-        self.queue_resize()
-        self.set_size_request(self.root_width, self.root_height)
-        self.resize(self.root_width, self.root_height)
-
-        gdk_win = self.get_window()
-        if gdk_win is not None:
-            gdk_win.resize(self.root_width, self.root_height)
-
-        local_display.close()
-
-        # do the X-level repositioning after GTK's resize has been applied
-        GLib.idle_add(self._reassert_geometry)
-
-    def _reassert_geometry(self):
-        local_display = Display()
-        xid = self.get_window().get_xid()
-        x_win = local_display.create_resource_object("window", xid)
-
-        x_win.configure(x=0, y=0, stack_mode=X.Above)
-        local_display.sync()
-        local_display.close()
-        return False
-
-    def _on_monitors_changed(self, *_):
-        self._update_monitor_geometry()
-
-    def force_window_map(self):
-        # When another window is in fullscreen mode, the "map" signal never gets emitted.
-        # This function forces the window to map, hence triggering the raise loop
-        local_display = Display()
-        xid = self.get_window().get_xid()
-        x_win = local_display.create_resource_object("window", xid)
-        x_win.change_attributes(
-            override_redirect=True,
-            event_mask=X.VisibilityChangeMask | X.StructureNotifyMask,
+        pads = (
+            (self.pad_left, mon_x, -1),
+            (self.pad_right, root_width - (mon_x + mon_w), -1),
+            (self.pad_top, -1, mon_y),
+            (self.pad_bottom, -1, root_height - (mon_y + mon_h)),
         )
+        for pad, width, height in pads:
+            pad.set_size_request(width, height)
+            pad.set_visible(max(width, height) > 0)
 
-        # bypass compositor
-        atom = local_display.intern_atom("_NET_WM_BYPASS_COMPOSITOR")
-        x_win.change_property(
-            atom,
-            local_display.intern_atom("CARDINAL"),
-            32,
-            [1],  # 1 = disable compositing for this window
-            X.PropModeReplace,
-        )
-        x_win.map()
-        x_win.configure(x=0, y=0, stack_mode=X.Above)
-        local_display.sync()
-        local_display.close()
+        self.center_box.set_size_request(mon_w, mon_h)
+        self.set_size_request(root_width, root_height)
+        self.resize(root_width, root_height)
+        self.move(0, 0)
+        if self.guard:
+            self.guard.raise_window()
+
+    # lifecycle
 
     def _on_mapped(self, *_):
-        self.xid = self.get_window().get_xid()
-        # self.move(0, 0)
-
-        if self.monitor_thread is None or not self.monitor_thread.is_alive():
-            logger.info("Starting fresh monitor thread.")
-            self.monitor_thread = threading.Thread(target=self.raise_loop, daemon=True)
-            self.monitor_thread.start()
-            threading.Thread(
-                target=self._try_grab_input_with_retry, daemon=True
-            ).start()
-        else:
-            logger.debug("Monitor thread already active; skipping spawn.")
-
-        GLib.idle_add(self.present)
-
-    def raise_loop(self):
-        if not XLIB_AVAILABLE:
-            logger.error("python-xlib not available;")
+        if self.guard is not None:
             return
-
-        try:
-            local_display = Display()
-            x_win = local_display.create_resource_object("window", self.xid)
-            root = local_display.screen().root
-
-            # listen to every other window's movement/mapping
-            root.change_attributes(event_mask=X.SubstructureNotifyMask)
-
-            # raise window
-            x_win.configure(x=0, y=0, stack_mode=X.Above)
-            local_display.flush()
-
-            logger.info(
-                f"Monitor thread active. Watching Root {hex(root.id)} for intruders."
-            )
-
-            while True:
-                event = local_display.next_event()  # blocking
-
-                # ugh for some reason I'm not able to get VisibilityNotify events :(
-                # # obscured
-                # if event.type == X.VisibilityNotify and event.window.id == self.xid:
-                #     if event.state != X.VisibilityUnobscured:
-                #         logger.debug("Lock screen obscured.")
-                #         should_raise = True
-
-                # very aggressive >.<
-                if event.type in [
-                    X.MapNotify,  # ANY window maps
-                    X.ConfigureNotify,  # Something else moved/resized/restacked
-                    X.CirculateNotify,  # We were obscured
-                ]:
-                    logger.debug("Raising window...")
-                    # skip if the event is about our own window to avoid infinite loops
-                    if hasattr(event, "window") and event.window.id == self.xid:
-                        continue
-
-                    # not waiting to be obscured.
-                    # raise the moment another window even tries to move.
-                    x_win.configure(stack_mode=X.Above)
-                    local_display.flush()
-
-                elif event.type == X.DestroyNotify and event.window.id == self.xid:
-                    logger.info("Lock screen unmapped/destroyed. Exiting thread.")
-                    break
-
-        except Exception as e:
-            logger.error(f"Error in raise_loop: {e}")
-
-        return False
-
-    def _try_grab_input_with_retry(self):
-        if not self.grabber.setup():
-            logger.error("Grabber setup failed")
-            GLib.idle_add(self._unlock)
-            return
-
-        # steal focus, possibly closing context menus that hold grabs
-        self.grabber.xwin.set_input_focus(X.RevertToParent, X.CurrentTime)
-        self.grabber.display.flush()
-
-        for _ in range(200):
-            if self.grabber.try_grab():
-                return
-            time.sleep(0.00005)  # 50 microseconds
-
-        logger.error("Could not grab inputs after 200 attempts")
-        GLib.idle_add(self._unlock)
-
-    def handle_keypress(self, keyname: str) -> bool:
-        """Handle keypresses from X11 grab."""
-        if self.authenticator.is_authenticating():
-            return False
-
-        if keyname == "Return":
-            self._on_entry_activate(self.text)
-        elif keyname == "BackSpace":
-            self._handle_backspace()
-        elif keyname == "Delete":
-            pass
-        elif keyname == "Escape":
-            self._handle_escape()
-        elif keyname and len(keyname) == 1:  # only single characters
-            self._handle_character(keyname)
-
-        return False
-
-    def _handle_backspace(self):
-        # remove last character
-        if self.text:
-            self._cycle_through_shape(forward=False)
-            if len(self.text) == 1:
-                self._flash_color([1, 1, 1])  # white
-            else:
-                self._flash_color([1, 0, 0])  # red
-            self.text = self.text[:-1]
-        else:
-            self._flash_color([1, 1, 1])  # white
-
-    def _handle_escape(self):
-        # clear all input
-        self.text = ""
-        self.shapes.set_visible_child(self.shapes.get_children()[0])
-        self._flash_color([1, 1, 1])  # white - reset
-
-    def _handle_character(self, char: str):
-        self.text += char
-        self._cycle_through_shape(forward=True)
-
-    def _flash_color(self, rgb: list):
-        """Temporarily flash a color on the current shape."""
-        shape = self.shapes.get_visible_child()
-        shape.set_color(rgb=rgb, redraw=True)
-        GLib.idle_add(lambda: shape.set_color(rgb=None, redraw=False))
-
-    def _cycle_through_shape(self, forward: bool = True):
-        if not self.shapes:
-            return
-
-        widget_list = self.shapes.get_children()
-
-        current_shape = self.shapes.get_visible_child()
-        current_index = widget_list.index(current_shape)
-
-        next_index = (current_index + (1 if forward else -1)) % len(widget_list)
-        next_shape = widget_list[next_index]
-        self.shapes.set_visible_child(next_shape)
-
-    def _on_entry_activate(self, entry):
-        password = self.text
-        if not password:
-            return
-
-        self.status_label.set_label("Authenticating...")
-        self.shapes.get_visible_child().set_color(rgb=[0, 0, 1], redraw=True)  # blue
-        GLib.idle_add(
-            lambda: self.shapes.get_visible_child().set_color(rgb=None, redraw=False)
+        self.guard = X11Guard(
+            self.get_window().get_xid(),
+            on_key=self.entry.handle_key,
+            on_lost=lambda: self._finish(1),
         )
-        self.authenticator.authenticate(password, self._on_auth_result)
+        self.guard.steal_focus()
 
-        self.text = ""
+        attempts = GRAB_TIMEOUT_MS // GRAB_RETRY_MS
 
-    def _on_auth_result(self, success: bool, message: str | None):
-        if success:
-            self._flash_color(rgb=[0, 1, 0])
-            logger.info("Authentication successful - unlocking")
-            self._unlock()
-        else:
-            self.shapes.get_visible_child().set_color(rgb=[1, 0, 0], redraw=True)  # red
-            self.status_label.set_label(message or "Incorrect password")
-            self.text = ""
-            logger.warning(f"Authentication failed: {message}")
-        GLib.idle_add(
-            lambda: self.shapes.get_visible_child().set_color(rgb=None, redraw=False)
-        )
+        def retry():
+            nonlocal attempts
+            if self.guard is None:
+                return False
+            if self.guard.try_grab():
+                logger.info("Keyboard and pointer grabbed")
+                signal_locked()
+                return False
+            attempts -= 1
+            if attempts <= 0:
+                logger.error(
+                    f"Could not grab input after {GRAB_TIMEOUT_MS}ms "
+                    f"(keyboard={self.guard.keyboard_grabbed}, "
+                    f"pointer={self.guard.pointer_grabbed})"
+                )
+                self._finish(EXIT_LOCK_FAILED)
+                return False
+            return True
 
-    def _unlock(self):
-        self.grabber.cleanup()
-        app = self.get_application()
-        if app:
-            app.quit()
+        if retry():
+            GLib.timeout_add(GRAB_RETRY_MS, retry)
 
-    def _on_destroy(self, *_):
-        self.grabber.cleanup()
+    def _finish(self, code: int):
+        self.exit_code = code
+        self.entry.password.clear()
+        if self.guard is not None:
+            self.guard.release()
+            self.guard = None
         app = self.get_application()
         if app:
             app.quit()
 
 
-def run():
+def run() -> int:
+    try:
+        # open_client=False: Fabric's DBus client exposes Execute/Evaluate (arbitrary
+        # Python), which would let any process on the session bus unlock us
+        app = Application(APP_NAME, open_client=False)
+    except ValueError:
+        logger.warning("Lock screen already running")
+        return EXIT_ALREADY_RUNNING
+
     lock_win = LockScreen()
-    app = Application("zenith-lockscreen", lock_win)
+    app.add_window(lock_win)
 
-    def set_css(*args):
+    def set_css(*_):
         app.set_stylesheet_from_file(get_relative_path("./style.css"))
 
     app.style_monitor = monitor_file(get_relative_path("../styles/colors.css"))
@@ -619,7 +356,8 @@ def run():
     set_css()
 
     app.run()
+    return lock_win.exit_code
 
 
 if __name__ == "__main__":
-    run()
+    raise SystemExit(run())
