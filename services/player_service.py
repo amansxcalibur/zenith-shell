@@ -8,7 +8,6 @@ from pathlib import Path
 from loguru import logger
 from PIL import Image, ImageFilter, ImageOps
 
-from fabric import Fabricator
 from fabric.core.service import Service, Signal, Property
 
 from config.config import config
@@ -20,39 +19,57 @@ gi.require_version("Playerctl", "2.0")
 from gi.repository import Playerctl, GLib, Gio  # type: ignore
 
 
-def check_shuffle_strictly(bus_name):
+PROPERTY_QUERY_TIMEOUT_MS = 1000
+POSITION_POLL_INTERVAL_MS = 1000
+SEEK_SETTLE_MS = 2000  # how long a player gets to apply a seek before polling resumes
+
+
+def get_player_property(bus_name, prop, on_result):
     if not bus_name:
-        return False
+        on_result(None)
+        return
 
     if not bus_name.startswith("org.mpris.MediaPlayer2."):
         bus_name = f"org.mpris.MediaPlayer2.{bus_name}"
 
     if not Gio.dbus_is_name(bus_name):
-        return False
+        on_result(None)
+        return
+
+    def on_reply(connection, result, *_):
+        try:
+            value = connection.call_finish(result).unpack()[0]
+        except GLib.Error:
+            value = None
+        on_result(value)
 
     # setup D-Bus proxy
     connection = Gio.bus_get_sync(Gio.BusType.SESSION, None)
 
     # call 'Get' on the standard Properties interface
     # Param 1: interface name ('org.mpris.MediaPlayer2.Player')
-    # Param 2: property name ('Shuffle')
-    params = GLib.Variant("(ss)", ("org.mpris.MediaPlayer2.Player", "Shuffle"))
+    # Param 2: property name
+    params = GLib.Variant("(ss)", ("org.mpris.MediaPlayer2.Player", prop))
 
-    try:
-        connection.call_sync(
-            bus_name,
-            "/org/mpris/MediaPlayer2",
-            "org.freedesktop.DBus.Properties",
-            "Get",
-            params,
-            None,
-            Gio.DBusCallFlags.NONE,
-            -1,
-            None,
-        )
-        return True
-    except Exception:
-        return False
+    connection.call(
+        bus_name,
+        "/org/mpris/MediaPlayer2",
+        "org.freedesktop.DBus.Properties",
+        "Get",
+        params,
+        None,
+        Gio.DBusCallFlags.NONE,
+        PROPERTY_QUERY_TIMEOUT_MS,
+        None,
+        on_reply,
+    )
+
+
+def get_track_labels(metadata) -> tuple[str, str]:
+    keys = metadata.keys()
+    title = metadata["xesam:title"] if "xesam:title" in keys else ""
+    artists = metadata["xesam:artist"] if "xesam:artist" in keys else []
+    return title or "Unknown Title", artists[0] if artists else "Unknown Artist"
 
 
 class PlayerService(Service):
@@ -103,11 +120,14 @@ class PlayerService(Service):
 
     @Property(bool, "readable", default_value=False)
     def can_shuffle(self) -> bool:
-        return check_shuffle_strictly(self._player.get_property("player_instance"))
+        return self._can_shuffle
 
     def __init__(self, player: Playerctl.Player, **kwargs):
         super().__init__(**kwargs)
         self._player: Playerctl.Player = player
+        self._can_shuffle = False
+        self._poll_source_id = None
+        self._latest_position_query = 0  # replies to older queries are out of date
         self._current_artwork_hash = ""
         self._current_theme = None
         self._current_artwork_path = ""
@@ -132,12 +152,8 @@ class PlayerService(Service):
             )
 
         self.status = self._player.props.playback_status
-        self.pos_fabricator = Fabricator(
-            interval=1000,  # 1s
-            poll_from=lambda f, *_: self.get_position(),
-            on_changed=lambda f, *_: self.fabricating(),
-        )
         self.poll_progress()
+        self._refresh_can_shuffle()
 
         try:
             metadata = self._player.props.metadata
@@ -148,10 +164,23 @@ class PlayerService(Service):
             logger.warning(f"Failed to initialize metadata: {e}")
 
     def on_seeked(self, player, position):
-        if self._is_cleaning_up:
+        self._stop_polling()
+        self.fabricating()
+        self.poll_progress()
+
+    def _refresh_can_shuffle(self):
+        get_player_property(
+            self._player.get_property("player_instance"),
+            "Shuffle",
+            self._on_shuffle_support,
+        )
+
+    def _on_shuffle_support(self, shuffle):
+        can_shuffle = shuffle is not None
+        if self._is_cleaning_up or can_shuffle == self._can_shuffle:
             return
-        if self.status.value_name == "PLAYERCTL_PLAYBACK_STATUS_PLAYING":
-            self.pos_fabricator.start()
+        self._can_shuffle = can_shuffle
+        self.notify("can-shuffle")
 
     def get_artwork(self) -> str:
         return self._current_artwork_path
@@ -172,45 +201,77 @@ class PlayerService(Service):
             position = 0
         return position
 
+    def get_duration(self) -> float:
+        """Length of the current track in seconds, 0 if the player doesn't report one."""
+        metadata = self._player.props.metadata
+        keys = metadata.keys() if metadata else []
+        return metadata["mpris:length"] / 1_000_000 if "mpris:length" in keys else 0.0
+
     def set_position(self, pos: float):
         if self._is_cleaning_up:
             return
         logger.debug("Seeking in the service")
-        self.pos_fabricator.stop()
+        # no reads until the player reports the seek, not every player does though
+        self._latest_position_query += 1
+        self._stop_polling()
         micro_pos = int(pos * 1_000_000)
         try:
             self._player.set_position(micro_pos)
             logger.debug(f"Set position to {micro_pos}")
         except GLib.Error as e:
             logger.error(f"Failed to seek: {e}")
+        self._poll_source_id = GLib.timeout_add(SEEK_SETTLE_MS, self._on_seek_settled)
+
+    def _on_seek_settled(self):
+        self._poll_source_id = None
+        self.fabricating()
+        self.poll_progress()
+        return False
 
     def poll_progress(self):
         if self._is_cleaning_up:
             return
-        if self.status.value_name == "PLAYERCTL_PLAYBACK_STATUS_PLAYING":
-            self.pos_fabricator.start()
-        else:
-            self.pos_fabricator.stop()
+        if self.status.value_name != "PLAYERCTL_PLAYBACK_STATUS_PLAYING":
+            self._stop_polling()
+        elif self._poll_source_id is None:
+            self._poll_source_id = GLib.timeout_add(
+                POSITION_POLL_INTERVAL_MS, self._on_poll
+            )
+
+    def _stop_polling(self):
+        if self._poll_source_id is not None:
+            GLib.source_remove(self._poll_source_id)
+            self._poll_source_id = None
+
+    def _on_poll(self):
+        self.fabricating()
+        return True
 
     def fabricating(self):
         if self._is_cleaning_up:
             return
-        try:
-            pos = self._player.get_position() / 1_000_000  # seconds
-            keys = self._player.props.metadata.keys()
-            if "mpris:length" in keys:
-                dur = self._player.props.metadata["mpris:length"] / 1_000_000  # seconds
-            else:
-                dur = 0
-            self.track_position(pos, dur)
-        except GLib.Error as e:
-            logger.warning(f"Failed to get position in fabricating: {e}")
+        self._latest_position_query += 1
+        query = self._latest_position_query
+        get_player_property(
+            self._player.get_property("player_instance"),
+            "Position",
+            lambda position: self._on_position(query, position),
+        )
+
+    def _on_position(self, query, position):
+        if self._is_cleaning_up or query != self._latest_position_query:
+            return
+        if position is None:
+            logger.debug("Player did not report a position")
+            return
+        self.track_position(position / 1_000_000, self.get_duration())  # seconds
 
     def on_play(self, player, status):
         if self._is_cleaning_up:
             return
         logger.debug(f"Player is playing: {player.props.player_name}")
         self.status = player.props.playback_status
+        self.fabricating()
         self.poll_progress()
         self.play()
 
@@ -219,6 +280,7 @@ class PlayerService(Service):
             return
         logger.debug(f"Player is paused: {player.props.player_name}")
         self.status = player.props.playback_status
+        self.fabricating()
         self.poll_progress()
         self.pause()
 
@@ -232,8 +294,9 @@ class PlayerService(Service):
         if self._is_cleaning_up:
             return
         keys = metadata.keys()
-        if "xesam:artist" in keys and "xesam:title" in keys:
-            logger.info(f"{metadata['xesam:artist'][0]} - {metadata['xesam:title']}")
+        title, artist = get_track_labels(metadata)
+        logger.info(f"{artist} - {title}")
+        self._refresh_can_shuffle()
         self.meta_change(metadata, player)
         self._handle_artwork(metadata, keys)
 
@@ -256,7 +319,12 @@ class PlayerService(Service):
         parsed = urllib.parse.urlparse(art_url)
 
         if parsed.scheme == "file":
-            self._process_local_artwork(urllib.parse.unquote(parsed.path), artwork_hash)
+            GLib.Thread.new(
+                "process-artwork",
+                self._process_local_artwork,
+                urllib.parse.unquote(parsed.path),
+                artwork_hash,
+            )
         elif parsed.scheme in ("http", "https"):
             GLib.Thread.new(
                 "download-artwork",
@@ -286,8 +354,12 @@ class PlayerService(Service):
         except Exception as e:
             logger.error(f"Failed to blur and resize image: {e}")
 
+    def _is_artwork_stale(self, artwork_hash) -> bool:
+        return self._is_cleaning_up or artwork_hash != self._current_artwork_hash
+
     def _process_local_artwork(self, art_url, artwork_hash):
-        if self._is_cleaning_up:
+        # runs off the main thread, so a newer track can overtake this one
+        if self._is_artwork_stale(artwork_hash):
             return
 
         input_path = Path(art_url)
@@ -299,6 +371,9 @@ class PlayerService(Service):
 
         if not blurred_artwork_path.exists():
             self._blur_image(input_path, blurred_artwork_path)
+
+        if self._is_artwork_stale(artwork_hash):
+            return
 
         # signal artwork change
         self._current_artwork_path = art_url
@@ -339,6 +414,8 @@ class PlayerService(Service):
             if result.returncode == 0:
                 try:
                     theme_json = json.loads(result.stdout)
+                    if self._is_artwork_stale(artwork_hash):
+                        return
                     self._theme_cache[artwork_hash] = theme_json
                     self._current_theme = theme_json
                     self.theme_change(theme_json)
@@ -346,7 +423,7 @@ class PlayerService(Service):
                     logger.error(f"Failed to parse color theme: {e}")
             else:
                 logger.error(f"Matugen error: {result.stderr}")
-        except (subprocess.TimeoutExpired, subprocess.SubprocessError) as e:
+        except (subprocess.SubprocessError, OSError) as e:
             logger.error(f"Matugen process failed: {e}")
 
     def _download_and_process_artwork(self, art_url, artwork_hash):
@@ -402,13 +479,7 @@ class PlayerService(Service):
         self._is_cleaning_up = True
         logger.info(f"Cleaning up PlayerService for {self._player.props.player_name}")
 
-        # stop the fabricator
-        try:
-            if hasattr(self, "pos_fabricator") and self.pos_fabricator:
-                logger.debug("Stopping fabricator")
-                self.pos_fabricator.stop()
-        except Exception as e:
-            logger.error(f"Error stopping fabricator: {e}")
+        self._stop_polling()
 
         # disconnect signals using stored IDs
         if self._signal_ids:
@@ -450,8 +521,9 @@ class PlayerManager(Service):
         super().__init__()
 
         self._manager = Playerctl.PlayerManager()
-        self._services = {}  # map player_name -> PlayerService
-        self._player_objects = {}  # map player_name -> Playerctl.Player
+        # keyed by instance, as e.g. two browser windows share a player name
+        self._services = {}  # map player_instance -> PlayerService
+        self._player_objects = {}  # map player_instance -> Playerctl.Player
 
         self._manager.connect("name-appeared", self._on_name_appeared, self._manager)
         self._manager.connect(
@@ -471,11 +543,11 @@ class PlayerManager(Service):
                 self._create_and_register_player(player_obj)
 
     def _create_and_register_player(self, name_obj):
-        name_str = name_obj.name
+        instance = name_obj.instance
 
         # avoid duplicate registration
-        if name_str in self._services:
-            logger.warning(f"Player {name_str} already registered, skipping")
+        if instance in self._services:
+            logger.warning(f"Player {instance} already registered, skipping")
             return
 
         try:
@@ -486,15 +558,15 @@ class PlayerManager(Service):
             player_service = PlayerService(player)
 
             # store references
-            self._services[name_str] = player_service
-            self._player_objects[name_str] = player
+            self._services[instance] = player_service
+            self._player_objects[instance] = player
 
-            logger.info(f"Registered player service for {name_str}")
+            logger.info(f"Registered player service for {instance}")
             # emit signal
-            self.new_player(name_str, player_service)
+            self.new_player(instance, player_service)
 
         except Exception as e:
-            logger.error(f"Failed to create player service for {name_str}: {e}")
+            logger.error(f"Failed to create player service for {instance}: {e}")
 
     def _on_name_appeared(self, sender, name, manager):
         name_str = name.name
@@ -506,28 +578,28 @@ class PlayerManager(Service):
             logger.debug(f"Player {name_str} not in allowed list")
 
     def _on_player_vanished(self, sender, player, manager):
-        player_name = player.props.player_name
-        logger.info(f"Player vanished: {player_name}")
+        instance = player.props.player_instance
+        logger.info(f"Player vanished: {instance}")
 
         # clean up the service
-        if player_name in self._services:
+        if instance in self._services:
             try:
-                player_service = self._services[player_name]
+                player_service = self._services[instance]
                 player_service.cleanup()
-                del self._services[player_name]
-                logger.info(f"Cleaned up service for {player_name}")
+                del self._services[instance]
+                logger.info(f"Cleaned up service for {instance}")
             except Exception as e:
-                logger.error(f"Error cleaning up service for {player_name}: {e}")
+                logger.error(f"Error cleaning up service for {instance}: {e}")
 
         # remove player object reference
-        if player_name in self._player_objects:
-            del self._player_objects[player_name]
+        if instance in self._player_objects:
+            del self._player_objects[instance]
 
         # emit signal
-        self.player_vanish(player_name)
+        self.player_vanish(instance)
 
-    def get_player_service(self, player_name: str) -> PlayerService | None:
-        return self._services.get(player_name)
+    def get_player_service(self, player_instance: str) -> PlayerService | None:
+        return self._services.get(player_instance)
 
     def get_all_services(self) -> dict[str, PlayerService]:
         return self._services.copy()

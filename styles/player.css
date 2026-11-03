@@ -140,6 +140,12 @@
   padding: 0px 3px;
 }
 
+.player-time {
+  color: whitesmoke;
+  font-size: 16px;
+  font-feature-settings: "tnum";
+}
+
 #progress {
   background-color: antiquewhite;
 }

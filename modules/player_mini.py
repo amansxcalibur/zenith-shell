@@ -16,7 +16,7 @@ from widgets.overrides import Svg
 from widgets.material_label import MaterialIconLabel
 
 from modules.wallpaper import WallpaperService
-from services.player_service import PlayerManager, PlayerService
+from services.player_service import PlayerManager, PlayerService, get_track_labels
 
 import svg
 import icons
@@ -253,11 +253,9 @@ class PlayerMini(Box):
         GLib.idle_add(_apply)
 
     def on_metadata(self, sender, metadata, player):
-        keys = metadata.keys()
-        if "xesam:artist" in keys and "xesam:title" in keys:
-            song_title = metadata["xesam:title"]
-            artist_list = metadata["xesam:artist"]
-            artist_name = artist_list[0] if artist_list else "Unknown Artist"
+        # empty between tracks, keep what's showing
+        if metadata.keys():
+            song_title, artist_name = get_track_labels(metadata)
 
             def _update_metadata_labels():
                 self.song.set_label(song_title)
@@ -378,6 +376,9 @@ class PlayerMini(Box):
         logger.debug(
             f"PlayerMini UI destroyed for {self._player_service._player.props.player_name}"
         )
+        if self._wallpaper_signal_id:
+            self._wallpaper_service.disconnect(self._wallpaper_signal_id)
+            self._wallpaper_signal_id = None
         # service cleanup is handled by PlayerManager
 
 
@@ -653,7 +654,8 @@ class PlayerContainerMini(Box):
         if not curr_child or not hasattr(curr_child, "get_name"):
             return
 
-        curr_player = curr_child.get_name()
+        # instances are named like firefox.instance123, icons by the player alone
+        curr_player = curr_child.get_name().split(".")[0]
 
         def _update_mini_tile_icon():
             self.mini_tile_icon.set_name(curr_player)

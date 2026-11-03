@@ -13,7 +13,7 @@ from modules.wallpaper import WallpaperService
 
 from services.volume_service import VolumeService
 from services.theme import ThemeMode, ThemeService
-from services.player_service import PlayerManager, PlayerService
+from services.player_service import PlayerManager, PlayerService, get_track_labels
 
 from utils.colors import get_css_variable
 from utils.helpers import format_accel_to_keybind
@@ -31,6 +31,14 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib  # type: ignore
+
+
+def format_track_time(seconds: float) -> str:
+    minutes, secs = divmod(int(seconds), 60)
+    hours, minutes = divmod(minutes, 60)
+    if hours:
+        return f"{hours}:{minutes:02}:{secs:02}"
+    return f"{minutes}:{secs:02}"
 
 
 class PlayerAudioScaleMaterial3(AnimatedScale):
@@ -193,9 +201,12 @@ class PlayerSource(Button):
         self.audio_source_stack.set_homogeneous(False)
         self.add(self.audio_source_stack)
 
-        self._volume_service.connect(
+        self._device_signal_id = self._volume_service.connect(
             "speaker-device-changed", self.on_audio_device_changed
         )
+
+    def disconnect_services(self):
+        self._volume_service.disconnect(self._device_signal_id)
 
     def get_audio_source_widget(self) -> Box:
         return self.audio_source
@@ -305,11 +316,10 @@ class Player(Box):
         self._flying_overlay = FlyingOverlay.get_shared()
 
         MAX_CHARS = 30
-        MAX_AUDIO_DEVICE_NAME_CHARS = 15
         self.duration = 0.0
         self._player_service = player_service
         player = self._player_service._player
-        self._device_name = self._volume_service.get_current_device_name()
+        self._service_handlers = []  # (service, handler id), released on destroy
 
         def _set_initial_bg(
             service: WallpaperService, full_path: str, preview_path: str
@@ -333,12 +343,6 @@ class Player(Box):
             h_expand=True,
             style_classes="player-icon",
             svg_string=getattr(svg, player.props.player_name, svg.disc),
-        )
-        self.audo_device_label = Label(
-            label=self._device_name,
-            style="color: var(--shadow); font-size: 13px;",
-            max_chars_width=MAX_AUDIO_DEVICE_NAME_CHARS,
-            ellipsization="end",
         )
         self.audio_source = PlayerSource(
             service=player_service, volume_service=self._volume_service
@@ -412,9 +416,15 @@ class Player(Box):
             on_clicked=lambda b, *_: self.handle_next(),
         )
 
+        self.position_label = Label(label="0:00", style_classes="player-time")
+        self.length_label = Label(label="0:00", style_classes="player-time")
+        self.prev_slot = self._create_time_slot(self.prev_button, self.position_label)
+        self.next_slot = self._create_time_slot(self.next_button, self.length_label)
+
         self.wiggly = WigglyScale()
         self.wiggly.connect("on-seek", self.on_seek)
-        # self.wiggly.connect("notify::dragging", self.on_dragging_changed)
+        self.wiggly.connect("on-scrub", self.on_scrub)
+        self.wiggly.connect("notify::dragging", self.on_dragging_changed)
 
         self.wiggly_bar = Box(
             orientation="v",
@@ -452,7 +462,7 @@ class Player(Box):
                 spacing=5,
                 children=(
                     [
-                        self.prev_button,
+                        self.prev_slot,
                         CenterBox(
                             name="progress-container",
                             h_expand=True,
@@ -460,7 +470,7 @@ class Player(Box):
                             orientation="v",
                             center_children=[self.wiggly_bar],
                         ),
-                        self.next_button,
+                        self.next_slot,
                         self.shuffle_button,
                     ]
                     if not config.VERTICAL
@@ -474,25 +484,10 @@ class Player(Box):
                                     v_expand=True,
                                     v_align="end",
                                     start_children=[
-                                        Button(
-                                            name="prev-button",
-                                            child=Label(
-                                                name="play-previous",
-                                                markup=icons.previous.markup(),
-                                            ),
-                                            on_clicked=lambda b, *_: self.handle_prev(),
-                                        ),
-                                        Button(
-                                            name="next-button",
-                                            child=Label(
-                                                name="play-next",
-                                                markup=icons.next.markup(),
-                                            ),
-                                            on_clicked=lambda b, *_: self.handle_next(),
-                                        ),
+                                        self.prev_slot,
+                                        self.next_slot,
                                         self.shuffle_button,
                                     ],
-                                    end_children=self.play_pause_button,
                                 )
                             ],
                             end_children=CenterBox(
@@ -509,18 +504,18 @@ class Player(Box):
         ]
 
         # connect to service signals
-        self._player_service.connect("pause", self.on_pause)
-        self._player_service.connect("play", self.on_play)
-        self._player_service.connect("meta-change", self.on_metadata)
-        self._player_service.connect("shuffle-toggle", self.on_shuffle)
-        self._player_service.connect("track-position", self.on_update_track_position)
-        self._player_service.connect("theme-change", self._apply_theme)
-        self._player_service.connect("artwork-change", self._apply_artwork)
-        self._theme_service.connect("theme-changed", self._switch_theme_mode)
-
-        self._volume_service.connect(
-            "speaker-device-changed", self.on_audio_device_changed
-        )
+        for service, signal, callback in (
+            (self._player_service, "pause", self.on_pause),
+            (self._player_service, "play", self.on_play),
+            (self._player_service, "meta-change", self.on_metadata),
+            (self._player_service, "shuffle-toggle", self.on_shuffle),
+            (self._player_service, "track-position", self.on_update_track_position),
+            (self._player_service, "theme-change", self._apply_theme),
+            (self._player_service, "artwork-change", self._apply_artwork),
+            (self._player_service, "notify::can-shuffle", self._update_shuffle_button),
+            (self._theme_service, "theme-changed", self._switch_theme_mode),
+        ):
+            self._service_handlers.append((service, service.connect(signal, callback)))
 
         self.connect("destroy", self.on_destroy)
 
@@ -541,16 +536,74 @@ class Player(Box):
         else:
             self.audio_source.update_theme({}, self._theme_service.theme)
 
-    def on_update_track_position(self, sender, pos, dur):
-        if dur == 0:
+    def _create_time_slot(self, button: Button, time_label: Label) -> Stack:
+        slot = Stack(
+            transition_type="crossfade",
+            transition_duration=200,
+            children=[button, time_label],
+        )
+        # same size either way, so the scale doesn't move under the pointer
+        slot.set_homogeneous(True)
+        slot.set_no_show_all(True)
+        return slot
+
+    def _sync_time_slots(self):
+        dragging = self.wiggly.dragging
+        for slot, button, time_label, available in (
+            (
+                self.prev_slot,
+                self.prev_button,
+                self.position_label,
+                self._player_service.can_go_previous,
+            ),
+            (
+                self.next_slot,
+                self.next_button,
+                self.length_label,
+                self._player_service.can_go_next,
+            ),
+        ):
+            button.set_visible(available)
+            button.set_sensitive(available)
+            # a player that can't skip still gets its times while dragging
+            slot.set_visible(available or dragging)
+            if dragging:
+                slot.set_visible_child(time_label)
+            elif available:
+                slot.set_visible_child(button)
+
+    def _set_duration(self, duration: float):
+        if duration == self.duration:
             return
-        self.duration = dur
-        self.wiggly.update_value_from_signal(pos / dur)
+        self.duration = duration
+        text = format_track_time(duration)
+        self.length_label.set_label(text)
+        # the position can't get wider than the length, reserve that up front
+        self.position_label.set_width_chars(len(text))
+        self.length_label.set_width_chars(len(text))
+
+    def _sync_track_times(self):
+        self._set_duration(self._player_service.get_duration())
+        self._player_service.fabricating()
+
+    def on_update_track_position(self, sender, pos, dur):
+        self._set_duration(dur)
+        # past the end means it's still the previous track's position
+        if 0 < dur and pos <= dur:
+            self.wiggly.update_value_from_signal(pos / dur)
 
     def on_seek(self, sender, ratio):
         pos = ratio * self.duration  # duration in seconds
         logger.debug(f"Seeking to {pos:.2f}s")
-        self._player_service.set_position(int(pos))
+        self._player_service.set_position(pos)
+
+    def on_scrub(self, sender, ratio):
+        self.position_label.set_label(format_track_time(ratio * self.duration))
+
+    def on_dragging_changed(self, *_):
+        if self.wiggly.dragging:
+            self.on_scrub(self.wiggly, self.wiggly.value)
+        self._sync_time_slots()
 
     def skip_forward(self, seconds=10):
         if self._player_service.can_seek:
@@ -561,20 +614,21 @@ class Player(Box):
             self._player_service._player.seek(-1 * seconds * 1000000)
 
     def _update_track_info(self, metadata, keys):
-        if "xesam:artist" in keys and "xesam:title" in keys:
-            song_title = metadata["xesam:title"]
-            artist_list = metadata["xesam:artist"]
-            artist_name = artist_list[0] if artist_list else "Unknown Artist"
+        # empty between tracks, keep what's showing
+        if not keys:
+            return
 
-            def _update_metadata_label():
-                self.song.set_label(song_title)
-                self.artist.set_label(artist_name)
-                self.audio_source.update_track_info(song_title, artist_name)
-                return False
+        song_title, artist_name = get_track_labels(metadata)
 
-            GLib.idle_add(_update_metadata_label)
+        def _update_metadata_label():
+            self.song.set_label(song_title)
+            self.artist.set_label(artist_name)
+            self.audio_source.update_track_info(song_title, artist_name)
+            return False
 
-    def _apply_artwork(self, source, art_path):
+        GLib.idle_add(_update_metadata_label)
+
+    def _apply_artwork(self, source, art_path, _blurred_art_path=None):
         # remove wallpaper connection
         if self._wallpaper_signal_id:
             self._wallpaper_service.disconnect(self._wallpaper_signal_id)
@@ -600,7 +654,10 @@ class Player(Box):
 
     def _switch_theme_mode(self, service: ThemeService, mode: ThemeMode):
         theme_json = self._player_service.get_theme()
-        self._apply_theme(self._player_service, theme_json, mode)
+        if theme_json:
+            self._apply_theme(self._player_service, theme_json, mode)
+        else:
+            self.audio_source.update_theme({}, mode)
 
     def _update_playback_status(self):
         if (
@@ -608,6 +665,8 @@ class Player(Box):
             == "PLAYERCTL_PLAYBACK_STATUS_PLAYING"
         ):
             self.on_play(self._player_service)
+        else:
+            self.on_pause(self._player_service)
 
     def _update_shuffle_status(self, status):
         def _update():
@@ -622,31 +681,27 @@ class Player(Box):
 
         GLib.idle_add(_update)
 
-    def on_audio_device_changed(self, source: VolumeService, device_name: str):
-        self.audo_device_label.set_label(device_name)
-
     def on_metadata(self, sender, metadata, player):
         keys = metadata.keys()
         self._update_track_info(metadata, keys)
         self._update_playback_status()
         self._update_shuffle_status(player.props.shuffle)
+        self._sync_track_times()
         self._update_controls()
 
     def _update_controls(self):
-        self.wiggly.set_sensitive(self._player_service.can_seek)
-        self.next_button.set_visible(self._player_service.can_go_next)
-        self.next_button.set_sensitive(self._player_service.can_go_next)
-        self.next_button.set_no_show_all(True)
+        self.wiggly.set_sensitive(self._player_service.can_seek and self.duration > 0)
+        self._sync_time_slots()
         self.play_pause_button.set_visible(
             self._player_service.can_play or self._player_service.can_pause
         )
         self.play_pause_button.set_sensitive(
             self._player_service.can_play or self._player_service.can_pause
         )
-        self.prev_button.set_no_show_all(True)
-        self.prev_button.set_visible(self._player_service.can_go_previous)
-        self.prev_button.set_sensitive(self._player_service.can_go_previous)
         self.play_pause_button.set_no_show_all(True)
+        self._update_shuffle_button()
+
+    def _update_shuffle_button(self, *_):
         self.shuffle_button.set_visible(self._player_service.can_shuffle)
         self.shuffle_button.set_sensitive(self._player_service.can_shuffle)
         self.shuffle_button.set_no_show_all(True)
@@ -661,8 +716,6 @@ class Player(Box):
     def on_pause(self, sender):
         GLib.idle_add(self._set_pause_ui)
 
-        self.wiggly._dragging = True
-        self.wiggly.update_amplitude(True)
         self.wiggly.pause = True
 
     def _set_play_ui(self):
@@ -676,8 +729,6 @@ class Player(Box):
         GLib.idle_add(self._set_play_ui)
 
         self.wiggly.pause = False
-        self.wiggly._dragging = False
-        self.wiggly.update_amplitude(False)
 
     def on_shuffle(self, sender, player, status):
         logger.debug(f"Shuffle callback status: {status}")
@@ -692,7 +743,7 @@ class Player(Box):
             self._player_service._player.previous()
 
     def handle_play_pause(self):
-        if not (self._player_service.can_play or self._player_service.can_play):
+        if not (self._player_service.can_play or self._player_service.can_pause):
             return
 
         is_playing = (
@@ -732,6 +783,15 @@ class Player(Box):
             f"Player UI destroyed for {self._player_service._player.props.player_name}"
         )
         # service cleanup is handled by PlayerManager
+        for service, handler_id in self._service_handlers:
+            service.disconnect(handler_id)
+        self._service_handlers.clear()
+
+        if self._wallpaper_signal_id:
+            self._wallpaper_service.disconnect(self._wallpaper_signal_id)
+            self._wallpaper_signal_id = None
+
+        self.audio_source.disconnect_services()
 
 
 class Placeholder(Box):
