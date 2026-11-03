@@ -86,6 +86,13 @@ class SharedPopupWindow(Window):
         self.target_x = 0
         self.target_y = 0
 
+        # last (width, height) sent to the X server. On X11, get_allocation()
+        # lags behind a resize until the WM's ConfigureNotify arrives, so any
+        # move computed from it in between puts the bottom below the baseline.
+        self._committed_size = None
+        # size sent via move_resize whose allocation hasn't arrived yet
+        self._pending_size = None
+
         # hover state tracking
         self.is_hover_popup = False
         self.is_hover_widget = False
@@ -217,26 +224,7 @@ class SharedPopupWindow(Window):
                     if was_already_visible and self._animations_enabled:
                         self.animate_to_position(x, y)
                     else:
-                        # moves coords calculated using widget preferred height/width
-                        _, popup_widget_height = (
-                            next_visible_child.get_preferred_height()
-                        )
-                        win = self.get_window()
-                        if win:
-                            fin_x = int(self._clamp_x(x))
-                            fin_y = int(
-                                self._get_target_baseline() - popup_widget_height
-                            )
-                            if IS_WAYLAND:
-                                GtkLayerShell.set_margin(
-                                    self, GtkLayerShell.Edge.LEFT, int(fin_x)
-                                )
-                                # GtkLayerShell.set_margin(
-                                #     self, GtkLayerShell.Edge.TOP, int(y)
-                                # )
-                            else:
-                                win.move(fin_x, fin_y)
-                        self.target_x = x
+                        self.place_popup(x)
                 return False
 
             GLib.idle_add(_set_position)
@@ -315,28 +303,37 @@ class SharedPopupWindow(Window):
             logger.error(f"Failed to calculate popup position: {e}")
             return None, None
 
+    @staticmethod
+    def _get_anchor_widget(widget):
+        # nearest ancestor (or the widget itself) marked with
+        # `is_popup_anchor = True`; lets containers whose children animate
+        # (e.g. dock modules raising on hover) provide a stable baseline
+        w = widget
+        while w is not None:
+            if getattr(w, "is_popup_anchor", False):
+                return w
+            w = w.get_parent()
+        return widget
+
     def _get_target_baseline(self):
         if not self.pointing_widget:
             return 0
-        _, _, pointing_widget_root_y = self.pointing_widget.get_window().get_origin()
-        return (
-            pointing_widget_root_y
-            + self.pointing_widget.get_allocation().y
-            - self.POPUP_OFFSET
-        )
+        anchor = self._get_anchor_widget(self.pointing_widget)
+        _, _, anchor_root_y = anchor.get_window().get_origin()
+        return anchor_root_y + anchor.get_allocation().y - self.POPUP_OFFSET
 
     def _clamp_x(self, x: int, width: int | None = None) -> int:
         screen = self.get_screen()
         if screen is None:
             return x
-        w = width if width is not None else self.get_allocation().width
+        w = width if width is not None else self._current_size()[0]
         return max(self.POPUP_OFFSET, min(x, screen.get_width() - w))
 
     def _clamp_y(self, y: int, height: int | None = None) -> int:
         screen = self.get_screen()
         if screen is None:
             return y
-        h = height if height is not None else self.get_allocation().height
+        h = height if height is not None else self._current_size()[1]
         return max(0, min(y, screen.get_height() - h))
 
     def _handle_window_visibility(self):
@@ -398,6 +395,14 @@ class SharedPopupWindow(Window):
         self.target_y = self._clamp_y(target_y)
         self.animator_x.play()
 
+    def _current_size(self) -> tuple[int, int]:
+        if self._pending_size is not None:
+            return self._pending_size
+        if self._committed_size is not None:
+            return self._committed_size
+        alloc = self.get_allocation()
+        return alloc.width, alloc.height
+
     def place_popup(self, override_x: int | None = None):
         if override_x is None:
             override_x = self.target_x
@@ -407,24 +412,51 @@ class SharedPopupWindow(Window):
         win = self.get_window()
         if win:
             x = int(self._clamp_x(override_x))
-            y = int(self._get_target_baseline() - self.get_allocation().height)
+            y = int(self._get_target_baseline() - self._current_size()[1])
             if IS_WAYLAND:
                 GtkLayerShell.set_margin(self, GtkLayerShell.Edge.LEFT, int(x))
                 # GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, int(y))
             else:
                 win.move(x, y)
 
+    def do_check_resize(self):
+        if not IS_WAYLAND and getattr(self, "pointing_widget", None) and self.get_mapped():
+            try:
+                _, nat = self.get_preferred_size()
+                win = self.get_window()
+                # compare against what we last sent; the GdkWindow size lags
+                # until ConfigureNotify, which would resend the same request
+                if win and (nat.width, nat.height) != self._current_size():
+                    x = int(self._clamp_x(self.target_x, width=nat.width))
+                    y = int(self._get_target_baseline() - nat.height)
+                    win.move_resize(x, y, nat.width, nat.height)
+                    self._pending_size = (nat.width, nat.height)
+            except Exception as e:
+                logger.error(f"do_check_resize atomic move_resize failed: {e}")
+
+        Gtk.Window.do_check_resize(self)
+
     def do_size_allocate(self, alloc):
         # uses fresh allocation to move window before it extends below baseline
         if not hasattr(self, "pointing_widget"):
             return
+
+        # GTK may allocate from an older ConfigureNotify after we already sent a
+        # newer move_resize. Positioning from that stale height would push the
+        # bottom off the baseline, so keep using the pending size until the
+        # allocation catches up.
+        alloc_size = (alloc.width, alloc.height)
+        if self._pending_size == alloc_size or not self.get_mapped():
+            self._pending_size = None
+        if self._pending_size is None:
+            self._committed_size = alloc_size
 
         if self.pointing_widget and self.get_mapped():
             try:
                 win = self.get_window()
                 if win:
                     x = int(self._clamp_x(self.target_x))
-                    y = int(self._get_target_baseline() - alloc.height)
+                    y = int(self._get_target_baseline() - self._current_size()[1])
                     if IS_WAYLAND:
                         GtkLayerShell.set_margin(self, GtkLayerShell.Edge.LEFT, int(x))
                         # GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, int(y))

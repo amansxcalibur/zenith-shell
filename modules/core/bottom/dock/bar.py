@@ -163,6 +163,11 @@ class DockBar(Window):
             for w in self.user_modules_right
         ]
 
+        # dock modules raise their content on hover; anchor popups to the
+        # module box, which stays put, so they don't bob with the raise
+        for box in (*self.visual_modules_left, *self.visual_modules_right):
+            box.is_popup_anchor = True
+
         self.placeholders_left = [
             HolePlaceholder(
                 target=mod, edge_flag=(i == len(self.visual_modules_left) - 2)
