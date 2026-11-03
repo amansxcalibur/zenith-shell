@@ -11,10 +11,6 @@ textview text {
   -gtk-secondary-caret-color: var(--cursor);
 }
 
-label {
-  font-size: 15px;
-}
-
 .roboto {
   font-family: Roboto Flex;
 }
@@ -55,6 +51,7 @@ label {
 
 #pill {
   background-color: var(--shadow);
+  font-size: 15px;
 }
 
 #close-button-small {

@@ -12,7 +12,7 @@ from services.animator import Animator
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk, GLib  # type: ignore
+from gi.repository import Gtk, Gdk  # type: ignore
 
 
 class ShellWindowManager:
@@ -26,7 +26,6 @@ class ShellWindowManager:
 
         self.pill = pill
         self.dockBar = dockBar
-        self.is_dock_overflowing = False
         # last zone state pushed to the dock; avoids re-toggling its style
         # classes on every drag motion / pill resize frame
         self._pill_in_dock_zone = None
@@ -53,7 +52,6 @@ class ShellWindowManager:
         # the pill positions itself for each new size in the same request as
         # the resize (see PinnedX11Window); only the dock state needs syncing
         self.pill.connect("size-allocate", self._on_pill_allocated)
-        self.dockBar.connect("size-allocate", self._handle_geometry_change)
         self.dockBar.connect("notify::visible", self._on_dock_visibility_toggle)
 
         self._disconnect_geometry_enforcement(self.pill)
@@ -101,10 +99,12 @@ class ShellWindowManager:
 
     def _set_dock_state(self, source, drag_state, x: int, y: int):
         geo = self._get_monitor_geometry(self.pill)
-        _, win_h = self.pill.current_size()
+        win_w, win_h = self.pill.current_size()
 
         pill_is_in_dock_zone = (y + win_h) > (geo.height - self.DOCK_HEIGHT) and (
-            geo.width // 4 < x < 3 * geo.width // 4
+            # judge by the pill's centre: a wide centred pill has its left
+            # edge outside the middle half of the screen
+            geo.width // 4 < x + win_w // 2 < 3 * geo.width // 4
         )
 
         if pill_is_in_dock_zone == self._pill_in_dock_zone:
@@ -137,10 +137,9 @@ class ShellWindowManager:
         target_x = x_targets[x_name]
         target_y = y_targets[y_name]
 
-        # If snapping to bottom center:
-        # 1. If NOT overflowing: Push pill down INTO the dock (y += offset).
-        # 2. If overflowing: Do NOT push down. Pill sits ON TOP of dock bar.
-        if y_name == "bottom" and x_name == "center" and not self.is_dock_overflowing:
+        # bottom center sits INSIDE the dock; the dock's module rows clip
+        # under the notch when the pill is wider than the free space
+        if y_name == "bottom" and x_name == "center":
             target_y += dock_offset
 
         return target_x, target_y
@@ -166,13 +165,6 @@ class ShellWindowManager:
     def _snap_pill(self, animate: bool = True, fixed: bool = False):
         if self._is_dragging():
             return
-
-        is_now_overflowing = self._check_horizontal_overflow()
-
-        if self.is_dock_overflowing != is_now_overflowing:
-            self.is_dock_overflowing = is_now_overflowing
-            animate = False
-            fixed = True
 
         win_x, win_y = self.pill.get_position()
         x_targets, y_targets, dock_offset = self._snap_targets(
@@ -250,57 +242,3 @@ class ShellWindowManager:
                     logger.debug(f"Could not disconnect {attr}: {e}")
 
     def _connect_geometry_enforcement(self, widget): ...
-
-    def _get_nat_width(self, widget: Gtk.Widget) -> int:
-        _, nat_w = widget.get_preferred_width()
-        return nat_w
-
-    def _check_horizontal_overflow(self) -> bool:
-        if not self.dockBar.get_window():
-            return False
-
-        display = Gdk.Display.get_default()
-        monitor = display.get_monitor_at_window(self.dockBar.get_window())
-        geo = monitor.get_geometry()
-
-        screen_width = geo.width
-
-        start_w = 0
-        for i in self.dockBar.layout_manager_left.hover_overlay_row:
-            start_w += self._get_nat_width(i)
-
-        end_w = 0
-        for i in self.dockBar.layout_manager_right.hover_overlay_row:
-            end_w += self._get_nat_width(i)
-
-        dock_w = self._get_nat_width(self.dockBar.pill_dock_container)
-
-        BUFFER = 0  # pill start/end curved edge width
-        is_overflowing = (start_w + dock_w / 2 + BUFFER > screen_width / 2) or (
-            end_w + dock_w / 2 + BUFFER > screen_width / 2
-        )
-
-        # total_needed =  dock_w + start_w + end_w
-        # if is_overflowing:
-        #     logger.debug(
-        #         f"[DockBar] OVERFLOW DETECTED: needed={total_needed} ({start_w}, {dock_w}, {end_w}), screen={screen_width}"
-        #     )
-        # else:
-        #     logger.debug(
-        #         f"[DockBar] FITS: needed={total_needed} ({start_w}, {dock_w}, {end_w}), screen={screen_width}"
-        #     )
-
-        return is_overflowing
-
-    def _handle_geometry_change(self, widget, allocation):
-        # dock allocations only: the pill's width is size-grouped with the
-        # dock, so pill resizes that affect overflow arrive here as well
-        if self._is_dragging() or self.animator.playing:
-            return
-
-        is_now_overflowing = self._check_horizontal_overflow()
-
-        if is_now_overflowing != self.is_dock_overflowing:
-            self.is_dock_overflowing = is_now_overflowing
-            logger.debug(f"[Manager] Overflow state changed: {is_now_overflowing}")
-            GLib.idle_add(lambda: self._snap_pill(animate=False, fixed=True))

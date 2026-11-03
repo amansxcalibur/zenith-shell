@@ -23,6 +23,8 @@ from utils.colors import bind_theme
 from utils.helpers import toggle_class
 from utils.cursor import add_hover_cursor
 
+from widgets.edge_clip_viewport import EdgeClipViewport
+
 from .layout_manager import LayoutManager
 from .module_overlay import HoverOverlay, HolePlaceholder
 
@@ -258,6 +260,13 @@ class DockBar(Window):
             h_expand=True,
             children=self.layout_manager_right.event_wrapper,
         )
+        # the module rows may shrink below their natural width: when the pill
+        # notch (size-grouped with the pill) needs more room than is free,
+        # it slides over the inner ends of the rows instead of overflowing
+        self.start_clip = EdgeClipViewport(
+            self.start_children, edge="start", h_expand=True
+        )
+        self.end_clip = EdgeClipViewport(self.end_children, edge="end", h_expand=True)
         self.left_pill_curve = Box(name="start", h_expand=True)
         self.right_pill_curve = Box(name="end", h_expand=True)
         self.pill_dock_container = Box(
@@ -285,12 +294,13 @@ class DockBar(Window):
 
         self.children = Box(
             name="main",
-            children=[self.start_children, self.stack, self.end_children],
+            children=[self.start_clip, self.stack, self.end_clip],
         )
 
+        # equal sides keep the notch centred
         size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
-        size_group.add_widget(self.start_children)
-        size_group.add_widget(self.end_children)
+        size_group.add_widget(self.start_clip)
+        size_group.add_widget(self.end_clip)
 
     def get_is_open(self):
         return self.is_open

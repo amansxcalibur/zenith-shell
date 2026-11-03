@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib  # type: ignore
+from gi.repository import GLib, Gtk  # type: ignore
 
 SPACING = 0
 DEFAULT_MARGIN = 0
@@ -104,6 +104,13 @@ class LayoutManager:
             overlays=self.hover_overlay_row,
             h_expand=True,
         )
+        # an Overlay is sized by its main child only, but the visible modules
+        # live in the overlay row; tie the widths so the row reports its real
+        # width (the dock clips it under the pill notch instead of letting the
+        # modules overrun the screen edge)
+        self._width_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
+        self._width_group.add_widget(self.placeholder_row)
+        self._width_group.add_widget(self.hover_overlay_row)
 
         self.event_wrapper = EventBox(
             child=self._dock_overlay,
