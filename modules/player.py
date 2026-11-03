@@ -135,21 +135,27 @@ class PlayerSource(Button):
             h_expand=True,
             style="min-height: 2px; border-radius: 10px; background-color: grey;",
         )
+        # A wrapping label's natural width is its whole text on one line, which the
+        # overlay would grow to fit. Capping it leaves the column's width in charge.
         self.song = Label(
             name="song",
             label="song",
             justification="left",
-            line_wrap="word",
-            h_align="start",
+            line_wrap="word-char",
+            max_chars_width=20,
+            h_align="fill",
         )
+        self.song.set_xalign(0)
 
         self.artist = Label(
             name="artist",
             label="artist",
             justification="left",
-            line_wrap="word",
-            h_align="start",
+            line_wrap="word-char",
+            max_chars_width=20,
+            h_align="fill",
         )
+        self.artist.set_xalign(0)
 
         self.music = Box(
             name="music",
@@ -171,6 +177,7 @@ class PlayerSource(Button):
                         Box(
                             orientation="v",
                             v_expand=True,
+                            size=(196, -1),
                             children=[
                                 Box(
                                     name="source-icon-container",
@@ -448,7 +455,7 @@ class Player(Box):
                     PopSlot(
                         self.audio_source,
                         overlay=self._flying_overlay,
-                        target_size=(346, 320),
+                        target_size=(346, 360),
                     ),
                 ],
             ),

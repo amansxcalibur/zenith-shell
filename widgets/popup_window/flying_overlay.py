@@ -390,7 +390,8 @@ class FlyingOverlay(Window, Service):
             self._size_watch_handle = None
 
     def _on_content_resized(self, widget, alloc):
-        new_w, new_h = widget.get_preferred_width()[1], widget.get_preferred_height()[1]
+        new_w = widget.get_preferred_width()[1]
+        new_h = widget.get_preferred_height_for_width(new_w)[1]
         if (new_w, new_h) == (self.curr_w, self.curr_h):
             return
 
