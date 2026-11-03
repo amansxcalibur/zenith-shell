@@ -167,6 +167,43 @@
   background-color: var(--on-surface-variant);
 }
 
+.binding-conflict #settings-entry-container,
+.light .binding-conflict #settings-entry-container {
+  background-color: var(--error);
+  color: var(--on-error);
+}
+.binding-conflict #settings-entry {
+  color: var(--on-error);
+}
+
+.binding-conflict-hint {
+  color: var(--error);
+  font-size: 12px;
+}
+
+.settings-item.binding-recording,
+.binding-recording .binding-conflict-hint {
+  color: var(--on-primary);
+}
+.settings-item.binding-recording {
+  background-color: var(--primary);
+}
+.binding-recording #settings-entry-container,
+.light .binding-recording #settings-entry-container {
+  background-color: var(--on-primary);
+  color: var(--primary);
+  animation: binding_recording_pulse 0.9s ease-out infinite;
+}
+
+@keyframes binding_recording_pulse {
+  from {
+    box-shadow: 0 0 0 0 alpha(var(--on-primary), 0.7);
+  }
+  to {
+    box-shadow: 0 0 0 7px alpha(var(--on-primary), 0);
+  }
+}
+
 .section-heading {
   font-size: 18px;
 }

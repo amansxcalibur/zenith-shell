@@ -10,7 +10,11 @@ from fabric.utils.helpers import exec_shell_command_async
 from config.info import IS_WAYLAND
 from config.i3.utils import is_swayfx
 from config.info import CONFIG_FILE, SHELL_NAME
-from config.bindings import KeybindingValidationError
+from config.bindings import (
+    KeyBinding,
+    KeybindingValidationError,
+    find_keybinding_conflicts,
+)
 
 import icons
 
@@ -18,6 +22,7 @@ from modules.wiggle_bar import WigglyArrow
 
 from utils.colors import bind_theme
 from utils.cursor import add_hover_cursor
+from utils.helpers import format_accel_to_keybind
 
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
 from widgets.shapes.expressive.morphing_shapes import AnimateShapeMorph
@@ -97,6 +102,7 @@ class SettingsWindow(Window):
         self.stack = None
         self.shapes_box = None
         self.drag_handler = DragHandler(self)
+        self.key_bindings_tab = KeyBindingsTab()
         self.tabs = self._register_tabs()
 
         self._build_ui()
@@ -147,7 +153,7 @@ class SettingsWindow(Window):
                     "key_bindings",
                     "Key Bindings",
                     icons.dictionary.symbol(),
-                    lambda: KeyBindingsTab().get_widget(),
+                    lambda: self.key_bindings_tab.get_widget(),
                     "Appearance",
                 ),
                 TabConfig(
@@ -365,18 +371,37 @@ class SettingsWindow(Window):
         else:
             self.destroy()
 
+    def _scroll_to_widget(self, widget):
+        # centers widget in the page
+        def scroll(frame_clock):
+            frame_clock.disconnect(handler_id)
+            coords = widget.translate_coordinates(self.stack, 0, 0)
+            if coords is None:
+                return
+            adjustment = self.scrollable_window.get_vadjustment()
+            margin = (adjustment.get_page_size() - widget.get_allocated_height()) / 2
+            adjustment.set_value(coords[1] - margin)
+
+        handler_id = self.get_frame_clock().connect("after-paint", scroll)
+        widget.queue_draw()
+
     def _validate_state_bindings(self):
-        staged_bindings = {"i3": state.get(["bindings", "i3"])} | state.get(
-            ["bindings", "modules"]
-        )
-        for module, bindings in staged_bindings.items():
-            seen_keys = set()
-            for keybinding in bindings.values():
-                if keybinding in seen_keys:
-                    raise KeybindingValidationError(
-                        f"[{module.upper()}] Duplicate keybinding: {keybinding}"
-                    )
-                seen_keys.add(keybinding)
+        conflicts = find_keybinding_conflicts(state.get(["bindings"]) or {})
+        if conflicts:
+            raise KeybindingValidationError(
+                "\n".join(self._describe_conflict(group) for group in conflicts)
+            )
+
+    def _describe_conflict(self, group: list[KeyBinding]) -> str:
+        scope = group[0].scope
+        if scope == "i3":
+            scope_label = "Sway" if IS_WAYLAND else "i3"
+        else:
+            scope_label = scope.capitalize()
+        key = format_accel_to_keybind(group[0].key).strip()
+        titles = [binding.title for binding in group]
+        actions = ", ".join(titles[:-1]) + f" and {titles[-1]}"
+        return f"{scope_label}: {key} is used by {actions}"
 
     def on_save(self, btn):
         try:
@@ -390,8 +415,12 @@ class SettingsWindow(Window):
 
         except KeybindingValidationError as e:
             logger.warning(f"Failed to save: {e}")
+            self.stack.set_visible_child_name("key_bindings")
+            self._scroll_to_widget(self.key_bindings_tab.get_first_conflict_row())
+            # Passed as argv, and escaped because notification bodies are markup.
+            body = GLib.markup_escape_text(f"{e}\nSettings were not saved.")
             exec_shell_command_async(
-                f"notify-send 'Keybinding Error' -u critical '{e}'"
+                ["notify-send", "-u", "critical", "Duplicate keybindings", body]
             )
 
         except Exception as e:

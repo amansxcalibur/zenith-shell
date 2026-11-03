@@ -14,6 +14,7 @@ from utils.helpers import format_accel_to_keybind
 import icons
 from ..base import BaseWidget, SectionBuilderMixin, LayoutBuilder
 from ..state import state
+from config.bindings import find_keybinding_conflicts
 from config.config import config
 from config.info import IS_WAYLAND
 
@@ -30,6 +31,7 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
         self.container = Box(orientation="v", spacing=25)
 
         self.entries = {}
+        self._rows = {}
         self._overrides = state.get(["bindings", "custom"]) or {}
         WM, wm = ("Sway", "sway") if IS_WAYLAND else ("i3", "i3")
 
@@ -91,6 +93,8 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
             )
         )
 
+        self._refresh_conflicts()
+
     def _create_entry_binding_row(self, binding):
         entry = Entry(
             name="settings-entry", style_classes=["roboto-flex"], h_expand=True
@@ -125,17 +129,7 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
         event_box.connect("enter-notify-event", self._handle_hover, value_box, True)
         event_box.connect("leave-notify-event", self._handle_hover, value_box, False)
 
-        return Box(
-            style_classes="settings-item",
-            spacing=10,
-            children=[
-                MaterialIconLabel(
-                    icon_text=binding.icon or "\ue11f", font_size=17, h_expand=False
-                ),
-                Label(label=binding.title, h_expand=True, h_align="start"),
-                event_box,
-            ],
-        )
+        return self._create_binding_row(binding, event_box)
 
     def _create_btn_binding_row(self, binding):
         binding_btn = ShortcutButton(
@@ -149,17 +143,58 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
             lambda btn, new_binding: self._on_binding_changed(binding, new_binding),
         )
 
-        return Box(
+        return self._create_binding_row(binding, binding_btn)
+
+    def _create_binding_row(self, binding, value_widget):
+        conflict_hint = Label(
+            style_classes="binding-conflict-hint", h_align="start", visible=False
+        )
+        conflict_hint.set_no_show_all(True)
+
+        row = Box(
             style_classes="settings-item",
             spacing=10,
             children=[
                 MaterialIconLabel(
                     icon_text=binding.icon or "\ue11f", font_size=17, h_expand=False
                 ),
-                Label(label=binding.title, h_expand=True, h_align="start"),
-                binding_btn,
+                Box(
+                    orientation="v",
+                    h_expand=True,
+                    v_align="center",
+                    children=[
+                        Label(label=binding.title, h_align="start"),
+                        conflict_hint,
+                    ],
+                ),
+                value_widget,
             ],
         )
+        self._rows[binding.action] = (row, conflict_hint)
+        return row
+
+    def get_first_conflict_row(self):
+        # scopes and actions are declared in the order the rows are displayed.
+        first_conflict = find_keybinding_conflicts(state.get(["bindings"]) or {})[0]
+        row, _conflict_hint = self._rows[first_conflict[0].action]
+        return row
+
+    def _refresh_conflicts(self):
+        conflicting_titles = {}
+        for group in find_keybinding_conflicts(state.get(["bindings"]) or {}):
+            for binding in group:
+                conflicting_titles[binding.action] = [
+                    other.title for other in group if other is not binding
+                ]
+
+        for action, (row, conflict_hint) in self._rows.items():
+            titles = conflicting_titles.get(action)
+            if titles:
+                row.add_style_class("binding-conflict")
+                conflict_hint.set_label(f"Also used by {', '.join(titles)}")
+            else:
+                row.remove_style_class("binding-conflict")
+            conflict_hint.set_visible(bool(titles))
 
     def _handle_hover(self, widget, event, target: Entry, is_enter):
         if event.detail != Gdk.NotifyType.INFERIOR:
@@ -204,16 +239,20 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
             self._clear_binding_override(binding)
 
     def _set_binding_override(self, binding, value: str):
-        action = binding.action
-        self._overrides[action] = value
+        self._overrides[binding.action] = value
+        self._stage_binding(binding, value)
 
+    def _clear_binding_override(self, binding):
+        self._overrides.pop(binding.action, None)
+        self._stage_binding(binding, binding.key)
+
+    def _stage_binding(self, binding, value: str):
+        action = binding.action
         if binding.scope == "i3":
             state.update(["bindings", "i3", action], value)
         else:
             state.update(["bindings", "modules", binding.scope, action], value)
-
-    def _clear_binding_override(self, binding):
-        self._overrides.pop(binding.action, None)
+        self._refresh_conflicts()
 
 
 class LauncherTab(BaseWidget, SectionBuilderMixin):
@@ -312,6 +351,7 @@ class ShortcutButton(Button, Service):
     def start_recording(self):
         self.is_recording = True
         self.set_label("Press shortcut")
+        self.get_parent().add_style_class("binding-recording")
 
         self.grab_focus()
 
@@ -343,16 +383,17 @@ class ShortcutButton(Button, Service):
         return True
 
     def stop_recording(self, binding):
-        self.is_recording = False
-        window = self.get_toplevel()
-        window.disconnect(self.handler_id)
+        self._end_recording()
         self.binding_string = binding
         self.binding_changed(binding)
 
     def _on_focus_out(self, widget, event):
-        self.is_recording = False
-        window = self.get_toplevel()
-        window.disconnect(self.handler_id)
-        self.disconnect(self.focus_out_id)
+        self._end_recording()
         self.set_label(format_accel_to_keybind(self.binding_string))
         return False
+
+    def _end_recording(self):
+        self.is_recording = False
+        self.get_toplevel().disconnect(self.handler_id)
+        self.disconnect(self.focus_out_id)
+        self.get_parent().remove_style_class("binding-recording")

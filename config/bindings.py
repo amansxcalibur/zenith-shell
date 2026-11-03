@@ -379,6 +379,24 @@ def build_resolved_binding_instances(
     return resolved  # dict[scope, dict[action, KeyBinding]]
 
 
+def _conflict_key(binding: KeyBinding) -> str | tuple:
+    # i3/sway treat modifier order as irrelevant, so $mod+Shift+n == Shift+$mod+n
+    if binding.scope == "i3":
+        *modifiers, key = (part.strip() for part in binding.key.split("+"))
+        return (*sorted(modifiers), key)
+    return binding.key
+
+
+def find_keybinding_conflicts(bindings_data: dict) -> list[list[KeyBinding]]:
+    conflicts: list[list[KeyBinding]] = []
+    for scoped in build_resolved_binding_instances(bindings_data).values():
+        by_key: dict[str | tuple, list[KeyBinding]] = {}
+        for binding in scoped.values():
+            by_key.setdefault(_conflict_key(binding), []).append(binding)
+        conflicts.extend(group for group in by_key.values() if len(group) > 1)
+    return conflicts
+
+
 def validate_keybindings(bindings: list[KeyBinding]) -> None:
     seen_keys = set()
 
