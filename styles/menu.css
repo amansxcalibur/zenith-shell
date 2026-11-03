@@ -30,11 +30,19 @@ menu > menuitem:hover > label {
   background-image: none;
 } */
 
-tooltip {
-  border: solid 1px;
-  border-color: var(--surface);
-  background-color: var(--shadow);
-  animation: tooltipShow 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+tooltip,
+tooltip.background {
+  border: none;
+  border-radius: 10px;
+  box-shadow: none;
+  padding: 0;
+  /* painted as an image, not background-color: GTK3 marks a window with an
+     opaque background-color fully opaque (ignoring border-radius), so the
+     compositor skips what's under it and the corners show the wallpaper */
+  background-color: transparent;
+  background-image: linear-gradient(var(--foreground), var(--foreground));
+  text-shadow: none;
+  animation: tooltipShow 0.2s cubic-bezier(0.05, 0.7, 0.1, 1);
 }
 
 @keyframes tooltipShow {
@@ -48,6 +56,14 @@ tooltip {
 }
 
 tooltip > * {
-  padding: 6px 10px;
-  border-radius: 10px;
+  padding: 4px 10px;
+  min-height: 24px;
+}
+
+tooltip label {
+  padding: 0;
+  color: var(--background);
+  font-family: Roboto Flex;
+  font-size: 12px;
+  font-weight: 500;
 }
