@@ -663,9 +663,8 @@ class AppLauncher(Box):
         return
 
     def close_launcher(self):
-        self.viewport.children = []
-        self.selected_index = -1
-        # _get_filtered_apps.cache_clear()
+        # don't clear the viewport here: the next open only rebuilds it through
+        # set_text(""), which doesn't fire when the query is already empty
         self._pill.close()
 
     def open_launcher(self):

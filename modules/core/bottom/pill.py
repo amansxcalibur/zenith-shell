@@ -285,6 +285,9 @@ class Pill(Window, Service):
         match mode:
             case AppCommands.WALLPAPERS:
                 self.stack.set_visible_child(self.wallpaper)
+                # Gtk.Stack moves focus into the new child itself (first
+                # focusable widget) when the old child had it; take it back
+                self.wallpaper.focus_search()
             case AppCommands.DASHBOARD:
                 self.stack.set_visible_child(self.dashboard)
             case AppCommands.POWER:

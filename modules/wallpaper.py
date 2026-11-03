@@ -291,7 +291,9 @@ class WallpaperSelector(Box):
         self.scheme_dropdown = Gtk.ComboBoxText()
         self.scheme_dropdown.set_name("scheme-dropdown")
         self.scheme_dropdown.set_tooltip_text("Select color scheme")
-        self._no_focus(self.scheme_dropdown)
+        # the combo's focusable part is its internal toggle button (nested in an
+        # internal box), which set_can_focus on the combo itself doesn't reach
+        self._no_focus_recursive(self.scheme_dropdown)
         for key, display_name in self.SCHEMES.items():
             self.scheme_dropdown.append(key, display_name)
         self.scheme_dropdown.set_active_id(self.DEFAULT_SCHEME)
@@ -481,6 +483,13 @@ class WallpaperSelector(Box):
         widget.set_can_focus(False)
         if hasattr(widget, "set_focus_on_click"):
             widget.set_focus_on_click(False)
+
+    @classmethod
+    def _no_focus_recursive(cls, widget):
+        cls._no_focus(widget)
+        if isinstance(widget, Gtk.Container):
+            # forall (unlike get_children) includes internal children
+            widget.forall(cls._no_focus_recursive)
 
     def focus_search(self):
         entry = self.search_entry
