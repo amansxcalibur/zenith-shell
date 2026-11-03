@@ -445,6 +445,8 @@ class NotificationGroupCarousal(Box):
         self._animator.connect("notify::value", self.do_update)
 
         self._last_overflow_order = []
+        self._icon_order: list[str] = []  # last order applied to _icon_row
+        self._spacer_width = -1
         self._recompute_pending = False
         self._anim_source_id = None
 
@@ -501,6 +503,11 @@ class NotificationGroupCarousal(Box):
         self.scrolled.connect("size-allocate", self._on_own_size_allocate)
 
     def _on_own_size_allocate(self, widget, allocation):
+        # only on a real width change: this runs on every allocation, and
+        # recomputing from here unconditionally kept the layout looping
+        if allocation.width == self._spacer_width:
+            return
+        self._spacer_width = allocation.width
         self._spacer.set_size_request(allocation.width, -1)
         self._queue_recompute()
 
@@ -532,6 +539,7 @@ class NotificationGroupCarousal(Box):
                 changed = True
 
         if changed:
+            self._icon_order = []  # icons added/removed: positions must be re-applied
             self._queue_recompute()
 
     def _queue_recompute(self):
@@ -562,8 +570,13 @@ class NotificationGroupCarousal(Box):
             return False
 
         rest = [name for name in self._icons if name not in overflow_order]
-        for index, app_name in enumerate([*rest, *overflow_order], start=1):
-            self._icon_row.reorder_child(self._icons[app_name], index)
+        order = [*rest, *overflow_order]
+        # reorder_child() queues a resize even when nothing moves; that resize
+        # re-allocated us -> recompute -> reorder -> ... a relayout every frame
+        if order != self._icon_order:
+            self._icon_order = order
+            for index, app_name in enumerate(order, start=1):
+                self._icon_row.reorder_child(self._icons[app_name], index)
 
         target = sum(self._icons[name].measured_width() + self.SPACING for name in rest)
         self._animate_scroll_to(target)
@@ -873,8 +886,12 @@ class NotificationManager:
     def _resort_viewport(self) -> None:
         groups = sorted(self._groups.values(), key=self._group_sort_key)
 
-        for index, group in enumerate(groups):
-            self.viewport.reorder_child(group, index)
+        # reorder_child() queues a resize even when nothing moves; only touch
+        # the viewport when the order actually changed
+        current = [c for c in self.viewport.get_children() if c in groups]
+        if current != groups:
+            for index, group in enumerate(groups):
+                self.viewport.reorder_child(group, index)
 
         self.notification_carousal.sync(groups)
 

@@ -141,25 +141,6 @@ class NotificationWidget(Box):
             else 54
         )
 
-    @property
-    def expanded_height(self) -> int:
-        page_diff = (
-            self.expanded_page.get_preferred_height()[1]
-            - self.collapsed_page.get_preferred_height()[1]
-        )
-
-        actions_height = 0
-        if self._notification.actions and (
-            self._stack.get_visible_child_name() == self.PAGE_EXPANDED
-        ):
-            actions_height = self._actions.get_preferred_height()[1] + 10  # margin-top
-
-        # css related adding
-        css_pads = 10  # from #notification-widget.contract
-
-        h = self.get_preferred_height()[1] + max(0, page_diff) + actions_height
-        return h + css_pads
-
     def __init__(self, notification: Notification, **kwargs):
         super().__init__(name="notification-widget", **kwargs)
 
@@ -210,10 +191,13 @@ class NotificationWidget(Box):
                 logger.warning(f"Unknown notification urgency level {self.urgency}")
 
         # main stack
+        # no interpolate_size: inside a NotificationGroup the group's clip animates
+        # the height; the page must reach its final size at once so the group can
+        # measure its real target height
         self._stack = Stack(
             transition_duration=150,
             transition_type="crossfade",
-            interpolate_size=True,
+            interpolate_size=False,
             h_expand=True,
         )
         self._stack.set_vhomogeneous(False)
@@ -534,6 +518,7 @@ class NotificationGroup(AnimatedClippingBox):
             contracting_bezier_curve=CubicBezierCurves.EXPRESSIVE,
             expanding_bezier_curve=CubicBezierCurves.EMPHASIS,
             max_overshoot_value=30,
+            fixed_height_animation=True,
             **kwargs,
         )
         self.app_name = app_name
@@ -543,6 +528,8 @@ class NotificationGroup(AnimatedClippingBox):
         self._max_urgency = 0
         self._latest_timestamp = 0.0
         self._expanded = False  # start collapsed
+        self._toggle_generation = 0
+        self._batch_removing = False
         self._current_icon_source: str | None = None
 
         self._icon_slot = Box(
@@ -700,8 +687,9 @@ class NotificationGroup(AnimatedClippingBox):
             if widget.timestamp >= self._latest_timestamp:
                 self._latest_timestamp = max(w.timestamp for w in self._widgets)
 
-        self._sync_header()
-        self._refresh_height()
+        if not self._batch_removing:
+            self._sync_header()
+            self._refresh_height()
         if not self._widgets:
             self._on_empty(self)
 
@@ -765,24 +753,13 @@ class NotificationGroup(AnimatedClippingBox):
             h += widget.collapsed_height
         return h
 
-    def _compute_expanded_height(self) -> int:
-        _, h = self._header.get_preferred_height()
-        widgets_h = sum(w.expanded_height for w in self._widgets)
-
-        widget_count = len(self._widgets)
-        inner_gaps = max(0, widget_count - 1) * self._children_box.get_spacing()
-        outer_gap = self.get_spacing() if widget_count > 0 else 0
-
-        # from #notif-group-children-box.contract > :last-child > :last-child
-        css_pad = -5
-        return h + outer_gap + widgets_h + inner_gaps + css_pad
-
     def _on_header_allocated(self, widget, allocation) -> None:
         h = allocation.height
         if h > 0 and h != self._collapsed_height:
             self._collapsed_height = h
-            if not self._expanded:
-                self.set_max_height(h)  # snap, no animation, keeps it in sync at rest
+            if not self._expanded and not self.animator.playing:
+                # snap, no animation, keeps it in sync at rest
+                self.set_max_height(self._compute_collapsed_height())
 
     def _toggle_expand(self, btn, state: bool | None = None) -> None:
         self._expanded = state if state is not None else not self._expanded
@@ -798,23 +775,74 @@ class NotificationGroup(AnimatedClippingBox):
 
         self.time_revealer.set_reveal_child(not self._expanded)
 
+        for widget in self._widgets:
+            widget.set_expanded(self._expanded)
+
+        if not self.get_mapped():
+            # nothing on screen to animate: snap to the end state
+            self._snap_to_state()
+            return
+
+        # keep the box at its current height while the content switches state,
+        # then measure the real target once the new styles are applied
+        self._toggle_generation += 1
+        generation = self._toggle_generation
+        self.hold()
+        self._after_style_flush(lambda: self._start_toggle_animation(generation))
+
+    def _after_style_flush(self, callback) -> None:
+        # CSS class changes are applied in the frame's layout phase, so measuring
+        # right away still sees the old styles. Run on the 2nd frame tick, which
+        # comes after one full layout pass.
+        ticks = [0]
+
+        def _tick(*_):
+            ticks[0] += 1
+            if ticks[0] < 2:
+                return GLib.SOURCE_CONTINUE
+            callback()
+            return GLib.SOURCE_REMOVE
+
+        self.add_tick_callback(_tick)
+
+    def _start_toggle_animation(self, generation: int) -> None:
+        if generation != self._toggle_generation:
+            return  # superseded by a newer toggle
+
+        # live targets: re-measured every frame, so content still settling (the
+        # image box's CSS size transition) is followed instead of snapped to at the end
         if self._expanded:
-            target = self._compute_expanded_height()
-            for widget in self._widgets:
-                widget.set_expanded(True)  # now kick off the real Stack transition
-            self.expand(target)
+            self.expand(lambda: Box.do_get_preferred_height(self)[1])
         else:
-            target = self._compute_collapsed_height()
-            for widget in self._widgets:
-                widget.set_expanded(False)
-            self.collapse(target)
+            self.collapse(self._compute_collapsed_height)
+
+        if not self.animator.playing:  # expand()/collapse() was a no-op
+            self.release_hold()
+            self._snap_to_state()
+
+    def _snap_to_state(self) -> None:
+        if self._expanded:
+            self._revealed = True
+            self.clear_max_height()
+        else:
+            self._revealed = False
+            self.set_max_height(self._compute_collapsed_height())
 
     def _dismiss_all(self, *_) -> None:
-        for widget in self._widgets[:]:
-            try:
-                widget._notification.close()
-            except Exception:
-                logger.error("Failed to close notification")
+        # one header sync + height update at the end instead of one per widget
+        self._batch_removing = True
+        try:
+            for widget in self._widgets[:]:
+                try:
+                    widget._notification.close()
+                except Exception:
+                    logger.error("Failed to close notification")
+        finally:
+            self._batch_removing = False
+
+        if self._widgets:  # some failed to close
+            self._sync_header()
+            self._refresh_height()
 
     def _on_widget_destroyed(self, widget: NotificationWidget) -> None:
         self.remove_widget(widget)

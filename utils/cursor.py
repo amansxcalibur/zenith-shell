@@ -7,6 +7,12 @@ from gi.repository import Gdk, Gtk  # type: ignore
 def add_hover_cursor(widget: Gtk.Widget, cursor_name="pointer"):
     """Wraps Widget and sets custom cursor."""
 
+    # idempotent: widgets that get re-added (e.g. top bar controls on every view
+    # switch) would otherwise pile up another pair of handlers each time
+    if getattr(widget, "_hover_cursor_wired", False):
+        return widget
+    widget._hover_cursor_wired = True
+
     def on_enter(w, event):
         window = w.get_window()
         if window:

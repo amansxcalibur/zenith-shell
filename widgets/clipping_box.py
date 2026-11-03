@@ -1,6 +1,7 @@
 import math
 import cairo
 from typing import cast
+from collections.abc import Callable
 from fabric.widgets.box import Box
 from services.animator import Animator, CubicBezierCurves
 import gi
@@ -169,12 +170,25 @@ class AnimatedClippingBox(TrueClippingBox):
             float, float, float, float
         ] = CubicBezierCurves.EMPHASIS,
         max_overshoot_value: float = -1.0,
+        fixed_height_animation: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self._revealed = self._max_height == -1
         self._contracting_bezier_curve = contracting_bezier_curve
         self._expanding_bezier_curve = expanding_bezier_curve
+        # fixed_height_animation: while animating, the box takes exactly the animated
+        # height (instead of only being capped by it). Content that is shorter than
+        # the animated height can't cut the motion short, so the curve (including
+        # overshoot) plays out in full. Off by default to keep the old behaviour.
+        self._fixed_height_animation = fixed_height_animation
+        self._forced_height: int | None = None
+        self._finish_handler: int | None = None
+        # current animation (fixed_height_animation): start height, target (a
+        # number or a callable re-read every frame) and the target's initial value
+        self._anim_from = 0
+        self._anim_target: int | Callable[[], int] = 0
+        self._anim_estimate = 0
 
         self.set_valign(Gtk.Align.START)
 
@@ -186,13 +200,91 @@ class AnimatedClippingBox(TrueClippingBox):
         )
         self.animator.connect("notify::value", self._on_animation_tick)
 
-    def _on_animation_tick(self, animator: Animator, _pspec) -> None:
-        self.set_max_height(max(0, int(animator.value)))
+    # forced height (fixed_height_animation)
+    def do_get_preferred_height(self) -> tuple[int, int]:
+        if self._forced_height is not None:
+            return self._forced_height, self._forced_height
+        return TrueClippingBox.do_get_preferred_height(self)
 
-    def _animate(self, from_height: int, to_height: int) -> None:
+    def do_get_preferred_height_for_width(self, width: int) -> tuple[int, int]:
+        if self._forced_height is not None:
+            return self._forced_height, self._forced_height
+        return TrueClippingBox.do_get_preferred_height_for_width(self, width)
+
+    def do_size_allocate(self, allocation) -> None:
+        if self._forced_height is None:
+            return TrueClippingBox.do_size_allocate(self, allocation)
+        alloc = allocation.copy()
+        if self._max_width != -1:
+            alloc.width = min(alloc.width, self._max_width)
+        alloc.height = self._forced_height
+        Box.do_size_allocate(self, alloc)
+
+    def hold(self) -> None:
+        """Freeze the box at its current height until the next animation starts
+        (lets the content change state without the box jumping in between)."""
+        if not self._fixed_height_animation:
+            return
+        # stop a running animation: it would keep driving the height during the
+        # hold, and its completion step belongs to the state being left
+        self._disconnect_finish_handler()
         self.animator.pause()
+        self._forced_height = self.get_allocated_height()
+        self.queue_resize()
+
+    def release_hold(self) -> None:
+        if self._forced_height is None:
+            return
+        self._forced_height = None
+        self.queue_resize()
+
+    @staticmethod
+    def _resolve(target: int | Callable[[], int]) -> int:
+        return int(target()) if callable(target) else int(target)
+
+    def _on_animation_tick(self, animator: Animator, _pspec) -> None:
+        if not self._fixed_height_animation:
+            self.set_max_height(max(0, int(animator.value)))
+            return
+
+        # the animator runs in pixels between the start height and the target's
+        # initial value (so overshoot damping keeps its pixel meaning); turn that
+        # into eased progress and apply it to the *live* target. Content that is
+        # still settling (e.g. CSS size transitions) then can't leave a jump at
+        # the end: at progress 1 the height is exactly the real target.
+        span = self._anim_estimate - self._anim_from
+        progress = 1.0 if span == 0 else (animator.value - self._anim_from) / span
+        target = self._resolve(self._anim_target)
+        value = max(0, round(self._anim_from + (target - self._anim_from) * progress))
+        if value != self._forced_height:
+            self._forced_height = value
+            self.queue_resize()
+
+    def _disconnect_finish_handler(self) -> None:
+        if self._finish_handler is not None:
+            self.animator.disconnect(self._finish_handler)
+            self._finish_handler = None
+
+    def _animate(
+        self, from_height: int, to_height: int | Callable[[], int], on_done=None
+    ) -> None:
+        # drop the previous animation's completion handler: an interrupted expand
+        # must not run its "lift the clamp" step when the following collapse ends
+        self._disconnect_finish_handler()
+        self.animator.pause()
+        estimate = self._resolve(to_height)
+        self._anim_from = from_height
+        self._anim_target = to_height
+        self._anim_estimate = estimate
         self.animator.min_value = from_height
-        self.animator.max_value = to_height
+        self.animator.max_value = estimate
+
+        def _done(_anim):
+            self._disconnect_finish_handler()
+            if on_done is not None:
+                on_done()
+
+        self._finish_handler = self.animator.connect("finished", _done)
         self.animator.play()
 
     def toggle(self, collapsed_height: int = _COLLAPSED_HEIGHT_DEFAULT) -> None:
@@ -201,7 +293,7 @@ class AnimatedClippingBox(TrueClippingBox):
         else:
             self.expand()
 
-    def expand(self, target_height: int | None = None) -> None:
+    def expand(self, target_height: int | Callable[[], int] | None = None) -> None:
         if self._revealed:
             return
         self._revealed = True
@@ -212,31 +304,43 @@ class AnimatedClippingBox(TrueClippingBox):
         else:
             natural_height = target_height
 
-        self._animate(self.get_allocated_height(), natural_height)
-
         # once animation settles, lift the constraint entirely
         # so future child resizes are never clipped
-        def _on_done(anim):
+        def _on_done():
+            self._forced_height = None
             self.clear_max_height()
-            anim.disconnect(handler)
 
-        handler = self.animator.connect("finished", _on_done)
+        self._animate(self.get_allocated_height(), natural_height, _on_done)
 
-    def collapse(self, target_height: int = _COLLAPSED_HEIGHT_DEFAULT) -> None:
+    def collapse(
+        self, target_height: int | Callable[[], int] = _COLLAPSED_HEIGHT_DEFAULT
+    ) -> None:
         if not self._revealed:
             return
         self._revealed = False
         self.animator.bezier_curve = self._contracting_bezier_curve
 
         self._max_height = self.get_allocated_height()
-        self._animate(self.get_allocated_height(), target_height)
+
+        def _on_done():
+            if self._forced_height is not None:
+                self._forced_height = None
+                self.set_max_height(self._resolve(target_height))
+
+        self._animate(self.get_allocated_height(), target_height, _on_done)
 
     def refresh(self) -> None:
         # only meaningful when collapsed
         if self._revealed:
             return
         _, natural_height = Box.do_get_preferred_height(self)
-        self._animate(self.get_allocated_height(), natural_height)
+
+        def _on_done():
+            if self._forced_height is not None:
+                self._forced_height = None
+                self.set_max_height(natural_height)
+
+        self._animate(self.get_allocated_height(), natural_height, _on_done)
 
 
 class OddlySpecificClippingBox(Box):

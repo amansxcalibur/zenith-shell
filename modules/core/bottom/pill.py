@@ -83,7 +83,7 @@ class Pill(Window, Service):
         self._dock_is_visible = True
         # set by the dock window itself; called directly, not through
         # `fabric-cli exec` (a subprocess + D-Bus round trip back into us)
-        self.dock_bar: "DockBar | None" = None
+        self.dock_bar: DockBar | None = None
         # for custom geometry handle in ShellWindowManager
         self._pos = pill_config.get("POSITION")  # changes the config
         self._drag_state = {
@@ -213,13 +213,20 @@ class Pill(Window, Service):
             "min-height:0px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)"
         )
 
+    # deferred to idle: callers (e.g. a snap) update the dock's anchors/geometry
+    # right after this, and the dock reads them when it opens/closes
     def open_dock(self):
         if self.dock_bar is not None:
-            self.dock_bar.open()
+            GLib.idle_add(self._run_dock, self.dock_bar.open)
 
     def close_dock(self):
         if self.dock_bar is not None:
-            self.dock_bar.close()
+            GLib.idle_add(self._run_dock, self.dock_bar.close)
+
+    @staticmethod
+    def _run_dock(fn):
+        fn()
+        return False
 
     def open(self):
         # opens launcher

@@ -9,14 +9,23 @@
   background-color: var(--shadow);
 }
 #notif-group-children-box.contract > :last-child > :last-child {
-  transition: all 0.15s linear;
+  /* no size transition: NotificationGroup measures its target height right
+     after toggling, and its clip animates the height */
   /* HEIGHT MEASUREMENT FLAG */
   padding-bottom: 5px;
 }
 
+#notification-box {
+  transition: all 0.15s linear;
+}
+#notification-widget {
+  /* padding transitions so rows glide instead of jumping when a group
+     toggles; NotificationGroup re-measures its target every frame */
+  transition: background-color 0.15s linear, border-radius 0.15s linear,
+    padding 0.15s linear;
+}
 #notification-box,
 #notification-widget {
-  transition: all 0.15s linear;
   background-color: var(--shadow);
   border-radius: 25px;
   padding: 10px;
