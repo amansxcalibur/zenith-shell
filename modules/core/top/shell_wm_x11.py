@@ -48,12 +48,10 @@ class ShellTopWindowManager:
         # Connect signals
         self.pill.connect("on-drag", self._set_dock_state)
         self.pill.connect("on-drag-end", lambda w, state: self._snap_pill())
+        self.pill.connect("size-allocate", self._on_pill_resized)
         self.top_bar.connect("notify::visible", self._on_dock_visibility_toggle)
 
         self._disconnect_geometry_enforcement(self.pill)
-        # the pill positions itself for each new size in the same request as
-        # the resize (see PinnedX11Window), so no size-allocate re-snap
-        self.pill.set_placement_func(self._placement_for_size)
 
     def _setup_size_groups(self):
         self.pill_size_group.add_widget(self.top_bar.pill_dock)
@@ -82,48 +80,16 @@ class ShellTopWindowManager:
     def _on_dock_visibility_toggle(self, *args):
         self._snap_pill()
 
-    def _is_dragging(self) -> bool:
+    def _on_pill_resized(self, widget, allocation):
+        # Currently dragging, don't snap
         drag_state = self.pill.get_drag_state()
-        return bool(drag_state and drag_state.get("dragging"))
+        if drag_state and drag_state.get("dragging"):
+            return
 
-    def _snap_targets(self, win_w: int):
-        geo = self._get_monitor_geometry(self.pill)
-        x_targets = {
-            "left": 0,
-            "center": (geo.width - win_w) // 2,
-            "right": geo.width - win_w,
-        }
-        y_targets = {
-            "top": 0,
-            # "center": (available_height - win_h) // 2,
-            # "bottom": available_height - win_h,
-        }
-        return x_targets, y_targets
-
-    def _resolve_target(self, x_name, y_name, x_targets, y_targets):
-        target_x = x_targets[x_name]
-        target_y = y_targets[y_name]
-
-        # If snapping to bottom and dock is open, push it down into the dock
-        if y_name == "bottom" and x_name == "center":
-            target_y += self.DOCK_HEIGHT if self._is_dock_visible() else 0
-
-        return target_x, target_y
-
-    def _placement_for_size(self, win_w: int, win_h: int):
-        # called by the pill for every size it is about to take
-        if self._is_dragging():
-            return None
-
-        x_targets, y_targets = self._snap_targets(win_w)
-        target = self._resolve_target(
-            self.pill._pos["x"], self.pill._pos["y"], x_targets, y_targets
-        )
         if self.animator.playing:
-            # keep animating, but towards where the pill belongs at its new size
-            self.pill_target_x, self.pill_target_y = target
-            return self._interpolate(self.animator.value)
-        return target
+            return
+
+        self._snap_pill(animate=False, fixed=True)
 
     def _set_dock_state(self, source, drag_state, x: int, y: int):
         pill_is_in_dock_zone = (y) < (self.DOCK_HEIGHT)
@@ -135,9 +101,24 @@ class ShellTopWindowManager:
             self.top_bar.override_close()
 
     def _snap_pill(self, animate: bool = True, fixed: bool = False):
+        geo = self._get_monitor_geometry(self.pill)
         win_x, win_y = self.pill.get_position()
-        win_w, _win_h = self.pill.current_size()
-        x_targets, y_targets = self._snap_targets(win_w)
+        win_w, _win_h = self.pill.get_size()
+
+        dock_offset = self.DOCK_HEIGHT if self._is_dock_visible() else 0
+
+        # snap coordinates
+        x_targets = {
+            "left": 0,
+            "center": (geo.width - win_w) // 2,
+            "right": geo.width - win_w,
+        }
+
+        y_targets = {
+            "top": 0,
+            # "center": (available_height - win_h) // 2,
+            # "bottom": available_height - win_h,
+        }
 
         pill_position_config = self.pill.get_position_config()
         if not fixed:
@@ -147,13 +128,20 @@ class ShellTopWindowManager:
             if pill_position_config["x"] != target_x_name:
                 # CHANGES THE CONFIG!!
                 self.pill.set_position_config(target_x_name, target_y_name)
+
+            target_x = x_targets[target_x_name]
+            target_y = y_targets[target_y_name]
+
         else:
             target_x_name = pill_position_config["x"]
             target_y_name = pill_position_config["y"]
 
-        target_x, target_y = self._resolve_target(
-            target_x_name, target_y_name, x_targets, y_targets
-        )
+            target_x = x_targets[target_x_name]
+            target_y = y_targets[target_y_name]
+
+        # If snapping to bottom and dock is open, push it down into the dock
+        if target_y_name == "bottom" and target_x_name == "center":
+            target_y += dock_offset
 
         geometry_map = {
             "top-left": X11WindowGeometry.TOP_LEFT,
@@ -170,12 +158,13 @@ class ShellTopWindowManager:
             self._update_target_position(target_x, target_y)
         else:
             self.animator.pause()
-            self.pill.place(target_x, target_y)
+            self.pill.move(target_x, target_y)
 
         self._set_dock_state(None, None, target_x, target_y)
 
     def _update_target_position(self, target_x, target_y):
-        if self._is_dragging():
+        drag_state = self.pill.get_drag_state()
+        if drag_state and drag_state.get("dragging"):
             return
 
         self.pill_start_x, self.pill_start_y = self.pill.get_position()
@@ -190,7 +179,7 @@ class ShellTopWindowManager:
 
         self.animator.play()
 
-    def _interpolate(self, progress_percent) -> tuple[int, int]:
+    def _apply_position(self, progress_percent):
         current_x = int(
             self.pill_start_x
             + (self.pill_target_x - self.pill_start_x) * progress_percent
@@ -199,10 +188,7 @@ class ShellTopWindowManager:
             self.pill_start_y
             + (self.pill_target_y - self.pill_start_y) * progress_percent
         )
-        return current_x, current_y
-
-    def _apply_position(self, progress_percent):
-        self.pill.place(*self._interpolate(progress_percent))
+        self.pill.move(current_x, current_y)
 
     def _disconnect_geometry_enforcement(self, widget):
         # Disable builtin geometry hooks to allow custom placement and prevent jitter.
