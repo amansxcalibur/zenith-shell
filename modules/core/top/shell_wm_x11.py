@@ -154,9 +154,16 @@ class ShellTopWindowManager:
         }
         new_geometry = f"top-{target_x_name}"
 
-        # keep the bar next to a side dock; X11Window adds the right margin to
-        # x and subtracts the left one, so these look swapped
-        margin = (0, insets.left, 0, insets.right)
+        # keep the bar next to a side dock when it's anchored on that side. Any
+        # margin shifts x whatever the anchor, so the other anchors get none.
+        # X11Window adds the right margin to x and subtracts the left one, so
+        # these look swapped
+        margin = (
+            0,
+            insets.left if target_x_name == "left" else 0,
+            0,
+            insets.right if target_x_name == "right" else 0,
+        )
         if self.top_bar.margin != margin:
             self.top_bar.margin = margin
         beside_dock = getattr(insets, target_x_name, 0) > 0
