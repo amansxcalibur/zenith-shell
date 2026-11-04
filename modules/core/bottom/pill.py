@@ -9,6 +9,7 @@ from fabric.utils.helpers import exec_shell_command_async
 from config.config import config
 from config.info import USERNAME, HOSTNAME, IS_WAYLAND, IPC_UTIL
 
+from modules.core.bottom.dock.placement import current_placement
 from modules.dashboard import Dashboard
 from modules.clipboard import ClipboardHistory
 from modules.power_menu import PowerMenu
@@ -128,7 +129,11 @@ class Pill(Window, Service):
         self.dashboard = Dashboard(controls=self.controls)
         self.clipboard = ClipboardHistory(window=self)
 
-        self.lift_box = Box(style="min-height:36px;")  # 40-3-1
+        # lifts the compact pill out of the dock it sits in
+        self._seated_in_dock = current_placement().seats_pill
+        self.lift_box = Box(
+            style=f"min-height:{36 if self._seated_in_dock else 0}px;"  # 40-3-1
+        )
 
         self.stack = ElasticStack(
             name="pill-stack",
@@ -211,8 +216,10 @@ class Pill(Window, Service):
         exec_shell_command_async(f"{IPC_UTIL} focus mode_toggle")
 
     def lift_pill(self):
-        if self._dock_is_visible and (
-            (self._pos["x"], self._pos["y"]) == ("center", "bottom")
+        if (
+            self._seated_in_dock
+            and self._dock_is_visible
+            and (self._pos["x"], self._pos["y"]) == ("center", "bottom")
         ):
             self.lift_box.set_style(
                 "min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)"
@@ -397,7 +404,9 @@ class Pill(Window, Service):
         GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, y)
         GtkLayerShell.set_margin(self, GtkLayerShell.Edge.LEFT, x)
 
-    def apply_snap_anchors(self, enable_edges, disable_edges, bottom_margin=0):
+    def apply_snap_anchors(
+        self, enable_edges, disable_edges, bottom_margin=0, right_margin=0
+    ):
         if not IS_WAYLAND:
             return
 
@@ -407,6 +416,7 @@ class Pill(Window, Service):
             GtkLayerShell.set_anchor(self, anchor, True)
 
         GtkLayerShell.set_margin(self, GtkLayerShell.Edge.BOTTOM, bottom_margin)
+        GtkLayerShell.set_margin(self, GtkLayerShell.Edge.RIGHT, right_margin)
 
     def get_current_position(self) -> tuple[int, int]:
         # top left coordinates

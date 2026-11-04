@@ -105,12 +105,6 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
             },
             {
                 "selected": False,
-                "icon": icons.north.symbol(),
-                "text": "top",
-                "value": "top",
-            },
-            {
-                "selected": False,
                 "icon": icons.south.symbol(),
                 "text": "bottom",
                 "value": "bottom",

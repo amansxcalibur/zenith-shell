@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .pill import TopPill
     from .bar import TopBar
+    from ..bottom.dock.bar import DockBar
 
 from services.animator import Animator
 
@@ -27,7 +28,7 @@ class ShellTopWindowManager:
     def dock_widget(self):
         return self.top_bar
 
-    def __init__(self, pill: TopPill, dockBar: TopBar):
+    def __init__(self, pill: TopPill, dockBar: TopBar, main_dock: DockBar):
         if not pill or not dockBar:
             raise ValueError(
                 "ShellWindowManager requires both 'pill' and 'dockBar' instances."
@@ -35,6 +36,7 @@ class ShellTopWindowManager:
 
         self.pill = pill
         self.top_bar = dockBar
+        self.main_dock = main_dock  # a dock on a screen side pads the pill
         self.is_dock_overflowing = False
 
         self.pill_start_x, self.pill_start_y = self.pill.get_current_position()
@@ -57,8 +59,10 @@ class ShellTopWindowManager:
         # Connect signals
         self.pill.connect("on-drag", self._set_dock_state)
         self.pill.connect("on-drag-end", lambda w, state: self._snap_pill())
+        self.main_dock.connect("insets-changed", self._on_dock_insets_changed)
 
         self._disconnect_geometry_enforcement(self.pill)
+        self._apply_dock_padding()
 
     def _setup_size_groups(self):
         self.pill_size_group.add_widget(self.top_bar.pill_dock)
@@ -78,8 +82,30 @@ class ShellTopWindowManager:
     def _is_dock_visible(self):
         return self.top_bar.get_visible()
 
-    def _on_dock_visibility_toggle(self, *args):
-        self._snap_pill()
+    def _on_dock_insets_changed(self, *_):
+        # a drag or snap in progress applies the new insets when it ends
+        drag_state = self.pill.get_drag_state()
+        if not (drag_state and drag_state.get("dragging")) and not self.animator.playing:
+            self._apply_dock_padding()
+
+    def _apply_dock_padding(self):
+        """Keep the pill and bar next to a side dock, not at the screen edge."""
+        self._set_side_margin(self.pill)
+        self._apply_bar_padding()
+
+    def _apply_bar_padding(self):
+        self._set_side_margin(self.top_bar)
+        position = self.pill.get_position_config()["x"]
+        beside_dock = getattr(self.main_dock.insets, position, 0) > 0
+        self.top_bar.set_dock_neighbour(position if beside_dock else None)
+
+    def _set_side_margin(self, window):
+        insets = self.main_dock.insets
+        position = self.pill.get_position_config()["x"]
+        if position == "left":
+            GtkLayerShell.set_margin(window, GtkLayerShell.Edge.LEFT, insets.left)
+        elif position == "right":
+            GtkLayerShell.set_margin(window, GtkLayerShell.Edge.RIGHT, insets.right)
 
     def _set_dock_state(self, source, drag_state, x: int, y: int):
         pill_is_in_dock_zone = (y) < (self.DOCK_HEIGHT)
@@ -97,12 +123,13 @@ class ShellTopWindowManager:
         geo = self._get_monitor_geometry(self.pill)
         win_x, win_y = self.pill.get_current_position()
         win_w, _ = self.pill.get_size()
+        insets = self.main_dock.insets
 
         # snap coordinates
         x_targets = {
-            "left": 0,
+            "left": insets.left,
             "center": (geo.width - win_w) // 2,
-            "right": geo.width - win_w,
+            "right": geo.width - win_w - insets.right,
         }
 
         y_targets = {
@@ -136,6 +163,9 @@ class ShellTopWindowManager:
                 self.layer_choice_for_pill["disable"].append(GtkLayerShell.Edge.RIGHT)
                 GtkLayerShell.set_anchor(self.top_bar, GtkLayerShell.Edge.LEFT, False)
                 GtkLayerShell.set_anchor(self.top_bar, GtkLayerShell.Edge.RIGHT, False)
+
+            # the bar is at its new side from here on; only the pill slides there
+            self._apply_bar_padding()
 
             # if target_y_name == "top":
             #     self.layer_choice_for_pill["enable"].append(GtkLayerShell.Edge.TOP)
@@ -196,6 +226,7 @@ class ShellTopWindowManager:
             GtkLayerShell.set_anchor(self.pill, anchor, False)
         for anchor in self.layer_choice_for_pill["enable"]:
             GtkLayerShell.set_anchor(self.pill, anchor, True)
+        self._apply_dock_padding()
 
     def _disconnect_geometry_enforcement(self, widget):
         # Disable builtin geometry hooks to allow custom placement and prevent jitter.

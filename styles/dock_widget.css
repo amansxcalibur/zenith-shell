@@ -1,19 +1,110 @@
-#hole-placeholder-box {
+/* painted by DockSurface as the dock's silhouette, not as a plain box */
+#dock-surface {
   background-color: var(--shadow);
 }
 
-#spacer {
-  min-width: 10px;
+#dock-surface.dock-bottom {
+  min-height: 40px;
 }
 
-/* #dock-module {
-  box-shadow: 0px 0px 10px 10px white;
-  border-radius: 100%;
-  padding-top: 3px;
-  background-color: red;
-   border: 1px solid white;
-} */
+#dock-surface.dock-left,
+#dock-surface.dock-right {
+  min-width: 40px;
+}
 
-/* #hover-overlay {
-  border: 1px solid white;
-} */
+#dock-pill-pad {
+  min-width: 20px;
+}
+
+/* modules rest in the middle of the dock and raise away from the screen edge */
+#dock-module {
+  padding: 2px 3px;
+  transition: padding 0.1s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+.dock-left #dock-module,
+.dock-right #dock-module {
+  padding: 3px 2px;
+}
+
+.dock-bottom #dock-module.raised {
+  padding: 0px 3px 3px 3px;
+}
+
+.dock-left #dock-module.raised {
+  padding: 3px 0px 3px 3px;
+}
+
+.dock-right #dock-module.raised {
+  padding: 3px 3px 3px 0px;
+}
+
+/*
+ * Side docks: the rail stretches each module to 36px wide, as the bottom dock
+ * does to its height. What is width on the bottom dock becomes height here.
+ */
+.dock-left #workspaces-container,
+.dock-right #workspaces-container {
+  margin-top: 0px;
+}
+
+.dock-left #workspaces,
+.dock-right #workspaces {
+  padding: 5px 0px;
+}
+
+.dock-left #workspaces > button,
+.dock-right #workspaces > button {
+  min-width: 0px;
+  min-height: 36px;
+  margin: -5px 0px;
+}
+
+.dock-left #orientation-btn,
+.dock-right #orientation-btn {
+  min-width: 0px;
+  min-height: 38px;
+}
+
+.dock-left #weather-mini,
+.dock-right #weather-mini {
+  padding: 8px 0px;
+}
+
+.dock-left #power-mode-switcher,
+.dock-right #power-mode-switcher {
+  min-width: 36px;
+}
+
+.dock-left #power-profile-icon,
+.dock-right #power-profile-icon {
+  min-width: 36px;
+  min-height: 65px;
+}
+
+.dock-left #systray,
+.dock-right #systray {
+  min-width: 0px;
+  min-height: 60px;
+  padding: 2px;
+}
+
+.dock-left #systray-notif-btn,
+.dock-right #systray-notif-btn {
+  border-radius: 99px 99px 50px 50px;
+  padding: 2px 0px;
+  margin: 1px 1px 3px 1px;
+}
+
+.dock-left #systray-spacer,
+.dock-right #systray-spacer {
+  min-width: 0px;
+  min-height: 2px;
+  margin: 0px 3px 4px 3px;
+}
+
+.dock-left #date-time,
+.dock-right #date-time {
+  padding: 8px 6px;
+  margin-bottom: 0px;
+}

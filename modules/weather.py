@@ -202,7 +202,7 @@ class WeatherService(Service):
 
 
 class WeatherMini(EventBox):
-    def __init__(self, dark: bool = True, **kwargs):
+    def __init__(self, dark: bool = True, vertical: bool = False, **kwargs):
         super().__init__(name="weather-mini-container", spacing=3, **kwargs)
         self.dark = dark
 
@@ -232,7 +232,10 @@ class WeatherMini(EventBox):
             on_clicked=self.service._fetch_weather,
         )
         self.weather_box = Box(
-            name="weather-mini", spacing=2, children=[self.emoji_svg, self.temperature]
+            name="weather-mini",
+            spacing=2,
+            orientation="v" if vertical else "h",
+            children=[self.emoji_svg, self.temperature],
         )
 
         self.stack = Stack(
@@ -241,7 +244,9 @@ class WeatherMini(EventBox):
             children=[self.weather_box, self.refresh_btn],
         )
 
-        self.children = Box(children=self.stack)
+        self.children = Box(
+            orientation="v" if vertical else "h", children=self.stack
+        )
 
         self.connect("enter-notify-event", self._on_hover, True)
         self.connect("leave-notify-event", self._on_hover, False)

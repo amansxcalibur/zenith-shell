@@ -101,7 +101,9 @@ if __name__ == "__main__":
 
     top_pill = TopPill()
     top_bar = TopBar(pill=top_pill)
-    top_window_manager = ShellTopWindowManager(pill=top_pill, dockBar=top_bar)
+    top_window_manager = ShellTopWindowManager(
+        pill=top_pill, dockBar=top_bar, main_dock=dockBar
+    )
 
     corners = None
     if config.get("screen_corners.enabled"):

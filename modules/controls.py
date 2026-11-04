@@ -19,7 +19,7 @@ from config.config import config
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib # type: ignore
+from gi.repository import GLib, Gtk  # type: ignore
 
 
 class AutoHideRevealer:
@@ -73,17 +73,16 @@ class ControlsManager:
             orientation="v",
         )
         self.popup_slider_mic = self.volume_manager.mui_mic_slider
-        self.vol_brightness_box = EventBox(
-            child=Box(
-                name="vol-brightness-container",
-                orientation="h",
-                children=[
-                    self.volume_manager.mic_small,
-                    self.volume_manager.vol_small,
-                    self.brightness_manager.brightness_small,
-                ],
-            )
+        self.vol_brightness_container = Box(
+            name="vol-brightness-container",
+            orientation="h",
+            children=[
+                self.volume_manager.mic_small,
+                self.volume_manager.vol_small,
+                self.brightness_manager.brightness_small,
+            ],
         )
+        self.vol_brightness_box = EventBox(child=self.vol_brightness_container)
 
         self.popup_win = SharedPopupWindow()
         self.popup_win.add_child(
@@ -100,7 +99,10 @@ class ControlsManager:
         )
 
     # getters
-    def get_controls_box(self):
+    def get_controls_box(self, vertical: bool = False):
+        self.vol_brightness_container.set_orientation(
+            Gtk.Orientation.VERTICAL if vertical else Gtk.Orientation.HORIZONTAL
+        )
         return self.vol_brightness_box
 
     def get_volume_small(self):

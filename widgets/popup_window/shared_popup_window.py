@@ -6,6 +6,7 @@ from fabric.widgets.eventbox import EventBox
 from fabric.widgets.revealer import Revealer
 
 from config.info import SHELL_NAME, IS_WAYLAND
+from modules.core.bottom.dock.placement import DockEdge, current_placement
 
 from services.animator import Animator
 from services.power_profiles import power_profiles_service
@@ -36,7 +37,8 @@ class SharedPopupWindow(Window):
     DEFAULT_TRANSITION_TYPE = "crossfade"
     UNHOVER_DELAY_MS = 250
     HIDE_DELAY_MS = 300
-    POPUP_OFFSET = 3  # pixels above the widget
+    POPUP_OFFSET = 3  # pixels between the dock and the popup
+    WINDOW_PADDING = 5  # the popup's own padding, around its child
 
     # animation constants
     ANIMATION_BEZIER = (0.15, 0.88, 0.68, 0.95)
@@ -56,13 +58,21 @@ class SharedPopupWindow(Window):
         if self._initialized:
             return
 
+        self._placement = current_placement()
         if IS_WAYLAND:
+            # no exclusive zone: the compositor keeps the fixed-side margin
+            # clear of the dock, these only add the offset from it
+            anchor, margin = {
+                DockEdge.BOTTOM: ("bottom left", (0, 0, 3, 0)),
+                DockEdge.LEFT: ("top left", (0, 0, 0, 3)),
+                DockEdge.RIGHT: ("top right", (0, 3, 0, 0)),
+            }[self._placement.edge]
             super().__init__(
                 layer="top",
                 keyboard_mode="on-demand",
-                anchor="bottom left",
+                anchor=anchor,
                 exclusivity="none",
-                margin=(0, 0, 3, 0),
+                margin=margin,
                 visible=False,
                 all_visible=False,
             )
@@ -82,9 +92,8 @@ class SharedPopupWindow(Window):
         self.pointing_widget = None
         self.pointing_widget_size_alloc_hook = None
 
-        # animation position tracking
-        self.target_x = 0
-        self.target_y = 0
+        # position along the dock: x for a bottom dock, y for a side dock
+        self.target_along = 0
 
         # last (width, height) sent to the X server. On X11, get_allocation()
         # lags behind a resize until the WM's ConfigureNotify arrives, so any
@@ -147,7 +156,7 @@ class SharedPopupWindow(Window):
         duration = self.DEFAULT_TRANSITION_DURATION if self._animations_enabled else 0
         self.stack.set_transition_duration(duration)
         self.revealer.set_transition_duration(duration)
-        self.animator_x.duration = (
+        self.animator.duration = (
             self.ANIMATION_DURATION if self._animations_enabled else 0
         )  # seconds
 
@@ -173,15 +182,15 @@ class SharedPopupWindow(Window):
         )
 
     def _initialize_animators(self):
-        self.animator_x = Animator(
+        self.animator = Animator(
             bezier_curve=self.ANIMATION_BEZIER,
             duration=self.ANIMATION_DURATION if self._animations_enabled else 0,
             tick_widget=self,
-            notify_value=self._on_animator_x_tick,
+            notify_value=self._on_animator_tick,
         )
 
-    def _on_animator_x_tick(self, p, *_):
-        self.target_x = p.value
+    def _on_animator_tick(self, p, *_):
+        self.target_along = p.value
         self.place_popup(p.value)
 
     def add_child(self, pointing_widget, child):
@@ -219,12 +228,12 @@ class SharedPopupWindow(Window):
             was_already_visible = self.get_visible()
 
             def _set_position():
-                x, y = self._calculate_popup_position()
-                if x is not None:
+                along = self._calculate_popup_position()
+                if along is not None:
                     if was_already_visible and self._animations_enabled:
-                        self.animate_to_position(x, y)
+                        self.animate_to_position(along)
                     else:
-                        self.place_popup(x)
+                        self.place_popup(along)
                 return False
 
             GLib.idle_add(_set_position)
@@ -250,31 +259,36 @@ class SharedPopupWindow(Window):
         if source_widget is not self.pointing_widget or not self.get_visible():
             return
 
-        x, y = self._calculate_popup_position()
+        along = self._calculate_popup_position()
+        if along is None:
+            return
 
-        if self.animator_x.playing:
+        if self.animator.playing:
             if self._animations_enabled:
-                self.animate_to_position(x, y)  # pauses, updates and plays
+                self.animate_to_position(along)  # pauses, updates and plays
             else:
-                self.animator_x.stop()
-                self.place_popup(x)
+                self.animator.stop()
+                self.place_popup(along)
             return
 
         else:
-            self.place_popup(x)
+            self.place_popup(along)
 
-    def _calculate_popup_position(self):
+    def _calculate_popup_position(self) -> float | None:
+        """Where the popup should start along the dock, centred on the widget."""
         if not self.pointing_widget:
-            return None, None
+            return None
+
+        if self._placement.vertical:
+            return self._calculate_side_dock_position()
 
         widget_alloc = self.pointing_widget.get_allocation()
-        win_alloc = self.get_allocation()
         _, popup_widget_alloc = self.child_pointing_widget_dict[
             self.pointing_widget
         ].get_preferred_width()
 
         try:
-            _, root_x, root_y = self.pointing_widget.get_window().get_origin()
+            _, root_x, _ = self.pointing_widget.get_window().get_origin()
 
             # print("Position of widget: ", root_x + widget_alloc.x)
             # print("popup widg final size", popup_widget_alloc)
@@ -288,20 +302,38 @@ class SharedPopupWindow(Window):
                 + widget_alloc.width / 2
                 - popup_widget_alloc / 2
             )
-            target_y = root_y + widget_alloc.y - win_alloc.height - self.POPUP_OFFSET
 
             if IS_WAYLAND:
-                success, x, y = get_absolute_wayland_widget_position(
+                success, x, _ = get_absolute_wayland_widget_position(
                     self.pointing_widget
                 )
                 if success:
-                    target_x, target_y = target_x + x, target_y + y
+                    target_x += x
 
-            return target_x, target_y
+            return target_x
 
         except Exception as e:
             logger.error(f"Failed to calculate popup position: {e}")
-            return None, None
+            return None
+
+    def _calculate_side_dock_position(self) -> float | None:
+        widget = self.pointing_widget
+        toplevel = widget.get_toplevel()
+        coords = widget.translate_coordinates(toplevel, 0, 0)
+        if coords is None:
+            return None
+
+        # a side dock spans the screen, so its window starts at the top
+        _, popup_height = self.child_pointing_widget_dict[widget].get_preferred_height()
+        popup_height += 2 * self.WINDOW_PADDING
+        return coords[1] + widget.get_allocated_height() / 2 - popup_height / 2
+
+    def _side_dock_x(self, width: int) -> int:
+        """X11 only: the fixed x next to a side dock; Wayland anchors instead."""
+        thickness = self.pointing_widget.get_toplevel().get_allocated_width()
+        if self._placement.edge is DockEdge.LEFT:
+            return thickness + self.POPUP_OFFSET
+        return self.get_screen().get_width() - thickness - width - self.POPUP_OFFSET
 
     @staticmethod
     def _get_anchor_widget(widget):
@@ -328,6 +360,27 @@ class SharedPopupWindow(Window):
             return x
         w = width if width is not None else self._current_size()[0]
         return max(self.POPUP_OFFSET, min(x, screen.get_width() - w))
+
+    def _clamp_along(self, along: float, width: int, height: int) -> int:
+        if self._placement.vertical:
+            return self._clamp_y(along, height)
+        return self._clamp_x(along, width)
+
+    def _x11_position(self, along: float, width: int, height: int) -> tuple[int, int]:
+        along = int(self._clamp_along(along, width, height))
+        if self._placement.vertical:
+            return self._side_dock_x(width), along
+        return along, int(self._get_target_baseline() - height)
+
+    def _set_along_margin(self, along: float, width: int, height: int) -> None:
+        edge = (
+            GtkLayerShell.Edge.TOP
+            if self._placement.vertical
+            else GtkLayerShell.Edge.LEFT
+        )
+        GtkLayerShell.set_margin(
+            self, edge, int(self._clamp_along(along, width, height))
+        )
 
     def _clamp_y(self, y: int, height: int | None = None) -> int:
         screen = self.get_screen()
@@ -364,7 +417,7 @@ class SharedPopupWindow(Window):
     def _check_and_hide(self):
         if not self.is_hover_widget and not self.is_hover_popup:
             self.revealer.unreveal()
-            self.animator_x.pause()
+            self.animator.pause()
 
             def _do_hide():
                 self.set_visible(False)
@@ -376,24 +429,27 @@ class SharedPopupWindow(Window):
         self.unhover_delay_ref = None
         return False
 
-    def animate_to_position(self, target_x, target_y):
-        _, start_x, _ = self.get_window().get_origin()
+    def _current_along(self) -> int:
+        _, x, y = self.get_window().get_origin()
         if IS_WAYLAND:
-            _, x, _ = get_absolute_wayland_widget_position(self)
-            start_x += x
-        self.animator_x.pause()
-        self.animator_x.handler_block_by_func(self._on_animator_x_tick)
-        self.animator_x.min_value = start_x
-        self.animator_x.max_value = self._clamp_x(
-            target_x,
-            width=self.child_pointing_widget_dict[
-                self.pointing_widget
-            ].get_preferred_width()[1],
+            _, wayland_x, wayland_y = get_absolute_wayland_widget_position(self)
+            x, y = x + wayland_x, y + wayland_y
+        return y if self._placement.vertical else x
+
+    def animate_to_position(self, target_along):
+        start = self._current_along()
+        child = self.child_pointing_widget_dict[self.pointing_widget]
+        self.animator.pause()
+        self.animator.handler_block_by_func(self._on_animator_tick)
+        self.animator.min_value = start
+        self.animator.max_value = self._clamp_along(
+            target_along,
+            width=child.get_preferred_width()[1],
+            height=child.get_preferred_height()[1] + 2 * self.WINDOW_PADDING,
         )
-        self.animator_x.value = start_x
-        self.animator_x.handler_unblock_by_func(self._on_animator_x_tick)
-        self.target_y = self._clamp_y(target_y)
-        self.animator_x.play()
+        self.animator.value = start
+        self.animator.handler_unblock_by_func(self._on_animator_tick)
+        self.animator.play()
 
     def _current_size(self) -> tuple[int, int]:
         if self._pending_size is not None:
@@ -403,21 +459,19 @@ class SharedPopupWindow(Window):
         alloc = self.get_allocation()
         return alloc.width, alloc.height
 
-    def place_popup(self, override_x: int | None = None):
-        if override_x is None:
-            override_x = self.target_x
+    def place_popup(self, along: float | None = None):
+        if along is None:
+            along = self.target_along
         else:
-            self.target_x = override_x
+            self.target_along = along
 
         win = self.get_window()
         if win:
-            x = int(self._clamp_x(override_x))
-            y = int(self._get_target_baseline() - self._current_size()[1])
+            width, height = self._current_size()
             if IS_WAYLAND:
-                GtkLayerShell.set_margin(self, GtkLayerShell.Edge.LEFT, int(x))
-                # GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, int(y))
+                self._set_along_margin(along, width, height)
             else:
-                win.move(x, y)
+                win.move(*self._x11_position(along, width, height))
 
     def do_check_resize(self):
         if not IS_WAYLAND and getattr(self, "pointing_widget", None) and self.get_mapped():
@@ -427,8 +481,9 @@ class SharedPopupWindow(Window):
                 # compare against what we last sent; the GdkWindow size lags
                 # until ConfigureNotify, which would resend the same request
                 if win and (nat.width, nat.height) != self._current_size():
-                    x = int(self._clamp_x(self.target_x, width=nat.width))
-                    y = int(self._get_target_baseline() - nat.height)
+                    x, y = self._x11_position(
+                        self.target_along, nat.width, nat.height
+                    )
                     win.move_resize(x, y, nat.width, nat.height)
                     self._pending_size = (nat.width, nat.height)
             except Exception as e:
@@ -455,13 +510,11 @@ class SharedPopupWindow(Window):
             try:
                 win = self.get_window()
                 if win:
-                    x = int(self._clamp_x(self.target_x))
-                    y = int(self._get_target_baseline() - self._current_size()[1])
+                    width, height = self._current_size()
                     if IS_WAYLAND:
-                        GtkLayerShell.set_margin(self, GtkLayerShell.Edge.LEFT, int(x))
-                        # GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, int(y))
+                        self._set_along_margin(self.target_along, width, height)
                     else:
-                        win.move(x, y)
+                        win.move(*self._x11_position(self.target_along, width, height))
 
             except Exception as e:
                 logger.error(f"do_size_allocate Y position failed: {e}")

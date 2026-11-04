@@ -126,6 +126,18 @@
   transition-delay: 0s;
 }
 
+#hori-top.pill.attach.beside-dock-left {
+  border-top-left-radius: 0px;
+}
+
+#hori-top.pill.attach.beside-dock-right {
+  border-top-right-radius: 0px;
+}
+
+#hori-top.pill.no-corner-transition {
+  transition: none;
+}
+
 #start-top.pushdown,
 #end-top.pushdown {
   transition-delay: 0.15s, 0.2s;

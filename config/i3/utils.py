@@ -10,6 +10,7 @@ from config.bindings import (
     apply_keybinding_overrides,
     I3_KEYBINDINGS,
 )
+from modules.core.bottom.dock.placement import DOCK_THICKNESS
 from utils.colors import get_css_variable, hex_to_rgb01
 
 from fabric.i3.widgets import get_i3_connection
@@ -209,6 +210,23 @@ def generate_i3_gaps_and_borders_config():
             if IS_WAYLAND:
                 exec_shell_command_async(f"swaymsg gaps {prop} all set {val}")
         lines.append("")
+
+    # sway reserves room through the dock's exclusive zone, i3 only does that
+    # for docks at the top or bottom
+    bar_position = config.get("bar.POSITION")
+    if not IS_WAYLAND and bar_position in ("left", "right"):
+        outer = gaps_config.get("props.outer") if gaps_config.get("enabled") else 0
+        lines.extend(
+            [
+                "# side dock",
+                f"gaps {bar_position} {DOCK_THICKNESS + (outer or 0)}px",
+                (
+                    'for_window [window_role="zenith-dock"] '
+                    "floating enable, sticky enable, border none"
+                ),
+                "",
+            ]
+        )
 
     border_config = config.get_node("i3.borders")
     if border_config.get("enabled"):

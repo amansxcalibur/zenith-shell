@@ -59,6 +59,9 @@ class TopPill(Window, Service):
                 visible=True,
                 all_visible=True,
             )
+            # margins count from the screen edge; ShellTopWindowManager adds
+            # the room a side dock takes
+            GtkLayerShell.set_exclusive_zone(self, -1)
         else:
             super().__init__(
                 name="pill",

@@ -7,6 +7,7 @@ from fabric.widgets.x11 import X11WindowGeometry
 
 if TYPE_CHECKING:
     from .bar import TopBar
+    from ..bottom.dock.bar import DockBar
     from .pill import TopPill
 
 from services.animator import Animator
@@ -20,7 +21,7 @@ from gi.repository import Gtk, Gdk  # type: ignore
 class ShellTopWindowManager:
     DOCK_HEIGHT = 43
 
-    def __init__(self, pill: TopPill, dockBar: TopBar):
+    def __init__(self, pill: TopPill, dockBar: TopBar, main_dock: DockBar):
         if not pill or not dockBar:
             raise ValueError(
                 "ShellWindowManager requires both 'pill' and 'dockBar' instances."
@@ -28,6 +29,7 @@ class ShellTopWindowManager:
 
         self.pill = pill
         self.top_bar = dockBar
+        self.main_dock = main_dock  # a dock on a screen side pads the pill
 
         self.pill_start_x, self.pill_start_y = self.pill.get_position()
         self.pill_target_x = self.pill_start_x
@@ -50,6 +52,7 @@ class ShellTopWindowManager:
         self.pill.connect("on-drag-end", lambda w, state: self._snap_pill())
         self.pill.connect("size-allocate", self._on_pill_resized)
         self.top_bar.connect("notify::visible", self._on_dock_visibility_toggle)
+        self.main_dock.connect("insets-changed", self._on_dock_visibility_toggle)
 
         self._disconnect_geometry_enforcement(self.pill)
 
@@ -104,14 +107,15 @@ class ShellTopWindowManager:
         geo = self._get_monitor_geometry(self.pill)
         win_x, win_y = self.pill.get_position()
         win_w, _win_h = self.pill.get_size()
+        insets = self.main_dock.insets
 
         dock_offset = self.DOCK_HEIGHT if self._is_dock_visible() else 0
 
         # snap coordinates
         x_targets = {
-            "left": 0,
+            "left": insets.left,
             "center": (geo.width - win_w) // 2,
-            "right": geo.width - win_w,
+            "right": geo.width - win_w - insets.right,
         }
 
         y_targets = {
@@ -149,6 +153,14 @@ class ShellTopWindowManager:
             "top-right": X11WindowGeometry.TOP_RIGHT,
         }
         new_geometry = f"top-{target_x_name}"
+
+        # keep the bar next to a side dock; X11Window adds the right margin to
+        # x and subtracts the left one, so these look swapped
+        margin = (0, insets.left, 0, insets.right)
+        if self.top_bar.margin != margin:
+            self.top_bar.margin = margin
+        beside_dock = getattr(insets, target_x_name, 0) > 0
+        self.top_bar.set_dock_neighbour(target_x_name if beside_dock else None)
 
         # update geometry if changed
         if geometry_map.get(new_geometry) != self.top_bar.get_geometry():

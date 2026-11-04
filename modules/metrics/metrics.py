@@ -6,7 +6,6 @@ from fabric.widgets.revealer import Revealer
 from fabric.widgets.circularprogressbar import CircularProgressBar
 
 import icons
-from config.config import config
 from widgets.popup_window import SharedPopupWindow
 from widgets.material_label import MaterialIconLabel
 from services.metrics import MetricsProvider
@@ -19,8 +18,10 @@ from gi.repository import GLib  # type: ignore
 class MetricItem(Box):
     ALERT_THRESHOLD = 90  # percent
 
-    def __init__(self, icon_symbol, style_class, bar_size):
-        super().__init__(name=f"metric-{style_class}-item", orientation="h")
+    def __init__(self, icon_symbol, style_class, bar_size, vertical=False):
+        super().__init__(
+            name=f"metric-{style_class}-item", orientation="v" if vertical else "h"
+        )
 
         self.icon = MaterialIconLabel(
             name=f"{style_class}-icon", FILL=0, wght=600, icon_text=icon_symbol
@@ -48,16 +49,17 @@ class MetricItem(Box):
 class MetricsSmall(Button):
     BAR_SIZE = 34
 
-    def __init__(self, **kwargs):
+    def __init__(self, vertical: bool = False, **kwargs):
         super().__init__(name="metrics-small", **kwargs)
         self.service = MetricsProvider()
 
-        self.cpu = MetricItem(icons.cpu.symbol(), "cpu", self.BAR_SIZE)
-        self.ram = MetricItem(icons.memory.symbol(), "ram", self.BAR_SIZE)
-        self.disk = MetricItem(icons.disk.symbol(), "disk", self.BAR_SIZE)
+        self.cpu = MetricItem(icons.cpu.symbol(), "cpu", self.BAR_SIZE, vertical)
+        self.ram = MetricItem(icons.memory.symbol(), "ram", self.BAR_SIZE, vertical)
+        self.disk = MetricItem(icons.disk.symbol(), "disk", self.BAR_SIZE, vertical)
 
         self.main_box = Box(
-            orientation="v" if config.VERTICAL else "h",
+            orientation="v" if vertical else "h",
+            spacing=1,
             children=[self.disk, self.ram, self.cpu],
         )
         self.children = self.main_box
@@ -67,7 +69,7 @@ class MetricsSmall(Button):
         self.popup_win = SharedPopupWindow()
         self.popup_win.add_child(pointing_widget=self, child=Metrics())
 
-        if config.VERTICAL:
+        if vertical:
             self.add_style_class("vertical")
 
     def update_metrics(self, source, cpu, mem, disk):
@@ -79,15 +81,16 @@ class MetricsSmall(Button):
 class Battery(Button):
     BAR_SIZE = 34
 
-    def __init__(self, **kwargs):
+    def __init__(self, vertical: bool = False, **kwargs):
         super().__init__(name="bat-small", **kwargs)
         self.service = MetricsProvider()
+        self._vertical = vertical
 
         # hover track states
         self.hide_timer = None
         self.hover_counter = 0
 
-        if config.VERTICAL:
+        if vertical:
             self.add_style_class("vertical")
 
         self.bat_icon = MaterialIconLabel(
@@ -105,11 +108,17 @@ class Battery(Button):
             end_angle=270,
             child=self.bat_icon,
         )
-        self.bat_level = Label(name="metrics-level", style_classes="bat", label="100%")
+        # a hidden slide-down revealer keeps its child's width, so on a side dock
+        # this label sizes the rail even before it's revealed
+        self.bat_level = Label(
+            name="metrics-level",
+            style_classes="bat",
+            label=self._format_percentage(100),
+        )
         self.bat_revealer = Revealer(
             name="metrics-bat-revealer",
             transition_duration=250,
-            transition_type="slide-left" if not config.VERTICAL else "slide-down",
+            transition_type="slide-left" if not vertical else "slide-down",
             child=self.bat_level,
             child_revealed=False,
         )
@@ -124,7 +133,7 @@ class Battery(Button):
 
         self.main_box = Box(
             spacing=0,
-            orientation="h" if not config.VERTICAL else "v",
+            orientation="h" if not vertical else "v",
             visible=True,
             all_visible=True,
             h_expand=True,
@@ -139,7 +148,7 @@ class Battery(Button):
         self.service.connect("battery-changed", self.update_battery)
 
     def _format_percentage(self, value: int) -> str:
-        return f"{value}" if config.VERTICAL else f"{value}%"
+        return f"{value}" if self._vertical else f"{value}%"
 
     def on_mouse_enter(self, widget, event):
         self.hover_counter += 1

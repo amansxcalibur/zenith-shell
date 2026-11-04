@@ -16,7 +16,7 @@ from gi.repository import Gtk, Gdk  # type: ignore
 
 
 class ShellWindowManager:
-    DOCK_HEIGHT = 43
+    DOCK_GAP = 3  # px between the dock and a pill floating above it
 
     def __init__(self, pill: Pill, dockBar: DockBar):
         if not pill or not dockBar:
@@ -47,11 +47,14 @@ class ShellWindowManager:
         self.pill.connect("on-drag", self._set_dock_state)
         self.pill.connect("on-drag-end", lambda w, state: self._snap_pill())
         self.pill.connect("size-allocate", self._on_pill_resized)
-        self.dockBar.connect("notify::visible", self._on_dock_visibility_toggle)
+        self.dockBar.connect("insets-changed", self._on_dock_insets_changed)
 
         self._disconnect_geometry_enforcement(self.pill)
 
     def _setup_size_groups(self):
+        # only a dock that seats the pill has a slot to match its width
+        if self.dockBar.pill_dock is None:
+            return
         self.pill_size_group.add_widget(self.dockBar.pill_dock)
         self.pill_size_group.add_widget(self.pill.pill_container)
 
@@ -75,10 +78,12 @@ class ShellWindowManager:
         monitor = display.get_monitor_at_window(win)
         return monitor.get_geometry()
 
-    def _is_dock_visible(self):
-        return self.dockBar.get_visible()
+    def _bottom_offset(self) -> int:
+        # room above a bottom dock; 0 when the dock is hidden or on a side
+        bottom = self.dockBar.insets.bottom
+        return bottom + self.DOCK_GAP if bottom else 0
 
-    def _on_dock_visibility_toggle(self, *args):
+    def _on_dock_insets_changed(self, *args):
         self._snap_pill()
 
     def _on_pill_resized(self, widget, allocation):
@@ -93,10 +98,14 @@ class ShellWindowManager:
         self._snap_pill(animate=False, fixed=True)
 
     def _set_dock_state(self, source, drag_state, x: int, y: int):
+        if not self.dockBar.placement.seats_pill:
+            return
+
         geo = self._get_monitor_geometry(self.pill)
         win_w, win_h = self.pill.get_size()
 
-        pill_is_in_dock_zone = (y + win_h) > (geo.height - self.DOCK_HEIGHT) and (
+        dock_top = geo.height - self.dockBar.surface.thickness - self.DOCK_GAP
+        pill_is_in_dock_zone = (y + win_h) > dock_top and (
             # judge by the pill's centre: a wide centred pill has its left
             # edge outside the middle half of the screen
             geo.width // 4 < x + win_w // 2 < 3 * geo.width // 4
@@ -116,14 +125,15 @@ class ShellWindowManager:
         win_x, win_y = self.pill.get_position()
         win_w, win_h = self.pill.get_size()
 
-        dock_offset = self.DOCK_HEIGHT if self._is_dock_visible() else 0
+        insets = self.dockBar.insets
+        dock_offset = self._bottom_offset()
         available_height = geo.height - dock_offset
 
         # snap coordinates
         x_targets = {
-            "left": 0,
+            "left": insets.left,
             "center": (geo.width - win_w) // 2,
-            "right": geo.width - win_w,
+            "right": geo.width - win_w - insets.right,
         }
 
         y_targets = {
@@ -150,7 +160,11 @@ class ShellWindowManager:
 
         # bottom center sits INSIDE the dock; the dock's module rows clip
         # under the notch when the pill is wider than the free space
-        if target_y_name == "bottom" and target_x_name == "center":
+        if (
+            self.dockBar.placement.seats_pill
+            and target_y_name == "bottom"
+            and target_x_name == "center"
+        ):
             target_y += dock_offset
 
         if animate:

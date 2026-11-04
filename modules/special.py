@@ -150,7 +150,7 @@ class DateTime(Button):
 
 
 class ActionButton(EventBox):
-    def __init__(self, **kwargs):
+    def __init__(self, popup_align: str = "start", **kwargs):
         super().__init__(**kwargs)
 
         self.restart_btn = Button(
@@ -206,7 +206,7 @@ class ActionButton(EventBox):
             children=[
                 Button(
                     name="action-btn",
-                    h_align="start",
+                    h_align=popup_align,
                     child=Box(
                         spacing=2,
                         children=[

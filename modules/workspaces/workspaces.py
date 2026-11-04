@@ -85,19 +85,20 @@ class i3Connector:
 
 
 class Workspaces(Box):
-    def __init__(self, **kwargs):
+    def __init__(self, vertical: bool = False, **kwargs):
         super().__init__(
             name="workspaces-container",
             visible=True,
             all_visible=True,
-            style_classes="" if not config.VERTICAL else "vertical",
-            orientation="h" if not config.VERTICAL else "v",
+            style_classes="" if not vertical else "vertical",
+            orientation="h" if not vertical else "v",
             h_align="fill",
         )
 
         self.children = (
             I3Workspaces(
                 name="workspaces",
+                orientation="h" if not vertical else "v",
                 buttons=[
                     WorkspaceButton(
                         id=ws_id,

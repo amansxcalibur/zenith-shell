@@ -10,7 +10,6 @@ from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
 from utils.cursor import add_hover_cursor
 from utils.colors import bind_theme
-from config.config import config
 import icons
 
 import gi
@@ -20,8 +19,10 @@ from gi.repository import Gray, Gtk, Gdk, GdkPixbuf, GLib  # type: ignore
 
 
 class NotificationIndicator(Box):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, vertical: bool = False):
+        # vertical: the button takes the rail's width, the icon stays centred
+        # with the unread dot next to it
+        super().__init__(orientation="v" if vertical else "h")
         self.unread_notif_indicator = Box(
             name="notif-unread-indicator",
             v_align="start",
@@ -48,6 +49,7 @@ class NotificationIndicator(Box):
                 icon_text=icons.notifications.symbol(),
             ),
             overlays=self.overlayed_widget,
+            h_align="center" if vertical else None,
         )
         self.overlay.set_overlay_pass_through(self.overlayed_widget, True)
 
@@ -72,10 +74,10 @@ class NotificationIndicator(Box):
 
 
 class SystemTray(Box):
-    def __init__(self, pixel_size: int = 20, **kwargs) -> None:
+    def __init__(self, pixel_size: int = 20, vertical: bool = False, **kwargs) -> None:
         super().__init__(
             name="systray",
-            orientation=("v" if config.VERTICAL else "h"),
+            orientation=("v" if vertical else "h"),
             **kwargs,
         )
         self.pixel_size = pixel_size
@@ -85,9 +87,9 @@ class SystemTray(Box):
         self.clipper = ClippingBox(
             name="systray-clipper",
             spacing=1,
-            orientation=("v" if config.VERTICAL else "h"),
+            orientation=("v" if vertical else "h"),
         )
-        self.clipper.add(NotificationIndicator())
+        self.clipper.add(NotificationIndicator(vertical=vertical))
 
         self.spacer = Box(name="systray-spacer")
         self.clipper.add(self.spacer)

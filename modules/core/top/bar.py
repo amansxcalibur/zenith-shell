@@ -53,6 +53,8 @@ class TopBar(Window):
                 visible=True,
                 all_visible=True,
             )
+            # positioned together with the top pill, see TopPill
+            GtkLayerShell.set_exclusive_zone(self, -1)
         else:
             super().__init__(
                 name="dock-bar",
@@ -80,6 +82,7 @@ class TopBar(Window):
         self._boxes_to_clean: list[Box] = []
 
         self.last_hover_time = 0
+        self._dock_neighbour: str | None = None
 
         self._controls_size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
 
@@ -167,6 +170,9 @@ class TopBar(Window):
         )
         self.hover_area.connect("enter-notify-event", self._handle_hover_reveal)
 
+        # to prevent curved edges to overflow
+        self.pill_clip = ClippingBox(children=self.stack)
+
         # main
         self.children = Overlay(
             orientation="v",
@@ -178,13 +184,31 @@ class TopBar(Window):
                 children=[
                     self.left_edge,
                     self.start_children,
-                    # to prevent curved edges to overflow
-                    ClippingBox(children=self.stack),
+                    self.pill_clip,
                     self.end_children,
                     self.right_edge,
                 ],
             ),
         )
+
+    def set_dock_neighbour(self, side: str | None) -> None:
+        """Drop the pill's corner curve on the side that touches a side dock."""
+        if side == self._dock_neighbour:
+            return
+        self._dock_neighbour = side
+
+        # the bar jumps to its new side, so the corner changes at once too. The
+        # transition is only skipped for this change: reading the style applies
+        # it right away, and opening or closing the pill still eases the corners
+        context = self.stack.get_style_context()
+        self.stack.add_style_class("no-corner-transition")
+        for candidate in ("left", "right"):
+            if candidate == side:
+                self.stack.add_style_class(f"beside-dock-{candidate}")
+            else:
+                self.stack.remove_style_class(f"beside-dock-{candidate}")
+        context.get_property("border-radius", context.get_state())
+        self.stack.remove_style_class("no-corner-transition")
 
     def _handle_hover_reveal(self, source, event):
         if (
@@ -281,6 +305,10 @@ class TopBar(Window):
             geometry = self.get_geometry()
             is_left = geometry == X11WindowGeometry.TOP_LEFT
             is_right = geometry == X11WindowGeometry.TOP_RIGHT
+
+        if is_left != is_right:
+            # closing at the centre hides this too; it holds the pill's place
+            self.pill_clip.set_visible(True)
 
         if is_left and not is_right:
             self.left_edge.set_visible(False)
