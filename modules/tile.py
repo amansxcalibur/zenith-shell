@@ -11,6 +11,7 @@ import icons
 from services.theme import ThemeMode, ThemeService
 
 from utils.cursor import add_hover_cursor
+from widgets.tile_menu import TileMenuLoader
 from widgets.material_label import MaterialIconLabel
 from widgets.clipping_box import ClippingBox, TrueClippingBox
 
@@ -153,6 +154,7 @@ class TileSimpleWithMenu(ClippingBox):
         title: str = "",
         status_label_widget: Label | None = None,
         menu_children: Gtk.Widget = None,
+        menu_loader: TileMenuLoader | None = None,
         **kwargs,
     ):
         if status_label_widget is None:
@@ -244,6 +246,7 @@ class TileSimpleWithMenu(ClippingBox):
             on_clicked=self.handle_menu_click,
         )
 
+        self.menu_loader = menu_loader or TileMenuLoader()
         self.menu = Box(
             style_classes="tile-menu",
             orientation="v",
@@ -260,10 +263,7 @@ class TileSimpleWithMenu(ClippingBox):
                             self.menu_close_btn,
                         ],
                     ),
-                    Box(
-                        name="tile-menu-separator",
-                        h_align="center",
-                    ),
+                    self.menu_loader,
                 ]
                 + (
                     [menu_children]
@@ -366,6 +366,7 @@ class Tile(ClippingBox):
         menu_children=None,
         props: Label = None,
         on_toggle: Callable | None = None,
+        menu_loader: TileMenuLoader | None = None,
         **kwargs,
     ):
         self.theme_service = ThemeService()
@@ -455,6 +456,7 @@ class Tile(ClippingBox):
             on_clicked=self.handle_menu_click,
         )
 
+        self.menu_loader = menu_loader or TileMenuLoader()
         self.menu_box = Box(
             style_classes="tile-menu",
             orientation="v",
@@ -471,10 +473,7 @@ class Tile(ClippingBox):
                             self.menu_close_btn,
                         ],
                     ),
-                    Box(
-                        name="tile-menu-separator",
-                        h_align="center",
-                    ),
+                    self.menu_loader,
                 ]
                 + ([menu_children] if menu_children else [Label(label="Options")])
             ),

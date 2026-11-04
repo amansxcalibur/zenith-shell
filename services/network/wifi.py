@@ -17,7 +17,7 @@ import gi
 
 try:
     gi.require_version("NM", "1.0")
-    from gi.repository import NM, GLib
+    from gi.repository import NM, GLib, GObject
 except ValueError:
     logger.error("Failed to load NetworkManager bindings")
     raise
@@ -203,6 +203,12 @@ class ConnectionStateMachine:
 
             self.network_service.connection_result(ssid, reason, message)
 
+    def cancel_all(self) -> None:
+        for ssid, pending in list(self.pending.items()):
+            del self.pending[ssid]
+            if pending.is_new:
+                self._schedule_cleanup(ssid)
+
     def check_disconnected_state(self, current_ssid: Optional[str]) -> None:
         """Check if any pending connections failed when device disconnected"""
         for ssid in list(self.pending.keys()):
@@ -383,11 +389,24 @@ class ConnectionProfileManager:
 
 
 class ScanManager:
-    def __init__(self, wifi_dev: Optional[NM.DeviceWifi], on_complete: Callable):
+    def __init__(
+        self,
+        wifi_dev: Optional[NM.DeviceWifi],
+        on_start: Callable[[], None],
+        on_complete: Callable[[], None],
+        on_list_changed: Callable[[], None],
+    ):
         self.wifi_dev = wifi_dev
+        self.on_start = on_start
         self.on_complete = on_complete
+        self.on_list_changed = on_list_changed
         self._is_scanning = False
         self._scan_timeout_id: Optional[int] = None
+        self._debounce_id: Optional[int] = None
+
+    @property
+    def is_scanning(self) -> bool:
+        return self._is_scanning
 
     def update_device(self, wifi_dev: Optional[NM.DeviceWifi]) -> None:
         self.wifi_dev = wifi_dev
@@ -402,37 +421,72 @@ class ScanManager:
             return False
 
         try:
-            self._is_scanning = True
-            self.wifi_dev.request_scan_async(None, self._on_scan_complete, None)
-            logger.debug("WiFi scan requested")
-            return True
+            self.wifi_dev.request_scan_async(None, self._on_scan_requested, None)
         except Exception as e:
             logger.error(f"Scan request failed: {e}")
-            self._is_scanning = False
             return False
 
-    def schedule_update(self) -> None:
-        if self._scan_timeout_id:
-            GLib.source_remove(self._scan_timeout_id)
+        logger.debug("WiFi scan requested")
+        self._is_scanning = True
+        self._scan_timeout_id = GLib.timeout_add_seconds(
+            NetworkConstants.SCAN_TIMEOUT_SECONDS, self._on_scan_timeout
+        )
+        self.on_start()
+        return True
 
-        self._scan_timeout_id = GLib.timeout_add(
+    def schedule_update(self) -> None:
+        """Coalesce a burst of access point changes into one list update."""
+        if self._debounce_id:
+            GLib.source_remove(self._debounce_id)
+
+        self._debounce_id = GLib.timeout_add(
             NetworkConstants.SCAN_DEBOUNCE_MS, self._do_scheduled_update
         )
 
-    def _on_scan_complete(self, device, result, user_data) -> None:
+    def on_results_ready(self) -> None:
+        """NM published new scan results, ours or from its own periodic scan."""
+        if self._is_scanning:
+            self._finish_scan()
+        else:
+            self.on_list_changed()
+
+    def cancel(self) -> None:
         self._is_scanning = False
+        self._clear_timeout("_scan_timeout_id")
+        self._clear_timeout("_debounce_id")
+
+    def _clear_timeout(self, attribute: str) -> None:
+        if source_id := getattr(self, attribute):
+            GLib.source_remove(source_id)
+            setattr(self, attribute, None)
+
+    def _finish_scan(self) -> None:
+        self._is_scanning = False
+        self._clear_timeout("_scan_timeout_id")
+        self.on_complete()
+
+    def _on_scan_requested(self, device, result, user_data) -> None:
+        # this only says NM accepted the request, results arrive with `last-scan`
         try:
             if device.request_scan_finish(result):
-                logger.debug("WiFi scan completed")
-                self.on_complete()
-            else:
-                logger.warning("WiFi scan failed")
+                return
+            logger.warning("WiFi scan failed")
         except Exception as e:
-            logger.error(f"Scan completion error: {e}")
+            # eg: NM rate limits scans that come right after the previous one
+            logger.debug(f"WiFi scan rejected: {e}")
+
+        if self._is_scanning:
+            self._finish_scan()
+
+    def _on_scan_timeout(self) -> bool:
+        self._scan_timeout_id = None
+        logger.debug("Timed out waiting for WiFi scan results")
+        self._finish_scan()
+        return False
 
     def _do_scheduled_update(self) -> bool:
-        self._scan_timeout_id = None
-        self.request_scan()
+        self._debounce_id = None
+        self.on_list_changed()
         return False
 
 
@@ -442,6 +496,11 @@ class WifiDevice(NetworkDevice):
     @Signal
     def ap_change(self) -> None:
         """Emitted when access points list changes"""
+        ...
+
+    @Signal
+    def scan_state_change(self, scanning: bool) -> None:
+        """Emitted when a requested scan starts and when its results are in"""
         ...
 
     @Signal
@@ -460,7 +519,12 @@ class WifiDevice(NetworkDevice):
         self.ap_manager = AccessPointManager()
         self.connection_state = ConnectionStateMachine(self)
         self.profile_manager = ConnectionProfileManager(self.client)
-        self.scan_manager = ScanManager(device, on_complete=self._on_scan_complete)
+        self.scan_manager = ScanManager(
+            device,
+            on_start=lambda: self.scan_state_change(True),
+            on_complete=self._on_scan_complete,
+            on_list_changed=self._update_ap_list,
+        )
 
         self._sig_ids["state"] = device.connect(
             "state-changed", self._on_device_state_change
@@ -474,6 +538,17 @@ class WifiDevice(NetworkDevice):
         self._sig_ids["ap_removed"] = device.connect(
             "access-point-removed", self._on_ap_changed
         )
+        self._sig_ids["last_scan"] = device.connect(
+            "notify::last-scan", lambda *_: self.scan_manager.on_results_ready()
+        )
+
+        # the "saved" state of a network depends on the profiles
+        self._client_sig_ids: list[int] = []
+        if self.client:
+            self._client_sig_ids = [
+                self.client.connect(signal, lambda *_: self._update_ap_list())
+                for signal in ("connection-added", "connection-removed")
+            ]
 
         self.scan()
         self._update_connection_state(device.get_state())
@@ -483,6 +558,21 @@ class WifiDevice(NetworkDevice):
             logger.debug("No Scan Manager available")
             return False
         return self.scan_manager.request_scan()
+
+    @property
+    def scanning(self) -> bool:
+        return self.scan_manager.is_scanning
+
+    def refresh_access_points(self) -> None:
+        self._update_ap_list()
+
+    def destroy(self) -> None:
+        self.scan_manager.cancel()
+        if self.client:
+            for handler_id in self._client_sig_ids:
+                GObject.Object.disconnect(self.client, handler_id)
+            self._client_sig_ids.clear()
+        super().destroy()
 
     def get_networks(self) -> list[dict]:
         if not self.device:
@@ -570,6 +660,9 @@ class WifiDevice(NetworkDevice):
             return False
 
         try:
+            # an attempt in progress is being called off, it hasn't failed
+            self.connection_state.cancel_all()
+
             active_conn = self.get_active_connection()
             if active_conn:
                 logger.info("Disconnecting from network")
@@ -738,6 +831,7 @@ class WifiDevice(NetworkDevice):
 
     def _on_scan_complete(self) -> None:
         self._update_ap_list()
+        self.scan_state_change(False)
 
     def _get_active_device_state(self) -> int:
         if not self.device:

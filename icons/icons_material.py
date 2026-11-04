@@ -157,6 +157,8 @@ wifi_3: str = "\uef16"
 wifi_4: str = "\uef10"
 
 lan: str = "\ueb2f"
+link_off: str = "\ue16f"
+key: str = "\ue73c"
 
 globe_2_question: str = "\U000fffb6"
 

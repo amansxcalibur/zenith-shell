@@ -3,8 +3,18 @@
   background-color: var(--surface);
 } */
 
-#ap-button.active {
+#ap-button {
+  padding: 10px 10px 10px 20px;
+  border-radius: 5px;
   background-color: var(--surface);
+  min-height: 40px;
+  transition: background-color 150ms ease;
+}
+#ap-button.no-action {
+  padding-right: 20px;
+}
+.light #ap-button {
+  color: var(--foreground);
 }
 
 #ap-button.hover,
@@ -12,18 +22,70 @@
   background-color: var(--surface-semi-bright);
 }
 
-#ap-button {
-  padding: 10px 20px;
-  border-radius: 5px;
-  background-color: var(--surface);
-  min-height: 40px;
-}
-.light #ap-button {
-  color: var(--foreground);
+#ap-button.connecting #ap-icon {
+  animation: ap_connecting_pulse 1.2s ease-in-out infinite;
 }
 
-/* #ap-label {
-} */
+#ap-status-label {
+  font-size: 13px;
+  opacity: 0.65;
+}
+
+@keyframes ap_connecting_pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.ap-secure-icon {
+  font-size: 18px;
+  opacity: 0.65;
+}
+
+/* tonal icon button, the circle squares up under the pointer (M3 expressive) */
+.ap-action-btn {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 20px;
+  background-color: var(--secondary-container);
+  color: var(--on-secondary-container);
+  transition:
+    border-radius 200ms cubic-bezier(0.2, 0, 0, 1),
+    background-color 150ms ease;
+}
+.ap-action-btn:hover {
+  border-radius: 14px;
+  background-color: alpha(var(--secondary-container), 0.75);
+}
+.ap-action-btn:active {
+  border-radius: 10px;
+}
+.ap-action-btn:disabled {
+  opacity: 0.4;
+}
+
+.ap-action-icon {
+  font-size: 22px;
+  color: var(--on-secondary-container);
+}
+
+.menu-icon-btn {
+  border-radius: 50px;
+  transition: opacity 150ms ease;
+}
+.menu-icon-btn:disabled {
+  opacity: 0.35;
+}
+
+#matugen-switcher {
+  transition:
+    background-color 0.3s ease,
+    opacity 150ms ease;
+}
+#matugen-switcher:disabled {
+  opacity: 0.5;
+}
 
 #subsection-heading-label {
   font-size: 16px;

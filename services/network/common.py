@@ -15,6 +15,8 @@ except ValueError:
 
 class NetworkConstants:
     SCAN_DEBOUNCE_MS = 500
+    # NM doesn't report failed scans, so don't wait on `last-scan` forever
+    SCAN_TIMEOUT_SECONDS = 10
     CLEANUP_DELAY_MS = 500
     CONNECTION_TIMEOUT_SECONDS = 30
     MAX_SSID_LENGTH = 32
@@ -37,6 +39,7 @@ class DeviceStatus(Enum):
     DISCONNECTED = "Device On (No Connection)"
     CONNECTING = "Connecting…"
     CONNECTED = "Connected"
+    DISCONNECTING = "Disconnecting…"
     NO_DEVICE = "No Device"
     FAILED = "Connection Failed"
     UNKNOWN = "Unknown"
@@ -46,6 +49,18 @@ class ConnectionType(Enum):
     NONE = 0
     WIFI = 1
     ETHERNET = 2
+
+
+# what the device is doing right now, finer grained than DeviceStatus
+NM_STATE_DETAILS = {
+    NM.DeviceState.PREPARE: "Preparing…",
+    NM.DeviceState.CONFIG: "Connecting…",
+    NM.DeviceState.NEED_AUTH: "Authenticating…",
+    NM.DeviceState.IP_CONFIG: "Obtaining IP address…",
+    NM.DeviceState.IP_CHECK: "Checking connection…",
+    NM.DeviceState.SECONDARIES: "Finishing up…",
+    NM.DeviceState.DEACTIVATING: "Disconnecting…",
+}
 
 
 class NetworkDevice(Service):
@@ -68,6 +83,12 @@ class NetworkDevice(Service):
         self._state = DeviceStatus.UNKNOWN
         self._sig_ids: dict[str, int] = {}
 
+    @property
+    def status_detail(self) -> str:
+        if not self.device:
+            return self._state.value
+        return NM_STATE_DETAILS.get(self.device.get_state(), self._state.value)
+
     def _map_nm_state(self, nm_state: NM.DeviceState) -> DeviceStatus:
         match nm_state:
             case NM.DeviceState.UNAVAILABLE:
@@ -85,6 +106,8 @@ class NetworkDevice(Service):
                 return DeviceStatus.CONNECTING
             case NM.DeviceState.ACTIVATED:
                 return DeviceStatus.CONNECTED
+            case NM.DeviceState.DEACTIVATING:
+                return DeviceStatus.DISCONNECTING
             case NM.DeviceState.FAILED:
                 return DeviceStatus.FAILED
             case _:

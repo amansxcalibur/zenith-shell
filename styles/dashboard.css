@@ -169,8 +169,16 @@
   min-height: 4px;
   border-radius: 10px;
   background-color: var(--surface);
+  color: var(--primary); /* the loader drawn on top of the bar */
   margin: 10px 0;
 }
 .light #tile-menu-separator {
   background-color: var(--outline-variant);
+}
+
+.tile-menu-placeholder {
+  padding: 16px;
+  font-size: 14px;
+  color: var(--on-surface-variant);
+  background-color: var(--surface);
 }

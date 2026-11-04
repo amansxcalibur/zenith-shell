@@ -410,13 +410,13 @@
 
 2. _on_ap_changed()
    └─ scan_manager.schedule_update()
-      ├─ Cancel any existing scheduled scan
+      ├─ Cancel any existing scheduled update
       └─ GLib.timeout_add(500ms, _do_scheduled_update)
-         └─ Debouncing: Multiple rapid AP changes → Single scan after 500ms
+         └─ Debouncing: Multiple rapid AP changes → Single update after 500ms
 
 3. _do_scheduled_update()
-   └─ scan_manager.request_scan()
-      └─ Goes to Workflow 9, step 2
+   └─ on_list_changed() → _update_ap_list()
+      └─ Emits "ap-change" (no new scan is requested)
 ```
 
 ---

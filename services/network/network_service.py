@@ -32,6 +32,10 @@ class NetworkService(Service):
     def wifi_enabled(self) -> bool:
         return self.client.wireless_get_enabled() if self.client else False
 
+    @Property(bool, default_value=False, flags="readable")
+    def wifi_hardware_enabled(self) -> bool:
+        return self.client.wireless_hardware_get_enabled() if self.client else False
+
     def __init__(self):
         super().__init__()
 
@@ -52,6 +56,13 @@ class NetworkService(Service):
             self.client.connect("device-removed", self._on_device_removed)
             self.client.connect(
                 "notify::primary-connection", self._on_primary_connection_changed
+            )
+            self.client.connect(
+                "notify::wireless-enabled", lambda *_: self.notify("wifi-enabled")
+            )
+            self.client.connect(
+                "notify::wireless-hardware-enabled",
+                lambda *_: self.notify("wifi-hardware-enabled"),
             )
 
             for dev in self.client.get_devices() or []:
@@ -174,7 +185,7 @@ class NetworkService(Service):
         return [
             {
                 "name": EthernetDevice._ethernet_display_name(device),
-                "state": device.get_state(),
+                "state": device.state,
                 "iface": device.get_iface(),
                 "device": device,
             }

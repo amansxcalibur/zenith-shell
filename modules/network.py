@@ -18,7 +18,7 @@ from modules.tile import TileSimpleWithMenu
 
 from services.network.wifi import WifiDevice
 from services.network.ethernet import EthernetDevice
-from services.network.common import ConnectionResult, DeviceStatus
+from services.network.common import ConnectionResult, DeviceStatus, NetworkConstants
 from services.network.network_service import NetworkService, ConnectionType
 
 from utils.colors import bind_theme
@@ -27,11 +27,17 @@ from utils.helpers import format_accel_to_keybind
 
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
+from widgets.tile_menu import (
+    MIN_BUSY_MS,
+    ContentFader,
+    TileMenuLoader,
+    menu_placeholder,
+)
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk  # type: ignore
+from gi.repository import Gtk, Gdk, GLib  # type: ignore
 
 
 class UIConstants:
@@ -40,6 +46,8 @@ class UIConstants:
     MAX_SSID_DISPLAY_LENGTH = 8
     DIALOG_DEFAULT_WIDTH = 350
     UPDATE_DIALOG_WIDTH = 350
+    MAX_ROW_LABEL_CHARS = 26
+    FAILURE_DISPLAY_MS = 6000
 
 
 class BaseDialog(Gtk.Dialog):
@@ -258,7 +266,7 @@ class PropertiesDialogEthernet(BasePropertiesDialog):
     def get_properties(self, data: dict) -> dict:
         return {
             "Device/Connection ID": data.get("name", "Unknown"),
-            "State": str(data.get("state", "Unknown")),
+            "State": getattr(data.get("state"), "value", "Unknown"),
             "IFace": data.get("iface", "Unknown"),
         }
 
@@ -281,17 +289,48 @@ class PropertiesDialogWifi(BasePropertiesDialog):
         }
 
 
+def _row_action_button(
+    icon: str, tooltip: str, on_clicked: Callable[..., None]
+) -> tuple[Button, MaterialIconLabel]:
+    icon_label = MaterialIconLabel(icon_text=icon, style_classes=["ap-action-icon"])
+    button = add_hover_cursor(
+        Button(
+            style_classes=["ap-action-btn"],
+            v_align="center",
+            child=icon_label,
+            tooltip_text=tooltip,
+            on_clicked=on_clicked,
+        )
+    )
+    # visibility follows the row state, opening the menu must not show_all() it
+    button.set_no_show_all(True)
+    icon_label.show()
+    return button, icon_label
+
+
+class WifiRowState:
+    IDLE = "idle"
+    CONNECTED = "connected"
+    CONNECTING = "connecting"
+    DISCONNECTING = "disconnecting"
+    FAILED = "failed"
+
+
 class WifiButton(EventBox):
     def __init__(
         self,
         ap: dict,
-        network_service: NetworkService,
+        network_service: WifiDevice,
         on_connect: Callable[[str, str | None], None],
+        on_disconnect: Callable[[], None],
+        is_saved: bool = False,
         **kwargs,
     ):
         self.ap = ap
         self.nm = network_service
         self.on_connect = on_connect
+        self.on_disconnect = on_disconnect
+        self.row_state = WifiRowState.IDLE
 
         super().__init__(
             events=["button-press", "button-release", "enter-notify", "leave-notify"],
@@ -301,8 +340,7 @@ class WifiButton(EventBox):
         self.ssid = self.ap.get("ssid", "Unknown Network")
         self.strength = self.ap.get("strength", 0)
         self.secured = self.ap.get("secured", False)
-        self.active = self.ap.get("active", False)
-        self.is_saved = self.ssid in self.nm.get_saved_networks()
+        self.is_saved = is_saved
 
         self._build_ui()
 
@@ -310,32 +348,30 @@ class WifiButton(EventBox):
         self.connect("enter-notify-event", self._on_enter)
         self.connect("leave-notify-event", self._on_leave)
 
-        if self.active:
-            self.add_style_class("active")
+        self.set_row_state(WifiRowState.IDLE)
 
     def _build_ui(self) -> None:
+        self.status_label = Label(name="ap-status-label", h_align="start")
         self.label_box = Box(
             orientation="v",
             h_expand=True,
             v_align="center",
-            children=[Label(name="ap-label", label=self.ssid, h_align="start")],
+            children=[
+                Label(
+                    name="ap-label",
+                    label=self.ssid,
+                    h_align="start",
+                    max_chars_width=UIConstants.MAX_ROW_LABEL_CHARS,
+                    ellipsization="end",
+                ),
+                self.status_label,
+            ],
         )
 
-        self.status_label = Label(
-            name="ap-label", label="Connecting...", h_align="start"
+        self.wifi_icon = MaterialIconLabel(
+            name="ap-icon", icon_text=self._get_wifi_icon(), h_expand=False
         )
-
-        children = [
-            MaterialIconLabel(icon_text=self._get_wifi_icon(), h_expand=False),
-            self.label_box,
-        ]
-
-        if self.is_saved and not self.active:
-            children.append(
-                MaterialIconLabel(
-                    icon_text=icons.sync_saved_locally.symbol(), tooltip_text="Saved"
-                )
-            )
+        children = [self.wifi_icon, self.label_box]
 
         if self.secured:
             children.append(
@@ -346,30 +382,71 @@ class WifiButton(EventBox):
                 )
             )
 
-        if self.is_saved and not self.active:
-            children.append(
-                Button(
-                    child=MaterialIconLabel(
-                        icon_text=icons.settings.symbol(),
-                        style_classes=["ap-secure-icon"],
-                        tooltip_text="Edit profile",
-                    ),
-                    on_clicked=self._show_update_password_dialog,
-                )
-            )
+        self.edit_button, _ = _row_action_button(
+            icons.key.symbol(), "Change password", self._show_update_password_dialog
+        )
+        self.disconnect_button, self.disconnect_icon = _row_action_button(
+            icons.link_off.symbol(), "Disconnect", lambda *_: self.on_disconnect()
+        )
+
+        children += [self.edit_button, self.disconnect_button]
 
         self.content = Box(name="ap-button", spacing=10, children=children)
         self.children = self.content
 
-    def _get_wifi_icon(self) -> str:
-        if self.strength > 80:
-            return icons.wifi_4.symbol()
-        elif self.strength > 50:
-            return icons.wifi_3.symbol()
-        elif self.strength > 20:
-            return icons.wifi_2.symbol()
+    def _idle_status(self) -> str:
+        if self.is_saved:
+            return "Saved"
+        return "Secured" if self.secured else "Open"
+
+    def set_row_state(self, state: str, text: str | None = None) -> None:
+        self.row_state = state
+        self.status_label.set_label(text or self._idle_status())
+
+        is_connecting = state == WifiRowState.CONNECTING
+        if is_connecting:
+            self.content.add_style_class("connecting")
         else:
-            return icons.wifi_1.symbol()
+            self.content.remove_style_class("connecting")
+
+        is_online = state in (
+            WifiRowState.CONNECTED,
+            WifiRowState.CONNECTING,
+            WifiRowState.DISCONNECTING,
+        )
+        has_edit_button = self.is_saved and not is_online
+        self.edit_button.set_visible(has_edit_button)
+        self.disconnect_button.set_visible(is_online)
+        # round buttons sit closer to the edge than a bare icon should
+        if has_edit_button or is_online:
+            self.content.remove_style_class("no-action")
+        else:
+            self.content.add_style_class("no-action")
+        self.disconnect_button.set_sensitive(state != WifiRowState.DISCONNECTING)
+        self.disconnect_button.set_tooltip_text(
+            "Cancel" if is_connecting else "Disconnect"
+        )
+        self.disconnect_icon.set_icon(
+            icons.close.symbol() if is_connecting else icons.link_off.symbol()
+        )
+
+    @staticmethod
+    def strength_bucket(strength: int) -> int:
+        if strength > 80:
+            return 4
+        elif strength > 50:
+            return 3
+        elif strength > 20:
+            return 2
+        return 1
+
+    def _get_wifi_icon(self) -> str:
+        return {
+            4: icons.wifi_4,
+            3: icons.wifi_3,
+            2: icons.wifi_2,
+            1: icons.wifi_1,
+        }[self.strength_bucket(self.strength)].symbol()
 
     def _on_button_press(self, source: EventBox, event: Gdk.EventButton) -> bool:
         if event.button == 1:  # left click
@@ -385,9 +462,11 @@ class WifiButton(EventBox):
             logger.error("Cannot connect: No SSID")
             return
 
+        if self.row_state not in (WifiRowState.IDLE, WifiRowState.FAILED):
+            return
+
         try:
             logger.debug(f"Connecting to: {self.ssid}")
-            self.label_box.add(self.status_label)
             self.on_connect(self.ssid, None)
         except Exception as e:
             logger.error(f"Error in WiFi button click: {e}")
@@ -403,13 +482,20 @@ class WifiButton(EventBox):
     def _show_context_menu(self, event: Gdk.EventButton) -> None:
         menu = Gtk.Menu()
 
-        if not self.active:
+        if self.row_state in (WifiRowState.IDLE, WifiRowState.FAILED):
             connect_item = Gtk.MenuItem(label="Connect")
             connect_item.connect("activate", lambda *_: self._do_connect())
             menu.append(connect_item)
         else:
-            disconnect_item = Gtk.MenuItem(label="Disconnect")
-            disconnect_item.connect("activate", lambda *_: self._disconnect_network())
+            disconnect_item = Gtk.MenuItem(
+                label=(
+                    "Cancel"
+                    if self.row_state == WifiRowState.CONNECTING
+                    else "Disconnect"
+                )
+            )
+            disconnect_item.set_sensitive(self.row_state != WifiRowState.DISCONNECTING)
+            disconnect_item.connect("activate", lambda *_: self.on_disconnect())
             menu.append(disconnect_item)
 
         if self.is_saved:
@@ -488,21 +574,17 @@ class WifiButton(EventBox):
     def _show_properties(self) -> None:
         PropertiesDialogWifi(self, self.ap)
 
-    def _disconnect_network(self) -> None:
-        success = self.nm.disconnect()
-        if success:
-            logger.info(f"Disconnecting from {self.ssid}")
-        else:
-            logger.warning("Failed to disconnect")
-
 
 class EthernetButton(EventBox):
+    # NM calls a wired device "unavailable" when there's no carrier
     STATUS_LABELS: ClassVar = {
-        DeviceStatus.UNKNOWN: "Off",
-        DeviceStatus.DEVICE_OFF: "Off",
+        DeviceStatus.UNKNOWN: "Unavailable",
+        DeviceStatus.DEVICE_OFF: "Cable unplugged",
         DeviceStatus.DISCONNECTED: "Disconnected",
         DeviceStatus.CONNECTING: "Connecting…",
         DeviceStatus.CONNECTED: "Connected",
+        DeviceStatus.DISCONNECTING: "Disconnecting…",
+        DeviceStatus.FAILED: "Connection failed",
         DeviceStatus.NO_DEVICE: "No Device",
     }
 
@@ -510,12 +592,12 @@ class EthernetButton(EventBox):
         self,
         eth_conn: dict,
         network_service: NetworkService,
-        on_connect: Callable[[str, str | None], None],
+        on_state_change: Callable[[], None] = lambda: None,
         **kwargs,
     ):
         self.eth_conn = eth_conn
         self.nm = network_service
-        self.on_connect = on_connect
+        self.on_state_change = on_state_change
         self.device: EthernetDevice = eth_conn.get("device", None)
 
         super().__init__(
@@ -532,14 +614,12 @@ class EthernetButton(EventBox):
         self.connect("enter-notify-event", self._on_enter)
         self.connect("leave-notify-event", self._on_leave)
         if self.device:
-            self.device.connect("state-changed", self._on_state_changed)
+            # rows get rebuilt, the device outlives them
+            state_handler = self.device.connect("state-changed", self._on_state_changed)
+            self.connect("destroy", lambda *_: self.device.disconnect(state_handler))
 
     def _build_ui(self) -> None:
-        self.status_label = Label(
-            name="ap-label",
-            label=self.STATUS_LABELS.get(self.state, "Unknown"),
-            h_align="start",
-        )
+        self.status_label = Label(name="ap-status-label", h_align="start")
         self.label_box = Box(
             orientation="v",
             h_expand=True,
@@ -549,20 +629,30 @@ class EthernetButton(EventBox):
                     name="ap-label",
                     label=self.name,
                     h_align="start",
-                    max_chars_width=50,
+                    max_chars_width=UIConstants.MAX_ROW_LABEL_CHARS,
                     ellipsization="end",
                 ),
                 self.status_label,
             ],
         )
 
+        self.disconnect_button, _ = _row_action_button(
+            icons.link_off.symbol(),
+            "Disconnect",
+            lambda *_: self._disconnect_network(),
+        )
+
         children = [
-            MaterialIconLabel(icon_text=self._get_ethernet_icon(), h_expand=False),
+            MaterialIconLabel(
+                name="ap-icon", icon_text=self._get_ethernet_icon(), h_expand=False
+            ),
             self.label_box,
+            self.disconnect_button,
         ]
 
         self.content = Box(name="ap-button", spacing=10, children=children)
         self.children = self.content
+        self._show_status(self.state)
 
     def _get_ethernet_icon(self) -> str:
         return icons.lan.symbol()
@@ -577,11 +667,31 @@ class EthernetButton(EventBox):
         return False
 
     def _on_state_changed(self, source, name, status):
+        self.state = status
+        self._show_status(status)
+        self.on_state_change()
+
+    def _show_status(self, status: DeviceStatus) -> None:
         self.status_label.set_label(self.STATUS_LABELS.get(status, "Unknown"))
+
+        if status == DeviceStatus.CONNECTING:
+            self.content.add_style_class("connecting")
+        else:
+            self.content.remove_style_class("connecting")
+
+        self.disconnect_button.set_visible(
+            status in (DeviceStatus.CONNECTED, DeviceStatus.CONNECTING)
+        )
+
+    def _can_connect(self) -> bool:
+        return self.state in (DeviceStatus.DISCONNECTED, DeviceStatus.FAILED)
 
     def _do_connect(self) -> None:
         if not self.name:
             logger.error("Cannot connect: No connection name")
+            return
+
+        if not self._can_connect():
             return
 
         try:
@@ -608,11 +718,10 @@ class EthernetButton(EventBox):
     def _show_context_menu(self, event: Gdk.EventButton) -> None:
         menu = Gtk.Menu()
 
-        is_connected = (
-            self.device.get_state() == DeviceStatus.CONNECTED if self.device else False
-        )
+        is_connected = self.state in (DeviceStatus.CONNECTED, DeviceStatus.CONNECTING)
         if not is_connected:
             connect_item = Gtk.MenuItem(label="Connect")
+            connect_item.set_sensitive(self._can_connect())
             connect_item.connect("activate", lambda *_: self._do_connect())
             menu.append(connect_item)
         else:
@@ -637,71 +746,92 @@ class NetworkListManager:
         self,
         active_container: Box,
         available_container: Box,
-        network_service: WifiDevice,
+        network_service: WifiDevice | None,
         on_connect: Callable[[str, str | None], None],
+        on_disconnect: Callable[[], None],
     ):
         self.active_container = active_container
         self.available_container = available_container
         self.nm = network_service
         self.on_connect = on_connect
+        self.on_disconnect = on_disconnect
+        self.rows: dict[str, WifiButton] = {}
 
-    def update(self, wifi_list: list[dict]) -> None:
+    @staticmethod
+    def make_signature(
+        wifi_list: list[dict], saved: set[str], empty_text: str
+    ) -> tuple:
+        """Everything that's fixed once a row is built, in display order."""
+        rows = tuple(
+            (
+                network.get("ssid"),
+                network.get("active", False),
+                network.get("secured", False),
+                network.get("ssid") in saved,
+                WifiButton.strength_bucket(network.get("strength", 0)),
+            )
+            for network in wifi_list
+        )
+        return (rows, empty_text if not rows else "")
+
+    def update(self, wifi_list: list[dict], saved: set[str], empty_text: str) -> None:
         self._clear()
 
         if not wifi_list:
-            self._show_empty_state()
+            self._show_empty_state(empty_text)
             return
 
-        active_networks = []
-        available_networks = []
-
         for network in wifi_list:
-            if not network.get("ssid"):
+            ssid = network.get("ssid")
+            if not ssid:
                 continue
 
             try:
                 button = add_hover_cursor(
                     widget=WifiButton(
-                        ap=network, network_service=self.nm, on_connect=self.on_connect
+                        ap=network,
+                        network_service=self.nm,
+                        on_connect=self.on_connect,
+                        on_disconnect=self.on_disconnect,
+                        is_saved=ssid in saved,
                     )
                 )
-
-                if network.get("active", False):
-                    active_networks.append(button)
-                else:
-                    available_networks.append(button)
-
             except Exception as e:
-                logger.error(
-                    f"Error creating button for {network.get('ssid', 'Unknown')}: {e}"
-                )
+                logger.error(f"Error creating button for {ssid}: {e}")
+                continue
 
-        for button in active_networks:
-            self.active_container.add(button)
-
-        available_networks.sort(key=lambda btn: btn.ap.get("strength", 0), reverse=True)
-        for button in available_networks:
-            self.available_container.add(button)
+            self.rows[ssid] = button
+            if network.get("active", False):
+                self.active_container.add(button)
+            else:
+                self.available_container.add(button)
 
     def _clear(self) -> None:
+        self.rows.clear()
         for container in [self.active_container, self.available_container]:
             for child in container.get_children():
                 child.destroy()
 
-    def _show_empty_state(self) -> None:
-        empty_label = Label(
-            label="No networks found", style_classes=["dim-label"], h_align="center"
-        )
-        self.available_container.add(empty_label)
+    def _show_empty_state(self, text: str) -> None:
+        self.available_container.add(menu_placeholder(text))
 
 
 class Network(TileSimpleWithMenu):
     STATUS_LABELS: ClassVar = {
-        DeviceStatus.UNKNOWN: "Off",
+        DeviceStatus.UNKNOWN: "Unavailable",
         DeviceStatus.DEVICE_OFF: "Off",
         DeviceStatus.DISCONNECTED: "Disconnected",
         DeviceStatus.CONNECTING: "Connecting…",
+        DeviceStatus.DISCONNECTING: "Disconnecting…",
+        DeviceStatus.FAILED: "Connection failed",
         DeviceStatus.NO_DEVICE: "No Device",
+    }
+
+    CONNECTION_FAILURES: ClassVar = {
+        ConnectionResult.INVALID_PASSWORD: "Incorrect password",
+        ConnectionResult.TIMEOUT: "Connection timed out",
+        ConnectionResult.NETWORK_NOT_FOUND: "Network not found",
+        ConnectionResult.NO_DEVICE: "No Wi-Fi adapter",
     }
 
     CONN_TYPE_META: ClassVar = {
@@ -727,13 +857,31 @@ class Network(TileSimpleWithMenu):
         self.nm.connect("primary-connection-change", self._on_connection_change)
         self.nm.connect("ethernet-change", self._on_ethernet_list_changed)
 
+        self.nm.connect("notify::wifi-enabled", self._on_wifi_radio_change)
+        self.nm.connect("notify::wifi-hardware-enabled", self._on_wifi_radio_change)
+
         self.wifi_dev = self.nm.get_wifi_device()
         if self.wifi_dev:
             self.wifi_dev.connect("ap-change", self._on_ap_list_change)
             self.wifi_dev.connect("connection-result", self._on_connection_result)
+            self.wifi_dev.connect("scan-state-change", self._on_scan_state_change)
+            self.wifi_dev.connect("state-changed", self._on_wifi_state_change)
 
         self._primary_device_singal_id = None
         self._primary_device = None
+
+        # the ssid we asked NM to connect to, until it reports back
+        self._connect_target: str | None = None
+        self._connect_failures: dict[str, str] = {}
+        self._wifi_rescan_pending = False
+        self._wifi_rescan_min_elapsed = False
+        self._ethernet_refresh_pending = False
+        self._wifi_radio_was_on = self.nm.wifi_enabled and self.nm.wifi_hardware_enabled
+        # set while a radio that just turned on waits for its adapter to come up
+        self._radio_ready_timeout_id: int | None = None
+        self._wifi_list_signature: tuple | None = None
+
+        self.menu_loader = TileMenuLoader()
 
         self.wifi_toggle = Gtk.Switch(name="matugen-switcher")
         self.wifi_toggle.set_active(self.nm.wifi_enabled)
@@ -784,6 +932,14 @@ class Network(TileSimpleWithMenu):
             ),
         )
 
+        self.wifi_fader = ContentFader(self.active_connection, self.scrolled_container)
+        self.ethernet_fader = ContentFader(self.ethernet_scrolled_container)
+
+        self.ethernet_rescan_button = self._build_rescan_button(
+            self._refresh_ethernet, "Refresh"
+        )
+        self.wifi_rescan_button = self._build_rescan_button(self._rescan_wifi, "Rescan")
+
         self.menu = self._build_menu()
         self.menu.connect("map", lambda *_: self.register_keybindings())
         self.menu.connect("unmap", lambda *_: self.unregister_keybindings())
@@ -793,6 +949,7 @@ class Network(TileSimpleWithMenu):
             self.connection_container,
             self.nm.get_wifi_device(),
             self._handle_network_connect,
+            self._disconnect_wifi,
         )
 
         self.password_dialog: PasswordDialog | None = None
@@ -803,12 +960,28 @@ class Network(TileSimpleWithMenu):
             status_label_widget=self.label,
             markup=icons.wifi.symbol(),
             menu_children=self.menu,
+            menu_loader=self.menu_loader,
             style_classes=["off"],
             **kwargs,
         )
 
         self.reveal_status_widget()
         self._initialize_network_state()
+
+    @staticmethod
+    def _build_rescan_button(on_clicked: Callable[[], None], tooltip: str) -> Button:
+        return add_hover_cursor(
+            Button(
+                h_align="end",
+                style_classes=["menu-icon-btn"],
+                on_clicked=lambda *_: on_clicked(),
+                child=MaterialIconLabel(
+                    style_classes=["menu-icon"],
+                    icon_text=icons.refresh.symbol(),
+                ),
+                tooltip_markup=tooltip,
+            )
+        )
 
     def _build_menu(self) -> Box:
         return Box(
@@ -829,17 +1002,7 @@ class Network(TileSimpleWithMenu):
                             justification="left",
                             h_align="start",
                         ),
-                        add_hover_cursor(
-                            Button(
-                                h_align="end",
-                                on_clicked=lambda *_: self._on_ethernet_list_changed(),
-                                child=MaterialIconLabel(
-                                    style_classes=["menu-icon"],
-                                    icon_text=icons.refresh.symbol(),
-                                ),
-                                tooltip_markup="Rescan",
-                            )
-                        ),
+                        self.ethernet_rescan_button,
                     ],
                 ),
                 self.ethernet_scrolled_container,
@@ -864,23 +1027,7 @@ class Network(TileSimpleWithMenu):
                     name="subsection-heading-container",
                     children=[
                         Label(label="Available", h_align="start", h_expand=True),
-                        add_hover_cursor(
-                            Button(
-                                h_align="end",
-                                on_clicked=lambda *_: (
-                                    self.wifi_dev.scan()
-                                    if self.wifi_dev is not None
-                                    else logger.error(
-                                        "[Netowrk] Wifi device is None, couldn't request scan."
-                                    )
-                                ),
-                                child=MaterialIconLabel(
-                                    style_classes=["menu-icon"],
-                                    icon_text=icons.refresh.symbol(),
-                                ),
-                                tooltip_markup="Rescan",
-                            )
-                        ),
+                        self.wifi_rescan_button,
                     ],
                 ),
                 self.scrolled_container,
@@ -890,13 +1037,7 @@ class Network(TileSimpleWithMenu):
     def _keybindings(self):
         wifi_bindings = config.get("bindings.modules.wifi")
         return {
-            format_accel_to_keybind(wifi_bindings["wifi.rescan"]): lambda *_: (
-                self.wifi_dev.scan()
-                if self.wifi_dev is not None
-                else logger.error(
-                    "[Netowrk] Wifi device is None, couldn't request scan."
-                )
-            ),
+            format_accel_to_keybind(wifi_bindings["wifi.rescan"]): self._rescan_wifi,
         }
 
     def register_keybindings(self):
@@ -911,27 +1052,275 @@ class Network(TileSimpleWithMenu):
 
     def _initialize_network_state(self) -> None:
         try:
-            self._on_ethernet_list_changed()
+            self._populate_ethernet()
+            if self.wifi_dev:
+                # also runs the initial wifi list update through _on_ap_list_change
+                self.wifi_dev.refresh_access_points()
+            else:
+                self._refresh_wifi_list(force=True)
+            self._sync_wifi_controls()
+            self._sync_tile()
+            self._sync_loader()
             self._is_initialized = True
         except Exception as e:
             logger.error(f"Failed to initialize network state: {e}")
 
     def _on_ethernet_list_changed(self):
-        eth_list = self.nm.get_ethernet_list()
-        for child in self.ethernet_connection_container.get_children():
-            self.ethernet_connection_container.remove(child)
+        if not self._ethernet_refresh_pending:
+            self.ethernet_fader.swap(self._populate_ethernet)
+
+    def _populate_ethernet(self) -> None:
+        container = self.ethernet_connection_container
+        for child in container.get_children():
+            container.remove(child)
             child.destroy()
+
+        eth_list = [
+            eth_info
+            for eth_info in self.nm.get_ethernet_list()
+            if eth_info.get("device") is not None
+        ]
+        if not eth_list:
+            container.add(menu_placeholder("No Ethernet adapters"))
+
         for eth_info in eth_list:
-            if eth_info.get("device") is not None:
-                self.ethernet_connection_container.add(
-                    add_hover_cursor(
-                        widget=EthernetButton(
-                            eth_conn=eth_info,
-                            network_service=self.nm,
-                            on_connect=lambda *_: ...,
-                        )
+            container.add(
+                add_hover_cursor(
+                    widget=EthernetButton(
+                        eth_conn=eth_info,
+                        network_service=self.nm,
+                        on_state_change=self._sync_loader,
                     )
                 )
+            )
+
+    def _refresh_ethernet(self) -> None:
+        # the list is always current, but the user asked for a visible refresh
+        if self._ethernet_refresh_pending:
+            return
+
+        self._ethernet_refresh_pending = True
+        self.ethernet_rescan_button.set_sensitive(False)
+        self.ethernet_fader.dim()
+        self._sync_loader()
+        GLib.timeout_add(MIN_BUSY_MS, self._finish_ethernet_refresh)
+
+    def _finish_ethernet_refresh(self) -> bool:
+        self._ethernet_refresh_pending = False
+        self.ethernet_rescan_button.set_sensitive(True)
+        self.ethernet_fader.swap(self._populate_ethernet)
+        self._sync_loader()
+        return False
+
+    def _rescan_wifi(self) -> None:
+        if self.wifi_dev is None:
+            logger.error("[Network] Wifi device is None, couldn't request scan.")
+            return
+
+        if self._wifi_rescan_pending or not self.nm.wifi_enabled:
+            return
+
+        self._wifi_rescan_pending = True
+        self._wifi_rescan_min_elapsed = False
+        self.wifi_fader.dim()
+        self._sync_wifi_controls()
+        self._sync_loader()
+
+        # False means a scan is already running, so its results are good enough
+        self.wifi_dev.scan()
+        GLib.timeout_add(MIN_BUSY_MS, self._on_rescan_min_elapsed)
+
+    def _on_rescan_min_elapsed(self) -> bool:
+        self._wifi_rescan_min_elapsed = True
+        self._maybe_finish_rescan()
+        return False
+
+    def _maybe_finish_rescan(self) -> None:
+        if (
+            not self._wifi_rescan_pending
+            or not self._wifi_rescan_min_elapsed
+            or self.wifi_dev.scanning
+        ):
+            return
+
+        self._wifi_rescan_pending = False
+        self._refresh_wifi_list(force=True)
+        self._sync_wifi_controls()
+        self._sync_loader()
+
+    def _on_scan_state_change(self, source: WifiDevice, scanning: bool) -> None:
+        self._sync_wifi_controls()
+        self._sync_loader()
+        self._maybe_finish_rescan()
+
+    def _sync_loader(self) -> None:
+        wifi_connecting = self._connect_target is not None or (
+            self.wifi_dev is not None
+            and self.wifi_dev.state
+            in (DeviceStatus.CONNECTING, DeviceStatus.DISCONNECTING)
+        )
+        scanning = (
+            self._wifi_rescan_pending
+            or self._radio_ready_timeout_id is not None
+            or (self.wifi_dev is not None and self.wifi_dev.scanning)
+        )
+        ethernet_busy = self._ethernet_refresh_pending or any(
+            eth_info["state"] in (DeviceStatus.CONNECTING, DeviceStatus.DISCONNECTING)
+            for eth_info in self.nm.get_ethernet_list()
+        )
+
+        self.menu_loader.set_busy("wifi-scan", scanning)
+        self.menu_loader.set_busy("wifi-connection", wifi_connecting)
+        self.menu_loader.set_busy("ethernet", ethernet_busy)
+
+    def _sync_wifi_controls(self) -> None:
+        has_device = self.wifi_dev is not None
+        radio_on = self.nm.wifi_enabled
+        hardware_on = self.nm.wifi_hardware_enabled
+
+        self.wifi_toggle.set_sensitive(has_device and hardware_on)
+        if not has_device:
+            self.wifi_toggle.set_tooltip_text("No Wi-Fi adapter")
+        elif not hardware_on:
+            self.wifi_toggle.set_tooltip_text("Blocked by a hardware switch")
+        else:
+            self.wifi_toggle.set_tooltip_text(None)
+
+        # programmatic change, prevent callback
+        self.wifi_toggle.handler_block(self.wifi_handler_id)
+        self.wifi_toggle.set_active(radio_on)
+        self.wifi_toggle.handler_unblock(self.wifi_handler_id)
+
+        self.wifi_rescan_button.set_sensitive(
+            has_device
+            and radio_on
+            and not self._wifi_rescan_pending
+            and self._radio_ready_timeout_id is None
+            and not self.wifi_dev.scanning
+        )
+
+    def _on_wifi_radio_change(self, *_) -> None:
+        radio_on = self.nm.wifi_enabled and self.nm.wifi_hardware_enabled
+        turned_on = radio_on and not self._wifi_radio_was_on
+        self._wifi_radio_was_on = radio_on
+
+        if not radio_on:
+            self._stop_waiting_for_radio()
+        elif turned_on and self.wifi_dev is not None:
+            self._radio_ready_timeout_id = GLib.timeout_add_seconds(
+                NetworkConstants.SCAN_TIMEOUT_SECONDS, self._on_radio_ready_timeout
+            )
+
+        self._sync_wifi_controls()
+        self._sync_loader()
+        self._refresh_wifi_list()
+        # NM doesn't order this against the device's state change, it may be up
+        self._scan_if_radio_ready()
+
+    def _stop_waiting_for_radio(self) -> None:
+        if self._radio_ready_timeout_id is not None:
+            GLib.source_remove(self._radio_ready_timeout_id)
+            self._radio_ready_timeout_id = None
+
+    def _scan_if_radio_ready(self) -> None:
+        # NM rejects scans until the adapter has left the "unavailable" state
+        if self._radio_ready_timeout_id is None or self.wifi_dev.state in (
+            DeviceStatus.DEVICE_OFF,
+            DeviceStatus.UNKNOWN,
+        ):
+            return
+
+        self._stop_waiting_for_radio()
+        self._rescan_wifi()
+
+    def _on_radio_ready_timeout(self) -> bool:
+        logger.warning("[Network] Wi-Fi adapter didn't come up, skipping the scan")
+        self._radio_ready_timeout_id = None
+        self._sync_wifi_controls()
+        self._sync_loader()
+        self._refresh_wifi_list()
+        return False
+
+    def _wifi_empty_text(self) -> str:
+        if self.wifi_dev is None:
+            return "No Wi-Fi adapter"
+        if not self.nm.wifi_hardware_enabled:
+            return "Wi-Fi is blocked by a hardware switch"
+        if not self.nm.wifi_enabled:
+            return "Wi-Fi is off"
+        if (
+            self.wifi_dev.scanning
+            or self._wifi_rescan_pending
+            or self._radio_ready_timeout_id is not None
+        ):
+            return "Searching for networks…"
+        return "No networks found"
+
+    def _refresh_wifi_list(self, force: bool = False) -> None:
+        radio_on = self.nm.wifi_enabled and self.wifi_dev is not None
+        wifi_list = self.wifi_dev.get_networks() if radio_on else []
+        saved = set(self.wifi_dev.get_saved_networks()) if self.wifi_dev else set()
+        empty_text = self._wifi_empty_text()
+
+        signature = self.list_manager.make_signature(wifi_list, saved, empty_text)
+        if not force and signature == self._wifi_list_signature:
+            self._apply_wifi_row_states()
+            return
+
+        # compare against what was last asked for: a swap may still be fading out
+        self._wifi_list_signature = signature
+
+        def populate():
+            self.list_manager.update(wifi_list, saved, empty_text)
+            self._apply_wifi_row_states()
+
+        self.wifi_fader.swap(populate)
+
+    def _apply_wifi_row_states(self) -> None:
+        if self.wifi_dev is None:
+            return
+
+        status = self.wifi_dev.state
+        active_ssid = self.wifi_dev.active_ssid
+        detail = self.wifi_dev.status_detail
+
+        for ssid, row in self.list_manager.rows.items():
+            if ssid == active_ssid and status == DeviceStatus.CONNECTED:
+                row.set_row_state(WifiRowState.CONNECTED, "Connected")
+            elif ssid == active_ssid and status == DeviceStatus.DISCONNECTING:
+                row.set_row_state(WifiRowState.DISCONNECTING, detail)
+            elif ssid == active_ssid and status == DeviceStatus.CONNECTING:
+                row.set_row_state(WifiRowState.CONNECTING, detail)
+            elif ssid == self._connect_target:
+                row.set_row_state(WifiRowState.CONNECTING, "Connecting…")
+            elif ssid in self._connect_failures:
+                row.set_row_state(WifiRowState.FAILED, self._connect_failures[ssid])
+            else:
+                row.set_row_state(WifiRowState.IDLE)
+
+    def _on_wifi_state_change(self, source, ssid: str, status: DeviceStatus) -> None:
+        self._apply_wifi_row_states()
+        self._sync_tile()
+        self._sync_loader()
+        self._scan_if_radio_ready()
+
+    def _show_connect_failure(self, ssid: str, text: str) -> None:
+        self._connect_failures[ssid] = text
+
+        def clear() -> bool:
+            if self._connect_failures.get(ssid) == text:
+                del self._connect_failures[ssid]
+                self._apply_wifi_row_states()
+            return False
+
+        GLib.timeout_add(UIConstants.FAILURE_DISPLAY_MS, clear)
+
+    def _disconnect_wifi(self) -> None:
+        self._connect_target = None
+        if self.wifi_dev is None or not self.wifi_dev.disconnect_network():
+            logger.warning("Failed to disconnect")
+        self._apply_wifi_row_states()
+        self._sync_loader()
 
     def _do_toggle_wifi(self, switch: Gtk.Switch, pspec: Any) -> None:
         if not self._is_initialized:
@@ -963,28 +1352,19 @@ class Network(TileSimpleWithMenu):
             switch.set_active(not enabled)
             self.wifi_toggle.handler_unblock(self.wifi_handler_id)
 
-    def _on_ap_list_change(self, source: NetworkService) -> None:
+    def _on_ap_list_change(self, source: WifiDevice) -> None:
+        # a pending rescan shows the final list in one go when it finishes
+        if self._wifi_rescan_pending:
+            return
+
         try:
-            wifi_list = self.wifi_dev.get_networks()
-            self.list_manager.update(wifi_list)
+            self._refresh_wifi_list()
         except Exception as e:
             logger.error(f"Error updating access point list: {e}")
-            self.list_manager._clear()
 
     def _on_connection_change(
         self, source: NetworkService, device: EthernetDevice | WifiDevice | None
     ) -> None:
-
-        if device is None:
-            self._update_visuals("", DeviceStatus.UNKNOWN, ConnectionType.NONE)
-            return
-
-        conn_type = device.CONNECTION_TYPE
-        status = device.get_state()
-        if conn_type == ConnectionType.WIFI:
-            name = device.active_ssid
-        elif conn_type == ConnectionType.ETHERNET:
-            name = EthernetDevice._ethernet_display_name(device)
 
         # wire up new device
         if (
@@ -993,15 +1373,33 @@ class Network(TileSimpleWithMenu):
         ):
             self._primary_device.disconnect(self._primary_device_singal_id)
 
-        self._primary_device_singal_id = device.connect(
-            "state-changed", self._on_primary_device_state_change, conn_type
-        )
+        self._primary_device_singal_id = None
         self._primary_device = device
-        self._on_primary_device_state_change(device, name, status, conn_type)
-        logger.info(f"Updating primary connection -> {name} status: {status}")
+        if device is not None:
+            self._primary_device_singal_id = device.connect(
+                "state-changed", lambda *_: self._sync_tile()
+            )
+            logger.info(f"Updating primary connection -> status: {device.state}")
 
-    def _on_primary_device_state_change(self, device, name, status, conn_type):
-        self._update_visuals(name, status, conn_type)
+        self._sync_tile()
+
+    def _sync_tile(self) -> None:
+        device = self._primary_device
+        if device is None or device.state != DeviceStatus.CONNECTED:
+            # nothing's up, the wifi device has the more interesting story to tell
+            device = self.wifi_dev or device
+
+        if device is None:
+            self._update_visuals("", DeviceStatus.NO_DEVICE, ConnectionType.NONE)
+            return
+
+        conn_type = device.CONNECTION_TYPE
+        if conn_type == ConnectionType.WIFI:
+            name = device.active_ssid
+        else:
+            name = EthernetDevice._ethernet_display_name(device)
+
+        self._update_visuals(name, device.state, conn_type)
 
     def _update_visuals(
         self, name: str, status: DeviceStatus, conn_type: ConnectionType
@@ -1020,27 +1418,16 @@ class Network(TileSimpleWithMenu):
         self.tile_label.set_label(meta["text"])
         self.icon.set_icon(meta["icon"])
 
-        self._update_wifi_toggle_state(status)
-
-    def _update_wifi_toggle_state(self, status: DeviceStatus) -> None:
-        # programmatic change, prevent callback
-        self.wifi_toggle.handler_block(self.wifi_handler_id)
-
-        if status == DeviceStatus.DEVICE_OFF:
-            self.wifi_toggle.set_active(False)
-        elif status in [
-            DeviceStatus.DISCONNECTED,
-            DeviceStatus.CONNECTING,
-            DeviceStatus.CONNECTED,
-        ]:
-            self.wifi_toggle.set_active(True)
-
-        self.wifi_toggle.handler_unblock(self.wifi_handler_id)
-
     def _on_connection_result(
         self, source: NetworkService, ssid: str, result: ConnectionResult, message: str
     ) -> None:
+        if self._connect_target == ssid:
+            self._connect_target = None
+
         if result == ConnectionResult.INVALID_PASSWORD:
+            self._show_connect_failure(
+                ssid, self.CONNECTION_FAILURES[ConnectionResult.INVALID_PASSWORD]
+            )
             self._show_password_dialog(ssid, "Incorrect password. Please try again.")
 
         elif result == ConnectionResult.SUCCESS:
@@ -1050,6 +1437,14 @@ class Network(TileSimpleWithMenu):
             if self.password_dialog:
                 self.password_dialog.destroy()
                 self.password_dialog = None
+
+        else:
+            self._show_connect_failure(
+                ssid, self.CONNECTION_FAILURES.get(result, "Couldn't connect")
+            )
+
+        self._apply_wifi_row_states()
+        self._sync_loader()
 
     def _handle_network_connect(self, ssid: str, password: str | None = None) -> None:
         try:
@@ -1062,16 +1457,23 @@ class Network(TileSimpleWithMenu):
                 logger.info(f"Already connected to {ssid}")
 
             elif result == ConnectionResult.NETWORK_NOT_FOUND:
+                self._show_connect_failure(ssid, self.CONNECTION_FAILURES[result])
                 BaseDialog.show_notification(f"Network '{ssid}' not found")
 
             elif result == ConnectionResult.NO_DEVICE:
                 BaseDialog.show_notification("No WiFi device available")
 
             elif result == ConnectionResult.CONNECTION_FAILED:
+                self._show_connect_failure(ssid, "Couldn't connect")
                 BaseDialog.show_notification(f"Failed to connect to '{ssid}'")
 
             elif result == ConnectionResult.SUCCESS:
+                self._connect_target = ssid
+                self._connect_failures.pop(ssid, None)
                 BaseDialog.show_notification(f"Connecting to {ssid}...")
+
+            self._apply_wifi_row_states()
+            self._sync_loader()
 
         except Exception as e:
             logger.error(f"Error handling network connection: {e}")
