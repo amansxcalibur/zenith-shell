@@ -34,6 +34,9 @@ else:
 
     from modules.core.bottom.shell_wm_x11 import ShellWindowManager
     from modules.core.top.shell_wm_x11 import ShellTopWindowManager
+    from widgets.overrides import enable_tooltip_transparency
+
+    enable_tooltip_transparency()
 
 
 def normalize_path():

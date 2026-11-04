@@ -8,7 +8,30 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Rsvg", "2.0")
-from gi.repository import Rsvg, Gtk # type: ignore
+from gi.repository import GObject, Rsvg, Gtk  # type: ignore
+
+
+def enable_tooltip_transparency():
+    """
+    Gives GTK's tooltip window an alpha channel, so its rounded corners aren't
+    black. GTK only does this itself if the window manager supports
+    `_GTK_FRAME_EXTENTS`, which i3 doesn't.
+
+    This should be called before the first tooltip is shown: the window can't change
+    its visual once realized. GTK creates it on the first hover over a widget with a
+    tooltip, just before asking that widget for the tooltip's contents.
+    """
+
+    def on_query_tooltip(*_):
+        for window in Gtk.Window.list_toplevels():
+            if type(window).__name__ == "GtkTooltipWindow":
+                visual = window.get_screen().get_rgba_visual()
+                if visual is not None:
+                    window.set_visual(visual)
+                return False  # done, remove this hook
+        return True
+
+    GObject.add_emission_hook(Gtk.Widget, "query-tooltip", on_query_tooltip)
 
 
 class PatchedX11Window(X11Window):
