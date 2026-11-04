@@ -6,7 +6,7 @@ from .scale_box import AnimatedScaleBox
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib
+from gi.repository import GLib  # type: ignore
 
 
 class ElasticStack(AnimatedScaleBox):

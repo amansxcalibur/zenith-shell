@@ -95,9 +95,10 @@ class Pill(Window, Service):
             "last_x": 0,
             "last_y": 0,
         }
-        self._animations_enabled = (
-            power_profiles_service.active_profile != "power-saver"
-        )
+        # self._animations_enabled = (
+        #     power_profiles_service.active_profile != "power-saver"
+        # )
+        self._animations_enabled = True
 
         # pill-compact
         self.active_window = ActiveWindow()
@@ -189,10 +190,13 @@ class Pill(Window, Service):
                 GLib.idle_add(self.clipboard.focus_search)
 
     def _on_power_profile_changed(self, *_):
-        self._animations_enabled = (
-            power_profiles_service.active_profile != "power-saver"
-        )
-        self.stack.set_bounce(self._animations_enabled)
+        # self._animations_enabled = (
+        #     power_profiles_service.active_profile != "power-saver"
+        # )
+        # self.stack.set_bounce(self._animations_enabled)
+
+        # temporarily allowing always
+        ...
 
     def focus_pill(self):
         if IS_WAYLAND:

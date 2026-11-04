@@ -376,6 +376,14 @@ class RotateBox(Container):
             and self._child
             and self._child.get_visible()
         ):
+            # The offscreen window has its own frame clock (it isn't a child of
+            # the toplevel), so it normally repaints *after* this draw and the
+            # surface still holds the previous frame's layout. While the child
+            # resizes every frame (stack interpolate_size, scale animation) that
+            # composites stale content against the current clip/allocation,
+            # and how stale depends on how the two clocks line up: jitter.
+            # Paint pending offscreen damage now so content matches this frame.
+            self._offscreen_window.process_updates(False)
             surface = Gdk.offscreen_window_get_surface(self._offscreen_window)
             # clip to the child's area, not the surface: subclasses (ScaleBox) may
             # keep the offscreen surface larger than the child to avoid reallocations
