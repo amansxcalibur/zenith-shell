@@ -7,7 +7,6 @@ from fabric.widgets.circularprogressbar import CircularProgressBar
 
 import icons
 from config.config import config
-from widgets.animated_scale import AnimatedScale
 from widgets.popup_window import SharedPopupWindow
 from widgets.material_label import MaterialIconLabel
 from services.metrics import MetricsProvider
@@ -18,7 +17,9 @@ from gi.repository import GLib  # type: ignore
 
 
 class MetricItem(Box):
-    def __init__(self, icon_symbol, style_class, vertical, bar_size):
+    ALERT_THRESHOLD = 90  # percent
+
+    def __init__(self, icon_symbol, style_class, bar_size):
         super().__init__(name=f"metric-{style_class}-item", orientation="h")
 
         self.icon = MaterialIconLabel(
@@ -34,20 +35,14 @@ class MetricItem(Box):
             style_classes=style_class,
             child=self.icon,
         )
-        self.level = Label(name="metrics-level", style_classes=style_class, label="0%")
-        self.revealer = Revealer(
-            transition_duration=250,
-            transition_type="slide-left" if not vertical else "slide-down",
-            child=self.level,
-        )
-
         self.add(self.circle)
-        self.add(self.revealer)
 
-    def update(self, value, vertical):
+    def update(self, value):
         self.circle.set_value(value / 100.0)
-        rounded = round(value)
-        self.level.set_label(f"{rounded}" if vertical else f"{rounded}%")
+        if value >= self.ALERT_THRESHOLD:
+            self.circle.add_style_class("alert")
+        else:
+            self.circle.remove_style_class("alert")
 
 
 class MetricsSmall(Button):
@@ -57,77 +52,28 @@ class MetricsSmall(Button):
         super().__init__(name="metrics-small", **kwargs)
         self.service = MetricsProvider()
 
-        self.cpu = MetricItem(icons.cpu.symbol(), "cpu", config.VERTICAL, self.BAR_SIZE)
-        self.ram = MetricItem(
-            icons.memory.symbol(), "ram", config.VERTICAL, self.BAR_SIZE
-        )
-        self.disk = MetricItem(
-            icons.disk.symbol(), "disk", config.VERTICAL, self.BAR_SIZE
-        )
-
-        self.metrics_list = [self.disk, self.ram, self.cpu]
+        self.cpu = MetricItem(icons.cpu.symbol(), "cpu", self.BAR_SIZE)
+        self.ram = MetricItem(icons.memory.symbol(), "ram", self.BAR_SIZE)
+        self.disk = MetricItem(icons.disk.symbol(), "disk", self.BAR_SIZE)
 
         self.main_box = Box(
             orientation="v" if config.VERTICAL else "h",
-            children=self.metrics_list,
+            children=[self.disk, self.ram, self.cpu],
         )
         self.children = self.main_box
 
-        self.connect("enter-notify-event", self.on_mouse_enter)
-        self.connect("leave-notify-event", self.on_mouse_leave)
         self.service.connect("metrics-changed", self.update_metrics)
 
         self.popup_win = SharedPopupWindow()
         self.popup_win.add_child(pointing_widget=self, child=Metrics())
 
-        self.hide_timer = None
-        self.hover_counter = 0
-
         if config.VERTICAL:
             self.add_style_class("vertical")
 
-    # Revealing is disabled in favour of interruption free popup placement
-    def on_mouse_enter(self, widget, event):
-        ...
-        # self.hover_counter += 1
-        # if self.hide_timer:
-        #     GLib.source_remove(self.hide_timer)
-        #     self.hide_timer = None
-        # for m in self.metrics_list:
-        #     m.revealer.set_reveal_child(True)
-
-    def on_mouse_leave(self, widget, event):
-        ...
-        # self.hover_counter = max(0, self.hover_counter - 1)
-        # if self.hover_counter == 0:
-        #     if self.hide_timer:
-        #         GLib.source_remove(self.hide_timer)
-        #     self.hide_timer = GLib.timeout_add(100, self.hide_revealer)
-
-    def hide_revealer(self):
-        # for m in self.metrics_list:
-        #     m.revealer.set_reveal_child(False)
-        # self.hide_timer = None
-        return False
-
     def update_metrics(self, source, cpu, mem, disk):
-        self.cpu.update(cpu, config.VERTICAL)
-        self.ram.update(mem, config.VERTICAL)
-        self.disk.update(disk, config.VERTICAL)
-
-
-class MetricsSliderMaterial3(AnimatedScale):
-    def __init__(self, orientation="h", **kwargs):
-        super().__init__(
-            name="control-slider-mui",
-            orientation=orientation,
-            h_expand=True,
-            has_origin=True,
-            inverted=orientation != "h",
-            style_classes="" if orientation == "h" else "vertical",
-            increments=(0.01, 0.1),
-            **kwargs,
-        )
+        self.cpu.update(cpu)
+        self.ram.update(mem)
+        self.disk.update(disk)
 
 
 class Battery(Button):
@@ -256,8 +202,3 @@ class Battery(Button):
             self.bat_circle.remove_style_class("low-bat")
             self.bat_icon.remove_style_class("alert")
             self.bat_circle.remove_style_class("alert")
-
-        # if is_full:
-        #     self.bat_circle.add_style_class("full-bat")
-        # else:
-        #     self.bat_circle.remove_style_class("full-bat")

@@ -3,9 +3,6 @@
   padding: 0px;
   min-width: 100px;
   border-radius: 20px;
-  /*margin-top: 4px;*/
-  /* margin-top: 3px;
-    margin-bottom: 3px; */
 }
 
 #metrics-small.vertical {
@@ -33,7 +30,6 @@
 
 #metrics-circle {
   color: var(--surface-bright);
-  /* border: 3px solid var(--primary); */
   border: 3px solid var(--primary);
 }
 
@@ -47,7 +43,6 @@
 
 .metrics-icon {
   font-size: 20px;
-  /* color: var(--foreground); */
 }
 
 #bat-icon {
@@ -79,7 +74,8 @@
   color: var(--foreground);
 }
 
-#metrics-icon.alert {
+#bat-icon.alert,
+#metrics-circle.alert label {
   color: var(--red-dim);
 }
 
@@ -89,79 +85,6 @@
 }
 .light #metrics-level {
   color: var(--foreground);
-}
-
-#metrics-sep {
-  min-width: 4px;
-}
-
-#network-icon-label {
-  color: var(--foreground);
-  font-size: 20px;
-  padding: 4px;
-  border-radius: 11px;
-  transition: all 0.1s ease;
-}
-
-#download-label {
-  color: var(--green);
-  font-size: 14px;
-  font-weight: bold;
-  padding: 4px;
-  border-radius: 11px;
-  transition: all 0.1s ease;
-}
-
-#download-label.urgent {
-  color: var(--shadow);
-}
-
-#network-icon-label.urgent {
-  color: var(--shadow);
-}
-
-#button-bar.download {
-  background-color: var(--green);
-}
-
-#button-bar.upload {
-  background-color: var(--yellow);
-}
-
-#download-icon-label {
-  color: var(--green);
-  font-size: 16px;
-}
-
-#download-icon-label.urgent {
-  color: var(--shadow);
-}
-
-#upload-icon-label {
-  color: var(--yellow);
-  font-size: 16px;
-}
-
-#upload-label {
-  color: var(--yellow);
-  font-size: 14px;
-  font-weight: bold;
-  padding: 4px;
-  border-radius: 11px;
-  transition: all 0.1s ease;
-}
-
-#upload-label.urgent {
-  color: var(--shadow);
-}
-
-#upload-icon-label.urgent {
-  color: var(--shadow);
-}
-
-.full-bat {
-  border: var(--green);
-  color: var(--green);
 }
 
 .low-bat {
@@ -186,23 +109,27 @@
   }
 }
 
-#progress-bar trough {
-  min-width: 40px;
-  min-height: 200px;
-  background-color: var(--surface-bright);
-  border-radius: 10px;
-}
-#progress-bar highlight {
-  background-color: var(--primary);
-  border-radius: 10px;
-}
-#progress-bar slider {
-  background-color: var(--on-primary);
-}
-
 #metric-graph-container {
   border: 2px solid var(--surface-bright);
   border-radius: 10px;
+}
+
+.metrics-graph {
+  color: var(--outline);
+}
+.light .metrics-graph {
+  color: var(--surface-bright);
+}
+
+.metrics-graph-value {
+  font-weight: bold;
+}
+
+.metrics-graph-detail {
+  color: var(--outline);
+}
+.light .metrics-graph-detail {
+  color: var(--foreground);
 }
 
 #metrics {
@@ -229,6 +156,7 @@
   background-color: var(--shadow);
   border-radius: 20px;
   padding: 0 12px;
+  min-height: 44px;
 }
 
 .metrics-sub-text {
@@ -255,18 +183,144 @@
     3px 0 0 2px var(--shadow);
 }
 
-#cpu-expressive-shape {
-  background-color: var(--surface-bright);
+#metrics-load-shape {
+  color: var(--surface-semi-bright);
+  border-color: var(--surface-bright);
+  transition: color 400ms ease;
 }
-.light #cpu-expressive-shape {
-  background-color: var(--primary);
+.light #metrics-load-shape {
+  color: var(--primary);
+}
+#metrics-load-shape.alert {
+  color: var(--error-container);
+  border-color: var(--error-dim);
 }
 
-#metrics-radial-inner-shape {
-  color: var(--surface-semi-bright);
+#metrics-stat-shape {
+  color: var(--surface-bright);
 }
-.light #metrics-radial-inner-shape {
-  color: var(--primary);
+#metrics-stat-shape.alert {
+  color: var(--error-container);
+}
+
+.metrics-main-label.alert,
+.light .metrics-main-label.alert,
+.metrics-sub-text.alert,
+.light .metrics-sub-text.alert {
+  color: var(--on-error-container);
+}
+
+.metrics-cpu-name {
+  font-size: 12px;
+}
+
+.metrics-alert-icon {
+  color: var(--red-dim);
+}
+
+#metrics-card {
+  background-color: var(--shadow);
+  border-radius: 28px;
+  padding: 12px;
+}
+
+#metrics-page-tabs {
+  background-color: var(--surface-semi-bright);
+  border-radius: 999px;
+  padding: 3px;
+}
+.light #metrics-page-tabs {
+  background-color: var(--surface-variant);
+}
+
+/* the active background is the morphing pill drawn by PageTabs */
+.metrics-sort.metrics-page-tab,
+.metrics-sort.metrics-page-tab:hover,
+.metrics-sort.metrics-page-tab.active {
+  background-color: transparent;
+  border-radius: 999px;
+  font-size: 13px;
+  padding: 4px 10px;
+  transition: color 200ms ease;
+}
+
+.metrics-tile {
+  background-color: var(--surface-semi-bright);
+  border-radius: 20px;
+  padding: 8px 12px;
+}
+.light .metrics-tile {
+  background-color: var(--surface-variant);
+}
+
+.metrics-tile-value {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.metrics-stat-name {
+  color: var(--outline);
+  font-size: 12px;
+}
+.light .metrics-stat-name {
+  color: var(--foreground);
+}
+
+.metrics-sort.active .metrics-alert-icon {
+  color: var(--on-primary);
+}
+.light .metrics-sort.active .metrics-alert-icon {
+  color: var(--surface);
+}
+
+#metrics-process-panel {
+  background-color: var(--shadow);
+  border-radius: 20px;
+  padding: 10px;
+}
+
+.metrics-sort {
+  background-color: var(--surface-semi-bright);
+  color: var(--foreground);
+  border-radius: 8px;
+  padding: 2px 10px;
+  min-height: 0;
+  font-size: 12px;
+  transition: all 200ms ease;
+}
+.metrics-sort:hover {
+  border-radius: 14px;
+}
+.metrics-sort.active {
+  background-color: var(--primary);
+  color: var(--on-primary);
+  border-radius: 14px;
+}
+.light .metrics-sort.active {
+  color: var(--surface);
+}
+
+.metrics-legend {
+  font-size: 12px;
+}
+
+.metrics-dot {
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: 4px;
+}
+.metrics-dot.used,
+.metrics-dot.down {
+  background-color: var(--primary);
+}
+.metrics-dot.cache {
+  background-color: alpha(var(--primary), 0.45);
+}
+.metrics-dot.free {
+  background-color: var(--surface-bright);
+}
+.metrics-dot.up {
+  background-color: var(--outline);
 }
 
 .metrics-main-label {
