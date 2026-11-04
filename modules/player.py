@@ -3,6 +3,7 @@ from loguru import logger
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
+from fabric.widgets.overlay import Overlay
 from fabric.widgets.button import Button
 from fabric.widgets.centerbox import CenterBox
 
@@ -15,7 +16,7 @@ from services.volume_service import VolumeService
 from services.theme import ThemeMode, ThemeService
 from services.player_service import PlayerManager, PlayerService, get_track_labels
 
-from utils.colors import get_css_variable
+from utils.colors import get_css_variable, hex_to_rgb01
 from utils.helpers import format_accel_to_keybind
 
 from widgets.material_label import MaterialIconLabel
@@ -39,6 +40,17 @@ def format_track_time(seconds: float) -> str:
     if hours:
         return f"{hours}:{minutes:02}:{secs:02}"
     return f"{minutes}:{secs:02}"
+
+
+def card_background(image_path: str | None, scrim_hex: str = "#000000") -> str:
+    # darker on the text side, so the artwork still shows behind the controls
+    red, green, blue = (round(c * 255) for c in hex_to_rgb01(scrim_hex))
+    scrim = (
+        f"linear-gradient(to right, rgba({red}, {green}, {blue}, 0.88),"
+        f" rgba({red}, {green}, {blue}, 0.5))"
+    )
+    image = f", url('{image_path}')" if image_path else ""
+    return f"background-image: {scrim}{image}"
 
 
 class PlayerAudioScaleMaterial3(AnimatedScale):
@@ -93,7 +105,7 @@ class PlayerSource(Button):
         self.toggle = False
         self.quick_settings_slot = None  # stamped in by PopSlot
 
-        MAX_AUDIO_DEVICE_NAME_CHARS = 15
+        MAX_AUDIO_DEVICE_NAME_CHARS = 14
         device_name = self._volume_service.get_current_device_name()
 
         self.player_icon = Svg(
@@ -127,7 +139,7 @@ class PlayerSource(Button):
         )
         self.volume_scale = PlayerAudioScaleMaterial3(service_instance=service)
         self.image_container = Box(
-            style="background-position: center; background-size: cover; border-radius: 15px",
+            style="background-position: center; background-size: cover; border-radius: 20px",
             v_align="start",
             size=90,
         )
@@ -243,7 +255,6 @@ class PlayerSource(Button):
     def update_theme(self, theme_json, mode: ThemeMode):
         if theme_json:
             primary_color = theme_json["colors"]["primary"][mode.value]["color"]
-            primary_color_dark = theme_json["colors"]["primary"]["dark"]["color"]
             surface_container_high_color = theme_json["colors"][
                 "surface_container_high"
             ][mode.value]["color"]
@@ -256,10 +267,16 @@ class PlayerSource(Button):
             foreground_color = theme_json["colors"]["on_background"][mode.value][
                 "color"
             ]
+            # sits on the always-dark player card, whatever the shell's mode
+            chip_color = theme_json["colors"]["secondary_container"]["dark"]["color"]
+            on_chip_color = theme_json["colors"]["on_secondary_container"]["dark"][
+                "color"
+            ]
         else:
             colors_path = f"{ROOT_DIR}/styles/colors.css"
             primary_color = get_css_variable(colors_path, "--primary")
-            primary_color_dark = primary_color
+            chip_color = primary_color
+            on_chip_color = get_css_variable(colors_path, "--on-primary")
             surface_container_high_color = get_css_variable(
                 colors_path, "--surface-semi-bright"
             )
@@ -267,7 +284,9 @@ class PlayerSource(Button):
             surface_color = get_css_variable(colors_path, "--surface")
             foreground_color = get_css_variable(colors_path, "--foreground")
 
-        self.audio_source.set_style(f"background-color: {primary_color_dark}")
+        self.audio_source.set_style(
+            f"background-color: {chip_color}; color: {on_chip_color}"
+        )
         self.player_menu.set_style(
             f"background-color: {surface_container_high_color}; color: {foreground_color}"
         )
@@ -304,13 +323,13 @@ class PlayerSource(Button):
 
     def update_artwork(self, art_path):
         self.image_container.set_style(
-            f"background-position: center; background-size: cover; border-radius: 15px; background-image:url('{art_path}')"
+            f"background-position: center; background-size: cover; border-radius: 20px; background-image:url('{art_path}')"
         )
 
 
 class Player(Box):
     def __init__(self, player_service: PlayerService, **kwargs):
-        super().__init__(style_classes="player", orientation="v", spacing=15, **kwargs)
+        super().__init__(style_classes="player", orientation="v", spacing=12, **kwargs)
 
         # vertical class binding from unknown source
         if not config.VERTICAL:
@@ -322,8 +341,15 @@ class Player(Box):
 
         self._flying_overlay = FlyingOverlay.get_shared()
 
-        MAX_CHARS = 30
+        # GTK counts these in the font's average character width, 12px for the song
+        # and 10px for the artist. Both fill the 276px beside the play button, any
+        # more would widen the card.
+        MAX_SONG_CHARS = 23
+        MAX_ARTIST_CHARS = 27
         self.duration = 0.0
+        self._palette = None  # dark scheme colors of the current artwork
+        self._background_image = None
+        self._shuffle_on = False
         self._player_service = player_service
         player = self._player_service._player
         self._service_handlers = []  # (service, handler id), released on destroy
@@ -331,7 +357,7 @@ class Player(Box):
         def _set_initial_bg(
             service: WallpaperService, full_path: str, preview_path: str
         ):
-            self.set_style(f"background-image: url('{preview_path}')")
+            self._set_background_image(preview_path)
             return False
 
         self._wallpaper_signal_id = self._wallpaper_service.connect(
@@ -347,7 +373,11 @@ class Player(Box):
 
         self.player_icon = Svg(
             name=player.props.player_name,
+            size=24,
             h_expand=True,
+            v_expand=True,
+            h_align="center",
+            v_align="center",
             style_classes="player-icon",
             svg_string=getattr(svg, player.props.player_name, svg.disc),
         )
@@ -361,7 +391,7 @@ class Player(Box):
             justification="left",
             h_align="start",
             ellipsization="end",
-            max_chars_width=MAX_CHARS,
+            max_chars_width=MAX_SONG_CHARS,
         )
 
         self.artist = Label(
@@ -369,14 +399,15 @@ class Player(Box):
             label="artist",
             justification="left",
             h_align="start",
-            max_chars_width=MAX_CHARS,
+            ellipsization="end",
+            max_chars_width=MAX_ARTIST_CHARS,
         )
 
         self.music = Box(
             name="music",
             orientation="v",
             h_expand=True,
-            v_expand=True,
+            v_align="center",
             children=[self.song, self.artist],
         )
 
@@ -387,18 +418,31 @@ class Player(Box):
                 name="pause-label", icon_text=icons.play_material.symbol()
             ),
             style_classes="pause-track",
+            v_align="center",
             tooltip_text="Play/Pause",
             on_clicked=lambda b, *_: self.handle_play_pause(),
         )
 
-        self.shuffle_button = Button(
-            name="shuffle-button",
+        # overlaid so the glyph stays level with prev and next when the dot shows
+        shuffle_dot = Box(name="shuffle-dot", h_align="center", v_align="end")
+        shuffle_content = Overlay(
             child=Svg(
                 name="shuffle",
                 style_classes=["material-icon"],
+                size=20,
+                h_expand=True,
                 v_expand=True,
+                h_align="center",
+                v_align="center",
                 svg_string=svg.shuffle,
             ),
+            overlays=shuffle_dot,
+        )
+        shuffle_content.set_overlay_pass_through(shuffle_dot, True)
+
+        self.shuffle_button = Button(
+            name="shuffle-button",
+            child=shuffle_content,
             on_clicked=lambda b, *_: self.handle_shuffle(b),
         )
 
@@ -407,7 +451,6 @@ class Player(Box):
             child=MaterialIconLabel(
                 name="play-previous",
                 style_classes=["material-icon"],
-                FILL=0,
                 icon_text=icons.skip_prev.symbol(),
             ),
             on_clicked=lambda b, *_: self.handle_prev(),
@@ -417,7 +460,6 @@ class Player(Box):
             child=MaterialIconLabel(
                 name="play-next",
                 style_classes=["material-icon"],
-                FILL=0,
                 icon_text=icons.skip_next.symbol(),
             ),
             on_clicked=lambda b, *_: self.handle_next(),
@@ -425,6 +467,9 @@ class Player(Box):
 
         self.position_label = Label(label="0:00", style_classes="player-time")
         self.length_label = Label(label="0:00", style_classes="player-time")
+        # hug the seek bar, the slots hang past the card's padding
+        self.position_label.set_xalign(1)
+        self.length_label.set_xalign(0)
         self.prev_slot = self._create_time_slot(self.prev_button, self.position_label)
         self.next_slot = self._create_time_slot(self.next_button, self.length_label)
 
@@ -448,7 +493,7 @@ class Player(Box):
                 children=[
                     Box(
                         name="source-icon-container",
-                        v_expand=True,
+                        v_align="center",
                         children=self.player_icon,
                     ),
                     Box(h_expand=True),
@@ -461,12 +506,13 @@ class Player(Box):
             ),
             Box(
                 name="details",
+                spacing=12,
                 children=[self.music, self.play_pause_button],
             ),
             Box(
                 name="controls",
                 style_classes="horizontal" if not config.VERTICAL else "vertical",
-                spacing=5,
+                spacing=8,
                 children=(
                     [
                         self.prev_slot,
@@ -490,11 +536,14 @@ class Player(Box):
                                     h_expand=True,
                                     v_expand=True,
                                     v_align="end",
-                                    start_children=[
-                                        self.prev_slot,
-                                        self.next_slot,
-                                        self.shuffle_button,
-                                    ],
+                                    start_children=Box(
+                                        spacing=8,
+                                        children=[
+                                            self.prev_slot,
+                                            self.next_slot,
+                                            self.shuffle_button,
+                                        ],
+                                    ),
                                 )
                             ],
                             end_children=CenterBox(
@@ -642,7 +691,7 @@ class Player(Box):
             self._wallpaper_signal_id = None
 
         def apply(art_path):
-            self.set_style(f"background-image:url('{art_path}')")
+            self._set_background_image(art_path)
             self.audio_source.update_artwork(art_path)
 
         GLib.idle_add(lambda art_path: apply(art_path), art_path)
@@ -650,14 +699,51 @@ class Player(Box):
     def _apply_theme(self, source, theme_json, mode: ThemeMode | None = None):
         if mode is None:
             mode = self._theme_service.theme
-        primary_color = theme_json["colors"]["primary"]["dark"]["color"]
+
+        # the card is always dark, it's text over artwork in either mode
+        def dark(role):
+            return theme_json["colors"][role]["dark"]["color"]
 
         def _apply():
-            self.play_pause_button.set_style(f"background-color: {primary_color}")
-            self.player_icon.set_style(f"color: {primary_color}")
+            self._palette = palette = {
+                "primary": dark("primary"),
+                "on_primary": dark("on_primary"),
+                "on_surface": dark("on_surface"),
+                "on_surface_variant": dark("on_surface_variant"),
+                "scrim": dark("surface_container_lowest"),
+            }
+
+            self._paint_background()
+            self.play_pause_button.set_style(
+                f"background-color: {palette['primary']}; color: {palette['on_primary']}"
+            )
+            self.prev_button.set_style(f"color: {palette['on_surface']}")
+            self.next_button.set_style(f"color: {palette['on_surface']}")
+            self._paint_shuffle_button()
+            self.player_icon.set_style(f"color: {palette['primary']}")
+            self.song.set_style(f"color: {palette['on_surface']}")
+            self.artist.set_style(f"color: {palette['on_surface_variant']}")
+            self.position_label.set_style(f"color: {palette['on_surface']}")
+            self.length_label.set_style(f"color: {palette['on_surface']}")
+            self.wiggly.set_color(hex_to_rgb01(palette["primary"]))
             self.audio_source.update_theme(theme_json, mode)
 
         GLib.idle_add(_apply)
+
+    def _set_background_image(self, image_path: str | None):
+        self._background_image = image_path
+        self._paint_background()
+
+    def _paint_background(self):
+        scrim = self._palette["scrim"] if self._palette else "#000000"
+        self.set_style(card_background(self._background_image, scrim))
+
+    def _paint_shuffle_button(self):
+        palette = self._palette
+        if not palette:
+            return  # the stylesheet's colors apply until a theme arrives
+        color = palette["primary"] if self._shuffle_on else palette["on_surface"]
+        self.shuffle_button.set_style(f"color: {color}")
 
     def _switch_theme_mode(self, service: ThemeService, mode: ThemeMode):
         theme_json = self._player_service.get_theme()
@@ -677,13 +763,12 @@ class Player(Box):
 
     def _update_shuffle_status(self, status):
         def _update():
-            child = self.shuffle_button.get_child()
+            self._shuffle_on = status
             if status:
-                child.set_from_string(svg.disable_shuffle)
-                child.set_name("disable-shuffle")
+                self.shuffle_button.add_style_class("active")
             else:
-                child.set_from_string(svg.shuffle)
-                child.set_name("shuffle")
+                self.shuffle_button.remove_style_class("active")
+            self._paint_shuffle_button()
             return False
 
         GLib.idle_add(_update)
@@ -810,7 +895,7 @@ class Placeholder(Box):
         def _set_initial_bg(
             service: WallpaperService, full_path: str, preview_path: str | None
         ):
-            self.set_style(f"background-image:url('{preview_path}')")
+            self.set_style(card_background(preview_path))
             return False
 
         self._wallpaper_signal_id = self._wallpaper_service.connect(
@@ -857,14 +942,16 @@ class PlayerContainer(Box):
         )
 
         self.player_switch_container = CenterBox(
-            name="player-switch-container",
+            name="player-switcher",
             orientation="h",
             style_classes=(
                 "horizontal-player" if not config.VERTICAL else "vertical-player"
             ),
+            h_align="center",
+            v_align="end",
             center_children=[],
         )
-        self.children = [self.stack, self.player_switch_container]
+        self.children = Overlay(child=self.stack, overlays=self.player_switch_container)
 
         # track UI instances: player_name -> Player widget
         self.player_widgets = {}
@@ -872,18 +959,16 @@ class PlayerContainer(Box):
         self.init_players()
 
     def init_players(self):
-        """Create UI instances of existing players"""
         self._services = self.manager.get_all_services()
         for service in self._services:
             self.on_new_player(self.manager, service, self._services[service])
 
     def on_new_player(self, manager, player_name: str, player_service: PlayerService):
-        """Called when PlayerManager creates a new PlayerService"""
-        logger.info(f"Creating UI for player: {player_name}")
+        logger.info(f"Creating widget for player: {player_name}")
 
         # avoid duplicate widget creation
         if player_name in self.player_widgets:
-            logger.warning(f"UI for {player_name} already exists, skipping")
+            logger.warning(f"Widget for {player_name} already exists, skipping")
             return
 
         player_widget = Player(player_service=player_service)
@@ -957,7 +1042,6 @@ class PlayerContainer(Box):
         self.update_player_list()
 
     def update_player_list(self):
-        """Update active state of player switch buttons"""
         curr = self.stack.get_visible_child()
         if not curr:
             return

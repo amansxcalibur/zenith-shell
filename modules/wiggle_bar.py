@@ -13,10 +13,17 @@ from gi.repository import Gtk, Gdk, GLib  # type: ignore
 
 
 class WigglyScale(Gtk.DrawingArea, Service):
-    MAX_AMPLITUDE = 2
-    AMPLITUDE_SPEED = 24.0  # per second
-    WAVE_SPEED = 3.0  # radians per second
-    SLIDER_DIAMETER = 6
+    MAX_AMPLITUDE = 3
+    AMPLITUDE_SPEED = 12.0  # per second
+    WAVE_SPEED = 4.0  # radians per second
+    WAVELENGTH = 32
+    STROKE_WIDTH = 4
+    TRACK_GAP = 4  # between the handle and either track
+    INACTIVE_ALPHA = 0.3
+    HANDLE_WIDTH = 4
+    HANDLE_PRESSED_WIDTH = 2
+    HANDLE_SPEED = 16.0  # px per second
+    HEIGHT = 32
     DRAG_THRESHOLD_PX = 1
     HOLD_TO_DRAG_MS = 200
 
@@ -39,13 +46,15 @@ class WigglyScale(Gtk.DrawingArea, Service):
         self.phase = 0
         self.value = 0.0
         self.amplitude = self.MAX_AMPLITUDE
+        self._handle_width = self.HANDLE_WIDTH
+        self._color = (1.0, 1.0, 1.0)
         self._dragging = False
         self._press = None  # (x, value before the press) while button 1 is held
         self._hold_source_id = None
         self._last_frame_time = None
         self.pause = False
 
-        self.set_size_request(-1, 20)
+        self.set_size_request(-1, self.HEIGHT)
         self.connect("draw", self.on_draw)
 
         # mouse events
@@ -68,10 +77,14 @@ class WigglyScale(Gtk.DrawingArea, Service):
 
         self.show_all()
 
+    def set_color(self, rgb: tuple[float, float, float]):
+        self._color = rgb
+        self.queue_draw()
+
     def update_value_from_x(self, x):
-        # the inverse of on_draw, which keeps the slider centered on the pointer
-        travel = self.get_allocated_width() - self.SLIDER_DIAMETER
-        self.value = max(0.0, min(1.0, (x - self.SLIDER_DIAMETER / 2) / travel))
+        # the inverse of on_draw, which keeps the handle centered on the pointer
+        travel = self.get_allocated_width() - self.HANDLE_WIDTH
+        self.value = max(0.0, min(1.0, (x - self.HANDLE_WIDTH / 2) / travel))
         self.queue_draw()
 
     def on_button_press(self, widget, event):
@@ -141,75 +154,88 @@ class WigglyScale(Gtk.DrawingArea, Service):
         elapsed = now - (self._last_frame_time or now)
         self._last_frame_time = now
 
-        flat = self.pause or self._press is not None
+        pressed = self._press is not None
+        flat = self.pause or pressed
         target = 0 if flat else self.MAX_AMPLITUDE
+        handle_target = self.HANDLE_PRESSED_WIDTH if pressed else self.HANDLE_WIDTH
 
-        if self.amplitude != target:
-            max_step = self.AMPLITUDE_SPEED * elapsed
-            delta = target - self.amplitude
-            self.amplitude += max(-max_step, min(max_step, delta))
-        elif flat:
+        if self.amplitude == target and self._handle_width == handle_target and flat:
             return True  # nothing is moving, skip the redraw
+
+        self.amplitude = self._step_towards(
+            self.amplitude, target, self.AMPLITUDE_SPEED * elapsed
+        )
+        self._handle_width = self._step_towards(
+            self._handle_width, handle_target, self.HANDLE_SPEED * elapsed
+        )
 
         if not flat:
             self.phase += self.WAVE_SPEED * elapsed
         self.queue_draw()
         return True
 
+    @staticmethod
+    def _step_towards(current, target, max_step):
+        return current + max(-max_step, min(max_step, target - current))
+
     def on_draw(self, widget, cr):
-        alloc_width = self.get_allocated_width()
+        width = self.get_allocated_width()
         height = self.get_allocated_height()
         center_y = height / 2
-        frequency = 0.3
-        slider_diameter = self.SLIDER_DIAMETER
-        stroke_width = 2
+        cap = self.STROKE_WIDTH / 2
 
-        # left edge of the slider, which stays fully inside the widget
-        slider_x = round(self.value * max(0, alloc_width - slider_diameter))
+        # the handle stays fully inside the widget at either end
+        travel = max(0, width - self.HANDLE_WIDTH)
+        handle_x = round(self.HANDLE_WIDTH / 2 + self.value * travel)
+        clearance = self._handle_width / 2 + self.TRACK_GAP + cap
 
-        cr.set_line_cap(cairo.LINE_CAP_ROUND)  # rounded line ends
-        cr.set_source_rgb(1, 1, 1)  # color here btw
-        cr.set_line_width(stroke_width)
+        cr.set_line_cap(cairo.LINE_CAP_ROUND)
+        cr.set_line_width(self.STROKE_WIDTH)
 
-        # init_x = stroke_width
-        init_y = center_y + self.amplitude * math.sin(
-            (stroke_width * frequency) + self.phase
-        )
-        cr.move_to(stroke_width, init_y)
-        for x in range(stroke_width, slider_x):
-            y = center_y + self.amplitude * math.sin((x * frequency) + self.phase)
-            cr.line_to(x, y)
+        cr.set_source_rgb(*self._color)
+        self._draw_active_track(cr, cap, handle_x - clearance, center_y)
 
+        inactive_start = handle_x + clearance
+        inactive_end = width - cap
+        self._draw_handle(cr, handle_x, height)
+
+        if inactive_start < inactive_end:
+            # the stop indicator marks the end of the track
+            if inactive_end - inactive_start >= self.STROKE_WIDTH:
+                cr.arc(inactive_end, center_y, cap, 0, 2 * math.pi)
+                cr.fill()
+
+            cr.set_source_rgba(*self._color, self.INACTIVE_ALPHA)
+            cr.move_to(inactive_start, center_y)
+            cr.line_to(inactive_end, center_y)
+            cr.stroke()
+
+    def _draw_active_track(self, cr, start, end, center_y):
+        if end < start:
+            return
+
+        frequency = 2 * math.pi / self.WAVELENGTH
+        # the wave settles onto the center line before it reaches the handle
+        taper = self.WAVELENGTH / 2
+
+        def wave_y(x):
+            envelope = min(1.0, (end - x) / taper)
+            offset = math.sin(x * frequency + self.phase)
+            return center_y + self.amplitude * envelope * offset
+
+        cr.move_to(start, wave_y(start))
+        for x in range(math.ceil(start), math.ceil(end)):
+            cr.line_to(x, wave_y(x))
+        cr.line_to(end, center_y)
         cr.stroke()
 
-        # hex_color = get_css_variable(f'{info.ROOT_DIR}/styles/colors_player.css', '--foreground-player')
-        # r, g, b = hex_to_rgb01(hex_color)
-        # cr.set_source_rgb(r, g, b)
-
-        rect_width = 6
-        arc_radius = slider_diameter / 2
-        self.draw_rounded_rect(cr, slider_x, height, rect_width, rect_width, arc_radius)
-        cr.fill()
-
-        cr.stroke()
-
-        cr.set_source_rgba(1, 1, 1, 0.5)
-        cr.set_line_width(stroke_width)
-
-        # This is for anti aliasing. When line width becomes 1px and the position is not an integer, two lines of opacity 50% is drawn on two pixel rows.
-        # This moves the line to make it pixel perfect hence not needing anti aliasing
-        # cr.translate(0, 0.5)
-
-        cr.move_to(slider_x + 2 * arc_radius, height / 2)
-        cr.line_to(alloc_width, height / 2)
-
-        cr.stroke()
-
-    def draw_rounded_rect(self, cr, x, y, width, height, radius):
+    def _draw_handle(self, cr, center_x, height):
+        radius = self._handle_width / 2
         cr.new_sub_path()
-        cr.arc(x + width - radius, radius, radius, -math.pi, 0)
-        cr.arc(x + width - radius, y - radius, radius, 0, -math.pi)
+        cr.arc(center_x, radius, radius, -math.pi, 0)
+        cr.arc(center_x, height - radius, radius, 0, math.pi)
         cr.close_path()
+        cr.fill()
 
 
 class WigglyArrow(Gtk.DrawingArea, Service):
@@ -393,7 +419,6 @@ class WigglyArrow(Gtk.DrawingArea, Service):
         cr.line_to(x + radius, y - radius)
 
     def _get_color(self) -> tuple[float, float, float]:
-        """Return the current RGB color (override or from CSS variable)."""
         if self._override_color is not None:
             return self._override_color
 
@@ -404,7 +429,6 @@ class WigglyArrow(Gtk.DrawingArea, Service):
         return hex_to_rgb01(hex_color)
 
     def set_color(self, rgb: tuple[float, float, float] | None, redraw: bool = True):
-        """Override the shape color and optionally trigger a redraw."""
         self._override_color = rgb
         if redraw:
             self.queue_draw()
