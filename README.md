@@ -57,7 +57,7 @@ Run the installer:
 bash <(curl -fsSL https://raw.githubusercontent.com/amansxcalibur/zenith-shell/main/installer/install.sh)
 ```
 
-The installer runs its pre-flight checks first, including network access, build tools, and package availability. It then installs dependencies, creates a Python virtual environment, downloads fonts, and creates the `~/.local/bin/zenith-shell` launcher.
+The installer runs its pre-flight checks first, including network access, build tools, and package availability. It then installs dependencies, creates a Python virtual environment, downloads fonts, and creates the `~/.local/bin/zenith-shell` launcher with tab completion for bash, zsh, and fish.
 
 <details>
 <summary>Want to inspect the installer before running it?</summary>
@@ -88,6 +88,7 @@ Append these options to the installer command when needed:
 | `--wm i3\|sway\|all` | Set up a specific window manager. By default, the installer detects it. |
 | `--dry-run` | Run the checks and show the plan without making changes. |
 | `-y`, `--yes` | Skip prompts and accept installing missing prerequisites, such as Rust or Go. |
+| `-v`, `--verbose` | Show command output as it runs. |
 | `--purge` | For `uninstall` only: also remove tools built from source. |
 
 ### Launch Zenith
@@ -119,12 +120,17 @@ If Zenith does not start as expected, run `zenith-shell setup doctor` to check f
 | Command | What it does |
 | --- | --- |
 | `zenith-shell` | Start the shell. |
+| `zenith-shell stop` / `restart` / `status` | Stop, restart, or check the running shell. |
+| `zenith-shell --version` | Show the installed version. |
 | `zenith-shell setup update` | Fetch the latest changes and install any new dependencies. |
-| `zenith-shell setup sync` | Install missing dependencies for the configured window manager. |
-| `zenith-shell setup doctor` | Show which dependencies are present or missing. |
+| `zenith-shell setup sync` | Install missing dependencies and configure the selected window manager. |
+| `zenith-shell setup doctor` | Check dependencies, the virtual environment, launcher, fonts, and autostart. |
+| `zenith-shell setup logs` | Show the end of the installer log. |
 | `zenith-shell setup uninstall` | Remove Zenith Shell. |
 
-Run `zenith-shell setup --help` to see all setup options. The `setup` commands can be run while the shell is running; restart the shell afterwards to pick up changes.
+Press <kbd>Tab</kbd> after `zenith-shell` to complete commands and options. Open a new terminal after installing. On zsh, add `fpath=(~/.local/share/zsh/site-functions $fpath)` to `~/.zshrc` before `compinit` runs.
+
+Run `zenith-shell setup` to pick a command from a menu, or `zenith-shell setup <command> --help` to see its options. The `setup` commands can be run while the shell is running; restart the shell afterwards to pick up changes.
 
 ### Updating
 
@@ -136,15 +142,15 @@ This fetches the latest commits, shows what's coming, fast-forwards the reposito
 
 ### Switching between i3 and sway
 
-Dependencies are tracked separately for each window manager. If you start with i3 and later move to sway (or the other way around), run the relevant command. For example:
+Dependencies and configuration are handled separately for each window manager. If you start with i3 and later move to sway (or the other way around), run the relevant command. For example:
 
 ```bash
 zenith-shell setup sync --wm sway
 ```
 > [!NOTE]
-> `zenith-shell setup sync` alone should detect and install dependencies. You can specify the window manager via `--wm i3|sway` to be elaborate 
+> `zenith-shell setup sync` alone detects the window manager. Use `--wm i3|sway|all` to choose it yourself. You can run this from either session.
 
-Only missing components are installed. If Zenith starts under a window manager that hasn't been set up yet, it sends a notification pointing you to this command.
+Only missing components are installed. The command also adds Zenith's keybindings and autostart to that window manager's config if they aren't there yet. If you have no config for it, one is created from the system default, without its bar and with any clashing keybindings commented out. An existing config only gets Zenith's lines added.
 
 ### Uninstalling
 
@@ -152,15 +158,15 @@ Only missing components are installed. If Zenith starts under a window manager t
 zenith-shell setup uninstall
 ```
 
-You'll be asked whether to keep `config/config.json`. If you keep it, the file is saved to `~/.config/zenith-shell-backup/` and restored on the next fresh install.
+You'll be asked whether to keep `config/config.json`. If you keep it, the file is saved to `~/.config/zenith-shell-backup/` and restored on the next fresh install. If the install directory has local edits or unpushed commits, the plan warns you and `--yes` refuses to continue.
 
-Add `--purge` to also remove tools the installer built from source: `fabric-cli`, `gray`, `gtk-session-lock`, and `matugen`. System packages are never removed automatically. Instead, the command prints the exact removal command for packages added by the installer, so you can review it first. Any i3/sway configuration lines that mention Zenith are listed for you to remove manually.
+Tools the installer built from source are kept, because other Fabric-based shells may use them. Add `--purge` to remove them too: `fabric-cli`, `gray`, `gtk-session-lock`, and `matugen`. Use it in the same uninstall, because their build files and records are deleted afterwards. System packages are never removed automatically. Instead, the command prints the exact removal command for packages added by the installer, so you can review it first. Any i3/sway configuration lines that mention Zenith, and any symlinks into the install directory, are listed for you to remove manually.
 
 ## Troubleshooting
 
 - **Missing dependencies:** Run `zenith-shell setup doctor` to see what's missing.
 - **Installer issues:** Check the full log at `~/.cache/zenith-shell/install.log`.
-- **Duplicate keybindings:** The installer adds keybindings to your i3/sway config. If you already use the same keys, your window manager may warn about duplicates. Review `~/.config/<i3|sway>/config`.
+- **Duplicate keybindings:** The installer adds keybindings to your i3/sway config. If you already use the same keys, your window manager may warn about duplicates. Review `~/.config/<i3|sway>/config`. Zenith's keybindings use `$mod`; if your config doesn't set it, Zenith sets it to the Super key (`Mod4`).
 - **i3 compositor effects:** Rounded corners, true transparency, and other effects require picom **v12 or newer**. Older or distro-patched builds may warn or lack effects. See the upstream [yshui/picom](https://github.com/yshui/picom) project.
 - **Screen appears black after enabling screen corners:** Disable screen corners until a compatible picom compositor is running. Do not enable screen corners without picom.
 
@@ -207,8 +213,8 @@ Python 3.10+ is required. See `requirements.txt`.
 
 These packages are installed as part of the setup process.
 
-- **Arch Linux:** `base-devel`, `git`, `curl`, `python`, `python-gobject`, `python-cairo`, `gtk3`, `libdbusmenu-gtk3`, `gobject-introspection`, `gnome-bluetooth-3.0`, `brightnessctl`, `playerctl`, `libnotify`, `meson`, `ninja`, `vala`
-- **Ubuntu / Debian:** `build-essential`, `pkg-config`, `git`, `curl`, `meson`, `ninja-build`, `valac`, `python3-dev`, `python3-venv`, `python3-pip`, `libcairo2-dev`, `libgirepository1.0-dev`, `libgtk-3-dev`, `libdbusmenu-gtk3-dev`, `gir1.2-playerctl-2.0`, `brightnessctl`, `libnotify-bin`
+- **Arch Linux:** `base-devel`, `git`, `curl`, `python`, `python-gobject`, `python-cairo`, `gtk3`, `libdbusmenu-gtk3`, `gobject-introspection`, `gnome-bluetooth-3.0`, `brightnessctl`, `playerctl`, `libnotify`, `libnm`, `librsvg`, `libpulse`, `bash-completion`, `meson`, `ninja`, `vala`
+- **Ubuntu / Debian:** `build-essential`, `pkg-config`, `git`, `curl`, `meson`, `ninja-build`, `valac`, `python3-dev`, `python3-venv`, `python3-pip`, `libcairo2-dev`, `libgirepository1.0-dev`, `libgtk-3-dev`, `libdbusmenu-gtk3-dev`, `gir1.2-playerctl-2.0`, `gir1.2-gnomebluetooth-3.0`, `gir1.2-nm-1.0`, `gir1.2-rsvg-2.0`, `pulseaudio-utils`, `bash-completion`, `brightnessctl`, `libnotify-bin`
 
 How the remaining tools are obtained depends on the distribution:
 

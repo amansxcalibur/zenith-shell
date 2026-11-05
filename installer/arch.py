@@ -1,9 +1,7 @@
-"""Arch Linux backend: pacman for repo packages, an AUR helper for the rest."""
-
+import time
 import json
 import shutil
 import tempfile
-import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -51,6 +49,11 @@ class ArchBackend(Backend):
             "brightnessctl",
             "playerctl",
             "libnotify",
+            # imported at startup: the shell crashes without these typelibs
+            "libnm",
+            "librsvg",
+            "libpulse",  # pactl, for volume control
+            "bash-completion",
             "matugen-bin",
             "fabric-cli-git",
             # build dependencies for gray (built from source, see TOOLS)
@@ -229,11 +232,17 @@ class ArchBackend(Backend):
         if not worked:
             warn("AUR lookup failed; assuming non-repo packages are in the AUR.")
         if repo:
-            run(
-                ["pacman", "-S", "--needed", "--noconfirm", *repo],
-                sudo=True,
-                label=f"Installing {len(repo)} packages (pacman)",
-            )
+            try:
+                run(
+                    ["pacman", "-S", "--needed", "--noconfirm", *repo],
+                    sudo=True,
+                    label=f"Installing {len(repo)} packages (pacman)",
+                )
+            except InstallError as exc:
+                raise InstallError(
+                    f"{exc} Download errors usually mean this system is out of date: "
+                    "run `sudo pacman -Syu`, then re-run."
+                ) from exc
         if aur:
             helper = self._ensure_helper()
             run(

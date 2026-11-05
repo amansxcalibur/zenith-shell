@@ -1,5 +1,3 @@
-"""Ubuntu / Debian backend: apt for packages, cargo + meson for the rest."""
-
 import re
 
 from common import (
@@ -28,11 +26,13 @@ FABRIC_CLI_URL = "https://github.com/Fabric-Development/fabric-cli.git"
 GRAY_URL = "https://github.com/Fabric-Development/gray.git"
 GTK_SESSION_LOCK_URL = "https://github.com/Cu3PO42/gtk-session-lock.git"
 
-GTK_SESSION_LOCK_TYPELIBS = (
-    "/usr/lib/girepository-1.0/GtkSessionLock-*.typelib",
-    "/usr/lib/*/girepository-1.0/GtkSessionLock-*.typelib",
-    "/usr/local/lib/*/girepository-1.0/GtkSessionLock-*.typelib",
-)
+
+def typelib_globs(name: str) -> tuple[str, ...]:
+    """Where a library's typelib can live, with or without a multiarch directory."""
+    return tuple(
+        f"{prefix}/girepository-1.0/{name}-*.typelib"
+        for prefix in ("/usr/lib", "/usr/lib/*", "/usr/local/lib", "/usr/local/lib/*")
+    )
 
 
 class UbuntuBackend(Backend):
@@ -58,6 +58,12 @@ class UbuntuBackend(Backend):
             "libgtk-3-dev",
             "libdbusmenu-gtk3-dev",
             "gir1.2-playerctl-2.0",
+            # imported at startup: the shell crashes without these typelibs
+            "gir1.2-gnomebluetooth-3.0",
+            "gir1.2-nm-1.0",
+            "gir1.2-rsvg-2.0",
+            "pulseaudio-utils",  # pactl, for volume control
+            "bash-completion",
             "brightnessctl",
             "libnotify-bin",
         ],
@@ -85,7 +91,8 @@ class UbuntuBackend(Backend):
             ("https://index.crates.io/config.json",),
         ),
         Tool("fabric-cli", "fabric-cli", "core", ("go",), "build_fabric_cli"),
-        Tool("gray", "gray", "core", (), "build_gray"),
+        # gray is only a library, so there is no command to look for
+        Tool("gray", "", "core", (), "build_gray", (), typelib_globs("Gray")),
         Tool(
             "gtk-session-lock",
             "",
@@ -93,7 +100,7 @@ class UbuntuBackend(Backend):
             (),
             "build_gtk_session_lock",
             (),
-            GTK_SESSION_LOCK_TYPELIBS,
+            typelib_globs("GtkSessionLock"),
         ),
     ]
 
@@ -144,7 +151,7 @@ class UbuntuBackend(Backend):
             [
                 "bash",
                 "-c",
-                "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal",
+                "set -o pipefail; curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal",
             ],
             label="Installing Rust toolchain (rustup)",
         )

@@ -9,7 +9,13 @@ HOSTNAME = os.uname().nodename
 
 WAYLAND_DISPLAY = os.environ.get("WAYLAND_DISPLAY")
 XDG_SESSION_TYPE = os.environ.get("XDG_SESSION_TYPE", "").lower()
-IS_WAYLAND = bool(WAYLAND_DISPLAY) or XDG_SESSION_TYPE == "wayland"
+# the installer sets this to write one WM's config from any session (see config.bootstrap)
+BOOTSTRAP_WM = os.environ.get("ZENITH_BOOTSTRAP_WM")
+IS_WAYLAND = (
+    BOOTSTRAP_WM == "sway"
+    if BOOTSTRAP_WM
+    else bool(WAYLAND_DISPLAY) or XDG_SESSION_TYPE == "wayland"
+)
 IPC_UTIL = (
     "swaymsg" if IS_WAYLAND else "i3-msg"
 )  # here till fabric i3 reconnection is fixed

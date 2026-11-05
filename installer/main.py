@@ -1,17 +1,9 @@
-"""Zenith Shell installer.
-
-install     full install (default)
-sync        install only what is missing for the selected WM(s)   <- use after switching i3 <-> sway
-update      pull the latest git changes, then sync dependencies and re-apply setup
-doctor      report present / missing dependencies
-uninstall   remove Zenith Shell (optionally keeping your config.json)
-"""
-
 import argparse
+import collections
 import datetime
+import difflib
 import os
 import shutil
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -48,6 +40,22 @@ LOGO = r"""
 |________/|________/|__/  \__/|______/   |__/   |__/  |__/
 """
 
+DATA_HOME = Path(os.environ.get("XDG_DATA_HOME", c.HOME / ".local" / "share"))
+CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME", c.HOME / ".config"))
+ZSH_COMPLETION_DIR = DATA_HOME / "zsh" / "site-functions"
+# shell -> (file in installer/completions, where that shell loads it from)
+COMPLETIONS = {
+    "bash": (
+        "zenith-shell.bash",
+        DATA_HOME / "bash-completion" / "completions" / c.SHELL_NAME,
+    ),
+    "zsh": ("_zenith-shell", ZSH_COMPLETION_DIR / f"_{c.SHELL_NAME}"),
+    "fish": (
+        "zenith-shell.fish",
+        CONFIG_HOME / "fish" / "completions" / f"{c.SHELL_NAME}.fish",
+    ),
+}
+
 FONT_DIR = c.HOME / ".local" / "share" / "fonts" / c.SHELL_NAME
 FONTS = {
     "RobotoFlex.ttf": "https://raw.githubusercontent.com/googlefonts/roboto-flex/main/fonts/RobotoFlex%5BGRAD%2CXOPQ%2CXTRA%2CYOPQ%2CYTAS%2CYTDE%2CYTFI%2CYTLC%2CYTUC%2Copsz%2Cslnt%2Cwdth%2Cwght%5D.ttf",
@@ -71,8 +79,14 @@ def load_backend(name: str):
 # ----------------------------------------------------------------------------
 def step_python_env(backend, upgrade_pip: bool = True) -> None:
     py = c.VENV_DIR / "bin" / "python"
-    if not c.VENV_DIR.exists():
-        cmd = [sys.executable, "-m", "venv"]
+    exists = c.VENV_DIR.exists()
+    if not exists or not c.venv_ok():
+        # We may be running from this very venv, so build from its base interpreter.
+        base = getattr(sys, "_base_executable", sys.executable)
+        cmd = [base, "-m", "venv"]
+        if exists:
+            warn("The virtual environment is broken, rebuilding it.")
+            cmd.append("--clear")
         if backend.VENV_SYSTEM_SITE:
             cmd.append("--system-site-packages")  # see python-gobject from pacman
         run([*cmd, c.VENV_DIR], label="Creating virtual environment")
@@ -106,17 +120,64 @@ def step_fonts() -> None:
 LAUNCHER = r"""#!/usr/bin/env bash
 cd "@INSTALL_DIR@" || exit 1
 
+PROCESS='@PROCESS@'
+COMMANDS=(start stop restart status lock setup help)
+
+running() { pgrep -f "$PROCESS" >/dev/null; }
+
+start_shell() {
+    if running; then
+        echo "zenith-shell is already running (use: zenith-shell restart)"
+        return 0
+    fi
+    "@VENV@/bin/python" main.py &
+    disown
+}
+
+stop_shell() {
+    pkill -f "$PROCESS" || return 1
+    for _ in {1..50}; do
+        running || return 0
+        sleep 0.1
+    done
+    pkill -KILL -f "$PROCESS"
+}
+
 case "${1:-}" in
+    ""|start)
+        start_shell
+        ;;
+    stop)
+        stop_shell || echo "zenith-shell is not running"
+        ;;
+    restart)
+        stop_shell
+        start_shell
+        ;;
+    status)
+        if pids=$(pgrep -f "$PROCESS"); then
+            echo "zenith-shell is running (pid ${pids//$'\n'/, })"
+        else
+            echo "zenith-shell is not running"
+            exit 1
+        fi
+        ;;
     -h|--help|help)
-        cat <<- 'EOF'
+        cat <<'EOF'
 Usage:
-    zenith-shell                  start the shell
+    zenith-shell [start]          start the shell
+    zenith-shell stop             stop the shell
+    zenith-shell restart          restart the shell
+    zenith-shell status           show whether the shell is running
     zenith-shell lock [-f]        lock the screen (-f: return once locked)
-    zenith-shell setup <cmd>      install | sync | update | doctor | uninstall
+    zenith-shell setup <cmd>      install | sync | update | doctor | uninstall | logs
                                   (zenith-shell setup --help for details)
+    zenith-shell -V, --version    show the installed version
     zenith-shell -h, --help       show this message
 EOF
-        exit 0
+        ;;
+    -V|--version)
+        echo "zenith-shell $(git describe --tags --always --dirty 2>/dev/null || echo unknown)"
         ;;
     lock)
         # foreground + exec: xss-lock and swayidle -w watch this process,
@@ -127,17 +188,19 @@ EOF
     setup)
         shift
         export ZENITH_PROG="zenith-shell setup"
+        export ZENITH_DIR="@INSTALL_DIR@"
         py="@VENV@/bin/python"
-        [[ -x "$py" ]] || py=python3
-        case "${1:-}" in
-            ""|-*) [[ "${1:-}" == -h || "${1:-}" == --help ]] || set -- --help ;;
-        esac
+        "$py" -c '' 2>/dev/null || py=python3
         exec "$py" installer/main.py "$@"
         ;;
+    *)
+        echo "zenith-shell: unknown command '$1'" >&2
+        match=$(python3 -c 'import difflib, sys; print(*difflib.get_close_matches(sys.argv[1], sys.argv[2:], 1))' "$1" "${COMMANDS[@]}" 2>/dev/null)
+        [[ -z "$match" ]] || echo "Did you mean: zenith-shell $match" >&2
+        echo "See: zenith-shell --help" >&2
+        exit 2
+        ;;
 esac
-
-"@VENV@/bin/python" main.py "$@" &
-disown
 """
 
 
@@ -147,38 +210,49 @@ def step_launchers() -> None:
     launcher.write_text(
         LAUNCHER.replace("@INSTALL_DIR@", str(c.INSTALL_DIR))
         .replace("@VENV@", str(c.VENV_DIR))
-        .replace("@TITLE@", c.SHELL_TITLE)
+        .replace("@PROCESS@", c.SHELL_PROCESS)
     )
     launcher.chmod(0o755)
     (c.BIN_DIR / f"{c.SHELL_NAME}-setup").unlink(
         missing_ok=True
     )  # installs before the merge had a 2nd launcher
-    ok(f"Launcher: {launcher.name}  (try: zenith-shell setup --help)")
+    ok(f"Launcher: {launcher.name}  (try: zenith-shell --help)")
+
+
+def step_completions() -> None:
+    source_dir = Path(__file__).resolve().parent / "completions"
+    installed = []
+    for shell, (source, target) in COMPLETIONS.items():
+        if not c.have(shell):
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source_dir / source, target)
+        installed.append(shell)
+    ok(f"Tab completion: {', '.join(installed) or 'no supported shell found'}")
 
 
 def step_restore_config() -> None:
     """Fresh install after `uninstall` that kept the settings -> put them back."""
     backup = c.BACKUP_DIR / "config.json"
     target = c.INSTALL_DIR / "config" / "config.json"
-    if backup.exists() and not c.STATE_FILE.exists():
+    if backup.exists() and not c.STATE_FILE.exists() and not target.exists():
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(backup, target)
         ok(f"Restored your previous settings from {backup}")
 
 
-def step_bootstrap(plan) -> None:
-    env = os.environ.copy()
-    env["PYTHONPATH"] = str(c.INSTALL_DIR)
-    env["ZENITH_WM"] = ",".join(
-        plan.wms
-    )  # e.g. "i3,sway" – lets config.bootstrap write the right snippets
-    env["ZENITH_FEATURES"] = ",".join(plan.features)
-    run(
-        [c.VENV_DIR / "bin" / "python", "-m", "config.bootstrap"],
-        cwd=c.INSTALL_DIR,
-        env=env,
-        label="Running Zenith bootstrap",
-    )
+def step_bootstrap(wms: list[str]) -> None:
+    """Write the config for each WM, whichever session the installer is running in."""
+    for wm in wms:
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(c.INSTALL_DIR)
+        env["ZENITH_BOOTSTRAP_WM"] = wm
+        run(
+            [c.VENV_DIR / "bin" / "python", "-m", "config.bootstrap"],
+            cwd=c.INSTALL_DIR,
+            env=env,
+            label=f"Writing {wm} config",
+        )
 
 
 # ----------------------------------------------------------------------------
@@ -215,6 +289,11 @@ def preflight_stage(backend, plan, command):
             plan = backend.plan(plan.wms)
             problems = backend.preflight(plan, command)
 
+    if c.OPTS.dry_run:
+        for problem in fixable:
+            info(f"Would offer to {problem.fix_desc}.")
+        problems = [p for p in problems if not p.fix]
+
     if problems:
         report_problems(problems)
         raise SystemExit(1)
@@ -222,7 +301,7 @@ def preflight_stage(backend, plan, command):
     return plan
 
 
-def show_plan(plan, backend) -> None:
+def show_plan(plan, backend, configure: list[str]) -> None:
     present = len(plan.pkgs) - len(plan.missing_pkgs)
     lines = [
         f"Distro     : {backend.pretty}",
@@ -235,6 +314,9 @@ def show_plan(plan, backend) -> None:
         )  # long lists are wrapped by panel()
     if plan.tools:
         lines.append(f"Build      : {', '.join(t.name for t in plan.tools)}")
+    if configure:
+        lines.append(f"Configure  : {', '.join(configure)}")
+    lines += backend.plan_notes(plan)
     panel("Plan", lines)
 
 
@@ -242,29 +324,10 @@ def show_plan(plan, backend) -> None:
 # doctor
 # ----------------------------------------------------------------------------
 def cmd_doctor(args, backend) -> int:
-    quiet = args.quiet or args.notify
-    if quiet:
-        # Started from the shell: if this WM was already set up (or is unknown) nothing changed -> no work at all.
-        current = c.current_wm()
-        if current is None or current in c.load_state().get("wms", []):
-            return 0
-    wms = (
-        [current] if quiet else c.resolve_wms(args.wm)
-    )  # from the shell: only the WM we are running under
+    wms = c.resolve_wms(args.wm)
     if not wms:
-        return 0
+        raise InstallError("Could not detect i3 or sway. Re-run with --wm i3|sway|all.")
     plan = backend.plan(wms)
-    healthy = not plan.needs_work
-    if quiet:
-        if not healthy:
-            what = [*plan.missing_pkgs, *(t.name for t in plan.tools)]
-            more = " ..." if len(what) > 4 else ""
-            body = f"Missing for {'+'.join(wms)}: {', '.join(what[:4])}{more}. Run `zenith-shell setup sync`, then restart the shell."
-            if args.notify:
-                c.notify("Zenith Shell: some features are unavailable", body)
-            else:
-                print(f"zenith-shell: {body}", file=sys.stderr)
-        return 0 if healthy else 1
 
     lines = []
     for feature in plan.features:
@@ -278,23 +341,51 @@ def cmd_doctor(args, backend) -> int:
     for tool in backend.TOOLS:
         if tool.feature in plan.features:
             lines.append(f"{mark(tool not in plan.tools)} tool: {tool.name}")
-    lines.append(f"{mark(c.VENV_DIR.exists())} virtualenv")
-    panel(
-        f"Doctor – {'+'.join(wms)}",
-        lines,
-        GREEN if healthy and c.VENV_DIR.exists() else YELLOW,
-    )
-    if not healthy:
-        target = "all" if len(wms) > 1 else wms[0]
-        info(f"Fix with:  zenith-shell setup sync --wm {target}")
-    return 0 if healthy else 1
+
+    launcher = c.BIN_DIR / c.SHELL_NAME
+    on_path = str(c.BIN_DIR) in c.ORIGINAL_PATH.split(":")
+    unconfigured = [
+        wm for wm in wms if c.have(wm) and not c.wm_autostart_configured(wm)
+    ]
+    not_installed = [wm for wm in wms if not c.have(wm)]
+    setup_checks = {
+        "virtualenv": c.venv_ok(),
+        "launcher": os.access(launcher, os.X_OK),
+        "fonts": all((FONT_DIR / name).exists() for name in FONTS),
+    }
+    for name, good in setup_checks.items():
+        lines.append(f"{mark(good)} {name}")
+    lines.append(f"{mark(on_path)} {c.BIN_DIR} in PATH")
+    for wm in wms:
+        if wm in not_installed:
+            lines.append(f"{mark(False)} {wm} is not installed")
+        else:
+            lines.append(f"{mark(wm not in unconfigured)} {wm} autostart")
+
+    target = "all" if len(wms) > 1 else wms[0]
+    fixes = []
+    if not all(setup_checks.values()):
+        fixes.append(f"{c.INSTALL_DIR}/installer/install.sh --wm {target}")
+    elif plan.needs_work or unconfigured:
+        fixes.append(f"zenith-shell setup sync --wm {target}")
+    if not_installed:
+        fixes.append(
+            f"install {' and '.join(not_installed)}, then: zenith-shell setup sync --wm {target}"
+        )
+    if not on_path:
+        fixes.append('add to your shell rc: export PATH="$HOME/.local/bin:$PATH"')
+
+    panel(f"Doctor – {'+'.join(wms)}", lines, YELLOW if fixes else GREEN)
+    for fix in fixes:
+        info(f"Fix with:  {fix}")
+    return 1 if fixes else 0
 
 
 # ----------------------------------------------------------------------------
 # install / sync
 # ----------------------------------------------------------------------------
-def notices(plan) -> None:
-    for wm in plan.wms:
+def notices(plan, configured: list[str]) -> None:
+    for wm in configured:
         panel(
             f"{wm} keybindings",
             [
@@ -333,6 +424,18 @@ def notices(plan) -> None:
             ],
             YELLOW,
         )
+    if os.environ.get("SHELL", "").endswith("zsh") and str(
+        ZSH_COMPLETION_DIR
+    ) not in os.environ.get("FPATH", ""):
+        panel(
+            "Tab completion in zsh",
+            [
+                "Add this to ~/.zshrc, before compinit runs:",
+                "",
+                f"  fpath=({ZSH_COMPLETION_DIR} $fpath)",
+            ],
+            YELLOW,
+        )
 
 
 def cmd_install_or_sync(args, backend, command: str) -> int:
@@ -345,9 +448,7 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
 
     wms = c.resolve_wms(args.wm)
     if not wms:
-        raise InstallError(
-            "Could not detect i3 or sway. Re-run with --wm i3|sway|all."
-        )
+        raise InstallError("Could not detect i3 or sway. Re-run with --wm i3|sway|all.")
 
     if command == "install":
         print(f"{BLUE}{LOGO}{NC}", end="")
@@ -362,6 +463,16 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
     )
 
     plan = backend.plan(wms)
+    # sync only touches WM configs that lack our lines; install and update refresh them all
+    targets = (
+        [wm for wm in wms if not c.wm_autostart_configured(wm)]
+        if command == "sync"
+        else wms
+    )
+    # Without the WM there is no system config to start from, and a config holding only
+    # our lines would later hide its defaults ($mod, font, basic keybindings).
+    configure = [wm for wm in targets if c.have(wm)]
+    not_installed = [wm for wm in targets if not c.have(wm)]
     steps = []
     if plan.missing_pkgs:
         steps.append(
@@ -377,16 +488,24 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
             ),
             ("Fonts", lambda p: step_fonts()),
             ("Launcher", lambda p: step_launchers()),
+            ("Tab completion", lambda p: step_completions()),
         ]
         if command == "install":
             steps.append(("Your settings", lambda p: step_restore_config()))
-        steps.append(("Zenith bootstrap", lambda p: step_bootstrap(p)))
+    elif configure and not c.venv_ok():  # bootstrap runs inside the virtualenv
+        steps.append(("Python environment", lambda p: step_python_env(backend)))
+    if configure:
+        steps.append(("Window manager config", lambda p: step_bootstrap(configure)))
 
     c.set_total(len(steps) + 1)
     plan = preflight_stage(backend, plan, command)
-    show_plan(plan, backend)
+    show_plan(plan, backend, configure)
+    for wm in not_installed:
+        warn(
+            f"{wm} is not installed, so its config was skipped. Install it, then run: zenith-shell setup sync --wm {wm}"
+        )
 
-    if command == "sync" and not plan.needs_work:
+    if command == "sync" and not plan.needs_work and not configure:
         c.save_state(wms, backend.name)
         ok(f"Everything for {'+'.join(wms)} is already installed.")
         return 0
@@ -428,7 +547,7 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
             f"Zenith Shell is still running the old components – apply the changes with: {BOLD}zenith-shell restart{NC}"
         )
     if command != "update":
-        notices(plan)
+        notices(plan, configure)
         info(f"Switched window manager later? Run: {BOLD}zenith-shell setup sync{NC}")
     return 0
 
@@ -555,11 +674,10 @@ def cmd_update(args, backend) -> int:
             str(c.INSTALL_DIR / "installer" / "main.py"),
             "update",
             "--after-pull",
-            "--distro",
-            backend.name,
             "--wm",
             args.wm,
             *(["--yes"] if args.yes else []),
+            *(["--verbose"] if args.verbose else []),
         ],
     )
 
@@ -567,18 +685,18 @@ def cmd_update(args, backend) -> int:
 # ----------------------------------------------------------------------------
 # uninstall
 # ----------------------------------------------------------------------------
-def scan_wm_configs() -> tuple[list[Path], list[Path]]:
-    """-> (symlinks pointing into the install dir, other files that mention 'zenith')"""
-    links: list[Path] = []
-    mentions: list[Path] = []
-    install = os.path.realpath(c.INSTALL_DIR)
+def scan_wm_configs() -> list[Path]:
+    """Files in the WM configs that mention zenith or link into the install dir.
+    These belong to the user: we list them for manual cleanup and never delete them."""
+    found: list[Path] = []
+    install = Path(os.path.realpath(c.INSTALL_DIR))
     for wm in c.WM_FEATURE:
         for dirpath, dirnames, filenames in os.walk(c.HOME / ".config" / wm):
             for name in [*dirnames, *filenames]:
                 path = Path(dirpath) / name
                 if path.is_symlink():
-                    if os.path.realpath(path).startswith(install):
-                        links.append(path)
+                    if Path(os.path.realpath(path)).is_relative_to(install):
+                        found.append(path)
                     continue
                 if not path.is_file():
                     continue
@@ -587,14 +705,26 @@ def scan_wm_configs() -> tuple[list[Path], list[Path]]:
                         "zenith" in name.lower()
                         or "zenith" in path.read_text(errors="ignore").lower()
                     ):
-                        mentions.append(path)
+                        found.append(path)
                 except OSError:
                     pass
-    return links, mentions
+    return found
+
+
+def has_local_work() -> bool:
+    """Would deleting the install dir lose commits or edits that exist nowhere else?"""
+    if c.INSTALL_DIR.is_symlink() or not (c.INSTALL_DIR / ".git").is_dir():
+        return False
+    edited = git_out("status", "--porcelain", "--untracked-files=no")
+    unpushed = git_out("rev-list", "--count", "@{u}..HEAD")
+    return bool(edited) or unpushed not in ("", "0")
 
 
 def remove_tree(path: Path) -> None:
-    if not path.exists() and not path.is_symlink():
+    if path.is_symlink():  # remove the link, never what it points to
+        path.unlink()
+        return
+    if not path.exists():
         return
     resolved, home = path.resolve(), c.HOME.resolve()
     if resolved == home or resolved in home.parents:
@@ -636,31 +766,45 @@ def cmd_uninstall(args, backend) -> int:
         for p in (c.BIN_DIR / c.SHELL_NAME, c.BIN_DIR / f"{c.SHELL_NAME}-setup")
         if p.exists() or p.is_symlink()
     ]
+    completions = [target for _, target in COMPLETIONS.values() if target.exists()]
     if not (c.INSTALL_DIR.exists() or launchers or FONT_DIR.exists() or state):
         info("Nothing to uninstall.")
         return 0
 
-    built = [name for name in state.get("tools", [])]
-    links, mentions = scan_wm_configs()
+    built = list(state.get("tools", []))
+    mentions = scan_wm_configs()
+    local_work = has_local_work()
+    if local_work and c.OPTS.yes:
+        raise InstallError(
+            f"{c.INSTALL_DIR} has local edits or unpushed commits. "
+            "Re-run without --yes to confirm deleting them."
+        )
     dot = SYM["dot"]
 
-    lines = [
-        f"{dot} stop running Zenith Shell processes",
-        f"{dot} delete {c.INSTALL_DIR} (code, virtualenv, vendored sources)",
-    ]
+    lines = [f"{dot} stop running Zenith Shell processes"]
+    if c.INSTALL_DIR.is_symlink():
+        lines.append(f"{dot} delete the {c.INSTALL_DIR} symlink (its target is kept)")
+    else:
+        lines.append(
+            f"{dot} delete {c.INSTALL_DIR} (code, virtualenv, vendored sources)"
+        )
+    if local_work:
+        lines.append(f"{RED}{SYM['warn']} it has local edits or unpushed commits!{NC}")
     if launchers:
         lines.append(f"{dot} delete launchers: {', '.join(p.name for p in launchers)}")
-    if links:
-        lines.append(
-            f"{dot} delete {len(links)} WM config symlink(s) pointing into the install dir"
-        )
+    if completions:
+        lines.append(f"{dot} delete tab completion files")
     lines += [
         f"{dot} delete fonts in {FONT_DIR}",
         f"{dot} delete installer state and logs",
     ]
-    if built:
+    if built and args.purge:
+        lines.append(f"{dot} remove tools built from source: {', '.join(built)}")
+    elif built:
         lines.append(
-            f"{dot} tools built from source ({', '.join(built)}): you will be asked"
+            f"{DIM}Tools built from source are kept ({', '.join(built)}); "
+            f"other Fabric-based shells may use them. To remove them, use --purge now: "
+            f"they can't be tracked after this uninstall.{NC}"
         )
     lines.append(f"{DIM}System packages are never removed automatically.{NC}")
     panel("Uninstall plan", lines, YELLOW)
@@ -672,16 +816,6 @@ def cmd_uninstall(args, backend) -> int:
     keep_config = config.exists() and c.confirm(
         f"Keep your settings ({config})?", default=True
     )
-    remove_tools = False
-    if built:
-        remove_tools = args.purge or (
-            not c.OPTS.yes
-            and c.confirm(
-                f"Also remove the tools built from source ({', '.join(built)}) from the system? "
-                "(other Fabric-based shells may use them)",
-                default=False,
-            )
-        )
     if not c.confirm("Uninstall Zenith Shell now?", default=False):
         info("Aborted.")
         return 1
@@ -702,9 +836,9 @@ def cmd_uninstall(args, backend) -> int:
         ok(f"Settings saved to {saved}")
 
     def remove_launchers() -> None:
-        for path in [*launchers, *links]:
+        for path in [*launchers, *completions]:
             path.unlink(missing_ok=True)
-        ok("Removed launchers and WM symlinks")
+        ok("Removed launchers and tab completion")
 
     def remove_fonts() -> None:
         remove_tree(FONT_DIR)
@@ -712,7 +846,7 @@ def cmd_uninstall(args, backend) -> int:
             run(["fc-cache", "-f"], check=False, label="Updating font cache")
 
     steps = [("Stopping Zenith Shell", stop_processes)]
-    if remove_tools and built:
+    if args.purge and built:
         steps.append(
             ("Removing source-built tools", remove_built_tools)
         )  # needs vendors/, so before the next steps
@@ -743,7 +877,11 @@ def cmd_uninstall(args, backend) -> int:
         panel(
             "Leftover references – edit these by hand",
             [str(p) for p in mentions]
-            + ["", "Remove the lines that mention zenith (include / exec / bindsym)."],
+            + [
+                "",
+                "Remove the lines that mention zenith (include / exec / bindsym),",
+                "and any symlinks into the old install directory.",
+            ],
             YELLOW,
         )
     pkgs = state.get("packages", [])
@@ -760,38 +898,137 @@ def cmd_uninstall(args, backend) -> int:
     return 0
 
 
-def main() -> int:
+# ----------------------------------------------------------------------------
+# logs
+# ----------------------------------------------------------------------------
+def cmd_logs(args) -> int:
+    if not c.LOG_FILE.exists():
+        info(f"No installer log yet ({c.LOG_FILE}).")
+        return 0
+    with open(c.LOG_FILE, encoding="utf-8", errors="replace") as log:
+        sys.stdout.writelines(collections.deque(log, maxlen=max(args.lines, 0)))
+    info(f"Full log: {c.LOG_FILE}")
+    return 0
+
+
+# ----------------------------------------------------------------------------
+# command line
+# ----------------------------------------------------------------------------
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog=os.environ.get("ZENITH_PROG", "install.sh"),
+        prog=os.environ.get("ZENITH_PROG", "main.py"),
         description="Zenith Shell installer",
     )
-    parser.add_argument(
-        "command",
-        nargs="?",
-        default="install",
-        choices=["install", "sync", "update", "doctor", "uninstall"],
+    commands = parser.add_subparsers(
+        dest="command", metavar="<command>", title="commands"
     )
-    parser.add_argument("--wm", default="auto", choices=["auto", "i3", "sway", "all"])
-    parser.add_argument(
-        "--distro", choices=["arch", "ubuntu"], default=os.environ.get("ZENITH_DISTRO")
+
+    wm = argparse.ArgumentParser(add_help=False)
+    wm.add_argument(
+        "--wm",
+        default="auto",
+        choices=["auto", "i3", "sway", "all"],
+        help="window manager(s) to set up (default: auto, detected)",
     )
-    parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument(
+    changes = argparse.ArgumentParser(add_help=False)
+    changes.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="run the checks and show the plan without changing anything",
+    )
+    changes.add_argument(
+        "-y", "--yes", action="store_true", help="never ask for confirmation"
+    )
+    changes.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="show command output as it runs",
+    )
+
+    def add(name, help_text, parents):
+        return commands.add_parser(
+            name, help=help_text, description=help_text, parents=parents
+        )
+
+    add(
+        "install",
+        "Full install: dependencies, virtualenv, fonts and WM config",
+        [wm, changes],
+    )
+    add(
+        "sync",
+        "Install what is missing and configure the selected WM(s)",
+        [wm, changes],
+    )
+    update = add(
+        "update",
+        "Pull the latest version, then sync dependencies and re-apply setup",
+        [wm, changes],
+    )
+    update.add_argument("--after-pull", action="store_true", help=argparse.SUPPRESS)
+    add("doctor", "Check dependencies and setup", [wm])
+    uninstall = add(
+        "uninstall",
+        "Remove Zenith Shell (asks whether to keep your settings)",
+        [changes],
+    )
+    uninstall.add_argument(
         "--purge",
         action="store_true",
-        help="uninstall: also remove tools built from source",
+        help="also remove tools built from source from the system",
     )
-    parser.add_argument("-y", "--yes", action="store_true")
-    parser.add_argument("--quiet", action="store_true", help=argparse.SUPPRESS)
-    parser.add_argument("--notify", action="store_true", help=argparse.SUPPRESS)
-    parser.add_argument("--after-pull", action="store_true", help=argparse.SUPPRESS)
-    args = parser.parse_args()
-    if args.purge and args.command != "uninstall":
-        parser.error("--purge only applies to the uninstall command")
-    c.OPTS.yes, c.OPTS.dry_run = args.yes, args.dry_run
+    logs = add("logs", "Show the end of the installer log", [])
+    logs.add_argument(
+        "-n", "--lines", type=int, default=50, help="lines to show (default: 50)"
+    )
+    return parser
+
+
+def normalize_argv(argv: list[str], parser: argparse.ArgumentParser) -> list[str]:
+    """Allow the command anywhere (`--wm i3 sync`) and suggest a fix for a mistyped one."""
+    argv = list(argv)
+    if "--distro" in argv:
+        # Older versions pass this when they hand over to this code during `update`.
+        at = argv.index("--distro")
+        del argv[at : at + 2]
+    names = list(
+        next(
+            action.choices
+            for action in parser._actions
+            if isinstance(action, argparse._SubParsersAction)
+        )
+    )
+    for at, word in enumerate(argv):
+        if word in names:
+            return [word, *argv[:at], *argv[at + 1 :]]
+    if argv and not argv[0].startswith("-"):
+        match = difflib.get_close_matches(argv[0], names, 1)
+        hint = f" (did you mean '{match[0]}'?)" if match else ""
+        parser.error(f"unknown command '{argv[0]}'{hint}")
+    return argv
+
+
+def main() -> int:
+    parser = build_parser()
+    args = parser.parse_args(normalize_argv(sys.argv[1:], parser))
+
+    if args.command is None:  # bare `zenith-shell setup`
+        names = ["sync", "update", "doctor", "install", "uninstall", "logs"]
+        picked = c.choose("What do you want to do?", names)
+        if picked is None:
+            parser.print_help()
+            return 0
+        args = parser.parse_args([picked])
+
+    c.OPTS.yes = getattr(args, "yes", False)
+    c.OPTS.dry_run = getattr(args, "dry_run", False)
+    c.OPTS.verbose = getattr(args, "verbose", False)
 
     try:
-        backend = load_backend(args.distro or c.detect_distro())
+        if args.command == "logs":
+            return cmd_logs(args)
+        backend = load_backend(c.detect_distro())
         if args.command == "doctor":
             return cmd_doctor(args, backend)
         if args.command == "uninstall":
@@ -799,9 +1036,9 @@ def main() -> int:
         if args.command == "update":
             return cmd_update(args, backend)
         return cmd_install_or_sync(args, backend, args.command)
-    except InstallError as exc:
+    except (InstallError, OSError) as exc:
         panel(
-            "Installation failed",
+            f"{args.command} failed",
             [
                 str(exc),
                 "",
@@ -814,9 +1051,6 @@ def main() -> int:
     except KeyboardInterrupt:
         print(f"\n{YELLOW}Interrupted.{NC}")
         return 130
-    except subprocess.CalledProcessError as exc:
-        c.err(f"Command failed: {exc}")
-        return 1
 
 
 if __name__ == "__main__":

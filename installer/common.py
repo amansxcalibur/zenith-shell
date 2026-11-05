@@ -19,7 +19,6 @@ from types import SimpleNamespace
 
 
 SHELL_NAME = "zenith-shell"
-REPO_URL = "https://github.com/amansxcalibur/zenith-shell.git"
 
 HOME = Path.home()
 INSTALL_DIR = Path(os.environ.get("ZENITH_DIR", HOME / ".config" / SHELL_NAME))
@@ -37,8 +36,9 @@ LOG_FILE = (
 )
 # where `uninstall` keeps your settings if you ask it to (restored on the next fresh install)
 BACKUP_DIR = HOME / ".config" / f"{SHELL_NAME}-backup"
-# the running shell renames itself with setproctitle(SHELL_NAME + "-shell") in main.py
-SHELL_TITLE = f"{SHELL_NAME}-shell"
+# The running shell's process title. main.py sets it from config.info.SHELL_NAME ("zenith")
+# + "-shell", so it equals the installer's SHELL_NAME. The launcher uses the same pattern.
+SHELL_PROCESS = f"^{SHELL_NAME}( |$)"
 
 # Remember the PATH the user actually has (for the "add ~/.local/bin" notice),
 # then extend ours so freshly installed tools (cargo, matugen) are found.
@@ -50,7 +50,7 @@ for _p in (CARGO_BIN, BIN_DIR):
 # window manager -> feature set of dependencies it needs
 WM_FEATURE = {"i3": "x11", "sway": "wayland"}
 
-OPTS = SimpleNamespace(yes=False, dry_run=False)
+OPTS = SimpleNamespace(yes=False, dry_run=False, verbose=False)
 
 
 class InstallError(Exception):
@@ -186,13 +186,23 @@ def confirm(question: str, default: bool = True) -> bool:
     if not sys.stdin.isatty():
         return False
     suffix = "[Y/n]" if default else "[y/N]"
-    try:
-        answer = (
-            input(f"{BLUE}{BOLD}?{NC} {question} {DIM}{suffix}{NC} ").strip().lower()
-        )
-    except EOFError:
-        return False
-    return default if not answer else answer.startswith("y")
+    while True:
+        try:
+            answer = (
+                input(f"{BLUE}{BOLD}?{NC} {question} {DIM}{suffix}{NC} ")
+                .strip()
+                .lower()
+            )
+        except EOFError:
+            return False
+        if not answer:
+            return default
+        if answer in ("y", "yes"):
+            return True
+        if answer in ("n", "no"):
+            return False
+        # a typo must not count as "no": some of these questions decide what gets deleted
+        print("   Please answer y or n.")
 
 
 def choose(question: str, options: list[str]) -> str | None:
@@ -232,20 +242,27 @@ def capture(cmd, **kwargs) -> tuple[int, str]:
 
 
 def shell_running() -> bool:
-    return capture(["pgrep", "-f", f"^{SHELL_TITLE}"])[0] == 0
+    return capture(["pgrep", "-f", SHELL_PROCESS])[0] == 0
 
 
 def stop_shell() -> bool:
-    return capture(["pkill", "-f", f"^{SHELL_TITLE}"])[0] == 0
+    return capture(["pkill", "-f", SHELL_PROCESS])[0] == 0
 
 
-def notify(summary: str, body: str = "") -> None:
-    if (
-        have("notify-send")
-        and capture(["notify-send", "-a", "Zenith Shell", summary, body])[0] == 0
-    ):
-        return
-    print(f"{summary}: {body}", file=sys.stderr)
+def venv_ok() -> bool:
+    """False if the virtualenv is missing or its interpreter no longer works,
+    e.g. after a Python upgrade removed the version it was created with."""
+    return capture([VENV_DIR / "bin" / "python", "-c", "import pip"])[0] == 0
+
+
+def wm_autostart_configured(wm: str) -> bool:
+    try:
+        text = (HOME / ".config" / wm / "config").read_text(errors="ignore")
+    except OSError:
+        return False
+    return (
+        re.search(rf"^\s*exec\w*\b.*\b{SHELL_NAME}\s*$", text, re.MULTILINE) is not None
+    )
 
 
 def run(
@@ -290,19 +307,26 @@ def run(
             raise InstallError(f"Command not found: {cmd[0]}") from None
 
         def pump() -> None:
-            for line in proc.stdout:
-                log.write(line)
-                log.flush()
-                tail.append(line.rstrip())
-                if line.strip():
-                    last[0] = line.strip()
+            try:
+                for line in proc.stdout:
+                    log.write(line)
+                    log.flush()
+                    tail.append(line.rstrip())
+                    if line.strip():
+                        last[0] = line.strip()
+                    if OPTS.verbose:
+                        print(f"    {DIM}{line.rstrip()}{NC}", flush=True)
+            except (
+                ValueError
+            ):  # log closed: we gave up waiting (Ctrl-C, or a daemon kept the pipe)
+                pass
 
         reader = threading.Thread(target=pump, daemon=True)
         reader.start()
         frame = 0
         try:
             while proc.poll() is None:
-                if TTY:
+                if TTY and not OPTS.verbose:
                     cols = shutil.get_terminal_size((80, 20)).columns
                     prefix = f"  {CYAN}{SPINNER[frame % len(SPINNER)]}{NC} {label} "
                     room = max(0, cols - vlen(prefix) - 2)
@@ -313,6 +337,11 @@ def run(
                 time.sleep(0.1)
         except KeyboardInterrupt:
             proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+            reader.join(timeout=2)
             if TTY:
                 print("\r\033[K", end="")
             raise
@@ -381,17 +410,22 @@ def download(url: str, dest: Path, retries: int = 3) -> None:
             time.sleep(2 * attempt)
 
 
+def responds(url: str, timeout: int = 15) -> bool:
+    try:
+        urllib.request.urlopen(
+            urllib.request.Request(url, method="HEAD"), timeout=timeout
+        )
+    except urllib.error.HTTPError:
+        return True  # server answered -> reachable
+    except Exception:
+        return False
+    return True
+
+
 def unreachable(urls: list[str]) -> list[str]:
     def probe(url: str) -> str | None:
-        try:
-            urllib.request.urlopen(
-                urllib.request.Request(url, method="HEAD"), timeout=6
-            )
-        except urllib.error.HTTPError:
-            return None  # server answered -> reachable
-        except Exception:
-            return url
-        return None
+        # one slow TLS handshake must not stop an install
+        return None if responds(url) or responds(url) else url
 
     if not urls:
         return []
@@ -444,10 +478,10 @@ def current_wm() -> str | None:
     return None
 
 
-def resolve_wms(choice: str, interactive: bool = True) -> list[str]:
+def resolve_wms(choice: str) -> list[str]:
     """--wm explicit > (previously installed + current session) > WMs found on PATH > ask."""
-    if choice == "both":
-        return ["i3", "sway"]
+    if choice == "all":
+        return list(WM_FEATURE)
     if choice in WM_FEATURE:
         return [choice]
     wms = list(load_state().get("wms", []))
@@ -456,12 +490,12 @@ def resolve_wms(choice: str, interactive: bool = True) -> list[str]:
         wms.append(current)
     if not wms:
         wms = [wm for wm in WM_FEATURE if have(wm)]
-    if not wms and interactive:
+    if not wms:
         picked = choose(
-            "Which window manager should Zenith be set up for?", ["i3", "sway", "both"]
+            "Which window manager should Zenith be set up for?", ["i3", "sway", "all"]
         )
         if picked:
-            wms = ["i3", "sway"] if picked == "both" else [picked]
+            wms = list(WM_FEATURE) if picked == "all" else [picked]
     return sorted(set(wms), key=list(WM_FEATURE).index)
 
 
@@ -471,8 +505,8 @@ def detect_distro() -> str:
     except OSError:
         raise InstallError("Cannot read /etc/os-release.") from None
     fields = dict(line.split("=", 1) for line in text.splitlines() if "=" in line)
-    words = f"{fields.get('ID', '')} {fields.get('ID_LIKE', '')}".replace(
-        '"', ""
+    words = f"{fields.get('ID', '')} {fields.get('ID_LIKE', '')}".translate(
+        str.maketrans("", "", "\"'")
     ).split()
     if "arch" in words:
         return "arch"
@@ -555,6 +589,10 @@ class Backend:
         return {}
 
     def extra_hosts(self, plan: Plan) -> list[str]:
+        return []
+
+    def plan_notes(self, plan: Plan) -> list[str]:
+        """Extra lines for the Plan panel."""
         return []
 
     def uninstall_tools(self, names: list[str]) -> None:

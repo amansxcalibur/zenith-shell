@@ -1,0 +1,61 @@
+#compdef zenith-shell
+# zsh completion for zenith-shell
+
+_zenith_shell_setup() {
+    local -a wm=('--wm[window manager to set up]:window manager:(auto i3 sway all)')
+    local -a yes=('(-y --yes)'{-y,--yes}'[never ask for confirmation]')
+    local -a verbose=('(-v --verbose)'{-v,--verbose}'[show command output as it runs]')
+    local -a dry=('--dry-run[show the plan without changing anything]')
+
+    if (( CURRENT == 2 )); then
+        local -a subcommands=(
+            'install:full install'
+            'sync:install what is missing and configure the selected WMs'
+            'update:pull the latest version and re-apply setup'
+            'doctor:check dependencies and setup'
+            'uninstall:remove Zenith Shell'
+            'logs:show the end of the installer log'
+        )
+        _describe 'setup command' subcommands
+        return
+    fi
+
+    local subcommand=$words[2]
+    shift words
+    (( CURRENT-- ))
+    case $subcommand in
+        install|sync|update) _arguments -s : $wm $dry $yes $verbose ;;
+        doctor) _arguments -s : $wm ;;
+        uninstall) _arguments -s : $dry $yes $verbose '--purge[also remove tools built from source]' ;;
+        logs) _arguments -s : '(-n --lines)'{-n,--lines}'[number of lines to show]:lines:' ;;
+    esac
+}
+
+_zenith_shell() {
+    if (( CURRENT == 2 )); then
+        local -a commands=(
+            'start:start the shell'
+            'stop:stop the shell'
+            'restart:restart the shell'
+            'status:show whether the shell is running'
+            'lock:lock the screen'
+            'setup:install, update or remove Zenith Shell'
+            'help:show help'
+            '--help:show help'
+            '--version:show the installed version'
+        )
+        _describe 'command' commands
+        return
+    fi
+
+    case $words[2] in
+        lock) (( CURRENT == 3 )) && compadd -- -f ;;
+        setup)
+            shift words
+            (( CURRENT-- ))
+            _zenith_shell_setup
+            ;;
+    esac
+}
+
+_zenith_shell "$@"

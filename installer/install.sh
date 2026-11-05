@@ -5,6 +5,7 @@ set -euo pipefail
 REPO_URL="${ZENITH_REPO:-https://github.com/amansxcalibur/zenith-shell.git}"
 INSTALL_DIR="${ZENITH_DIR:-$HOME/.config/zenith-shell}"
 export ZENITH_DIR="$INSTALL_DIR"
+export ZENITH_PROG="install.sh"
 
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
     RED=$'\033[0;31m'; GREEN=$'\033[0;32m'; BLUE=$'\033[0;34m'
@@ -25,17 +26,19 @@ Usage: install.sh [command] [options]
 
 Commands:
   install    Full install (default)
-  sync       Install only what is missing for the chosen WM(s)
+  sync       Install what is missing and configure the chosen WM(s)
              (use this after switching between i3 and sway)
   update     Pull the latest version, then sync dependencies and re-apply setup
-  doctor     Show which dependencies are present / missing
+  doctor     Check dependencies and setup
   uninstall  Remove Zenith Shell (asks whether to keep your config.json)
+  logs       Show the end of the installer log
 
 Options:
-  --wm {auto,i3,sway,both}   Window manager(s) to set up (default: auto)
+  --wm {auto,i3,sway,all}    Window manager(s) to set up (default: auto)
   --dry-run                  Run pre-flight checks and show the plan; change nothing
   --purge                    uninstall: also remove tools that were built from source
   -y, --yes                  Never ask; accept automatic prerequisite installs
+  -v, --verbose              Show command output as it runs
   -h, --help                 Show this help
 
 After installing, the same tool is available as:  zenith-shell setup <command> [options]
@@ -51,7 +54,6 @@ done
 [[ $EUID -ne 0 ]] || die "Do not run as root. sudo is requested automatically when needed."
 
 detect_distro() {
-    if [[ -n "${ZENITH_DISTRO:-}" ]]; then echo "$ZENITH_DISTRO"; return; fi
     [[ -r /etc/os-release ]] || die "Cannot read /etc/os-release – unsupported system."
     local id like
     id=$(. /etc/os-release; echo "${ID:-}")
@@ -71,18 +73,25 @@ check_python() {
         || die "Python 3.10+ is required (found $(python3 --version 2>&1))."
 }
 
-# -------- commands that work on an existing install: no bootstrap, no git pull here --------
-# (`update` does its own fetch/pull so it can re-launch the *new* installer afterwards)
+DRY_RUN=false
+COMMAND=""
 for arg in "$@"; do
     case "$arg" in
-        uninstall|update|sync|doctor)
-            check_python
-            [[ -f "$INSTALL_DIR/installer/main.py" ]] \
-                || die "Zenith Shell is not installed ($INSTALL_DIR/installer/main.py not found). Run: install.sh"
-            exec python3 "$INSTALL_DIR/installer/main.py" --distro "$DISTRO" "$@"
-            ;;
+        --dry-run) DRY_RUN=true ;;
+        install|uninstall|update|sync|doctor|logs) [[ -n "$COMMAND" ]] || COMMAND="$arg" ;;
     esac
 done
+
+# -------- commands that work on an existing install: no bootstrap, no git pull here --------
+# (`update` does its own fetch/pull so it can re-launch the *new* installer afterwards)
+if [[ -n "$COMMAND" && "$COMMAND" != install ]]; then
+    check_python
+    [[ -f "$INSTALL_DIR/installer/main.py" ]] \
+        || die "Zenith Shell is not installed ($INSTALL_DIR/installer/main.py not found). Run: install.sh"
+    exec python3 "$INSTALL_DIR/installer/main.py" "$@"
+fi
+
+[[ -n "$COMMAND" ]] || set -- install "$@"
 
 # -------- Bootstrap tools: git, curl, python3 (>=3.10) --------
 need=()
@@ -96,11 +105,31 @@ if [[ "$DISTRO" == "ubuntu" ]] && command -v python3 >/dev/null 2>&1 \
     need+=(python3-venv python3-pip)
 fi
 
+# -------- Dry run: leave the system and the install directory alone --------
+if $DRY_RUN; then
+    if [[ ${#need[@]} -gt 0 ]]; then
+        info "Dry run: would install bootstrap packages first: ${need[*]}"
+        info "The remaining checks need them, so stopping here. Nothing was changed."
+        exit 0
+    fi
+    check_python
+    if [[ -f "$INSTALL_DIR/installer/main.py" ]]; then
+        exec python3 "$INSTALL_DIR/installer/main.py" "$@"
+    fi
+    TMP_CHECKOUT="$(mktemp -d)"
+    trap 'rm -rf "$TMP_CHECKOUT"' EXIT
+    git clone --depth=1 --quiet "$REPO_URL" "$TMP_CHECKOUT" || die "git clone failed – check your connection."
+    rc=0
+    python3 "$TMP_CHECKOUT/installer/main.py" "$@" || rc=$?
+    exit "$rc"
+fi
+
 if [[ ${#need[@]} -gt 0 ]]; then
     command -v sudo >/dev/null 2>&1 || die "sudo is required to install: ${need[*]}"
     info "Installing bootstrap packages: ${need[*]}"
     if [[ "$DISTRO" == "arch" ]]; then
-        sudo pacman -S --needed --noconfirm "${need[@]}"
+        sudo pacman -S --needed --noconfirm "${need[@]}" \
+            || die "Could not install ${need[*]}. Download errors usually mean this system is out of date: run 'sudo pacman -Syu', then re-run."
     else
         sudo apt-get -o DPkg::Lock::Timeout=300 update -qq
         sudo env DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=300 install -y "${need[@]}"
@@ -124,4 +153,4 @@ fi
 
 [[ -f "$INSTALL_DIR/installer/main.py" ]] || die "installer/main.py not found in $INSTALL_DIR."
 
-exec python3 "$INSTALL_DIR/installer/main.py" --distro "$DISTRO" "$@"
+exec python3 "$INSTALL_DIR/installer/main.py" "$@"
