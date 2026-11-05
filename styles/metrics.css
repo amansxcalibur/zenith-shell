@@ -229,9 +229,6 @@
   border-radius: 999px;
   padding: 3px;
 }
-.light #metrics-page-tabs {
-  background-color: var(--surface-variant);
-}
 
 /* the active background is the morphing pill drawn by PageTabs */
 .metrics-sort.metrics-page-tab,
@@ -248,9 +245,6 @@
   background-color: var(--surface-semi-bright);
   border-radius: 20px;
   padding: 8px 12px;
-}
-.light .metrics-tile {
-  background-color: var(--surface-variant);
 }
 
 .metrics-tile-value {

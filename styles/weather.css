@@ -3,7 +3,7 @@
   border-radius: 18px;
 }
 .light #weather-mini-container {
-  background-color: var(--outline-variant);
+  background-color: var(--surface-semi-bright);
 }
 
 #weather-mini {

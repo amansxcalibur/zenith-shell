@@ -41,14 +41,13 @@ def open_settings():
 
 
 def sync_settings_theme(is_light: bool) -> None:
-    if _settings_process is None or _settings_process.poll() is not None:
-        return
-
+    # No _settings_process check: settings may have outlived a shell restart.
+    # If it isn't running, fabric-cli just fails to find the instance.
     from fabric.utils.helpers import exec_shell_command_async
 
     exec_shell_command_async(
         f"fabric-cli exec {SHELL_NAME}-settings "
-        f"'win.set_light_theme({is_light})'"
+        f"'settings_window.set_light_theme({is_light})'"
     )
 
 

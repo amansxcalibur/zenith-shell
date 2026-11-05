@@ -36,15 +36,22 @@
   margin-top: 2px;
 }
 .light #agenda-btn-group {
-  background-color: var(--surface-variant);
+  background-color: var(--primary);
 }
 #agenda-btn {
   background-color: transparent;
   padding: 6px 7px;
   border-radius: 20px;
 }
+.light #agenda-btn,
+.light #agenda-btn > * {
+  color: var(--on-primary);
+}
 #agenda-btn:hover {
   background-color: var(--outline-variant);
+}
+.light #agenda-btn:hover {
+  background-color: var(--on-primary-fixed-variant);
 }
 #agenda-btn.delete-btn:hover {
   background-color: var(--error-container);
@@ -64,8 +71,9 @@
   border-radius: 20px;
   padding: 8px;
 }
-.light #text-editor {
-  background-color: var(--surface-variant);
+.light textview#text-editor {
+  background-color: var(--true-surface-bright);
+  box-shadow: inset 0 0 0 2px var(--primary);
 }
 #text-editor selection {
   background-color: var(--primary);
@@ -78,6 +86,9 @@
   padding: 5px 10px;
   box-shadow: -4px -4px 12px 4px var(--background);
   transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.light #add-new-agenda-btn {
+  box-shadow: -4px -4px 12px 4px var(--surface-semi-bright);
 }
 #add-new-agenda-btn:hover {
   border-radius: 99px;
@@ -105,11 +116,28 @@
   border-radius: 20px;
   font-size: 15px;
 }
-.light #editor-btn {
-  background-color: var(--surface-variant);
-}
 #editor-btn:hover {
   background-color: var(--surface-semi-bright);
+}
+.light #editor-btn {
+  background-color: var(--surface-semi-bright);
+}
+.light #editor-btn:hover {
+  background-color: var(--surface-bright);
+}
+/* the new-note editor's panel is already --surface-bright */
+.light #editor-box #editor-btn:not(:first-child):hover {
+  background-color: var(--true-surface-bright);
+}
+/* the confirming action (Save / Add) comes first; Cancel stays neutral */
+.light #editor-btn:first-child {
+  background-color: var(--primary);
+}
+.light #editor-btn:first-child > * {
+  color: var(--on-primary);
+}
+.light #editor-btn:first-child:hover {
+  background-color: var(--on-primary-fixed-variant);
 }
 #editor-btn.delete-btn {
   background-color: var(--error-container);
@@ -135,6 +163,9 @@
   background-color: var(--shadow);
   border-radius: 24px;
   padding: 5px;
+}
+.light #agenda-box {
+  background-color: var(--true-surface-bright);
 }
 
 #display-box {
@@ -306,6 +337,9 @@ filechooser combobox {
   padding: 4px;
   box-shadow: 4px -4px 12px 4px var(--background);
 }
+.light #agenda-actions-pill {
+  box-shadow: 4px -4px 12px 4px var(--surface-semi-bright);
+}
 #agenda-pill-btn {
   background-color: transparent;
   border-radius: 20px;
@@ -323,9 +357,6 @@ filechooser combobox {
 }
 #agenda-pill-btn.active > * {
   color: var(--background);
-}
-.light #agenda-actions-pill {
-  background-color: var(--surface-variant);
 }
 
 /* re-arrange mode */

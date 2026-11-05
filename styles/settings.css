@@ -79,8 +79,9 @@
 .settings-option-btn:hover {
   background-color: var(--surface);
 }
+
 .light .settings-option-btn:hover {
-  background-color: var(--surface-variant);
+  background-color: alpha(var(--surface-semi-bright), 0.65);
 }
 
 .settings-option-btn.checked {
@@ -122,6 +123,10 @@
 }
 .light .settings-btn.bright {
   background-color: var(--primary);
+}
+.light .settings-btn.bright,
+.light .settings-btn.bright > * {
+  color: var(--on-primary);
 }
 
 .settings-btn:hover,

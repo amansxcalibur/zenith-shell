@@ -551,10 +551,7 @@ class AgendaApp(Box):
             self.edit_btn.add_style_class("active")
         else:
             self.edit_btn.remove_style_class("active")
-        # adding notes while re-arranging makes no sense
-        self.input_stack.set_visible_child_name(
-            "hidden" if self.reorder_mode else "trigger"
-        )
+        self._sync_overlays()
 
     def _rows(self) -> list[AgendaItem]:
         return [r for r in self.listbox.get_children() if hasattr(r, "text")]
@@ -563,6 +560,9 @@ class AgendaApp(Box):
         item = AgendaItem(text, self._remove_item, self.save_to_disk, image)
         item.setup_dnd(
             self._on_drag_begin, self._on_drop, self._on_drag_motion, self._on_drag_end
+        )
+        item.stack.connect(
+            "notify::visible-child-name", lambda *_: self._sync_overlays()
         )
         item.set_reorder_mode(self.reorder_mode)
         return item
@@ -674,6 +674,10 @@ class AgendaApp(Box):
             ),
             overlays=[self.actions_stack, self.input_stack],
         )
+        # Their box-shadows paint outside the overlay child's window, which is
+        # all GTK repaints on a theme change. Repaint from here to clear them.
+        for widget in (self.trigger_box, self.actions_pill):
+            widget.connect("style-updated", lambda *_: self.queue_draw())
 
     def _show_editor(self, _widget):
         self.input_stack.set_visible_child_name("editor")
@@ -682,7 +686,22 @@ class AgendaApp(Box):
 
     def _hide_editor(self, _widget):
         self.input_stack.set_visible_child_name("trigger")
-        self.actions_stack.set_visible_child_name("pill")
+        self._sync_overlays()
+
+    def _sync_overlays(self):
+        # the new-note editor already hid the pill, and hiding it would lose its view
+        if self.input_stack.get_visible_child_name() == "editor":
+            return
+        # the overlays would sit on top of a row's editor or delete confirmation
+        row_busy = any(
+            row.stack.get_visible_child_name() in ("edit", "delete")
+            for row in self._rows()
+        )
+        # adding notes while re-arranging makes no sense
+        self.input_stack.set_visible_child_name(
+            "hidden" if row_busy or self.reorder_mode else "trigger"
+        )
+        self.actions_stack.set_visible_child_name("hidden" if row_busy else "pill")
 
     def _update_header(self, row, before):
         if before:
@@ -698,12 +717,13 @@ class AgendaApp(Box):
         buf.set_text("")
         self.new_text_view.undo.reset()
         self.input_stack.set_visible_child_name("trigger")
-        self.actions_stack.set_visible_child_name("pill")
+        self._sync_overlays()
         self.show_all()
         self.save_to_disk()
 
     def _remove_item(self, item: AgendaItem):
         self.listbox.remove(item)
+        self._sync_overlays()
         self.save_to_disk()
 
     def load_from_disk(self):

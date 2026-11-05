@@ -4,7 +4,7 @@
   margin-top: 1px;
 }
 .light #workspaces-container {
-  background-color: var(--outline-variant);
+  background-color: var(--surface-semi-bright);
 }
 
 #workspaces {
@@ -38,7 +38,7 @@
   background-color: var(--outline);
 }
 .light #workspaces > button:hover {
-  background-color: var(--on-surface-variant);
+  background-color: var(--surface-bright);
 }
 
 /* #workspaces > button.urgent {
@@ -58,9 +58,6 @@
   background-color: var(--foreground);
   transition: all 0.25s;
 }
-.light #workspace-morph-shape {
-  background-color: var(--shadow);
-}
 #workspace-morph-shape.active {
   background-color: var(--primary);
 }
@@ -69,7 +66,7 @@
   background-color: var(--background);
 }
 .light #workspace-morph-shape.empty {
-  background-color: var(--foreground);
+  background-color: alpha(var(--on-surface-variant), 0.8);
 }
 
 #workspace-morph-shape.urgent {

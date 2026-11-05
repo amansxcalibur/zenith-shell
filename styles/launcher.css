@@ -32,6 +32,10 @@
   color: var(--foreground);
   border-radius: 34px;
 }
+.light #search-container,
+.light #search-entry {
+  background-color: var(--true-surface-bright);
+}
 #search-entry selection {
   color: var(--background);
   background-color: var(--primary);
@@ -49,9 +53,6 @@
 }
 .launch-mode-btn:hover {
   background-color: var(--surface-bright);
-}
-.light .launch-mode-btn:hover {
-  background-color: var(--surface-dull);
 }
 .launch-mode-btn > * {
   font-size: 24px;
@@ -89,9 +90,6 @@
   padding: 12px 16px;
   transition: all 0.1s linear;
   background-color: var(--surface);
-}
-.light #app-slot-btn {
-  background-color: var(--surface-variant);
 }
 #app-slot-btn.selected,
 #app-slot-btn:hover,

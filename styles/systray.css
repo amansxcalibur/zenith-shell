@@ -5,7 +5,7 @@
   min-width: 60px;
 }
 .light #systray {
-  background-color: var(--outline-variant);
+  background-color: var(--surface-semi-bright);
 }
 
 #systray-clipper {

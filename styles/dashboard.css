@@ -3,9 +3,6 @@
   border-radius: 25px;
   padding: 13px;
 }
-.light #dashboard {
-  background-color: var(--surface-variant);
-}
 
 .tile {
   min-height: 62px;
@@ -120,7 +117,7 @@
   border-radius: 30px;
 }
 .light .tile-menu {
-  background-color: var(--surface-variant);
+  background-color: var(--shadow);
   color: var(--foreground);
 }
 

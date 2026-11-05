@@ -6,11 +6,15 @@
 
   /* M3 Surface Tones */
   --surface-dim: {{colors.surface_dim.light.hex}};
-  --surface-dull: {{colors.surface.light.hex | lighten: -2.5}};
+  /* Same role names as dark, tuned for a light ladder (lightest to darkest):
+     true-surface-bright, surface, surface-dull, shadow (the shell's base),
+     surface-semi-bright, surface-bright. These start from M3 tones because
+     HSL-darkening a near-white surface keeps its saturation and turns it peach. */
+  --surface-dull: {{colors.surface_container_low.light.hex}};
   --surface: {{colors.surface.light.hex}};
-  --surface-bright: {{colors.outline.light.hex | lighten: 25.0}}; /* change here */
-  --true-surface-bright: {{colors.surface_bright.light.hex | lighten: 25.0}}; /* change here */
-  --surface-semi-bright: {{colors.surface_bright.light.hex | lighten: -9.0}};
+  --surface-bright: {{colors.outline_variant.light.hex | lighten: -14.0}};
+  --true-surface-bright: {{colors.surface_container_lowest.light.hex}};
+  --surface-semi-bright: {{colors.secondary_fixed_dim.light.hex}};
 
   /* M3 Surface Containers */
   --surface-container-lowest: {{colors.surface_container_lowest.light.hex}};
@@ -23,11 +27,11 @@
   --surface-variant: {{colors.surface_variant.light.hex}};
   --on-surface: {{colors.on_surface.light.hex}};
   --on-surface-variant: {{colors.on_surface_variant.light.hex}};
-  --outline: {{colors.outline.light.hex | lighten: 25}};
+  --outline: {{colors.outline.light.hex}};
   --outline-variant: {{colors.outline_variant.light.hex}};
 
   /* Primary */
-  --primary: {{colors.primary.light.hex | set_saturation: 50.0}};
+  --primary: {{colors.primary.light.hex | set_saturation: 50.0 | lighten: -5.0}};
   --on-primary: {{colors.on_primary.light.hex}};
   --primary-container: {{colors.primary_container.light.hex}};
   --on-primary-container: {{colors.on_primary_container.light.hex}};
@@ -69,7 +73,7 @@
   --inverse-primary: {{colors.inverse_primary.light.hex}};
 
   /* Effects */
-  --shadow: {{colors.surface_bright.light.hex}};
+  --shadow: {{colors.secondary_fixed.light.hex}};
   --scrim: {{colors.scrim.light.hex}};
 
   --red: {{colors.red.light.hex}};

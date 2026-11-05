@@ -202,7 +202,7 @@ highlight {
   min-height: 10px;
 }
 .light #control-slider-mui.dashboard trough {
-  background-color: var(--shadow);
+  background-color: var(--true-surface-bright);
 }
 
 #control-slider-mui slider {
@@ -216,9 +216,6 @@ highlight {
   /* border: 4px var(--shadow) solid; */
   box-shadow: 0 0 0 4px var(--shadow);
 }
-.light #control-slider-mui.dashboard slider {
-  box-shadow: 0 0 0 4px var(--surface-variant);
-}
 
 #control-slider-mui:hover slider {
   min-width: 2px;
@@ -229,9 +226,6 @@ highlight {
   background-color: var(--primary);
   border-radius: 0 4px 4px 0;
   box-shadow: 4px 0 0 4px var(--shadow);
-}
-.light #control-slider-mui.dashboard highlight {
-  box-shadow: 4px 0 0 4px var(--surface-variant);
 }
 
 #control-slider-mui trough {

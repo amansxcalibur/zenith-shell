@@ -92,13 +92,22 @@
   background-color: var(--surface-container-highest);
 }
 .light #clipboard-row {
-  background-color: var(--surface-container-high);
+  background-color: var(--true-surface-bright);
 }
 .light #clipboard-row.hover {
-  background-color: var(--surface-container-highest);
+  background-color: var(--surface);
 }
-.light #clipboard-row.selected {
-  background-color: var(--surface-dim);
+.light #clipboard-row.selected,
+.light #clipboard-row.pressed {
+  background-color: var(--surface-semi-bright);
+}
+.light #clipboard-empty-icon,
+.light #clipboard-icon-btn {
+  background-color: var(--surface-semi-bright);
+  color: var(--foreground);
+}
+.light #clipboard-row.selected #clipboard-icon-btn {
+  background-color: var(--true-surface-bright);
 }
 
 #clipboard-row-box {
@@ -135,14 +144,15 @@
 
 /* tonal icon buttons (rows + expanded toolbar) */
 #clipboard-icon-btn {
-  border-radius: 30px;
+  /* half the 42px button: any more is clamped, so the morph would start late */
+  border-radius: 21px;
   padding: 6px;
   min-width: 30px;
   min-height: 30px;
   color: var(--on-surface-variant);
   background-color: var(--surface-container-high);
   transition: background-color 0.15s linear, color 0.15s linear,
-    border-radius 0.2s cubic-bezier(0.2, 0, 0, 1);
+    border-radius 0.1s cubic-bezier(0.2, 0, 0, 1);
 }
 #clipboard-icon-btn > * {
   font-size: 20px;
@@ -152,9 +162,28 @@
   color: var(--on-primary-container);
   border-radius: 12px;
 }
-#clipboard-icon-btn.danger:hover {
+#clipboard-icon-btn.danger {
   background-color: var(--error-container);
   color: var(--on-error-container);
+}
+#clipboard-icon-btn.danger:hover {
+  background-color: var(--error);
+  color: var(--on-error);
+}
+.light #clipboard-icon-btn:hover,
+.light #clipboard-row.selected #clipboard-icon-btn:hover {
+  background-color: var(--primary);
+  color: var(--on-primary);
+}
+.light #clipboard-icon-btn.danger,
+.light #clipboard-row.selected #clipboard-icon-btn.danger {
+  background-color: var(--error-container);
+  color: var(--error);
+}
+.light #clipboard-icon-btn.danger:hover,
+.light #clipboard-row.selected #clipboard-icon-btn.danger:hover {
+  background-color: var(--error);
+  color: var(--on-error);
 }
 #clipboard-icon-btn:active {
   border-radius: 8px;
@@ -178,7 +207,7 @@
   border-radius: 28px;
 }
 .light #clipboard-detail-scroll {
-  background-color: var(--surface-container-high);
+  background-color: var(--true-surface-bright);
 }
 #clipboard-detail-text {
   color: var(--on-surface);
