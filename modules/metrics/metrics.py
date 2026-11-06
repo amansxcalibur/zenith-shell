@@ -189,14 +189,10 @@ class Battery(Button):
             status_text = "Fully Charged"
         elif is_charging:
             icon = icons.battery_charging.symbol()
-            status_text = f"{icons.bat_charging.symbol()} Charging"
+            status_text = "Charging"
         else:
             icon = icons.battery.symbol()
-            status_text = (
-                f"{icons.discharging.symbol()} Discharging"
-                if not is_low
-                else "Low Battery"
-            )
+            status_text = "Discharging" if not is_low else "Low Battery"
 
         self.bat_icon.set_icon(icon)
         self.set_tooltip_markup(status_text)

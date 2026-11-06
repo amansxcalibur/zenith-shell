@@ -149,6 +149,21 @@ if __name__ == "__main__":
                 "mic_off_slider_img": lambda: (
                     f"background-image: url('{ROOT_DIR}/icons/mic_off.svg');"
                 ),
+                "mute_slider_img_light": lambda: (
+                    f"background-image: url('{ROOT_DIR}/icons/mute_light.png');"
+                ),
+                "volume_slider_img_light": lambda: (
+                    f"background-image: url('{ROOT_DIR}/icons/volume_light.png');"
+                ),
+                "brightness_slider_img_light": lambda: (
+                    f"background-image: url('{ROOT_DIR}/icons/brightness_light.png');"
+                ),
+                "mic_slider_img_light": lambda: (
+                    f"background-image: url('{ROOT_DIR}/icons/mic_light.svg');"
+                ),
+                "mic_off_slider_img_light": lambda: (
+                    f"background-image: url('{ROOT_DIR}/icons/mic_off_light.svg');"
+                ),
             },
         )
         # reloads i3wm

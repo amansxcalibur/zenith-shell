@@ -42,15 +42,19 @@ def format_track_time(seconds: float) -> str:
     return f"{minutes}:{secs:02}"
 
 
-def card_background(image_path: str | None, scrim_hex: str = "#000000") -> str:
-    # darker on the text side, so the artwork still shows behind the controls
+def default_scrim(mode: ThemeMode) -> str:
+    return "#ffffff" if mode == ThemeMode.LIGHT else "#000000"
+
+
+def card_background(image_path: str | None, scrim_hex: str) -> str:
+    # more solid on the text side, so the artwork still shows behind the controls
     red, green, blue = (round(c * 255) for c in hex_to_rgb01(scrim_hex))
     scrim = (
         f"linear-gradient(to right, rgba({red}, {green}, {blue}, 0.88),"
         f" rgba({red}, {green}, {blue}, 0.5))"
     )
     image = f", url('{image_path}')" if image_path else ""
-    return f"background-image: {scrim}{image}"
+    return f"background-image: {scrim}{image};"
 
 
 class PlayerAudioScaleMaterial3(AnimatedScale):
@@ -267,9 +271,10 @@ class PlayerSource(Button):
             foreground_color = theme_json["colors"]["on_background"][mode.value][
                 "color"
             ]
-            # sits on the always-dark player card, whatever the shell's mode
-            chip_color = theme_json["colors"]["secondary_container"]["dark"]["color"]
-            on_chip_color = theme_json["colors"]["on_secondary_container"]["dark"][
+            chip_color = theme_json["colors"]["secondary_container"][mode.value][
+                "color"
+            ]
+            on_chip_color = theme_json["colors"]["on_secondary_container"][mode.value][
                 "color"
             ]
         else:
@@ -347,7 +352,7 @@ class Player(Box):
         MAX_SONG_CHARS = 23
         MAX_ARTIST_CHARS = 27
         self.duration = 0.0
-        self._palette = None  # dark scheme colors of the current artwork
+        self._palette = None  # the current artwork's colors in the current mode
         self._background_image = None
         self._shuffle_on = False
         self._player_service = player_service
@@ -590,7 +595,7 @@ class Player(Box):
                 self._player_service, current_theme, self._theme_service.theme
             )
         else:
-            self.audio_source.update_theme({}, self._theme_service.theme)
+            self._apply_fallback_theme(self._theme_service.theme)
 
     def _create_time_slot(self, button: Button, time_label: Label) -> Stack:
         slot = Stack(
@@ -700,17 +705,16 @@ class Player(Box):
         if mode is None:
             mode = self._theme_service.theme
 
-        # the card is always dark, it's text over artwork in either mode
-        def dark(role):
-            return theme_json["colors"][role]["dark"]["color"]
+        def color(role):
+            return theme_json["colors"][role][mode.value]["color"]
 
         def _apply():
             self._palette = palette = {
-                "primary": dark("primary"),
-                "on_primary": dark("on_primary"),
-                "on_surface": dark("on_surface"),
-                "on_surface_variant": dark("on_surface_variant"),
-                "scrim": dark("surface_container_lowest"),
+                "primary": color("primary"),
+                "on_primary": color("on_primary"),
+                "on_surface": color("on_surface"),
+                "on_surface_variant": color("on_surface_variant"),
+                "scrim": color("surface_container_lowest"),
             }
 
             self._paint_background()
@@ -730,12 +734,22 @@ class Player(Box):
 
         GLib.idle_add(_apply)
 
+    def _apply_fallback_theme(self, mode: ThemeMode):
+        # no artwork colors yet, the stylesheet colors the rest of the card
+        self._paint_background()
+        self.wiggly.set_color((0, 0, 0) if mode == ThemeMode.LIGHT else (1, 1, 1))
+        self.audio_source.update_theme({}, mode)
+
     def _set_background_image(self, image_path: str | None):
         self._background_image = image_path
         self._paint_background()
 
     def _paint_background(self):
-        scrim = self._palette["scrim"] if self._palette else "#000000"
+        scrim = (
+            self._palette["scrim"]
+            if self._palette
+            else default_scrim(self._theme_service.theme)
+        )
         self.set_style(card_background(self._background_image, scrim))
 
     def _paint_shuffle_button(self):
@@ -750,7 +764,7 @@ class Player(Box):
         if theme_json:
             self._apply_theme(self._player_service, theme_json, mode)
         else:
-            self.audio_source.update_theme({}, mode)
+            self._apply_fallback_theme(mode)
 
     def _update_playback_status(self):
         if (
@@ -891,15 +905,21 @@ class Placeholder(Box):
         super().__init__(style_classes="player", **kwargs)
 
         self._wallpaper_service = WallpaperService()
+        self._theme_service = ThemeService()
+        self._background_image = None
 
         def _set_initial_bg(
             service: WallpaperService, full_path: str, preview_path: str | None
         ):
-            self.set_style(card_background(preview_path))
+            self._background_image = preview_path
+            self._paint_background(self._theme_service.theme)
             return False
 
         self._wallpaper_signal_id = self._wallpaper_service.connect(
             "wallpaper-changed", _set_initial_bg
+        )
+        self._theme_service.connect(
+            "theme-changed", lambda _, mode: self._paint_background(mode)
         )
 
         GLib.idle_add(
@@ -922,6 +942,9 @@ class Placeholder(Box):
                 ),
             ),
         ]
+
+    def _paint_background(self, mode: ThemeMode):
+        self.set_style(card_background(self._background_image, default_scrim(mode)))
 
 
 class PlayerContainer(Box):

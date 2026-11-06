@@ -38,6 +38,7 @@ from .tabs import (
     ShapesTab,
     I3Tab,
 )
+from .tabs.navigation import ShortcutButton
 
 if IS_WAYLAND:
     from fabric.widgets.window import Window
@@ -167,10 +168,36 @@ class SettingsWindow(Window):
         }
 
     def _setup_events(self):
+        # capture phase: buttons and scales would otherwise keep the click to themselves
+        self._outside_click = Gtk.GestureMultiPress.new(self)
+        self._outside_click.set_button(0)
+        self._outside_click.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        self._outside_click.connect("pressed", self._on_window_pressed)
+
         self.connect("button-press-event", self.drag_handler.on_button_press)
         # self.connect("motion-notify-event", self.drag_handler.on_motion)
         # self.connect("button-release-event", self.drag_handler.on_button_release)
         self.connect("delete-event", self.on_close)
+
+    def _on_window_pressed(self, _gesture, _n_press, x, y):
+        """A click outside the focused entry or recording shortcut drops its focus."""
+        focus = self.get_focus()
+        if isinstance(focus, Gtk.Entry):
+            area = focus.get_parent()  # its padding focuses the entry too
+        elif isinstance(focus, ShortcutButton) and focus.is_recording:
+            area = focus
+        else:
+            return
+
+        coords = self.translate_coordinates(area, x, y)
+        allocation = area.get_allocation()
+        inside = (
+            coords is not None
+            and 0 <= coords[0] < allocation.width
+            and 0 <= coords[1] < allocation.height
+        )
+        if not inside:
+            self.set_focus(None)
 
     def _build_ui(self):
         main_box = Box(name="settings", orientation="v", spacing=10)

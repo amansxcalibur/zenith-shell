@@ -79,6 +79,27 @@
   background-size: contain;
 }
 
+/* the knob sits on the dark highlight in light mode, so its icon goes white */
+.light #control-slider.muted-slider slider {
+  @apply mute_slider_img_light();
+}
+
+.light #control-slider.vol slider {
+  @apply volume_slider_img_light();
+}
+
+.light #control-slider.brightness slider {
+  @apply brightness_slider_img_light();
+}
+
+.light #control-slider.mic slider {
+  @apply mic_slider_img_light();
+}
+
+.light #control-slider.mic-off slider {
+  @apply mic_off_slider_img_light();
+}
+
 #control-small {
   padding: 4px;
   margin-top: 4px;

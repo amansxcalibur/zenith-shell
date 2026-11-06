@@ -20,14 +20,14 @@
   margin: 0 -5px;
 }
 
-#ws-btn-background-box {
+/* #ws-btn-background-box {
   transition: all 0.15s steps(8);
-  /* background-color: var(--surface); */
+  background-color: var(--surface);
   margin: 5px;
 }
 #ws-btn-background-box.activate {
   margin: 15px;
-}
+} */
 
 #workspaces > button > label {
   font-size: 0px;

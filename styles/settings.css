@@ -172,6 +172,12 @@
   background-color: var(--on-surface-variant);
 }
 
+/* the entry sits on a dark pill in light mode too */
+.light #settings-entry {
+  caret-color: var(--on-primary);
+  -gtk-secondary-caret-color: var(--on-primary);
+}
+
 .binding-conflict #settings-entry-container,
 .light .binding-conflict #settings-entry-container {
   background-color: var(--error);
@@ -237,7 +243,7 @@
 
 #config-path-box {
   border-radius: 20px;
-  color: var(--primary);
+  color: var(--foreground);
   background-color: var(--surface-semi-bright);
   padding: 8px 12px;
 }

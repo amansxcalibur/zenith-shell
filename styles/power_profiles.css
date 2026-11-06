@@ -3,9 +3,14 @@
   min-height: 56px;
   border-radius: 20px;
   font-size: 20px;
+  transition: color 0.25s cubic-bezier(0.5, 0.25, 0, 1);
 }
 .light .power-profile-btn {
   color: var(--foreground);
+}
+/* the slider is dark in light mode, the icon over it needs to be light */
+.light .power-profile-btn.on-slider {
+  color: var(--on-primary);
 }
 
 #power-profiles-container {
@@ -47,5 +52,5 @@
   color: var(--primary);
 }
 .light #power-profile-icon {
-  background-color: var(--outline-variant);
+  background-color: var(--surface-semi-bright);
 }

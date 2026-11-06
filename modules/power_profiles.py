@@ -147,6 +147,12 @@ class PowerProfilesSelector(EventBox):
         )
         self._left_spacer.set_style(f"min-width: {offset}px;")
 
+        for i, (_, btn) in enumerate(self._profile_buttons):
+            if i == idx:
+                btn.add_style_class("on-slider")
+            else:
+                btn.remove_style_class("on-slider")
+
     def _on_hover(self, mode):
         self._slide_to(self._mode_index(mode))
 
