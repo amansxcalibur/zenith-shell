@@ -1,3 +1,4 @@
+import math
 import cairo
 
 from fabric.widgets.box import Box
@@ -5,12 +6,27 @@ from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
 
+from widgets.clipping_box import ClippingBox
 from widgets.wrap_box import WrapBox
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
 
 import icons
 from utils.cursor import add_hover_cursor
 from ..state import state
+from modules.core.bottom.dock.placement import (
+    COMPACT_MODULE_SIDE_PADDING,
+    COMPACT_PADDING,
+    MODULE_RADIUS,
+    MODULE_SIZE,
+    PILL_RADIUS,
+    edge_band,
+)
+from modules.core.bottom.dock.surface import (
+    BORDER_WIDTH,
+    Hole,
+    trace_inner_edge,
+    trace_silhouette,
+)
 from ..base import BaseWidget, SectionBuilderMixin, LayoutBuilder
 
 import gi
@@ -29,6 +45,102 @@ ALL_MODULES_MAPPING = {
     "systray": "System Tray",
     "power_profiles": "Power Profiles",
 }
+
+
+class DockPreview(Gtk.DrawingArea):
+    """The bottom dock at a padding, drawn as DockSurface and the pill would be."""
+
+    MODULE_WIDTH = 70
+    PILL_WIDTH = 130
+    PILL_HEIGHT = 44
+    CORNER_RADIUS = 12  # #module-drop-box's 25px, less its 3px border and 10px padding
+
+    def __init__(self, padding: int, border: bool):
+        super().__init__(name="dock-preview", hexpand=True)
+        self._padding = padding
+        self._border = border
+        self.set_size_request(-1, 100)
+
+    def set_dock_padding(self, padding: int):
+        self._padding = padding
+        self.queue_draw()
+
+    def set_border(self, border: bool):
+        self._border = border
+        self.queue_draw()
+
+    def do_draw(self, cr: cairo.Context):
+        gap = self._padding
+        width, height = self.get_allocated_width(), self.get_allocated_height()
+        compact = gap == COMPACT_PADDING
+        depth = MODULE_SIZE + 2 * gap
+        thickness = depth + edge_band(gap)
+        flare = MODULE_RADIUS + gap
+        side = COMPACT_MODULE_SIDE_PADDING if compact else gap
+        slot = self.MODULE_WIDTH + 2 * side  # a module with its padding
+
+        pill_hole_size = self.PILL_WIDTH + 2 * gap
+        pill_hole_start = (width - pill_hole_size) / 2
+        holes = [
+            # the second module, as if hovered, and the pill
+            Hole(slot, slot, depth, flare, flare),
+            Hole(pill_hole_start, pill_hole_size, depth, flare, PILL_RADIUS + gap),
+        ]
+
+        # round the bottom corners to follow the frame around the preview
+        radius = self.CORNER_RADIUS
+        cr.move_to(0, 0)
+        cr.line_to(width, 0)
+        cr.arc(width - radius, height - radius, radius, 0, math.pi / 2)
+        cr.arc(radius, height - radius, radius, math.pi / 2, math.pi)
+        cr.close_path()
+        cr.clip()
+
+        context = self.get_style_context()
+        state_flags = context.get_state()
+        cr.translate(0, height - thickness)
+
+        cr.save()
+        trace_silhouette(cr, width, thickness, holes)
+        cr.clip()
+        Gdk.cairo_set_source_rgba(
+            cr, context.get_property("background-color", state_flags)
+        )
+        cr.paint()
+        if self._border:
+            trace_inner_edge(cr, width, holes)
+            cr.set_line_width(BORDER_WIDTH * 2)
+            Gdk.cairo_set_source_rgba(
+                cr, context.get_property("border-top-color", state_flags)
+            )
+            cr.stroke()
+        cr.restore()
+
+        Gdk.cairo_set_source_rgba(cr, context.get_color(state_flags))
+        for start, top in ((0, gap), (slot, 0 if compact else gap)):
+            cr.save()
+            cr.translate(start + side, top)
+            ClippingBox.render_shape(cr, self.MODULE_WIDTH, MODULE_SIZE, MODULE_RADIUS)
+            cr.fill()
+            cr.restore()
+
+        cr.save()
+        cr.translate(pill_hole_start + gap, depth - gap - self.PILL_HEIGHT)
+        ClippingBox.render_shape(cr, self.PILL_WIDTH, self.PILL_HEIGHT, PILL_RADIUS)
+        Gdk.cairo_set_source_rgba(
+            cr, context.get_property("background-color", state_flags)
+        )
+        cr.fill_preserve()
+        if self._border:
+            Gdk.cairo_set_source_rgba(
+                cr, context.get_property("border-top-color", state_flags)
+            )
+            cr.set_line_width(BORDER_WIDTH)
+            cr.stroke()
+        else:
+            cr.new_path()
+        cr.restore()
+        return False
 
 
 class PillDockTab(BaseWidget, SectionBuilderMixin):
@@ -190,12 +302,73 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
         self.container.add(
             LayoutBuilder.section(
                 "Dock",
-                [
-                    self._create_position_selector("Dock", dock_positions),
-                    dock_modules_section,
+                Box(
+                    orientation="v",
+                    spacing=16,
+                    children=[
+                        self._create_position_selector("Dock", dock_positions),
+                        self._create_appearance_section(),
+                        dock_modules_section,
+                    ],
+                ),
+            )
+        )
+
+    def _create_appearance_section(self):
+        self.dock_preview = DockPreview(
+            padding=state.get(["bar", "PADDING"]),
+            border=state.get(["bar", "BORDER"]),
+        )
+
+        border_switch = Gtk.Switch(
+            name="matugen-switcher", active=state.get(["bar", "BORDER"])
+        )
+        border_switch.set_valign(Gtk.Align.CENTER)
+        border_switch.connect("notify::active", self._on_border_toggled)
+
+        section_box = Box(
+            style_classes="settings-section-container", orientation="v", spacing=6
+        )
+        section_box.add(
+            Label(
+                label="Appearance",
+                style_classes="section-subheading",
+                h_align="start",
+            )
+        )
+        section_box.add(
+            Box(
+                spacing=30,
+                children=[
+                    Box(
+                        spacing=10,
+                        children=[
+                            Label(label="Border"),
+                            border_switch,
+                        ],
+                    ),
+                    LayoutBuilder.pixel_slider(
+                        "Padding",
+                        2,
+                        12,
+                        self._on_padding_changed,
+                        state.get(["bar", "PADDING"]),
+                    ),
                 ],
             )
         )
+        section_box.add(Box(name="module-drop-box", children=self.dock_preview))
+        return section_box
+
+    def _on_padding_changed(self, scale):
+        val = int(scale.get_value())
+        self.dock_preview.set_dock_padding(val)
+        state.update(["bar", "PADDING"], val)
+
+    def _on_border_toggled(self, switch, _pspec):
+        active = switch.get_active()
+        self.dock_preview.set_border(active)
+        state.update(["bar", "BORDER"], active)
 
     def _create_position_selector(self, group_id: str, positions: list):
         section_box = Box(

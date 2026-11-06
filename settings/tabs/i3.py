@@ -5,7 +5,6 @@ from fabric.widgets.eventbox import EventBox
 
 from widgets.wrap_box import WrapBox
 from widgets.material_label import MaterialIconLabel
-from widgets.animated_scale import AnimatedScale
 
 import icons
 from config.info import IS_WAYLAND
@@ -302,38 +301,8 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
         callback: callable = None,  # noqa: RUF013
         initial_val=30,
     ):
-        value_label = Label(
-            label=f"{int(initial_val)}px", style_classes="slider-value-label"
-        )
-
-        scale = AnimatedScale(
-            name="slider-mui",
-            orientation="h",
-            h_expand=True,
-            increments=(1, 1),
-            min_value=min_val,
-            max_value=max_val,
-            value=initial_val,
-        )
-
-        def on_value_changed(s):
-            val = int(s.get_value())
-            value_label.set_label(f"{val}px")
-            if callback is not None and scale.get_mapped():
-                callback(s)
-
-        scale.connect("value-changed", on_value_changed)
-        if callback is not None:
-            scale.connect("map", lambda: callback(scale))
-
-        return Box(
-            h_expand=True,
-            spacing=10,
-            children=[
-                Label(label=label, width_request=80, h_align="start"),
-                scale,
-                value_label,
-            ],
+        return LayoutBuilder.pixel_slider(
+            label, min_val, max_val, callback, initial_val
         )
 
     def _create_position_selector(self, group_id: str, positions: list):

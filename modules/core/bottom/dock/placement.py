@@ -7,7 +7,26 @@ from dataclasses import dataclass
 
 from config.config import config
 
-DOCK_THICKNESS = 40  # px, used until the dock has a real allocation
+MODULE_SIZE = 36  # px, a module's height (or width on a side dock)
+MODULE_RADIUS = 18  # px, the corners of a fully rounded module
+# the compact dock: holes reach the screen edge and hovered modules rise, with
+# their padding in styles/dock_widget.css. Any other padding is equal all around.
+COMPACT_PADDING = 2
+COMPACT_MODULE_SIDE_PADDING = 3  # px, #dock-module's padding along the dock
+DOCK_PADDING: int = config.get("bar.PADDING")  # px around each module
+
+
+def edge_band(padding: int) -> int:
+    """Px of dock left between a hole's floor and the screen edge."""
+    return 0 if padding == COMPACT_PADDING else 4
+
+
+DOCK_EDGE_BAND = edge_band(DOCK_PADDING)
+DOCK_THICKNESS = MODULE_SIZE + 2 * DOCK_PADDING + DOCK_EDGE_BAND
+PILL_RADIUS = 23  # px, the pill's corners
+PILL_WINDOW_PADDING = 2  # px, #pill-container's padding around the visible pill
+# how far the pill's hole reaches past its window to leave DOCK_PADDING all around
+PILL_HOLE_EXTRA = DOCK_PADDING - PILL_WINDOW_PADDING
 
 
 class DockEdge(Enum):
@@ -52,6 +71,25 @@ class DockPlacement:
     @property
     def style_class(self) -> str:
         return f"dock-{self.edge.value}"
+
+    @property
+    def thickness_style(self) -> str:
+        side = "min-width" if self.vertical else "min-height"
+        return f"{side}: {DOCK_THICKNESS}px;"
+
+    @property
+    def module_padding_style(self) -> str | None:
+        if DOCK_PADDING == COMPACT_PADDING:
+            return None  # the stylesheet's, which changes when raised
+
+        # equal all around a module; the band is extra on the screen's side
+        gap, outer = DOCK_PADDING, DOCK_PADDING + DOCK_EDGE_BAND
+        top, right, bottom, left = {
+            DockEdge.BOTTOM: (gap, gap, outer, gap),
+            DockEdge.LEFT: (gap, gap, gap, outer),
+            DockEdge.RIGHT: (gap, outer, gap, gap),
+        }[self.edge]
+        return f"padding: {top}px {right}px {bottom}px {left}px;"
 
     def expand_along(self) -> dict[str, bool]:
         """Widget kwargs that make a widget grow along the dock."""

@@ -17,14 +17,19 @@ from modules.clipboard import ClipboardHistory
 from modules.wallpaper import WallpaperSelector
 from modules.launcher import AppLauncher, AppCommands
 from modules.workspaces.workspaces import ActiveWindow
-from modules.core.bottom.dock.placement import current_placement
+from modules.core.bottom.dock.placement import (
+    DOCK_EDGE_BAND,
+    DOCK_THICKNESS,
+    PILL_HOLE_EXTRA,
+    current_placement,
+)
 
 from services.power_profiles import power_profiles_service
 
 from utils.colors import bind_theme
 from utils.helpers import open_settings, get_absolute_wayland_widget_position
 
-from widgets.clipping_box import ClippingBox
+from widgets.clipping_box import BorderedClippingBox, ClippingBox
 from widgets.elastic.elastic_stack import ElasticStack
 
 
@@ -45,6 +50,7 @@ if TYPE_CHECKING:
 
 class Pill(Window, Service):
     WIN_ROLE = "bottom-pill"
+    LIFTED_HEIGHT = DOCK_THICKNESS - 4  # the compact pill overlaps the dock by 4px
 
     @Signal
     def on_drag(self, drag_state: object, new_x: int, new_y: int): ...
@@ -132,7 +138,7 @@ class Pill(Window, Service):
         # lifts the compact pill out of the dock it sits in
         self._seated_in_dock = current_placement().seats_pill
         self.lift_box = Box(
-            style=f"min-height:{36 if self._seated_in_dock else 0}px;"  # 40-3-1
+            style=f"min-height:{self.LIFTED_HEIGHT if self._seated_in_dock else 0}px;"
         )
 
         self.stack = ElasticStack(
@@ -153,11 +159,12 @@ class Pill(Window, Service):
         )
         self.stack.get_inner_stack().set_homogeneous(False)
 
+        clipper = BorderedClippingBox if config.get("bar.BORDER") else ClippingBox
         self.pill_container = Box(
             name="pill-container",
             orientation="v",
             children=[
-                ClippingBox(name="pill-border-clipper", children=self.stack),
+                clipper(name="pill-border-clipper", children=self.stack),
                 self.lift_box,
             ],
         )
@@ -215,20 +222,25 @@ class Pill(Window, Service):
             return
         exec_shell_command_async(f"{IPC_UTIL} focus mode_toggle")
 
-    def lift_pill(self):
-        if (
+    def _is_over_dock(self) -> bool:
+        return (
             self._seated_in_dock
             and self._dock_is_visible
             and (self._pos["x"], self._pos["y"]) == ("center", "bottom")
-        ):
-            self.lift_box.set_style(
-                "min-height:36px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)"
-            )
+        )
+
+    def _set_lift(self, height: int):
+        self.lift_box.set_style(
+            f"min-height:{height}px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)"
+        )
+
+    def lift_pill(self):
+        if self._is_over_dock():
+            self._set_lift(self.LIFTED_HEIGHT)
 
     def lower_pill(self):
-        self.lift_box.set_style(
-            "min-height:0px; transition: min-height 0.25s cubic-bezier(0.5, 0.25, 0, 1)"
-        )
+        # above the hole's floor by the same gap as its walls
+        self._set_lift(DOCK_EDGE_BAND + PILL_HOLE_EXTRA if self._is_over_dock() else 0)
 
     # deferred to idle: callers (e.g. a snap) update the dock's anchors/geometry
     # right after this, and the dock reads them when it opens/closes

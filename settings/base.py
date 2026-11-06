@@ -8,6 +8,7 @@ from fabric.widgets.label import Label
 from fabric.widgets.scale import Scale
 from fabric.widgets.eventbox import EventBox
 
+from widgets.animated_scale import AnimatedScale
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialFontLabel
 
@@ -166,6 +167,49 @@ class LayoutBuilder:
         parent.pack_start(scale_box, False, False, 0)
 
         return scale
+
+    @staticmethod
+    def pixel_slider(
+        label: str,
+        min_val: float,
+        max_val: float,
+        callback: Callable | None = None,
+        initial_val: float = 30,
+    ) -> Box:
+        value_label = Label(
+            label=f"{int(initial_val)}px", style_classes="slider-value-label"
+        )
+
+        scale = AnimatedScale(
+            name="slider-mui",
+            orientation="h",
+            h_expand=True,
+            increments=(1, 1),
+            min_value=min_val,
+            max_value=max_val,
+            value=initial_val,
+        )
+        scale.set_round_digits(0)  # whole pixels while dragging
+
+        def on_value_changed(s):
+            val = int(s.get_value())
+            value_label.set_label(f"{val}px")
+            if callback is not None and scale.get_mapped():
+                callback(s)
+
+        scale.connect("value-changed", on_value_changed)
+        if callback is not None:
+            scale.connect("map", lambda: callback(scale))
+
+        return Box(
+            h_expand=True,
+            spacing=10,
+            children=[
+                Label(label=label, width_request=80, h_align="start"),
+                scale,
+                value_label,
+            ],
+        )
 
     @staticmethod
     def framed_container(

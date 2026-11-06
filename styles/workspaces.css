@@ -1,7 +1,6 @@
 #workspaces-container {
   background-color: var(--surface-bright);
-  border-radius: 17px;
-  margin-top: 1px;
+  border-radius: 18px;
 }
 .light #workspaces-container {
   background-color: var(--surface-semi-bright);

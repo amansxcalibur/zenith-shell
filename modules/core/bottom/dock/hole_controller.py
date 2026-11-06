@@ -80,7 +80,7 @@ class HoleController:
         self.hole.animate_to(
             start=start,
             size=size,
-            depth=self._surface.thickness,
+            depth=self._surface.hole_depth,
             flare=HOLE_FLARE,
         )
 
@@ -105,7 +105,7 @@ class HoleController:
             return
 
         start, size = along
-        depth = self._surface.thickness
+        depth = self._surface.hole_depth
         current = self.hole.current
         if self.hole.animating:
             self.hole.animate_to(start=start, size=size, depth=depth)

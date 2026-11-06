@@ -25,7 +25,14 @@ from utils.cursor import add_hover_cursor
 from widgets.edge_clip_viewport import EdgeClipViewport
 
 from .hole_controller import HoleController
-from .placement import DockInsets, DockEdge, current_placement
+from .placement import (
+    DOCK_PADDING,
+    PILL_HOLE_EXTRA,
+    PILL_RADIUS,
+    DockEdge,
+    DockInsets,
+    current_placement,
+)
 from .surface import HOLE_FLARE, DockSurface
 
 import gi
@@ -41,7 +48,7 @@ else:
 if TYPE_CHECKING:
     from ..pill import Pill
 
-PILL_HOLE_RADIUS = 25  # px, 2px larger than the pill's own corners
+PILL_HOLE_RADIUS = PILL_RADIUS + DOCK_PADDING  # px, concentric with the pill
 
 
 class DockBar(Window):
@@ -160,6 +167,7 @@ class DockBar(Window):
             module = Box(
                 name="dock-module",
                 orientation=self.placement.orientation,
+                style=self.placement.module_padding_style,
                 children=widget,
             )
             # dock modules raise their content on hover; anchor popups to the
@@ -221,11 +229,12 @@ class DockBar(Window):
         # transparent spacer that takes the pill's width; the surface cuts the
         # hole around it. The pads keep the hole's flares clear of the rows.
         self.pill_dock = Box(name="dock-pill-slot")
+        pad_style = f"min-width: {HOLE_FLARE + PILL_HOLE_EXTRA}px;"
         self.pill_slot = Box(
             children=[
-                Box(name="dock-pill-pad", h_expand=True),
+                Box(name="dock-pill-pad", h_expand=True, style=pad_style),
                 self.pill_dock,
-                Box(name="dock-pill-pad", h_expand=True),
+                Box(name="dock-pill-pad", h_expand=True, style=pad_style),
             ]
         )
         self.compact = Box(style="min-width:1px; min-height:1px;")
@@ -300,11 +309,13 @@ class DockBar(Window):
 
         # the pill drives this width as it animates, so follow it exactly
         start, size = along
+        start -= PILL_HOLE_EXTRA
+        size += 2 * PILL_HOLE_EXTRA
         current = self.pill_hole.current
         if (start, size) != (current.start, current.size):
             self.pill_hole.jump_to(start=start, size=size)
         if self.pill_hole.target.depth > 0:
-            self.pill_hole.animate_to(depth=self.surface.thickness)
+            self.pill_hole.animate_to(depth=self.surface.hole_depth)
 
     def get_is_open(self):
         return self.is_open
@@ -328,7 +339,9 @@ class DockBar(Window):
         if not self._pill_is_docked:
             # reopen around the centre the hole closed to
             target = self.pill_hole.target
-            size = self.pill_dock.get_preferred_width().natural_width
+            size = (
+                self.pill_dock.get_preferred_width().natural_width + 2 * PILL_HOLE_EXTRA
+            )
             self.pill_hole.animate_to(
                 start=target.start + (target.size - size) / 2, size=size
             )
@@ -351,7 +364,7 @@ class DockBar(Window):
 
     def _apply_open_visual(self):
         if self.pill_hole is not None:
-            self.pill_hole.animate_to(depth=self.surface.thickness, flare=HOLE_FLARE)
+            self.pill_hole.animate_to(depth=self.surface.hole_depth, flare=HOLE_FLARE)
 
     def _apply_close_visual(self):
         if self.pill_hole is not None:

@@ -7,7 +7,7 @@ from services.animator import Animator, CubicBezierCurves
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # type: ignore
+from gi.repository import Gdk, Gtk  # type: ignore
 
 
 class ClippingBox(Box):
@@ -50,6 +50,29 @@ class ClippingBox(Box):
 
         Box.do_draw(self, cr)
 
+        cr.restore()
+        return True
+
+
+class BorderedClippingBox(ClippingBox):
+    """A `ClippingBox` with a 1px line, in its CSS border-color, over its children."""
+
+    def do_draw(self, cr: cairo.Context):
+        ClippingBox.do_draw(self, cr)
+
+        context = self.get_style_context()
+        state = self.get_state_flags()
+        cr.save()
+        cr.translate(0.5, 0.5)
+        ClippingBox.render_shape(
+            cr,
+            self.get_allocated_width() - 1,
+            self.get_allocated_height() - 1,
+            cast(int, context.get_property("border-radius", state)) - 0.5,
+        )
+        cr.set_line_width(1)
+        Gdk.cairo_set_source_rgba(cr, context.get_property("border-top-color", state))
+        cr.stroke()
         cr.restore()
         return True
 

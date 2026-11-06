@@ -23,6 +23,7 @@
 
 #pill-border-clipper {
   border-radius: 23px;
+  border-color: var(--outline-variant);
 }
 
 #pill-container {

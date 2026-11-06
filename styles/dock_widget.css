@@ -1,22 +1,16 @@
 /* painted by DockSurface as the dock's silhouette, not as a plain box */
 #dock-surface {
   background-color: var(--shadow);
+  border-color: var(--outline-variant);
 }
 
-#dock-surface.dock-bottom {
-  min-height: 40px;
-}
+/* the dock's thickness is set from bar.PADDING by DockPlacement. Padding stays
+   on the modules, not the surface, so hovering the very edge of the screen still
+   works. */
 
-#dock-surface.dock-left,
-#dock-surface.dock-right {
-  min-width: 40px;
-}
-
-#dock-pill-pad {
-  min-width: 20px;
-}
-
-/* modules rest in the middle of the dock and raise away from the screen edge */
+/* the compact dock (bar.PADDING 2): modules rest in the middle of the dock and
+   raise away from the screen edge. DockPlacement overrides these at any other
+   padding, where a module keeps its place. */
 #dock-module {
   padding: 2px 3px;
   transition: padding 0.1s cubic-bezier(0.5, 0.25, 0, 1);

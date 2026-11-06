@@ -45,6 +45,8 @@ DEFAULTS = {
         "POSITION": "bottom",
         "HEIGHT": 32,
         "SPACING": 8,
+        "PADDING": 6,  # px around each dock module
+        "BORDER": True,  # line around the dock and the pill
         "modules": {
             "left": [
                 "actions",

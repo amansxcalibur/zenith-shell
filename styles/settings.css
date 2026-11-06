@@ -327,6 +327,12 @@
   background-color: var(--surface-semi-bright);
 }
 
+#dock-preview {
+  background-color: var(--shadow);
+  border-color: var(--outline-variant);
+  color: var(--surface-bright);
+}
+
 #settings-shapes-morph {
   color: var(--primary);
 }
