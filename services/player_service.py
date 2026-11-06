@@ -1,6 +1,7 @@
 import json
 import hashlib
 import mimetypes
+import shutil
 import subprocess
 import urllib.parse
 import urllib.request
@@ -357,12 +358,34 @@ class PlayerService(Service):
     def _is_artwork_stale(self, artwork_hash) -> bool:
         return self._is_cleaning_up or artwork_hash != self._current_artwork_hash
 
+    def _with_image_suffix(self, path: Path, artwork_hash) -> Path:
+        # matugen and Pillow's save pick the format from the extension, but Chrome
+        # names its artwork /tmp/.com.google.Chrome.XXXXXX, so copy those under a real one
+        if path.suffix.lower() in Image.registered_extensions():
+            return path
+
+        with Image.open(path) as img:
+            suffix = f".{img.format.lower()}"
+
+        cache_dir = Path(TEMP_DIR) / "player-art"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        named_path = cache_dir / f"{artwork_hash}{suffix}"
+        if not named_path.exists():
+            shutil.copyfile(path, named_path)
+        return named_path
+
     def _process_local_artwork(self, art_url, artwork_hash):
         # runs off the main thread, so a newer track can overtake this one
         if self._is_artwork_stale(artwork_hash):
             return
 
-        input_path = Path(art_url)
+        try:
+            input_path = self._with_image_suffix(Path(art_url), artwork_hash)
+        except OSError as e:
+            logger.error(f"Failed to read artwork {art_url}: {e}")
+            return
+
+        art_url = str(input_path)
         blurred_dir = Path(TEMP_DIR) / "player-art" / "blurred"
         blurred_dir.mkdir(parents=True, exist_ok=True)
 
@@ -411,18 +434,17 @@ class PlayerService(Service):
                 check=True,
             )
 
-            if result.returncode == 0:
-                try:
-                    theme_json = json.loads(result.stdout)
-                    if self._is_artwork_stale(artwork_hash):
-                        return
-                    self._theme_cache[artwork_hash] = theme_json
-                    self._current_theme = theme_json
-                    self.theme_change(theme_json)
-                except (json.JSONDecodeError, KeyError) as e:
-                    logger.error(f"Failed to parse color theme: {e}")
-            else:
-                logger.error(f"Matugen error: {result.stderr}")
+            try:
+                theme_json = json.loads(result.stdout)
+                if self._is_artwork_stale(artwork_hash):
+                    return
+                self._theme_cache[artwork_hash] = theme_json
+                self._current_theme = theme_json
+                self.theme_change(theme_json)
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.error(f"Failed to parse color theme: {e}")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Matugen error: {e.stderr.strip()}")
         except (subprocess.SubprocessError, OSError) as e:
             logger.error(f"Matugen process failed: {e}")
 
