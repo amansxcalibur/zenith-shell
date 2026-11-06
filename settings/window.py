@@ -8,7 +8,7 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.utils.helpers import exec_shell_command_async
 
 from config.info import IS_WAYLAND
-from config.i3.utils import is_swayfx
+from config.i3.utils import generate_i3_keybinds_config, is_swayfx
 from config.info import CONFIG_FILE, SHELL_NAME
 from config.bindings import (
     KeyBinding,
@@ -403,11 +403,34 @@ class SettingsWindow(Window):
         actions = ", ".join(titles[:-1]) + f" and {titles[-1]}"
         return f"{scope_label}: {key} is used by {actions}"
 
+    def _show_first_conflict(self):
+        self.stack.set_visible_child_name("key_bindings")
+        row = self.key_bindings_tab.get_first_conflict_row()
+        if row:
+            self._scroll_to_widget(row)
+
     def on_save(self, btn):
         try:
             self._validate_state_bindings()
             state.print_all()
             state.save_to_disk()
+            state.reset()
+            generate_i3_keybinds_config()
+            if self.key_bindings_tab.check_wm_conflicts():
+                self._show_first_conflict()
+                exec_shell_command_async(
+                    [
+                        "notify-send",
+                        "-u",
+                        "critical",
+                        "Keybinding conflict",
+                        (
+                            "Settings were saved, but a key is also used by your window "
+                            "manager config. Rebind it or remove it from that config."
+                        ),
+                    ]
+                )
+                return
             exec_shell_command_async(
                 "notify-send 'Zenith Settings' 'Restart zenith-shell to apply changes.'"
             )
@@ -415,8 +438,7 @@ class SettingsWindow(Window):
 
         except KeybindingValidationError as e:
             logger.warning(f"Failed to save: {e}")
-            self.stack.set_visible_child_name("key_bindings")
-            self._scroll_to_widget(self.key_bindings_tab.get_first_conflict_row())
+            self._show_first_conflict()
             # Passed as argv, and escaped because notification bodies are markup.
             body = GLib.markup_escape_text(f"{e}\nSettings were not saved.")
             exec_shell_command_async(

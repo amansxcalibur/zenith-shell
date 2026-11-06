@@ -4,7 +4,7 @@ _zenith_shell() {
     local seen=" ${COMP_WORDS[*]:1:COMP_CWORD-1} " subcommand="" word opts
 
     if [[ $COMP_CWORD -eq 1 ]]; then
-        COMPREPLY=($(compgen -W "start stop restart status lock setup help --help --version" -- "$cur"))
+        COMPREPLY=($(compgen -W "start stop restart status lock settings setup help --help --version" -- "$cur"))
         return
     fi
 

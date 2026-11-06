@@ -1,10 +1,8 @@
-"""Run with: python3 -m unittest discover -s installer/tests
-
-Nothing here touches a real shell: the launcher runs against stubbed pgrep, pkill and python.
-"""
+"""python3 -m unittest discover -s installer/tests"""  # :|
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -16,11 +14,21 @@ sys.path.insert(0, str(INSTALLER))
 
 import common as c
 import main as m
+from config.wm_conflicts import find_wm_conflicts, parse_i3_output, parse_sway_output
 
 COMPLETION_FILES = [
     INSTALLER / "completions" / source for source, _ in m.COMPLETIONS.values()
 ]
-LAUNCHER_COMMANDS = ["start", "stop", "restart", "status", "lock", "setup", "help"]
+LAUNCHER_COMMANDS = [
+    "start",
+    "stop",
+    "restart",
+    "status",
+    "lock",
+    "settings",
+    "setup",
+    "help",
+]
 
 
 def subparsers(parser: argparse.ArgumentParser) -> dict[str, argparse.ArgumentParser]:
@@ -40,7 +48,10 @@ class CompletionTests(unittest.TestCase):
             for name, sub in subparsers(m.build_parser()).items():
                 self.assertIn(name, text, path.name)
                 for action in sub._actions:
-                    if action.help == argparse.SUPPRESS or "-h" in action.option_strings:
+                    if (
+                        action.help == argparse.SUPPRESS
+                        or "-h" in action.option_strings
+                    ):
                         continue
                     longest = max(action.option_strings, key=len).lstrip("-")
                     self.assertIn(longest, text, f"{path.name}: {name}")
@@ -106,7 +117,9 @@ class LauncherTests(unittest.TestCase):
             ("pkill", 'echo pkill >> "$CALLS"; [ -e "$RUNNING" ] && rm "$RUNNING"'),
         ):
             self.stub(self.bin / name, body)
-        self.stub(self.venv_bin / "python", 'echo "python $* dir=$ZENITH_DIR" >> "$CALLS"')
+        self.stub(
+            self.venv_bin / "python", 'echo "python $* dir=$ZENITH_DIR" >> "$CALLS"'
+        )
         self.launcher = self.root / "zenith-shell"
         self.launcher.write_text(
             m.LAUNCHER.replace("@INSTALL_DIR@", str(self.root))
@@ -157,6 +170,54 @@ class LauncherTests(unittest.TestCase):
     def test_setup_exports_the_install_dir(self):
         _, calls = self.run_launcher("setup", "doctor")
         self.assertIn(f"installer/main.py doctor dir={self.root}", calls)
+
+
+class WmConflictTests(unittest.TestCase):
+    def test_i3_output_is_deduplicated_and_keeps_modifiers(self):
+        output = (
+            "ERROR: Duplicate keybinding in config file:\n"
+            '  state mask 0x41 with keysym n, command "exec zenith-bar"\n'
+            "ERROR: Duplicate keybinding in config file:\n"
+            '  state mask 0x41 with keysym n, command "exec zenith-bar"\n'
+        )
+        conflicts = parse_i3_output(output)
+        self.assertEqual(len(conflicts), 1)
+        self.assertEqual(conflicts[0].key, "Shift+Mod4+n")
+        self.assertEqual(conflicts[0].commands, ("exec zenith-bar",))
+
+    def test_sway_output_names_both_commands(self):
+        output = (
+            "[INFO] [sway/commands/bind.c:287] Overwriting binding 'Mod4+d' "
+            "for device '*' to `exec zenith-open` from `exec dmenu_run`\n"
+        )
+        conflicts = parse_sway_output(output)
+        self.assertEqual(conflicts[0].key, "Mod4+d")
+        self.assertEqual(conflicts[0].commands, ("exec zenith-open", "exec dmenu_run"))
+
+    def test_real_wms_follow_includes_and_ignore_modifier_order(self):
+        for wm in ("i3", "sway"):
+            if not shutil.which(wm):
+                continue
+            with self.subTest(wm=wm), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                (root / "theirs.conf").write_text("bindsym Shift+$mod+d exec theirs\n")
+                (root / "ours.conf").write_text("bindsym $mod+Shift+d exec ours\n")
+                (root / "other.conf").write_text("bindsym $mod+x exec other\n")
+                main = root / "config"
+
+                main.write_text(
+                    "set $mod Mod4\n"
+                    f"include {root}/theirs.conf\ninclude {root}/ours.conf\n"
+                )
+                conflicts = find_wm_conflicts(wm, main)
+                self.assertEqual(len(conflicts), 1)
+                self.assertIn("exec ours", conflicts[0].commands)
+
+                main.write_text(
+                    f"set $mod Mod4\ninclude {root}/other.conf\n"
+                    f"include {root}/ours.conf\n"
+                )
+                self.assertEqual(find_wm_conflicts(wm, main), [])
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+import re
 from loguru import logger
 from typing import ClassVar
 
@@ -14,9 +15,13 @@ from utils.helpers import format_accel_to_keybind
 import icons
 from ..base import BaseWidget, SectionBuilderMixin, LayoutBuilder
 from ..state import state
-from config.bindings import find_keybinding_conflicts
+from config.bindings import (
+    build_resolved_binding_instances,
+    find_keybinding_conflicts,
+)
 from config.config import config
 from config.info import IS_WAYLAND
+from config.wm_conflicts import find_wm_conflicts
 
 import gi
 
@@ -93,7 +98,7 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
             )
         )
 
-        self._refresh_conflicts()
+        self.check_wm_conflicts()
 
     def _create_entry_binding_row(self, binding):
         entry = Entry(
@@ -174,27 +179,57 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
         return row
 
     def get_first_conflict_row(self):
-        # scopes and actions are declared in the order the rows are displayed.
-        first_conflict = find_keybinding_conflicts(state.get(["bindings"]) or {})[0]
-        row, _conflict_hint = self._rows[first_conflict[0].action]
-        return row
+        # rows are stored in display order
+        for row, conflict_hint in self._rows.values():
+            if conflict_hint.get_visible():
+                return row
+        return None
+
+    def check_wm_conflicts(self):
+        """Ask the WM about the saved config, then highlight the rows it names."""
+        wm = "sway" if IS_WAYLAND else "i3"
+        found = find_wm_conflicts(wm)
+        self._wm_conflicts = {}
+        for binding in build_resolved_binding_instances(
+            state.get(["bindings"]) or {}
+        )["i3"].values():
+            for conflict in found:
+                others = [c for c in conflict.commands if binding.command not in c]
+                if len(others) < len(conflict.commands):
+                    hint = f"Also bound in your {wm} config"
+                    if others:
+                        hint += f": {self._short_command(others[0])}"
+                    self._wm_conflicts[binding.action] = (binding.key, hint)
+        self._refresh_conflicts()
+        return found
+
+    @staticmethod
+    def _short_command(command: str) -> str:
+        command = re.sub(r"^exec\s+(--\S+\s+)*", "", command)
+        return command if len(command) <= 40 else f"{command[:39]}…"
 
     def _refresh_conflicts(self):
-        conflicting_titles = {}
-        for group in find_keybinding_conflicts(state.get(["bindings"]) or {}):
+        bindings = state.get(["bindings"]) or {}
+        hints = {}
+        for group in find_keybinding_conflicts(bindings):
             for binding in group:
-                conflicting_titles[binding.action] = [
-                    other.title for other in group if other is not binding
-                ]
+                titles = [other.title for other in group if other is not binding]
+                hints[binding.action] = f"Also used by {', '.join(titles)}"
+
+        current = build_resolved_binding_instances(bindings)["i3"]
+        for action, (key, hint) in self._wm_conflicts.items():
+            # A changed key can't be judged until it is saved and checked again
+            if current[action].key == key:
+                hints.setdefault(action, hint)
 
         for action, (row, conflict_hint) in self._rows.items():
-            titles = conflicting_titles.get(action)
-            if titles:
+            hint = hints.get(action)
+            if hint:
                 row.add_style_class("binding-conflict")
-                conflict_hint.set_label(f"Also used by {', '.join(titles)}")
+                conflict_hint.set_label(hint)
             else:
                 row.remove_style_class("binding-conflict")
-            conflict_hint.set_visible(bool(titles))
+            conflict_hint.set_visible(bool(hint))
 
     def _handle_hover(self, widget, event, target: Entry, is_enter):
         if event.detail != Gdk.NotifyType.INFERIOR:

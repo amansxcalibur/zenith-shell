@@ -6,6 +6,9 @@ from config.config import config
 
 class SettingsState:
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         # config.get_all() does a shallow copy
         self.staged_data = copy.deepcopy(config.get_all())
 

@@ -39,6 +39,7 @@ _zenith_shell() {
             'restart:restart the shell'
             'status:show whether the shell is running'
             'lock:lock the screen'
+            'settings:open the settings window'
             'setup:install, update or remove Zenith Shell'
             'help:show help'
             '--help:show help'

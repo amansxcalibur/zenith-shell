@@ -166,7 +166,7 @@ Tools the installer built from source are kept, because other Fabric-based shell
 
 - **Missing dependencies:** Run `zenith-shell setup doctor` to see what's missing.
 - **Installer issues:** Check the full log at `~/.cache/zenith-shell/install.log`.
-- **Duplicate keybindings:** The installer adds keybindings to your i3/sway config. If you already use the same keys, your window manager may warn about duplicates. Review `~/.config/<i3|sway>/config`. Zenith's keybindings use `$mod`; if your config doesn't set it, Zenith sets it to the Super key (`Mod4`).
+- **Conflicting keybindings:** Zenith never edits bindings in your existing i3/sway config. If one of its keys is already in use, including in an included file, `install`, `sync`, `update` and `doctor` list the conflict and exit with an error, and the Keybindings tab of the settings window highlights it. To fix it, rebind the key with `zenith-shell settings`, which works even when the launcher's key is taken, or remove it from your config. Then reload your window manager to clear its error bar. Zenith's keybindings use `$mod`; if your config doesn't set it, Zenith sets it to the Super key (`Mod4`).
 - **i3 compositor effects:** Rounded corners, true transparency, and other effects require picom **v12 or newer**. Older or distro-patched builds may warn or lack effects. See the upstream [yshui/picom](https://github.com/yshui/picom) project.
 - **Screen appears black after enabling screen corners:** Disable screen corners until a compatible picom compositor is running. Do not enable screen corners without picom.
 

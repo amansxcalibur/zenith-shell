@@ -8,9 +8,11 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+INSTALLER_DIR = Path(__file__).resolve().parent
+sys.path[:0] = [str(INSTALLER_DIR), str(INSTALLER_DIR.parent)]
 
 import common as c
+from config.wm_conflicts import find_wm_conflicts
 from common import (
     BLUE,
     BOLD,
@@ -121,7 +123,7 @@ LAUNCHER = r"""#!/usr/bin/env bash
 cd "@INSTALL_DIR@" || exit 1
 
 PROCESS='@PROCESS@'
-COMMANDS=(start stop restart status lock setup help)
+COMMANDS=(start stop restart status lock settings setup help)
 
 running() { pgrep -f "$PROCESS" >/dev/null; }
 
@@ -170,6 +172,7 @@ Usage:
     zenith-shell restart          restart the shell
     zenith-shell status           show whether the shell is running
     zenith-shell lock [-f]        lock the screen (-f: return once locked)
+    zenith-shell settings         open the settings window
     zenith-shell setup <cmd>      install | sync | update | doctor | uninstall | logs
                                   (zenith-shell setup --help for details)
     zenith-shell -V, --version    show the installed version
@@ -184,6 +187,9 @@ EOF
         # and xss-lock's sleep fd must reach the locker
         shift
         exec "@VENV@/bin/python" -m lock "$@"
+        ;;
+    settings)
+        exec "@VENV@/bin/python" -m settings
         ;;
     setup)
         shift
@@ -323,6 +329,23 @@ def show_plan(plan, backend, configure: list[str]) -> None:
 # ----------------------------------------------------------------------------
 # doctor
 # ----------------------------------------------------------------------------
+CONFLICT_FIX = (
+    "rebind the key in zenith-shell settings (Keybindings tab) or remove it from "
+    "your window manager config, then reload the window manager"
+)
+
+
+def keybinding_conflicts(wms: list[str]) -> dict:
+    found = {wm: find_wm_conflicts(wm) for wm in wms}
+    return {wm: conflicts for wm, conflicts in found.items() if conflicts}
+
+
+def conflict_lines(conflicts) -> list[str]:
+    return [
+        f"{conflict.key}: {' / '.join(conflict.commands)}" for conflict in conflicts
+    ]
+
+
 def cmd_doctor(args, backend) -> int:
     wms = c.resolve_wms(args.wm)
     if not wms:
@@ -348,6 +371,7 @@ def cmd_doctor(args, backend) -> int:
         wm for wm in wms if c.have(wm) and not c.wm_autostart_configured(wm)
     ]
     not_installed = [wm for wm in wms if not c.have(wm)]
+    conflicts = keybinding_conflicts(wms)
     setup_checks = {
         "virtualenv": c.venv_ok(),
         "launcher": os.access(launcher, os.X_OK),
@@ -361,6 +385,10 @@ def cmd_doctor(args, backend) -> int:
             lines.append(f"{mark(False)} {wm} is not installed")
         else:
             lines.append(f"{mark(wm not in unconfigured)} {wm} autostart")
+            lines.append(f"{mark(wm not in conflicts)} {wm} keybindings")
+            lines += [
+                f"    {DIM}{line}{NC}" for line in conflict_lines(conflicts.get(wm, []))
+            ]
 
     target = "all" if len(wms) > 1 else wms[0]
     fixes = []
@@ -372,6 +400,8 @@ def cmd_doctor(args, backend) -> int:
         fixes.append(
             f"install {' and '.join(not_installed)}, then: zenith-shell setup sync --wm {target}"
         )
+    if conflicts:
+        fixes.append(CONFLICT_FIX)
     if not on_path:
         fixes.append('add to your shell rc: export PATH="$HOME/.local/bin:$PATH"')
 
@@ -384,17 +414,25 @@ def cmd_doctor(args, backend) -> int:
 # ----------------------------------------------------------------------------
 # install / sync
 # ----------------------------------------------------------------------------
-def notices(plan, configured: list[str]) -> None:
-    for wm in configured:
+def report_keybinding_conflicts(wms: list[str]) -> int:
+    """Nothing is edited: the user decides which binding keeps the key. Returns the exit code."""
+    conflicts = keybinding_conflicts(wms)
+    for wm, found in conflicts.items():
         panel(
-            f"{wm} keybindings",
+            f"{wm} has conflicting keybindings",
             [
-                f"{c.SHELL_NAME} has added {wm} config snippets and keybindings.",
-                "If you already have custom keybindings you may see duplicate-binding warnings.",
-                f"Review: ~/.config/{wm}/config (or your included files)",
+                *conflict_lines(found),
+                "",
+                "Zenith's launcher or other shortcuts may not work until this is fixed.",
             ],
-            YELLOW,
+            RED,
         )
+    if conflicts:
+        info(f"Fix with:  {CONFLICT_FIX}")
+    return 1 if conflicts else 0
+
+
+def notices(plan) -> None:
     if "x11" in plan.features:
         lines = [
             f"Config shipped in: {c.INSTALL_DIR}/config/picom",
@@ -508,7 +546,7 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
     if command == "sync" and not plan.needs_work and not configure:
         c.save_state(wms, backend.name)
         ok(f"Everything for {'+'.join(wms)} is already installed.")
-        return 0
+        return report_keybinding_conflicts(wms)
     if args.dry_run:
         info("Dry run – nothing was changed.")
         return 0
@@ -547,9 +585,9 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
             f"Zenith Shell is still running the old components – apply the changes with: {BOLD}zenith-shell restart{NC}"
         )
     if command != "update":
-        notices(plan, configure)
+        notices(plan)
         info(f"Switched window manager later? Run: {BOLD}zenith-shell setup sync{NC}")
-    return 0
+    return report_keybinding_conflicts(wms)
 
 
 # ----------------------------------------------------------------------------
