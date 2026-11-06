@@ -129,6 +129,8 @@ class PlayerService(Service):
         self._can_shuffle = False
         self._poll_source_id = None
         self._latest_position_query = 0  # replies to older queries are out of date
+        self._duration_track = None
+        self._duration = 0.0
         self._current_artwork_hash = ""
         self._current_theme = None
         self._current_artwork_path = ""
@@ -206,7 +208,18 @@ class PlayerService(Service):
         """Length of the current track in seconds, 0 if the player doesn't report one."""
         metadata = self._player.props.metadata
         keys = metadata.keys() if metadata else []
-        return metadata["mpris:length"] / 1_000_000 if "mpris:length" in keys else 0.0
+        track = get_track_labels(metadata) if keys else None
+        if track != self._duration_track:
+            self._duration_track = track
+            self._duration = 0.0
+        # Firefox drops the length after a seek, keep it until the track changes
+        if "mpris:length" in keys:
+            self._duration = metadata["mpris:length"] / 1_000_000
+        return self._duration
+
+    def _is_length_missing(self) -> bool:
+        metadata = self._player.props.metadata
+        return not metadata or "mpris:length" not in metadata.keys()  # noqa: SIM118 its a GLib.Variant
 
     def set_position(self, pos: float):
         if self._is_cleaning_up:
@@ -265,7 +278,12 @@ class PlayerService(Service):
         if position is None:
             logger.debug("Player did not report a position")
             return
-        self.track_position(position / 1_000_000, self.get_duration())  # seconds
+        duration = self.get_duration()
+        # Firefox also reports a position of 0 for as long as the length is gone
+        if duration and self._is_length_missing():
+            logger.debug("Ignoring position from a player that lost its track length")
+            return
+        self.track_position(position / 1_000_000, duration)  # seconds
 
     def on_play(self, player, status):
         if self._is_cleaning_up:
