@@ -1,8 +1,7 @@
 import math
+import cairo
 from collections.abc import Callable
 from dataclasses import dataclass, replace
-
-import cairo
 
 from fabric.widgets.box import Box
 
@@ -15,19 +14,19 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # type: ignore
 
-NOTCH_DURATION = 0.25  # seconds
-NOTCH_CURVE = (0.5, 0.25, 0, 1)
-NOTCH_FLARE = 20  # px, outward curve where a notch meets the inner edge
-NOTCH_RADIUS = 20  # px, rounding of a notch's inner corners
+HOLE_DURATION = 0.25  # seconds
+HOLE_CURVE = (0.5, 0.25, 0, 1)
+HOLE_FLARE = 20  # px, outward curve where a hole meets the inner edge
+HOLE_RADIUS = 20  # px, rounding of a hole's inner corners
 
 
 @dataclass
-class Notch:
+class Hole:
     start: float = 0
     size: float = 0
     depth: float = 0
     flare: float = 0
-    radius: float = NOTCH_RADIUS
+    radius: float = HOLE_RADIUS
 
     @property
     def end(self) -> float:
@@ -39,55 +38,55 @@ class Notch:
 
 
 def trace_silhouette(
-    cr: cairo.Context, length: float, thickness: float, notches: list[Notch]
+    cr: cairo.Context, length: float, thickness: float, holes: list[Hole]
 ) -> None:
-    """Trace the dock's outline. Notches must be ordered and not overlap."""
-    notches = [n for n in notches if n.is_open]
+    """Trace the dock's outline. Holes must be ordered and not overlap."""
+    holes = [n for n in holes if n.is_open]
 
     cr.move_to(0, 0)
-    for i, notch in enumerate(notches):
-        # flares can't cross the screen edge and split the gap between notches
-        before = notch.start if i == 0 else (notch.start - notches[i - 1].end) / 2
+    for i, hole in enumerate(holes):
+        # flares can't cross the screen edge and split the gap between holes
+        before = hole.start if i == 0 else (hole.start - holes[i - 1].end) / 2
         after = (
-            length - notch.end
-            if i == len(notches) - 1
-            else (notches[i + 1].start - notch.end) / 2
+            length - hole.end
+            if i == len(holes) - 1
+            else (holes[i + 1].start - hole.end) / 2
         )
-        flare_before = max(0, min(notch.flare, before, notch.depth))
-        flare_after = max(0, min(notch.flare, after, notch.depth))
-        radius = min(notch.radius, notch.depth, notch.size / 2)
+        flare_before = max(0, min(hole.flare, before, hole.depth))
+        flare_after = max(0, min(hole.flare, after, hole.depth))
+        radius = min(hole.radius, hole.depth, hole.size / 2)
 
-        # flares sit outside the notch and corners inside it, so the two may
-        # share a stretch of depth (a shallow notch) without crossing
-        cr.line_to(notch.start - flare_before, 0)
+        # flares sit outside the hole and corners inside it, so the two may
+        # share a stretch of depth (a shallow hole) without crossing
+        cr.line_to(hole.start - flare_before, 0)
         if flare_before > 0:
             cr.arc(
-                notch.start - flare_before,
+                hole.start - flare_before,
                 flare_before,
                 flare_before,
                 -math.pi / 2,
                 0,
             )
-        cr.line_to(notch.start, notch.depth - radius)
+        cr.line_to(hole.start, hole.depth - radius)
         cr.arc_negative(
-            notch.start + radius,
-            notch.depth - radius,
+            hole.start + radius,
+            hole.depth - radius,
             radius,
             math.pi,
             math.pi / 2,
         )
-        cr.line_to(notch.end - radius, notch.depth)
+        cr.line_to(hole.end - radius, hole.depth)
         cr.arc_negative(
-            notch.end - radius,
-            notch.depth - radius,
+            hole.end - radius,
+            hole.depth - radius,
             radius,
             math.pi / 2,
             0,
         )
-        cr.line_to(notch.end, flare_after)
+        cr.line_to(hole.end, flare_after)
         if flare_after > 0:
             cr.arc(
-                notch.end + flare_after,
+                hole.end + flare_after,
                 flare_after,
                 flare_after,
                 math.pi,
@@ -100,20 +99,20 @@ def trace_silhouette(
     cr.close_path()
 
 
-class AnimatedNotch:
+class AnimatedHole:
     def __init__(
         self,
         tick_widget: Gtk.Widget,
         on_change: Callable[[], None],
-        radius: float = NOTCH_RADIUS,
+        radius: float = HOLE_RADIUS,
     ):
-        self.current = Notch(radius=radius)
+        self.current = Hole(radius=radius)
         self._from = replace(self.current)
         self._to = replace(self.current)
         self._on_change = on_change
         self._animator = Animator(
-            bezier_curve=NOTCH_CURVE,
-            duration=NOTCH_DURATION,
+            bezier_curve=HOLE_CURVE,
+            duration=HOLE_DURATION,
             min_value=0,
             max_value=1,
             tick_widget=tick_widget,
@@ -125,7 +124,7 @@ class AnimatedNotch:
         return self._animator.playing
 
     @property
-    def target(self) -> Notch:
+    def target(self) -> Hole:
         return self._to
 
     def animate_to(self, **values: float) -> None:
@@ -160,13 +159,12 @@ class DockSurface(Box):
         )
         self.placement = placement
         self.add_style_class(placement.style_class)
-        self._notches: list[AnimatedNotch] = []
+        self._holes: list[AnimatedHole] = []
 
-    def add_notch(self, radius: float = NOTCH_RADIUS) -> AnimatedNotch:
-        """Add a notch. Call in the order the notches appear along the dock."""
-        notch = AnimatedNotch(self, self.queue_draw, radius)
-        self._notches.append(notch)
-        return notch
+    def add_hole(self, radius: float = HOLE_RADIUS) -> AnimatedHole:
+        hole = AnimatedHole(self, self.queue_draw, radius)
+        self._holes.append(hole)
+        return hole
 
     @property
     def thickness(self) -> int:
@@ -197,7 +195,7 @@ class DockSurface(Box):
             cr,
             self.placement.length(width, height),
             self.placement.thickness(width, height),
-            [notch.current for notch in self._notches],
+            [hole.current for hole in self._holes],
         )
         cr.restore()  # the path keeps its device coordinates
         cr.clip()

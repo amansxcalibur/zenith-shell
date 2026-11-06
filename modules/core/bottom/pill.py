@@ -9,15 +9,15 @@ from fabric.utils.helpers import exec_shell_command_async
 from config.config import config
 from config.info import USERNAME, HOSTNAME, IS_WAYLAND, IPC_UTIL
 
-from modules.core.bottom.dock.placement import current_placement
 from modules.dashboard import Dashboard
-from modules.clipboard import ClipboardHistory
 from modules.power_menu import PowerMenu
 from modules.player import PlayerContainer
 from modules.controls import ControlsManager
+from modules.clipboard import ClipboardHistory
 from modules.wallpaper import WallpaperSelector
 from modules.launcher import AppLauncher, AppCommands
 from modules.workspaces.workspaces import ActiveWindow
+from modules.core.bottom.dock.placement import current_placement
 
 from services.power_profiles import power_profiles_service
 

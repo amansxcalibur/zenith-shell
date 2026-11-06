@@ -18,6 +18,14 @@ from gi.repository import Gtk, Gdk, GtkLayerShell  # type: ignore
 class ShellWindowManager:
     DOCK_GAP = 3  # px between the dock and a pill floating above it
 
+    @property
+    def pill_widget(self):
+        return self.pill
+
+    @property
+    def dock_widget(self):
+        return self.dockBar
+
     def __init__(self, pill: Pill, dockBar: DockBar):
         if not pill or not dockBar:
             raise ValueError(
@@ -65,15 +73,6 @@ class ShellWindowManager:
 
     def _remove_size_groups(self):
         self.pill_size_group.remove_widget(self.pill.pill_container)
-
-    # -- Properties --
-    @property
-    def pill_widget(self):
-        return self.pill
-
-    @property
-    def dock_widget(self):
-        return self.dockBar
 
     def _get_monitor_geometry(self, widget):
         display = Gdk.Display.get_default()
@@ -186,7 +185,7 @@ class ShellWindowManager:
             target_y = y_targets[target_y_name]
 
         # bottom center sits INSIDE the dock; the dock's module rows clip
-        # under the notch when the pill is wider than the free space
+        # under the hole when the pill is wider than the free space
         should_sit_inside_dock = (
             self.dockBar.placement.seats_pill
             and target_y_name == "bottom"

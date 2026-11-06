@@ -3,9 +3,9 @@ from __future__ import annotations
 from loguru import logger
 from typing import TYPE_CHECKING
 
-from fabric.core.service import Signal
 from fabric.widgets.box import Box
 from fabric.widgets.stack import Stack
+from fabric.core.service import Signal
 
 from config.config import config
 from config.info import IS_WAYLAND
@@ -26,7 +26,7 @@ from widgets.edge_clip_viewport import EdgeClipViewport
 
 from .hole_controller import HoleController
 from .placement import DockInsets, DockEdge, current_placement
-from .surface import NOTCH_FLARE, DockSurface
+from .surface import HOLE_FLARE, DockSurface
 
 import gi
 
@@ -41,7 +41,7 @@ else:
 if TYPE_CHECKING:
     from ..pill import Pill
 
-PILL_NOTCH_RADIUS = 25  # px, 2px larger than the pill's own corners
+PILL_HOLE_RADIUS = 25  # px, 2px larger than the pill's own corners
 
 
 class DockBar(Window):
@@ -171,12 +171,12 @@ class DockBar(Window):
     def build_bar(self):
         self.surface = DockSurface(self.placement)
 
-        # notches are drawn in the order they're added, so this order matters
+        # holes are drawn in the order they're added, so this order matters
         self.holes_start = HoleController(
             self.surface, self.placement, self.modules_start, side="start"
         )
-        self.pill_notch = (
-            self.surface.add_notch(radius=PILL_NOTCH_RADIUS)
+        self.pill_hole = (
+            self.surface.add_hole(radius=PILL_HOLE_RADIUS)
             if self.placement.seats_pill
             else None
         )
@@ -185,7 +185,7 @@ class DockBar(Window):
         )
 
         # the module rows may shrink below their natural size: when the pill
-        # notch (size-grouped with the pill) needs more room than is free,
+        # hole (size-grouped with the pill) needs more room than is free,
         # it slides over the inner ends of the rows instead of overflowing
         self.start_clip = self._clip_row(self.holes_start, edge="start")
         self.end_clip = self._clip_row(self.holes_end, edge="end")
@@ -196,7 +196,7 @@ class DockBar(Window):
                 self._build_pill_slot(),
                 self.end_clip,
             ]
-            # equal sides keep the notch centred
+            # equal sides keep the hole centred
             size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
             size_group.add_widget(self.start_clip)
             size_group.add_widget(self.end_clip)
@@ -219,7 +219,7 @@ class DockBar(Window):
 
     def _build_pill_slot(self) -> Stack:
         # transparent spacer that takes the pill's width; the surface cuts the
-        # notch around it. The pads keep the notch's flares clear of the rows.
+        # hole around it. The pads keep the hole's flares clear of the rows.
         self.pill_dock = Box(name="dock-pill-slot")
         self.pill_slot = Box(
             children=[
@@ -283,11 +283,15 @@ class DockBar(Window):
     def _on_surface_allocated(self, *_):
         self.holes_start.sync_geometry()
         self.holes_end.sync_geometry()
-        self._sync_pill_notch()
+        self._sync_pill_hole()
         self._check_insets()
 
-    def _sync_pill_notch(self) -> None:
-        if self.pill_notch is None or not self.pill_dock.get_mapped():
+    def _sync_pill_hole(self) -> None:
+        if self.pill_hole is None or not self.pill_dock.get_mapped():
+            return
+
+        # mid transition the slot keeps its width and drifts with the stack's edge
+        if not self._pill_is_docked or self.stack.get_transition_running():
             return
 
         along = self.surface.rect_along(self.pill_dock)
@@ -296,11 +300,11 @@ class DockBar(Window):
 
         # the pill drives this width as it animates, so follow it exactly
         start, size = along
-        current = self.pill_notch.current
+        current = self.pill_hole.current
         if (start, size) != (current.start, current.size):
-            self.pill_notch.jump_to(start=start, size=size)
-        if self.pill_notch.target.depth > 0:
-            self.pill_notch.animate_to(depth=self.surface.thickness)
+            self.pill_hole.jump_to(start=start, size=size)
+        if self.pill_hole.target.depth > 0:
+            self.pill_hole.animate_to(depth=self.surface.thickness)
 
     def get_is_open(self):
         return self.is_open
@@ -313,11 +317,21 @@ class DockBar(Window):
             return
         self._pill_is_docked = False
         self.stack.set_visible_child(self.compact)
-        self._apply_close_visual()
+        target = self.pill_hole.target
+        self.pill_hole.animate_to(
+            start=target.start + target.size / 2, size=0, depth=0, flare=0
+        )
 
     def override_reset(self):
         if not self.placement.seats_pill:
             return
+        if not self._pill_is_docked:
+            # reopen around the centre the hole closed to
+            target = self.pill_hole.target
+            size = self.pill_dock.get_preferred_width().natural_width
+            self.pill_hole.animate_to(
+                start=target.start + (target.size - size) / 2, size=size
+            )
         self._pill_is_docked = True
         self.stack.set_visible_child(self.pill_slot)
         if self.is_open:
@@ -336,12 +350,12 @@ class DockBar(Window):
             self._apply_close_visual()
 
     def _apply_open_visual(self):
-        if self.pill_notch is not None:
-            self.pill_notch.animate_to(depth=self.surface.thickness, flare=NOTCH_FLARE)
+        if self.pill_hole is not None:
+            self.pill_hole.animate_to(depth=self.surface.thickness, flare=HOLE_FLARE)
 
     def _apply_close_visual(self):
-        if self.pill_notch is not None:
-            self.pill_notch.animate_to(depth=0, flare=0)
+        if self.pill_hole is not None:
+            self.pill_hole.animate_to(depth=0, flare=0)
 
     def toggle_visibility(self):
         visible = not self.is_visible()

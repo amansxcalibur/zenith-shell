@@ -3,9 +3,9 @@ from typing import Literal
 from fabric.widgets.box import Box
 from fabric.widgets.eventbox import EventBox
 
-from .module_overlay import HoverOverlay
 from .placement import DockPlacement
-from .surface import NOTCH_FLARE, DockSurface
+from .module_overlay import HoverOverlay
+from .surface import HOLE_FLARE, DockSurface
 
 import gi
 
@@ -30,7 +30,7 @@ class HoleController:
         # area the row is visible in, set when the row is clipped
         self._clip: Gtk.Widget | None = None
 
-        self.notch = surface.add_notch()
+        self.hole = surface.add_hole()
         self.overlays = [HoverOverlay(module, self) for module in modules]
 
         # hovering past the last module collapses the hole, even though the
@@ -69,19 +69,19 @@ class HoleController:
             other.set_raised(other is overlay)
         self._hovered = overlay
 
-        along = self._notch_along(overlay)
+        along = self._hole_along(overlay)
         if along is None:
             return
 
         start, size = along
-        if not self.notch.target.is_open:
+        if not self.hole.target.is_open:
             # open in place instead of sliding in from the previous position
-            self.notch.jump_to(start=start + size / 2, size=0)
-        self.notch.animate_to(
+            self.hole.jump_to(start=start + size / 2, size=0)
+        self.hole.animate_to(
             start=start,
             size=size,
             depth=self._surface.thickness,
-            flare=NOTCH_FLARE,
+            flare=HOLE_FLARE,
         )
 
     def collapse(self) -> None:
@@ -89,8 +89,8 @@ class HoleController:
         for overlay in self.overlays:
             overlay.set_raised(False)
 
-        target = self.notch.target
-        self.notch.animate_to(
+        target = self.hole.target
+        self.hole.animate_to(
             start=target.start + target.size / 2, size=0, depth=0, flare=0
         )
         self._schedule_rest()
@@ -100,20 +100,20 @@ class HoleController:
         if self._hovered is None:
             return
 
-        along = self._notch_along(self._hovered)
+        along = self._hole_along(self._hovered)
         if along is None:
             return
 
         start, size = along
         depth = self._surface.thickness
-        current = self.notch.current
-        if self.notch.animating:
-            self.notch.animate_to(start=start, size=size, depth=depth)
+        current = self.hole.current
+        if self.hole.animating:
+            self.hole.animate_to(start=start, size=size, depth=depth)
         elif (start, size, depth) != (current.start, current.size, current.depth):
             # a module resizing frame by frame: easing each step would lag
-            self.notch.jump_to(start=start, size=size, depth=depth)
+            self.hole.jump_to(start=start, size=size, depth=depth)
 
-    def _notch_along(self, overlay: HoverOverlay) -> tuple[float, float] | None:
+    def _hole_along(self, overlay: HoverOverlay) -> tuple[float, float] | None:
         along = self._surface.rect_along(overlay)
         if along is None:
             return None

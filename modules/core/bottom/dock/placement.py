@@ -1,10 +1,9 @@
 import math
-from dataclasses import dataclass
-from enum import Enum
-from typing import NamedTuple
-
 import cairo
+from enum import Enum
 from loguru import logger
+from typing import NamedTuple
+from dataclasses import dataclass
 
 from config.config import config
 

@@ -14,7 +14,7 @@ class EdgeClipViewport(Gtk.Viewport):
     pinned to `edge` ("start" = left/top, "end" = right/bottom); whatever
     doesn't fit is clipped off the opposite side. Because the minimum size
     reported is 0, a parent box never has to overflow to fit it: neighbours
-    that grow (e.g. the dock's pill notch) slide over the far end of the child
+    that grow (e.g. the dock's pill hole) slide over the far end of the child
     instead.
     """
 
