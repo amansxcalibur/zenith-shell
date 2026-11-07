@@ -235,6 +235,61 @@
   background-color: var(--surface-bright);
 }
 
+#version-pill {
+  background-color: var(--surface-semi-bright);
+  border-radius: 20px;
+  margin: 4px 0;
+  padding: 6px 22px 6px 16px;
+  font-weight: 600;
+}
+
+#version-pill:hover {
+  background-color: var(--surface);
+}
+
+.light #version-pill:hover {
+  background-color: alpha(var(--surface-semi-bright), 0.65);
+}
+
+#version-pill.checked {
+  background-color: var(--surface-bright);
+}
+
+.light #version-pill.checked {
+  background-color: var(--surface-semi-bright);
+}
+
+#zenith-logo {
+  background-color: var(--primary);
+  color: var(--surface);
+}
+.light #zenith-logo {
+  background-color: var(--surface-semi-bright);
+  color: var(--on-surface);
+}
+
+#about-version {
+  background-color: var(--surface-semi-bright);
+  border-radius: 20px;
+  color: var(--primary);
+  padding: 4px 14px;
+}
+
+.about-key {
+  color: var(--outline);
+}
+
+#about-link {
+  all: unset;
+  background-color: var(--surface-semi-bright);
+  border-radius: 999px;
+  padding: 8px 16px;
+}
+
+#about-link:hover {
+  background-color: var(--surface-bright);
+}
+
 #config-path-label {
   border-radius: 20px;
   color: var(--primary);

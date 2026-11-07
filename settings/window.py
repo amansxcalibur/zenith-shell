@@ -7,9 +7,8 @@ from fabric.widgets.button import Button
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.utils.helpers import exec_shell_command_async
 
-from config.info import IS_WAYLAND
+from config.info import IS_WAYLAND, CONFIG_FILE, SHELL_NAME
 from config.i3.utils import generate_i3_keybinds_config, is_swayfx
-from config.info import CONFIG_FILE, SHELL_NAME
 from config.bindings import (
     KeyBinding,
     KeybindingValidationError,
@@ -37,6 +36,8 @@ from .tabs import (
     PillDockTab,
     ShapesTab,
     I3Tab,
+    AboutTab,
+    zenith_version,
 )
 from .tabs.navigation import ShortcutButton
 
@@ -49,6 +50,16 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib  # type: ignore
+
+
+class SquareFrame(Gtk.AspectFrame):
+    """An aspect frame that asks to be as tall as it is wide."""
+
+    def do_get_request_mode(self):
+        return Gtk.SizeRequestMode.HEIGHT_FOR_WIDTH
+
+    def do_get_preferred_height_for_width(self, width):
+        return width, width
 
 
 class DragHandler:
@@ -261,7 +272,8 @@ class SettingsWindow(Window):
         switch_box = self._create_tab_switcher()
 
         shapes_id = "shapes"
-        aspect = Gtk.AspectFrame(ratio=1.0, obey_child=False, xalign=0.5, yalign=1.0)
+        aspect = SquareFrame(ratio=1.0, obey_child=False, xalign=0.5, yalign=1.0)
+        aspect.set_vexpand(False)  # the free height goes above the version pill
         self.shapes_box = Box(
             h_expand=True,
             v_expand=True,
@@ -279,7 +291,29 @@ class SettingsWindow(Window):
 
         self.stack.add_titled(ShapesTab().get_widget(), shapes_id, "expressive-shapes")
 
-        return Box(orientation="v", children=[switch_box, aspect])
+        about_id = "about"
+        version_pill = add_hover_cursor(
+            Button(
+                name="version-pill",
+                child=Box(
+                    spacing=6,
+                    children=[
+                        MaterialIconLabel(icon_text=icons.info.symbol(), font_size=16),
+                        Label(label=zenith_version()),
+                    ],
+                ),
+                h_align="start",
+                tooltip_text="About Zenith",
+                on_clicked=lambda b: self._on_tab_clicked(about_id),
+            )
+        )
+        self.buttons[about_id] = version_pill  # marked checked while open
+        self.stack.add_titled(AboutTab().get_widget(), about_id, "About")
+
+        return Box(
+            orientation="v",
+            children=[switch_box, Box(v_expand=True), version_pill, aspect],
+        )
 
     def _create_tab_switcher(self) -> Box:
         switch_box = Box(name="stack-switcher", orientation="v", spacing=2)

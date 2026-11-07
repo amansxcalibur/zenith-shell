@@ -19,7 +19,7 @@ def main():
 
     win = SettingsWindow()
     # `fabric-cli exec` evaluates in the outermost frame's globals, which under
-    # `python -m settings` is runpy's, so expose via builtins to make it visible.
+    # `python -m settings` is runpy's, so we gotta expose via builtins to make it visible.
     builtins.settings_window = win
     win.show_all()
     app.add_window(win)

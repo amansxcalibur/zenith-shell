@@ -116,6 +116,8 @@ description: str = "\ue873"
 folder_material: str = "\ue2c7"
 check_material: str = "\ue5ca"
 drag_indicator: str = "\ue945"
+code: str = "\ue86f"
+info: str = "\ue88e"
 
 # player
 disc: str = "\ue019"
