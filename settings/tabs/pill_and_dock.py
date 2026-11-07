@@ -5,6 +5,7 @@ from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
+from fabric.widgets.revealer import Revealer
 
 from widgets.clipping_box import ClippingBox
 from widgets.wrap_box import WrapBox
@@ -449,8 +450,6 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
 
 
 class ModulePill(EventBox):
-    """A draggable module; with a rank and a remove callback it is a placed one."""
-
     def __init__(self, name, rank=None, on_remove=None):
         super().__init__()
         self.internal_key = name
@@ -530,7 +529,7 @@ class ModulePill(EventBox):
     def set_lifted(self, lifted: bool) -> bool:
         self.lifted = lifted
         parent = self.get_parent()
-        if isinstance(parent, Gtk.Revealer) and isinstance(
+        if isinstance(parent, Revealer) and isinstance(
             parent.get_parent(), Gtk.ListBoxRow
         ):
             # a placed row vanishes at once, and its empty space slides shut
@@ -538,9 +537,7 @@ class ModulePill(EventBox):
             parent.set_reveal_child(not lifted)
         elif parent is not None:
             # a palette chip, maybe inside its fade-in revealer, leaves the wrap
-            (parent if isinstance(parent, Gtk.Revealer) else self).set_visible(
-                not lifted
-            )
+            (parent if isinstance(parent, Revealer) else self).set_visible(not lifted)
         return False
 
     def create_cairo_surface(self):
@@ -560,25 +557,18 @@ class ModulePill(EventBox):
 
 
 def animated(child, transition, revealed=False):
-    """Wrap child in a revealer that opens once shown, unless already revealed."""
-    revealer = Gtk.Revealer(
+    revealer = Revealer(
+        child=child,
+        child_revealed=revealed,
         transition_type=transition,
         transition_duration=ANIMATION_MS,
-        reveal_child=revealed,
     )
-    revealer.add(child)
     if not revealed:
         revealer.connect("map", lambda r: r.set_reveal_child(True))
     return revealer
 
 
 class ModuleDropBox(Gtk.ListBox):
-    """
-    One side of the dock. Rows are kept per module and ordered by `_order`, so a
-    row on its way out can collapse in place while the others settle around it.
-    A drag hovering here opens an empty gap, which the module fills when dropped.
-    """
-
     def __init__(self, side, model, refresh_all):
         super().__init__(name="module-drop-box")
         self.side = side
@@ -623,7 +613,7 @@ class ModuleDropBox(Gtk.ListBox):
         row._order = order
         row._leaving = False
         row.pill = None
-        row.add(animated(child, Gtk.RevealerTransitionType.SLIDE_DOWN, not animate))
+        row.add(animated(child, "slide-down", not animate))
         self.add(row)
         row.show_all()
         return row
@@ -789,8 +779,6 @@ class ModuleDropBox(Gtk.ListBox):
 
 
 class ModulePalette(WrapBox):
-    """The modules on neither side of the dock; ones that come back fade in."""
-
     def __init__(self, all_modules, model):
         super().__init__(spacing=4)
         self.handles_own_drag = True
@@ -812,6 +800,6 @@ class ModulePalette(WrapBox):
         for name in available:
             pill = ModulePill(name)
             if name in returned:
-                pill = animated(pill, Gtk.RevealerTransitionType.CROSSFADE)
+                pill = animated(pill, "crossfade")
             self.add(pill)
         self.show_all()

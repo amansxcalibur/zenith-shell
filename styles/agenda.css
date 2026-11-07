@@ -158,7 +158,9 @@
   background-color: shade(var(--error), 0.9);
 }
 
+/* the space between cards lives in the card, so it closes with a lifted row */
 #agenda-box {
+  margin-bottom: 3px;
   min-height: 25px;
   background-color: var(--shadow);
   border-radius: 24px;
@@ -186,7 +188,7 @@
 }
 
 #agenda-list-box {
-  padding-bottom: 64px;
+  padding-bottom: 61px; /* 64px with the last card's margin */
 }
 
 /* file chooser dialog styles (agenda background + wallpaper directory) */
@@ -359,20 +361,15 @@ filechooser combobox {
   color: var(--background);
 }
 
-/* re-arrange mode */
-#agenda-drag-handle {
-  border-radius: 20px;
-}
-#agenda-box.dragging {
-  opacity: 0.4;
-}
-
-/* drop slot shown while re-arranging */
+/* the gap a dragged card opens; the card's own size */
+#agenda-row,
+#agenda-row:hover,
 #agenda-drop-slot,
 #agenda-drop-slot:hover {
   background-color: transparent;
 }
 #agenda-drop-placeholder {
+  margin-bottom: 3px;
   min-height: 25px;
   border-radius: 24px;
   border: 2px dashed var(--primary);
