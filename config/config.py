@@ -47,6 +47,7 @@ DEFAULTS = {
         "SPACING": 8,
         "PADDING": 6,  # px around each dock module
         "BORDER": True,  # line around the dock and the pill
+        "ACTION": "restart",  # what the dock's action button does
         "modules": {
             "left": [
                 "actions",

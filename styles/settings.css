@@ -279,19 +279,31 @@
 
 .module-pill {
   background-color: var(--surface-semi-bright);
-  border-radius: 15px;
-  padding: 16px;
+  border-radius: 14px;
+  padding: 8px 12px 8px 8px;
 }
 
-.module-pill.active {
-  background-color: var(--primary);
-  border-radius: 22px;
-  color: var(--surface);
+.module-pill.placed {
+  margin: 2px 0;
+  padding-right: 8px;
 }
 
-.module-pill.active.ranking {
-  padding: 16px;
-  border-radius: 30px;
+.module-drag-icon {
+  color: var(--outline);
+}
+
+.module-rank {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.module-hint {
+  color: var(--outline);
+  font-size: 13px;
+}
+
+.module-hint.empty {
+  padding: 24px 0;
 }
 
 #module-drop-box {
@@ -301,15 +313,37 @@
   padding: 10px;
 }
 
-.placeholder-row {
-  border: dashed 3px var(--surface-bright);
-  margin: 4px;
-  border-radius: 25px;
+#module-drop-box {
+  transition: border-color 180ms ease-out;
+}
+
+#module-drop-box.drag-over {
+  border-color: var(--primary);
+}
+
+/* the empty space a dragged module opens; a placed row's height */
+.drop-gap {
+  margin: 2px 0;
+  min-height: 46px;
 }
 
 #module-pill-close-button {
   padding: 0;
   margin-left: -2px;
+}
+
+#module-pill-close-button #close-label.settings {
+  background-color: transparent;
+  color: var(--outline);
+  font-size: 18px;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
+}
+
+#module-pill-close-button:hover #close-label.settings {
+  background-color: var(--error-dim);
+  color: var(--surface-semi-bright);
 }
 
 #i3-settings-demo-window {

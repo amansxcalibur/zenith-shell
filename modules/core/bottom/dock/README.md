@@ -1,7 +1,8 @@
 # Dock
 
 The dock sits on the bottom, left or right screen edge (`bar.POSITION`, applied on
-restart). Everything that depends on the edge goes through `DockPlacement`.
+restart; the action button's toggle cycles it and restarts). Everything that depends on
+the edge goes through `DockPlacement`.
 
 - `placement.py`: the edge, and what follows from it (anchors, axes, cairo transform).
 - `surface.py`: `DockSurface` paints the dock as one cairo path with holes cut out,

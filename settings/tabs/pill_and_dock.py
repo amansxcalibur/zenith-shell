@@ -8,7 +8,7 @@ from fabric.widgets.eventbox import EventBox
 
 from widgets.clipping_box import ClippingBox
 from widgets.wrap_box import WrapBox
-from widgets.material_label import MaterialIconLabel, MaterialFontLabel
+from widgets.material_label import MaterialIconLabel
 
 import icons
 from utils.cursor import add_hover_cursor
@@ -18,7 +18,6 @@ from modules.core.bottom.dock.placement import (
     COMPACT_PADDING,
     MODULE_RADIUS,
     MODULE_SIZE,
-    PILL_RADIUS,
     edge_band,
 )
 from modules.core.bottom.dock.surface import (
@@ -34,6 +33,8 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk  # type: ignore
 
+ANIMATION_MS = 180  # module rows opening, closing and fading
+
 ALL_MODULES_MAPPING = {
     "actions": "Actions",
     "workspaces": "Workspaces",
@@ -48,18 +49,14 @@ ALL_MODULES_MAPPING = {
 
 
 class DockPreview(Gtk.DrawingArea):
-    """The bottom dock at a padding, drawn as DockSurface and the pill would be."""
-
-    MODULE_WIDTH = 70
-    PILL_WIDTH = 130
-    PILL_HEIGHT = 44
-    CORNER_RADIUS = 12  # #module-drop-box's 25px, less its 3px border and 10px padding
+    MODULE_WIDTH = 79
+    CORNER_RADIUS = 12
 
     def __init__(self, padding: int, border: bool):
         super().__init__(name="dock-preview", hexpand=True)
         self._padding = padding
         self._border = border
-        self.set_size_request(-1, 100)
+        self.set_size_request(-1, 72)  # the thickest dock, with a little room above
 
     def set_dock_padding(self, padding: int):
         self._padding = padding
@@ -79,13 +76,9 @@ class DockPreview(Gtk.DrawingArea):
         side = COMPACT_MODULE_SIDE_PADDING if compact else gap
         slot = self.MODULE_WIDTH + 2 * side  # a module with its padding
 
-        pill_hole_size = self.PILL_WIDTH + 2 * gap
-        pill_hole_start = (width - pill_hole_size) / 2
-        holes = [
-            # the second module, as if hovered, and the pill
-            Hole(slot, slot, depth, flare, flare),
-            Hole(pill_hole_start, pill_hole_size, depth, flare, PILL_RADIUS + gap),
-        ]
+        resting_start = (width - 2 * slot) / 2  # the pair, centred
+        hovered_start = resting_start + slot
+        holes = [Hole(hovered_start, slot, depth, flare, flare)]
 
         # round the bottom corners to follow the frame around the preview
         radius = self.CORNER_RADIUS
@@ -116,30 +109,20 @@ class DockPreview(Gtk.DrawingArea):
             cr.stroke()
         cr.restore()
 
-        Gdk.cairo_set_source_rgba(cr, context.get_color(state_flags))
-        for start, top in ((0, gap), (slot, 0 if compact else gap)):
+        for start, top, color in (
+            (resting_start, gap, context.get_color(state_flags)),
+            (
+                hovered_start,
+                0 if compact else gap,
+                context.get_property("background-color", state_flags),
+            ),
+        ):
             cr.save()
             cr.translate(start + side, top)
             ClippingBox.render_shape(cr, self.MODULE_WIDTH, MODULE_SIZE, MODULE_RADIUS)
+            Gdk.cairo_set_source_rgba(cr, color)
             cr.fill()
             cr.restore()
-
-        cr.save()
-        cr.translate(pill_hole_start + gap, depth - gap - self.PILL_HEIGHT)
-        ClippingBox.render_shape(cr, self.PILL_WIDTH, self.PILL_HEIGHT, PILL_RADIUS)
-        Gdk.cairo_set_source_rgba(
-            cr, context.get_property("background-color", state_flags)
-        )
-        cr.fill_preserve()
-        if self._border:
-            Gdk.cairo_set_source_rgba(
-                cr, context.get_property("border-top-color", state_flags)
-            )
-            cr.set_line_width(BORDER_WIDTH)
-            cr.stroke()
-        else:
-            cr.new_path()
-        cr.restore()
         return False
 
 
@@ -248,7 +231,7 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
             )
         )
 
-        palette = ModulePalette(list(ALL_MODULES_MAPPING.keys()))
+        palette = ModulePalette(list(ALL_MODULES_MAPPING.keys()), dock_modules)
         dock_modules_section = Box(
             style_classes="settings-section-container", orientation="v", spacing=6
         )
@@ -256,6 +239,13 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
             Label(
                 label="Modules",
                 style_classes="section-subheading",
+                h_align="start",
+            )
+        )
+        dock_modules_section.add(
+            Label(
+                label="Drag a module onto a side of the dock, or between sides to move it.",
+                style_classes="module-hint",
                 h_align="start",
             )
         )
@@ -269,6 +259,7 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
         def refresh_docks():
             left_box.refresh()
             right_box.refresh()
+            palette.refresh()
             return False
 
         left_box = ModuleDropBox("left", dock_modules, refresh_docks)
@@ -276,7 +267,7 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
             orientation="v",
             spacing=4,
             children=[
-                Label(label="Left"),
+                Label(label="Left", h_align="start"),
                 left_box,
             ],
         )
@@ -285,7 +276,7 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
             orientation="v",
             spacing=4,
             children=[
-                Label(label="Right"),
+                Label(label="Right", h_align="start"),
                 right_box,
             ],
         )
@@ -336,28 +327,41 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
                 h_align="start",
             )
         )
-        section_box.add(
-            Box(
-                spacing=30,
-                children=[
-                    Box(
-                        spacing=10,
-                        children=[
-                            Label(label="Border"),
-                            border_switch,
-                        ],
-                    ),
-                    LayoutBuilder.pixel_slider(
-                        "Padding",
-                        2,
-                        12,
-                        self._on_padding_changed,
-                        state.get(["bar", "PADDING"]),
-                    ),
-                ],
-            )
+        controls = Box(
+            orientation="v",
+            spacing=16,
+            v_align="center",
+            children=[
+                Box(
+                    spacing=10,
+                    children=[
+                        Label(
+                            label="Border",
+                            width_request=80,
+                            h_expand=True,
+                            h_align="start",
+                        ),
+                        border_switch,
+                    ],
+                ),
+                LayoutBuilder.pixel_slider(
+                    "Spacing",
+                    2,
+                    12,
+                    self._on_padding_changed,
+                    state.get(["bar", "PADDING"]),
+                ),
+            ],
         )
-        section_box.add(Box(name="module-drop-box", children=self.dock_preview))
+        row = Box(
+            spacing=16,
+            children=[
+                controls,
+                Box(name="module-drop-box", children=self.dock_preview),
+            ],
+        )
+        row.set_homogeneous(True)
+        section_box.add(row)
         return section_box
 
     def _on_padding_changed(self, scale):
@@ -445,15 +449,54 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
 
 
 class ModulePill(EventBox):
-    def __init__(self, name):
+    """A draggable module; with a rank and a remove callback it is a placed one."""
+
+    def __init__(self, name, rank=None, on_remove=None):
         super().__init__()
         self.internal_key = name
         self.name = ALL_MODULES_MAPPING[name]
+        self.lifted = False  # picked up by a drag, its space closed
 
         self.targets = [Gtk.TargetEntry.new("text/plain", Gtk.TargetFlags.SAME_APP, 0)]
 
-        self.label = Label(style_classes=["module-pill"], label=self.name)
-        self.add(self.label)
+        placed = rank is not None
+        self.rank_label = Label(style_classes="module-rank", label=str(rank))
+        children = [
+            MaterialIconLabel(
+                style_classes="module-drag-icon",
+                icon_text=icons.drag_indicator.symbol(),
+                font_size=18,
+            )
+        ]
+        if placed:
+            children.append(self.rank_label)
+        children.append(
+            Label(label=self.name, h_expand=placed, h_align="start"),
+        )
+        if on_remove is not None:
+            children.append(
+                add_hover_cursor(
+                    Button(
+                        name="module-pill-close-button",
+                        tooltip_text=f"Remove {self.name}",
+                        child=MaterialIconLabel(
+                            name="close-label",
+                            style_classes="settings",
+                            icon_text=icons.close.symbol(),
+                        ),
+                        on_clicked=lambda *_: on_remove(name),
+                    )
+                )
+            )
+
+        self.add(
+            Box(
+                style_classes=["module-pill"] + (["placed"] if placed else []),
+                spacing=8,
+                children=children,
+            )
+        )
+        add_hover_cursor(self, "grab")
 
         self.drag_source_set(
             Gdk.ModifierType.BUTTON1_MASK, self.targets, Gdk.DragAction.MOVE
@@ -461,7 +504,7 @@ class ModulePill(EventBox):
 
         self.connect("drag-data-get", self.on_drag_data_get)
         self.connect("drag-begin", self.on_drag_begin)
-        self.connect("drag-end", self.on_drag_end)
+        self.connect("drag-failed", self.on_drag_failed)
         self.connect("button-press-event", self.on_button_press)
 
     def on_button_press(self, widget, event):
@@ -470,14 +513,35 @@ class ModulePill(EventBox):
         return True
 
     def on_drag_begin(self, widget, drag_context) -> None:
-        self.set_opacity(0.5)
-
-        # set the module pill as drag icon
+        # set the module pill as drag icon, held by its middle
         surface = self.create_cairo_surface()
+        allocation = self.get_allocation()
+        surface.set_device_offset(-allocation.width / 2, -allocation.height / 2)
         Gtk.drag_set_icon_surface(drag_context, surface)
 
-    def on_drag_end(self, widget, drag_context) -> None:
-        self.set_opacity(1.0)
+        # once the drag has its icon, close the space the module leaves
+        GLib.idle_add(self.set_lifted, True)
+
+    def on_drag_failed(self, widget, drag_context, result) -> bool:
+        # dropped nowhere or cancelled: put it back. A drop rebuilds it instead.
+        self.set_lifted(False)
+        return False
+
+    def set_lifted(self, lifted: bool) -> bool:
+        self.lifted = lifted
+        parent = self.get_parent()
+        if isinstance(parent, Gtk.Revealer) and isinstance(
+            parent.get_parent(), Gtk.ListBoxRow
+        ):
+            # a placed row vanishes at once, and its empty space slides shut
+            self.set_opacity(0 if lifted else 1)
+            parent.set_reveal_child(not lifted)
+        elif parent is not None:
+            # a palette chip, maybe inside its fade-in revealer, leaves the wrap
+            (parent if isinstance(parent, Gtk.Revealer) else self).set_visible(
+                not lifted
+            )
+        return False
 
     def create_cairo_surface(self):
         allocation = self.get_allocation()
@@ -495,72 +559,169 @@ class ModulePill(EventBox):
         data.set_text(self.internal_key, -1)
 
 
+def animated(child, transition, revealed=False):
+    """Wrap child in a revealer that opens once shown, unless already revealed."""
+    revealer = Gtk.Revealer(
+        transition_type=transition,
+        transition_duration=ANIMATION_MS,
+        reveal_child=revealed,
+    )
+    revealer.add(child)
+    if not revealed:
+        revealer.connect("map", lambda r: r.set_reveal_child(True))
+    return revealer
+
+
 class ModuleDropBox(Gtk.ListBox):
+    """
+    One side of the dock. Rows are kept per module and ordered by `_order`, so a
+    row on its way out can collapse in place while the others settle around it.
+    A drag hovering here opens an empty gap, which the module fills when dropped.
+    """
+
     def __init__(self, side, model, refresh_all):
         super().__init__(name="module-drop-box")
         self.side = side
         self.model = model
         self.refresh_all = refresh_all
-        self.placeholder = None
+        self.drop_gap = None
         self.set_selection_mode(Gtk.SelectionMode.NONE)
         self.set_vexpand(True)
+        self.set_sort_func(self._sort)
         self._pending_drop_index = None
+        self._rows = {}  # module name -> its row, while on this side
+        self._dropped = None  # the module to put in the gap on the next refresh
+        self._filled_gap = None  # the gap it replaces then
+        self._hovering = False
+        self._dropping = False
+        self._built = False
 
+        empty_hint = Label(
+            style_classes=["module-hint", "empty"], label="Drop modules here"
+        )
+        empty_hint.show()
+        self.set_placeholder(empty_hint)
+
+        # no defaults: GTK's would emit drag-leave on drop and close the gap
+        # before the module could fill it, so drops are taken by hand
         targets = [Gtk.TargetEntry.new("text/plain", Gtk.TargetFlags.SAME_APP, 0)]
-        self.drag_dest_set(Gtk.DestDefaults.ALL, targets, Gdk.DragAction.MOVE)
+        self.drag_dest_set(0, targets, Gdk.DragAction.MOVE)
 
         self.connect("drag-motion", self.on_drag_motion)
         self.connect("drag-leave", self.on_drag_leave)
+        self.connect("drag-drop", self.on_drag_drop)
         self.connect("drag-data-received", self.on_drop)
 
         GLib.idle_add(self.refresh_all)
 
-    def create_placeholder(self):
-        row = Gtk.ListBoxRow()
-        box = Box()
-        box.set_size_request(200, 60)
-        box.add_style_class("placeholder-row")
+    @staticmethod
+    def _sort(row_a, row_b, *_):
+        return (row_a._order > row_b._order) - (row_a._order < row_b._order)
 
-        row.add(Box(children=box, h_align="center"))
-
+    def _new_row(self, child, order, animate):
+        row = Gtk.ListBoxRow(activatable=False, selectable=False)
+        row._order = order
+        row._leaving = False
+        row.pill = None
+        row.add(animated(child, Gtk.RevealerTransitionType.SLIDE_DOWN, not animate))
+        self.add(row)
+        row.show_all()
         return row
 
+    def _collapse(self, row):
+        """Close the row, then drop it."""
+        row._leaving = True
+        # sit just above the row that now holds its index
+        row._order -= 0.5
+
+        revealer = row.get_child()
+        if not revealer.get_reveal_child() and not revealer.get_child_revealed():
+            self.remove(row)  # already shut, as a lifted row is
+            return
+
+        def on_revealed(revealer, _pspec):
+            if not revealer.get_child_revealed() and row.get_parent() is self:
+                self.remove(row)
+
+        revealer.connect("notify::child-revealed", on_revealed)
+        revealer.set_reveal_child(False)
+
+    def _module_rows(self):
+        """Rows of modules staying here, in order: not leaving, not lifted."""
+        return [
+            row
+            for row in self.get_children()
+            if row.pill is not None and not row._leaving and not row.pill.lifted
+        ]
+
+    def drop_index_at(self, y):
+        """Module rows above y, by their middles; the gap doesn't count."""
+        index = 0
+        for row in self._module_rows():
+            _, row_y = row.translate_coordinates(self, 0, 0)
+            if row_y + row.get_allocated_height() / 2 < y:
+                index += 1
+        return index
+
+    def show_drop_gap(self, index):
+        rows = self._module_rows()
+        # just above the module the drop would push down
+        if index < len(rows):
+            order = rows[index]._order - 0.25
+        else:
+            order = (rows[-1]._order if rows else 0) + 0.75
+
+        if not self.drop_gap:
+            self.drop_gap = self._new_row(
+                Box(style_classes="drop-gap"), order, animate=True
+            )
+        elif self.drop_gap._order != order:
+            self.drop_gap._order = order
+            self.drop_gap.changed()
+
+    def hide_drop_gap(self):
+        if self.drop_gap:
+            self._collapse(self.drop_gap)
+            self.drop_gap = None
+
+    @staticmethod
+    def _is_module_drag(widget, context):
+        target = widget.drag_dest_find_target(context, None)
+        return target is not None and target.name() == "text/plain"
+
     def on_drag_motion(self, widget, context, x, y, time):
-        target_row = self.get_row_at_y(y)
+        if not self._is_module_drag(widget, context):
+            Gdk.drag_status(context, 0, time)
+            return False
 
-        if target_row:
-            new_index = target_row.get_index()
-        else:
-            # If mouse is in the empty space at the bottom
-            new_index = len(self.model[self.side])
-
-        self._pending_drop_index = new_index
-
-        # placeholder positioning
-        if not self.placeholder:
-            # create
-            self.placeholder = self.create_placeholder()
-            self.insert(self.placeholder, new_index)
-            self.show_all()
-        else:
-            # move it only if the index has changed
-            current_index = self.placeholder.get_index()
-            if current_index != new_index:
-                self.remove(self.placeholder)
-                self.insert(self.placeholder, new_index)
-                self.placeholder.show_all()
+        self._hovering = True
+        self._pending_drop_index = self.drop_index_at(y)
+        self.show_drop_gap(self._pending_drop_index)
+        self.get_style_context().add_class("drag-over")
 
         Gdk.drag_status(context, Gdk.DragAction.MOVE, time)
         return True
 
     def on_drag_leave(self, widget, context, time):
-        # Remove placeholder when mouse exits the box
-        if self.placeholder:
-            self.remove(self.placeholder)
-            self.placeholder.destroy()
-            self.placeholder = None
+        # GTK also leaves just before a drop, so wait to see if one follows
+        self._hovering = False
+        self.get_style_context().remove_class("drag-over")
+        GLib.idle_add(self._close_gap_if_left)
+
+    def _close_gap_if_left(self):
+        if not self._hovering and not self._dropping:
+            self.hide_drop_gap()
+        return False
+
+    def on_drag_drop(self, widget, context, x, y, time):
+        if not self._is_module_drag(widget, context):
+            return False
+        self._dropping = True
+        widget.drag_get_data(context, widget.drag_dest_find_target(context, None), time)
+        return True
 
     def on_drop(self, widget, drag_context, x, y, data, info, time):
+        self._dropping = False
         name = data.get_text()
 
         drop_index = (
@@ -569,123 +730,88 @@ class ModuleDropBox(Gtk.ListBox):
             else len(self.model[self.side])
         )
 
-        # cleanup placeholder
-        if self.placeholder:
-            self.remove(self.placeholder)
-            self.placeholder = None
-
         if not name:
+            self.hide_drop_gap()
             drag_context.finish(False, False, time)
             return
 
-        source_side = None
-        old_index = None
-
-        # update model
+        # the index counts the modules staying here, the dragged one aside
         for side in ("left", "right"):
             if name in self.model[side]:
-                source_side = side
-                old_index = self.model[side].index(name)
                 self.model[side].remove(name)
                 break
 
-        if source_side == self.side and old_index is not None:  # noqa: SIM102
-            if drop_index > old_index:
-                drop_index -= 1
-
         self.model[self.side].insert(drop_index, name)
+        self._dropped = name
+        self._filled_gap = self.drop_gap  # stays open until the module fills it
+        self.drop_gap = None
 
         drag_context.finish(True, False, time)
         GLib.idle_add(self.refresh_all)
         return True
 
     def refresh(self):
-        for row in self.get_children():
-            self.remove(row)
+        names = self.model[self.side]
 
-        module_list = []
+        # rows that left, and a row moved within this side, close where they were
+        for name, row in list(self._rows.items()):
+            if name not in names or name == self._dropped:
+                del self._rows[name]
+                self._collapse(row)
 
-        for index, name in enumerate(self.model[self.side]):
-            row = self._create_module_row(index, name)
-            self.add(row)
-            row.show()
-            module_list.append(name)
+        for index, name in enumerate(names):
+            row = self._rows.get(name)
+            if row is None:
+                pill = ModulePill(name, rank=index + 1, on_remove=self.on_remove)
+                # a dropped module fills its gap as is; others open into place
+                animate = self._built and name != self._dropped
+                row = self._new_row(pill, index, animate=animate)
+                row.pill = pill
+                self._rows[name] = row
+            row._order = index
+            row.pill.rank_label.set_label(str(index + 1))
 
-        state.update(["bar", "modules", self.side], module_list)
+        if self._filled_gap is not None:
+            if self._filled_gap.get_parent() is self:
+                self.remove(self._filled_gap)
+            self._filled_gap = None
 
-    def _create_module_row(self, index, name):
-        row = Gtk.ListBoxRow()
+        self._dropped = None
+        self._built = True
+        self.invalidate_sort()
+        state.update(["bar", "modules", self.side], list(names))
 
-        mod_pill = ModulePill(name)
-        mod_pill.label.add_style_class("active")
-
-        close_button = Button(
-            name="module-pill-close-button",
-            child=MaterialIconLabel(
-                name="close-label",
-                style_classes="settings",
-                icon_text=icons.close.symbol(),
-            ),
-            on_clicked=self.on_close,
-            visible=False,
-        )
-
-        elem = EventBox(
-            events="all",
-            child=Box(
-                h_align="center",
-                spacing=4,
-                style="margin-top:4px;",
-                children=[
-                    MaterialFontLabel(
-                        style_classes=["module-pill", "active", "ranking"],
-                        text=f"#{index + 1}",
-                        wght=100,
-                        font_size=15,
-                    ),
-                    mod_pill,
-                    Box(v_align="start", children=close_button),
-                ],
-            ),
-        )
-
-        elem.close_button = close_button
-
-        def on_enter(widget, _event):
-            widget.close_button.show()
-
-        def on_leave(widget, event):
-            if event.detail == Gdk.NotifyType.INFERIOR:
-                return
-            widget.close_button.hide()
-
-        elem.connect("enter-notify-event", on_enter)
-        elem.connect("leave-notify-event", on_leave)
-
-        row.add(elem)
-        return row
-
-    def on_close(self, button):
-        widget = button
-        while widget and not isinstance(widget, Gtk.ListBoxRow):
-            widget = widget.get_parent()
-
-        if not widget:
-            return
-
-        index = widget.get_index()
-
-        # remove module
-        if 0 <= index < len(self.model[self.side]):
-            self.model[self.side].pop(index)
+    def on_remove(self, name):
+        if name in self.model[self.side]:
+            self.model[self.side].remove(name)
 
         GLib.idle_add(self.refresh_all)
 
 
 class ModulePalette(WrapBox):
-    def __init__(self, all_modules):
+    """The modules on neither side of the dock; ones that come back fade in."""
+
+    def __init__(self, all_modules, model):
         super().__init__(spacing=4)
         self.handles_own_drag = True
+        self.all_modules = all_modules
+        self.model = model
+        self._available = None
 
-        for name in all_modules:
-            self.add(ModulePill(name))
+    def refresh(self):
+        for child in self.get_children():
+            self.remove(child)
+
+        placed = self.model["left"] + self.model["right"]
+        available = [name for name in self.all_modules if name not in placed]
+        returned = set(available) - set(
+            available if self._available is None else self._available
+        )
+        self._available = available
+
+        for name in available:
+            pill = ModulePill(name)
+            if name in returned:
+                pill = animated(pill, Gtk.RevealerTransitionType.CROSSFADE)
+            self.add(pill)
+        self.show_all()

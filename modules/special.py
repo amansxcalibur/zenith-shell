@@ -10,7 +10,9 @@ from fabric.core.service import Property
 from fabric.utils.helpers import invoke_repeater, exec_shell_command_async
 
 import icons
+from config.config import config
 from config.info import SHELL_NAME
+from modules.core.bottom.dock.placement import DockEdge, current_placement
 from widgets.popup_window.shared_popup_window import SharedPopupWindow
 from widgets.material_label import MaterialFontLabel, MaterialIconLabel
 from services.animator import Animator
@@ -20,6 +22,8 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk  # type: ignore
+
+DOCK_EDGE_CYCLE = (DockEdge.BOTTOM, DockEdge.LEFT, DockEdge.RIGHT)
 
 
 # too much overriding
@@ -235,9 +239,15 @@ class ActionButton(EventBox):
         self.popup_win = SharedPopupWindow()
         self.popup_win.add_child(pointing_widget=self, child=self.action_options)
 
-        self.action_options.get_children()[-1].emit("clicked")
+        # toggling restarts the shell, so the choice must survive for the next click
+        saved_action = config.get("bar.ACTION")
+        actions = [info["action"] for info in self.mapping.values()]
+        index = actions.index(saved_action) if saved_action in actions else -1
+        self.action_options.get_children()[index].emit("clicked")
 
     def select_action(self, btn_option: Button, action: str):
+        config.set("bar.ACTION", action)
+
         action_map = {
             "toggle": self.toggle_vrt_btn,
             "restart": self.restart_btn,
@@ -315,9 +325,13 @@ class ActionButton(EventBox):
         self.show_all()
 
     def toggle_vertical(self):
-        exec_shell_command_async(
-            "notify-send 'Zenith Shell' 'Toggling is coming soon.'"
-        )
+        edge = current_placement().edge
+        next_edge = DOCK_EDGE_CYCLE[
+            (DOCK_EDGE_CYCLE.index(edge) + 1) % len(DOCK_EDGE_CYCLE)
+        ]
+        config.set("bar.POSITION", next_edge.value)
+        config.flush()  # restart_shell exits before the debounced save would run
+        restart_shell()
 
     def start_launcher(self):
         exec_shell_command_async(f"fabric-cli exec {SHELL_NAME} 'pill.open()'")
