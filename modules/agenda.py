@@ -253,7 +253,9 @@ class AgendaItem(Gtk.ListBoxRow):
             ],
         )
 
-        self.stack = Stack(transition_type="crossfade", transition_duration=250)
+        self.stack = Stack(
+            transition_type="crossfade", transition_duration=250, h_expand=True
+        )
         self.stack.set_interpolate_size(True)
         self.stack.set_homogeneous(False)
         self.stack.add_named(self.event_box, "display")
