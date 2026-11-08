@@ -201,6 +201,7 @@ class PlayerMini(Box):
         metadata = self._player_service.get_metadata()
         if metadata is not None:
             self.on_metadata(self._player_service, metadata=metadata, player=player)
+        GLib.idle_add(self._update_controls)
 
         # init artwork
         current_artwork = self._player_service.get_artwork()
@@ -290,6 +291,8 @@ class PlayerMini(Box):
         GLib.idle_add(self._update_controls)
 
     def _update_controls(self):
+        # players can change what they allow without changing track (e.g. the
+        # end of a playlist), so this also runs on play/pause
         # self.wiggly.set_sensitive(self._player_service.can_seek)
         self.next_button.set_sensitive(self._player_service.can_go_next)
         self.play_pause_button.set_sensitive(
@@ -298,6 +301,7 @@ class PlayerMini(Box):
         self.prev_button.set_sensitive(self._player_service.can_go_previous)
         # self.shuffle_button.set_visible(self._player_service.can_shuffle)
         # self.shuffle_button.set_sensitive(self._player_service.can_shuffle)
+        return False
 
     def on_pause(self, sender):
         def _set_pause_markup():
@@ -306,6 +310,7 @@ class PlayerMini(Box):
             )
 
         GLib.idle_add(_set_pause_markup)
+        GLib.idle_add(self._update_controls)
 
         # self.wiggly._dragging = True
         # self.wiggly.update_amplitude(True)
@@ -318,6 +323,7 @@ class PlayerMini(Box):
             )
 
         GLib.idle_add(_set_play_markup)
+        GLib.idle_add(self._update_controls)
 
         # self.wiggly.pause = False
         # self.wiggly._dragging = False

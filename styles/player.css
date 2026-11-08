@@ -134,6 +134,12 @@
   /* padding-left: 1px;
   padding-right: 1px; */
 }
+
+/* the explicit color above hides GTK's insensitive dimming, so dim it here */
+#prev-button:disabled #play-previous.mini,
+#next-button:disabled #play-next.mini {
+  opacity: 0.3;
+}
 #play-pause-label {
   color: var(--primary-player);
 }
@@ -182,6 +188,11 @@
 #play-pause-button:hover {
   border-radius: 100%;
   box-shadow: inset rgba(255, 255, 255, 0.6) 0 0 10px;
+}
+
+#next-button:disabled:hover,
+#prev-button:disabled:hover {
+  box-shadow: none;
 }
 
 .player-button {
