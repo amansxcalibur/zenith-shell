@@ -25,7 +25,8 @@ POSITION_POLL_INTERVAL_MS = 1000
 SEEK_SETTLE_MS = 2000  # how long a player gets to apply a seek before polling resumes
 
 
-def get_player_property(bus_name, prop, on_result):
+def get_player_property(bus_name, prop, on_result, *, unpack=True):
+    """Read an MPRIS property asynchronously; `on_result(None)` if the player is gone."""
     if not bus_name:
         on_result(None)
         return
@@ -39,7 +40,11 @@ def get_player_property(bus_name, prop, on_result):
 
     def on_reply(connection, result, *_):
         try:
-            value = connection.call_finish(result).unpack()[0]
+            reply = connection.call_finish(result)
+            value = (
+                reply.unpack()[0] if unpack else reply.get_child_value(0).get_variant()
+            )
+
         except GLib.Error:
             value = None
         on_result(value)
@@ -138,6 +143,10 @@ class PlayerService(Service):
         self._theme_cache = {}
         self._is_cleaning_up = False
         self._signal_ids = []  # track signal connection IDs
+        # Never read `player.props.metadata`: when Playerctl has nothing cached it
+        # asks D-Bus synchronously and g_error()s (aborting the whole shell) if the
+        # player has already gone. Keep our own copy instead.
+        self._metadata: GLib.Variant | None = None
 
         # store signal IDs for proper disconnection
         self._signal_ids.append(
@@ -157,13 +166,24 @@ class PlayerService(Service):
         self.poll_progress()
         self._refresh_can_shuffle()
 
-        try:
-            metadata = self._player.props.metadata
-            if metadata:
-                self.meta_change(metadata, self._player)
-                self._handle_artwork(metadata, metadata.keys())
-        except Exception as e:
-            logger.warning(f"Failed to initialize metadata: {e}")
+        get_player_property(
+            self._player.get_property("player_instance"),
+            "Metadata",
+            self._on_initial_metadata,
+            unpack=False,
+        )
+
+    def _on_initial_metadata(self, metadata):
+        # a `metadata` signal may have beaten the reply; it is newer, keep it
+        if self._is_cleaning_up or metadata is None or self._metadata is not None:
+            return
+        self._metadata = metadata
+        if metadata.keys():
+            self.meta_change(metadata, self._player)
+            self._handle_artwork(metadata, metadata.keys())
+
+    def get_metadata(self) -> GLib.Variant | None:
+        return self._metadata
 
     def on_seeked(self, player, position):
         self._stop_polling()
@@ -203,9 +223,8 @@ class PlayerService(Service):
             position = 0
         return position
 
-    def get_duration(self) -> float:
-        """Length of the current track in seconds, 0 if the player doesn't report one."""
-        metadata = self._player.props.metadata
+    def get_duration_in_seconds(self) -> float:
+        metadata = self._metadata
         keys = metadata.keys() if metadata else []
         track = get_track_labels(metadata) if keys else None
         if track != self._duration_track:
@@ -217,7 +236,7 @@ class PlayerService(Service):
         return self._duration
 
     def _is_length_missing(self) -> bool:
-        metadata = self._player.props.metadata
+        metadata = self._metadata
         return not metadata or "mpris:length" not in metadata.keys()  # noqa: SIM118 its a GLib.Variant
 
     def set_position(self, pos: float):
@@ -277,7 +296,7 @@ class PlayerService(Service):
         if position is None:
             logger.debug("Player did not report a position")
             return
-        duration = self.get_duration()
+        duration = self.get_duration_in_seconds()
         # Firefox also reports a position of 0 for as long as the length is gone
         if duration and self._is_length_missing():
             logger.debug("Ignoring position from a player that lost its track length")
@@ -311,6 +330,7 @@ class PlayerService(Service):
     def on_metadata(self, player, metadata):
         if self._is_cleaning_up:
             return
+        self._metadata = metadata
         keys = metadata.keys()
         title, artist = get_track_labels(metadata)
         logger.info(f"{artist} - {title}")

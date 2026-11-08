@@ -209,10 +209,10 @@ class PlayerMini(Box):
         # connect cleanup
         self.connect("destroy", self.on_destroy)
 
-        # init metadata
-        self.on_metadata(
-            self._player_service, metadata=player.props.metadata, player=player
-        )
+        # init metadata; if it hasn't arrived yet, meta-change delivers it
+        metadata = self._player_service.get_metadata()
+        if metadata is not None:
+            self.on_metadata(self._player_service, metadata=metadata, player=player)
 
         # init artwork
         current_artwork = self._player_service.get_artwork()

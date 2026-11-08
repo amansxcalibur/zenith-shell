@@ -578,10 +578,10 @@ class Player(Box):
 
         self.connect("destroy", self.on_destroy)
 
-        # init metadata
-        self.on_metadata(
-            self._player_service, metadata=player.props.metadata, player=player
-        )
+        # init metadata; if it hasn't arrived yet, meta-change delivers it
+        metadata = self._player_service.get_metadata()
+        if metadata is not None:
+            self.on_metadata(self._player_service, metadata=metadata, player=player)
 
         # init artwork & theme
         current_artwork = self._player_service.get_artwork()
@@ -642,7 +642,7 @@ class Player(Box):
         self.length_label.set_width_chars(len(text))
 
     def _sync_track_times(self):
-        self._set_duration(self._player_service.get_duration())
+        self._set_duration(self._player_service.get_duration_in_seconds())
         self._player_service.fabricating()
 
     def on_update_track_position(self, sender, pos, dur):
