@@ -1,10 +1,11 @@
 import os
+import pwd
 from pathlib import Path
 
 from gi.repository import GLib  # type: ignore
 
 SHELL_NAME = "zenith"
-USERNAME = os.getlogin()
+USERNAME = pwd.getpwuid(os.getuid()).pw_name
 HOSTNAME = os.uname().nodename
 
 WAYLAND_DISPLAY = os.environ.get("WAYLAND_DISPLAY")
