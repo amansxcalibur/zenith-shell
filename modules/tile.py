@@ -8,9 +8,12 @@ from fabric.widgets.overlay import Overlay
 from fabric.widgets.revealer import Revealer
 
 import icons
-from services.theme import ThemeMode, ThemeService
 
+from services.theme import ThemeService
+
+from utils.colors import bind_theme
 from utils.cursor import add_hover_cursor
+
 from widgets.tile_menu import TileMenuLoader
 from widgets.material_label import MaterialIconLabel
 from widgets.clipping_box import ClippingBox, TrueClippingBox
@@ -371,12 +374,12 @@ class Tile(ClippingBox):
     ):
         self.theme_service = ThemeService()
         default_classes = ["tile", "off"]
-        if self.theme_service.theme == ThemeMode.LIGHT:
-            default_classes += ["light"]
         extra_classes = kwargs.pop("style_classes", [])
         merged_classes = default_classes + extra_classes
         markup_styles = kwargs.pop("markup_style", "")
         super().__init__(style_classes=merged_classes, v_align="start", **kwargs)
+
+        bind_theme(self)
 
         self._on_toggle = on_toggle
         self.state = False

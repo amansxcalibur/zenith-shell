@@ -8,6 +8,8 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gdk, Gtk, Pango, PangoCairo  # type: ignore
 
+from fabric.widgets.scale import Scale
+
 from icons.icon import Icon
 
 ICON_FAMILY = "Material Symbols Rounded"
@@ -34,7 +36,7 @@ def _font(family: str | None, px: int, bold: bool = False, filled: bool = False)
 class TrackDecor:
     def __init__(
         self,
-        scale: Gtk.Scale,
+        scale: Scale,
         icon: Callable[[], Icon],
         value_text: Callable[[], str] | None = None,
         stops: Iterable[float] = (),

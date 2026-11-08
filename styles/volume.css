@@ -329,6 +329,42 @@ highlight {
   color: var(--inverse-on-surface);
 }
 
+/* light: the popup's base is tinted, so white tracks and cards lift off it
+   where dark mode's greys would sink into it */
+.light #control-slider-mui.vertical trough {
+  background-color: var(--true-surface-bright);
+}
+.light #device-card,
+.light #app-card,
+.light #user-row {
+  background-color: var(--true-surface-bright);
+}
+.light #device-card:not(.static) #card-header:hover,
+.light #device-option:hover {
+  background-color: var(--surface-container);
+}
+.light #app-icon-shape {
+  background-color: var(--primary-fixed);
+}
+/* soft like the mic's pink one; light primary-container is a loud blue,
+   and primary-fixed is the popup's own base */
+.light #status-row.active #status-more {
+  background-color: var(--true-surface-bright);
+}
+.light #status-row.active #status-more:hover {
+  background-color: var(--surface-container);
+}
+.light #status-row.active #status-more-icon {
+  color: var(--on-primary-fixed);
+}
+/* the app slider's gap is cut in the card's colour */
+.light #app-volume-slider slider {
+  box-shadow: 0 0 0 3px var(--true-surface-bright);
+}
+.light #app-volume-slider trough {
+  background-color: var(--primary-fixed);
+}
+
 /* between the sliders and the panel */
 #control-divider {
   min-width: 1px;

@@ -2,6 +2,7 @@ from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
+from fabric.widgets.scale import Scale
 from fabric.widgets.scrolledwindow import ScrolledWindow
 
 import icons
@@ -255,10 +256,14 @@ class AppCard(Box):
 
         self.name = _name_label("app-name")
         self.level = Label(name="app-level")
-        self.slider = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 1, 0.01)
-        self.slider.set_name("app-volume-slider")
-        self.slider.set_draw_value(False)
-        self.slider.set_hexpand(True)
+        self.slider = Scale(
+            name="app-volume-slider",
+            min_value=0,
+            max_value=1,
+            increments=(0.01, 0.1),
+            digits=2,  # fabric's default of 1 would round drags to 10% steps
+            h_expand=True,
+        )
         self.slider.connect("change-value", self._on_change, service)
         for signal, pressed in (
             ("button-press-event", True),

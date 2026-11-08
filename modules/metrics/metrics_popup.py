@@ -921,7 +921,6 @@ class Metrics(Box):
             self._update_details(cpu)
 
     def _update_details(self, cpu: float) -> None:
-        """Stats on the Details page and the full dashboard; costs nothing elsewhere."""
         self.cpu_value_label.set_label(f"{cpu:.0f}%")
         self._set_panel_alert(self.cpu_panel_icon, icons.cpu.symbol(), self._cpu_hot)
 

@@ -9,6 +9,11 @@ from fabric.widgets.centerbox import CenterBox
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.bluetooth import BluetoothClient, BluetoothDevice
 
+import icons
+
+from config.config import config
+from modules.tile import Tile
+
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
 from widgets.tile_menu import (
@@ -18,9 +23,6 @@ from widgets.tile_menu import (
     menu_placeholder,
 )
 
-import icons
-from modules.tile import Tile
-from config.config import config
 from utils.cursor import add_hover_cursor
 
 import gi
@@ -33,7 +35,7 @@ WINDOW_MAX_HEIGHT = 270
 MAX_SSID_DISPLAY_LENGTH = 8
 DIALOG_DEFAULT_WIDTH = 350
 UPDATE_DIALOG_WIDTH = 350
-MAX_DEVICE_NAME_CHARS = 20
+MAX_DEVICE_NAME_CHARS = 24
 FAILURE_DISPLAY_MS = 5000
 POWER_CHANGE_TIMEOUT_MS = 5000
 
@@ -97,7 +99,7 @@ class Bluetooth(Tile):
             self.add_style_class("on")
 
 
-class BluetoothDeviceSlot(CenterBox):
+class BluetoothDeviceSlot(Box):
     def __init__(
         self,
         device: BluetoothDevice,
@@ -140,8 +142,9 @@ class BluetoothDeviceSlot(CenterBox):
         # )
 
         icon_name = (device.icon_name or "bluetooth") + "-symbolic"
-        self.start_children = Box(
+        info = Box(
             spacing=10,
+            h_expand=True,
             children=[
                 Box(
                     name="bluetooth-device-img",
@@ -162,13 +165,14 @@ class BluetoothDeviceSlot(CenterBox):
                 ),
             ],
         )
-        self.end_children = Box(
+        actions = Box(
             spacing=10,
             children=[
                 self.connect_button,
                 # self.forget_button
             ],
         )
+        self.children = [info, actions]
 
         self.on_changed()
 
