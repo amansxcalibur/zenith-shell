@@ -81,6 +81,7 @@ class SystemTray(Box):
             **kwargs,
         )
         self.pixel_size = pixel_size
+        self._path_themes: dict[str, Gtk.IconTheme] = {}
         self.watcher = Gray.Watcher()
         self.watcher.connect("item-added", self.on_item_added)
 
@@ -109,6 +110,44 @@ class SystemTray(Box):
         # if len(self.clipper.get_children()) <= 2:
         #     self.spacer.set_visible(False)
 
+    def _item_pixbuf(self, item: Gray.Item) -> GdkPixbuf.Pixbuf | None:
+        pixmaps = item.get_icon_pixmaps()
+        pixmap = (
+            Gray.get_pixmap_for_pixmaps(pixmaps, self.pixel_size) if pixmaps else None
+        )
+        if pixmap is not None:
+            try:
+                return pixmap.as_pixbuf(self.pixel_size, GdkPixbuf.InterpType.HYPER)
+            except GLib.Error as e:
+                logger.warning(f"[Systray] Bad pixmap for {item.get_id()}: {e}")
+
+        default_theme = Gtk.IconTheme.get_default()
+        themes = [default_theme]
+        theme_path = item.get_icon_theme_path()
+        if theme_path:
+            themes.insert(0, self._theme_for_path(theme_path))
+
+        icon_name = item.get_icon_name()
+        attempts = [(theme, icon_name) for theme in themes if icon_name]
+        attempts.append((default_theme, "image-missing"))
+
+        for theme, name in attempts:
+            try:
+                return theme.load_icon(
+                    name, self.pixel_size, Gtk.IconLookupFlags.FORCE_SIZE
+                )
+            except GLib.Error:
+                continue
+        return None
+
+    def _theme_for_path(self, path: str) -> Gtk.IconTheme:
+        # one theme per search path; building one per item re-scans the directory
+        if path not in self._path_themes:
+            theme = Gtk.IconTheme.new()
+            theme.prepend_search_path(path)
+            self._path_themes[path] = theme
+        return self._path_themes[path]
+
     def do_bake_item_button(self, item: Gray.Item) -> Gtk.Button:
         button = Gtk.Button()
 
@@ -117,47 +156,7 @@ class SystemTray(Box):
             lambda button, event: self.on_button_click(button, item, event),
         )
 
-        pixmap = Gray.get_pixmap_for_pixmaps(item.get_icon_pixmaps(), self.pixel_size)
-
-        try:
-            if pixmap is not None:
-                pixbuf = pixmap.as_pixbuf(self.pixel_size, GdkPixbuf.InterpType.HYPER)
-            else:
-                icon_name = item.get_icon_name()
-                icon_theme_path = item.get_icon_theme_path()
-
-                # Use custom theme path if available
-                if icon_theme_path:
-                    custom_theme = Gtk.IconTheme.new()
-                    custom_theme.prepend_search_path(icon_theme_path)
-                    try:
-                        pixbuf = custom_theme.load_icon(
-                            icon_name,
-                            self.pixel_size,
-                            Gtk.IconLookupFlags.FORCE_SIZE,
-                        )
-                    except GLib.Error:
-                        # Fallback to default theme if custom path fails
-                        pixbuf = Gtk.IconTheme.get_default().load_icon(
-                            icon_name,
-                            self.pixel_size,
-                            Gtk.IconLookupFlags.FORCE_SIZE,
-                        )
-                else:
-                    pixbuf = Gtk.IconTheme.get_default().load_icon(
-                        icon_name,
-                        self.pixel_size,
-                        Gtk.IconLookupFlags.FORCE_SIZE,
-                    )
-        except GLib.Error:
-            # Fallback to 'image-missing' icon
-            pixbuf = Gtk.IconTheme.get_default().load_icon(
-                "image-missing",
-                self.pixel_size,
-                Gtk.IconLookupFlags.FORCE_SIZE,
-            )
-
-        button.set_image(Gtk.Image.new_from_pixbuf(pixbuf))
+        button.set_image(Gtk.Image.new_from_pixbuf(self._item_pixbuf(item)))
         button.set_name("tray-button")
         return button
 

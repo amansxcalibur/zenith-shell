@@ -43,6 +43,11 @@ def _get_icon_resolver() -> IconResolver:
     global _icon_resolver
     if _icon_resolver is None:
         _icon_resolver = IconResolver()
+        # resolved assets go stale when apps are (un)installed or the theme changes
+        _icon_resolver.add_change_callback(_resolve_icon_asset.cache_clear)
+        Gtk.IconTheme.get_default().connect(
+            "changed", lambda *_: _resolve_icon_asset.cache_clear()
+        )
     return _icon_resolver
 
 
@@ -51,11 +56,11 @@ def _resolve_icon_asset(app_name: str, app_icon: str, has_pixbuf: bool, size: in
     resolver = _get_icon_resolver()
     theme = Gtk.IconTheme.get_default()
 
-    candidates = filter(None, [app_icon, resolver.get_icon(app_name or "")])
+    candidates = filter(None, [app_icon, resolver.get_icon(app_name)])
 
     for candidate in candidates:
-        if candidate == "application-x-symbolic":
-            continue
+        if candidate.startswith("file://"):
+            candidate = GLib.filename_from_uri(candidate)[0]
 
         if os.path.isabs(candidate) and os.path.exists(candidate):
             return ("file_path", candidate)

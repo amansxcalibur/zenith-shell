@@ -5,6 +5,8 @@ from typing import ClassVar
 # from functools import lru_cache
 from collections.abc import Iterator
 
+from loguru import logger
+
 from fabric.widgets.box import Box
 from fabric.widgets.entry import Entry
 from fabric.widgets.image import Image
@@ -566,19 +568,22 @@ class AppLauncher(Box):
         icon_theme = Gtk.IconTheme.get_default()
         flags = Gtk.IconLookupFlags.FORCE_REGULAR | Gtk.IconLookupFlags.FORCE_SIZE
 
-        if app.icon is not None:
-            icon_info = icon_theme.lookup_by_gicon(app.icon, size, flags)
-            if icon_info:
-                return icon_info.load_icon()
+        try:
+            if app.icon is not None:
+                icon_info = icon_theme.lookup_by_gicon(app.icon, size, flags)
+                if icon_info:
+                    return icon_info.load_icon()
 
-        if (
-            app.icon_name
-            and os.path.isabs(app.icon_name)
-            and os.path.exists(app.icon_name)
-        ):
-            return GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                app.icon_name, size, size, True
-            )
+            if (
+                app.icon_name
+                and os.path.isabs(app.icon_name)
+                and os.path.exists(app.icon_name)
+            ):
+                return GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                    app.icon_name, size, size, True
+                )
+        except GLib.Error as e:
+            logger.warning(f"[Launcher] Could not load icon for {app.name}: {e}")
 
         return app.get_icon_pixbuf(size=size)
 
