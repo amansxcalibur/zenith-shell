@@ -89,7 +89,6 @@ Append these options to the installer command when needed:
 | `--dry-run` | Run the checks and show the plan without making changes. |
 | `-y`, `--yes` | Skip prompts and accept installing missing prerequisites, such as Rust or Go. |
 | `-v`, `--verbose` | Show command output as it runs. |
-| `--purge` | For `uninstall` only: also remove tools built from source. |
 
 ### Launch Zenith
 
@@ -113,7 +112,7 @@ If Zenith does not start as expected, run `zenith-shell setup doctor` to check f
 > [!TIP]
 > **For best visual results**: Start with the sample `picom` configurations and GLSL shaders located in `~/.config/zenith-shell/config/picom/`.
 
-## Usage and management
+## Usage
 
 ### Commands
 
@@ -121,16 +120,28 @@ If Zenith does not start as expected, run `zenith-shell setup doctor` to check f
 | --- | --- |
 | `zenith-shell` | Start the shell. |
 | `zenith-shell stop` / `restart` / `status` | Stop, restart, or check the running shell. |
+| `zenith-shell settings` | Open the settings window. |
+| `zenith-shell lock` | Lock the screen ([WIP](#lockscreen-wip)). Stays in the foreground, so it works with `xss-lock` and `swayidle -w`. |
 | `zenith-shell --version` | Show the installed version. |
-| `zenith-shell setup update` | Fetch the latest changes and install any new dependencies. |
-| `zenith-shell setup sync` | Install missing dependencies and configure the selected window manager. |
+| `zenith-shell setup update` | Update Zenith and install any new dependencies. |
+| `zenith-shell setup sync` | Install missing dependencies and set up a window manager. |
 | `zenith-shell setup doctor` | Check dependencies, the virtual environment, launcher, fonts, and autostart. |
 | `zenith-shell setup logs` | Show the end of the installer log. |
-| `zenith-shell setup uninstall` | Remove Zenith Shell. |
+| `zenith-shell setup uninstall [--purge]` | Remove Zenith. See [Uninstalling](#uninstalling). |
 
-Press <kbd>Tab</kbd> after `zenith-shell` to complete commands and options. Open a new terminal after installing. On zsh, add `fpath=(~/.local/share/zsh/site-functions $fpath)` to `~/.zshrc` before `compinit` runs.
+Run `zenith-shell setup` for a menu, or add `--help` to any `setup` command. `setup` commands can run while the shell is running; restart it afterwards.
 
-Run `zenith-shell setup` to pick a command from a menu, or `zenith-shell setup <command> --help` to see its options. The `setup` commands can be run while the shell is running; restart the shell afterwards to pick up changes.
+Tab completion works in bash, zsh, and fish once you open a new terminal. On zsh, add `fpath=(~/.local/share/zsh/site-functions $fpath)` to `~/.zshrc` before `compinit`.
+
+### Configuration
+
+All settings live in one file:
+
+```
+~/.config/zenith-shell/config/config.json
+```
+
+Change them with `zenith-shell settings`, which shows this path at the bottom with a button to copy it, or edit the file by hand and restart the shell.
 
 ### Updating
 
@@ -138,29 +149,29 @@ Run `zenith-shell setup` to pick a command from a menu, or `zenith-shell setup <
 zenith-shell setup update
 ```
 
-This fetches the latest commits, shows what's coming, fast-forwards the repository, and runs the **new** version of the installer to pick up any new dependencies. If you've edited a file that the update would also change, the updater stops before touching anything and tells you which file. Edits to other files are left alone.
+Pulls the latest changes and installs any new dependencies. If you've edited a file the update would change, it stops and names the file; other edits are left alone.
 
 ### Switching between i3 and sway
 
-Dependencies and configuration are handled separately for each window manager. If you start with i3 and later move to sway (or the other way around), run the relevant command. For example:
-
 ```bash
-zenith-shell setup sync --wm sway
+zenith-shell setup sync --wm sway   # or i3, all; detected if omitted
 ```
-> [!NOTE]
-> `zenith-shell setup sync` alone detects the window manager. Use `--wm i3|sway|all` to choose it yourself. You can run this from either session.
 
-Only missing components are installed. The command also adds Zenith's keybindings and autostart to that window manager's config if they aren't there yet. If you have no config for it, one is created from the system default, without its bar and with any clashing keybindings commented out. An existing config only gets Zenith's lines added.
+Installs only what that window manager is missing, then adds Zenith's keybindings and autostart to its config. If it has no config yet, one is created from the system default, without its bar and with clashing keybindings commented out.
 
 ### Uninstalling
 
 ```bash
-zenith-shell setup uninstall
+zenith-shell setup uninstall           # keep tools built from source
+zenith-shell setup uninstall --purge   # also remove fabric-cli, gray, gtk-session-lock, matugen
 ```
 
-You'll be asked whether to keep `config/config.json`. If you keep it, the file is saved to `~/.config/zenith-shell-backup/` and restored on the next fresh install. If the install directory has local edits or unpushed commits, the plan warns you and `--yes` refuses to continue.
+Built tools are kept by default because other Fabric-based shells may use them. Decide on `--purge` up front: their build files are deleted with Zenith, so they can't be removed later.
 
-Tools the installer built from source are kept, because other Fabric-based shells may use them. Add `--purge` to remove them too: `fabric-cli`, `gray`, `gtk-session-lock`, and `matugen`. Use it in the same uninstall, because their build files and records are deleted afterwards. System packages are never removed automatically. Instead, the command prints the exact removal command for packages added by the installer, so you can review it first. Any i3/sway configuration lines that mention Zenith, and any symlinks into the install directory, are listed for you to remove manually.
+- **Config:** you're asked whether to keep `config.json`. A kept copy goes to `~/.config/zenith-shell-backup/` and is restored on the next install.
+- **System packages** are never removed. The exact removal command is printed for you to review and run.
+- **Leftovers:** i3/sway config lines and symlinks that point at Zenith are listed for you to remove.
+- **Local changes:** if the install directory has edits or unpushed commits, you're warned, and `--yes` refuses to continue.
 
 ## Troubleshooting
 
