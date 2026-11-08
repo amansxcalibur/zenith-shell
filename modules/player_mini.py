@@ -12,16 +12,19 @@ from fabric.widgets.centerbox import CenterBox
 if TYPE_CHECKING:
     from fabric.widgets.widget import Widget
 
+import svg
+import icons
+
+from config.config import config
+from config.info import CACHE_DIR, ROOT_DIR
+
+from modules.wallpaper import WallpaperService
+
+from services.player_service import PlayerManager, PlayerService, get_track_labels
+
 from widgets.overrides import Svg
 from widgets.material_label import MaterialIconLabel
 
-from modules.wallpaper import WallpaperService
-from services.player_service import PlayerManager, PlayerService, get_track_labels
-
-import svg
-import icons
-from config.config import config
-from config.info import CACHE_DIR, ROOT_DIR
 
 from loguru import logger
 
@@ -46,24 +49,9 @@ class PlayerMini(Box):
 
         self._player_service = player_service
         player = self._player_service._player
+
         self._wallpaper_signal_id = None
-
-        def _set_initial_bg(
-            service: WallpaperService, full_path: str, preview_path: str
-        ):
-            apply_filter_to_player_art(self, preview_path)
-            return False
-
-        self._wallpaper_signal_id = self._wallpaper_service.connect(
-            "wallpaper-changed", _set_initial_bg
-        )
-
-        GLib.idle_add(
-            _set_initial_bg,
-            self._wallpaper_service,
-            self._wallpaper_service.get_wallpaper_path(),
-            self._wallpaper_service.get_preview_path(),
-        )
+        self._follow_wallpaper()
 
         if not config.VERTICAL:
             self.remove_style_class("vertical")
@@ -239,7 +227,31 @@ class PlayerMini(Box):
     def skip_backward(self, seconds=10):
         self._player_service._player.seek(-1 * seconds * 1000000)
 
+    def _follow_wallpaper(self):
+        if not self._wallpaper_signal_id:
+            self._wallpaper_signal_id = self._wallpaper_service.connect(
+                "wallpaper-changed", self._on_wallpaper_changed
+            )
+        GLib.idle_add(
+            self._on_wallpaper_changed,
+            self._wallpaper_service,
+            self._wallpaper_service.get_wallpaper_path(),
+            self._wallpaper_service.get_preview_path(),
+        )
+
+    def _on_wallpaper_changed(
+        self, service: WallpaperService, full_path: str, preview_path: str | None
+    ):
+        apply_filter_to_player_art(self, preview_path)
+        if preview_path:
+            self.album_cover.set_style(f"background-image:url('{preview_path}')")
+        return False
+
     def _apply_artwork(self, source, art_path, blurred_art_path):
+        if not art_path:
+            self._follow_wallpaper()  # track without art
+            return
+
         # remove wallpaper connection
         if self._wallpaper_signal_id:
             self._wallpaper_service.disconnect(self._wallpaper_signal_id)

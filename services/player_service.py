@@ -23,6 +23,10 @@ from gi.repository import Playerctl, GLib, Gio  # type: ignore
 PROPERTY_QUERY_TIMEOUT_MS = 1000
 POSITION_POLL_INTERVAL_MS = 1000
 SEEK_SETTLE_MS = 2000  # how long a player gets to apply a seek before polling resumes
+# Firefox (and possibly others untested) sends a new track's title first and its art
+# ~200-300 ms later in a second update; wait this long before falling back to the wallpaper
+# so the card doesn't flash it on every track change (Spotify and VLC send both at once)
+ARTWORK_CLEAR_DELAY_MS = 600
 
 
 def get_player_property(bus_name, prop, on_result, *, unpack=True):
@@ -137,6 +141,8 @@ class PlayerService(Service):
         self._duration_track = None
         self._duration = 0.0
         self._current_artwork_hash = ""
+        self._artwork_track = None  # (title, artist) the current artwork belongs to
+        self._artwork_clear_id = 0
         self._current_theme = None
         self._current_artwork_path = ""
         self._current_blurred_artwork_path = ""
@@ -341,10 +347,19 @@ class PlayerService(Service):
     def _handle_artwork(self, metadata, keys):
         if self._is_cleaning_up:
             return
-        if "mpris:artUrl" not in keys:
+        art_url = metadata["mpris:artUrl"] if "mpris:artUrl" in keys else ""
+        track = get_track_labels(metadata) if keys else None
+
+        if not art_url:
+            # empty metadata between tracks, or a partial update for the same
+            # track: keep what's showing
+            if track is None or track == self._artwork_track:
+                return
+            self._schedule_artwork_clear()
             return
 
-        art_url = metadata["mpris:artUrl"]
+        self._cancel_artwork_clear()
+        self._artwork_track = track
         artwork_hash = hashlib.md5(art_url.encode()).hexdigest()
 
         if artwork_hash == self._current_artwork_hash:
@@ -370,6 +385,33 @@ class PlayerService(Service):
                 art_url,
                 artwork_hash,
             )
+
+    def _schedule_artwork_clear(self):
+        if not self._current_artwork_hash:
+            return  # already showing the wallpaper
+        self._cancel_artwork_clear()
+        self._artwork_clear_id = GLib.timeout_add(
+            ARTWORK_CLEAR_DELAY_MS, self._clear_artwork
+        )
+
+    def _cancel_artwork_clear(self):
+        if self._artwork_clear_id:
+            GLib.source_remove(self._artwork_clear_id)
+            self._artwork_clear_id = 0
+
+    def _clear_artwork(self):
+        self._artwork_clear_id = 0
+        if self._is_cleaning_up:
+            return GLib.SOURCE_REMOVE
+        logger.info("Track has no artwork, falling back to the wallpaper")
+        # also marks any artwork still being processed as stale
+        self._current_artwork_hash = ""
+        self._artwork_track = None
+        self._current_artwork_path = ""
+        self._current_blurred_artwork_path = ""
+        self._current_theme = None
+        self.artwork_change("", "")
+        return GLib.SOURCE_REMOVE
 
     def _blur_image(self, source_path: Path, destination_path: Path, radius: int = 20):
         try:
@@ -539,6 +581,7 @@ class PlayerService(Service):
         logger.info(f"Cleaning up PlayerService for {self._player.props.player_name}")
 
         self._stop_polling()
+        self._cancel_artwork_clear()
 
         # disconnect signals using stored IDs
         if self._signal_ids:

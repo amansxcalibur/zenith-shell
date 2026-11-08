@@ -328,9 +328,10 @@ class PlayerSource(Button):
         self.song.set_label(song)
         self.artist.set_label(artist)
 
-    def update_artwork(self, art_path):
+    def update_artwork(self, art_path: str | None):
+        image = f"background-image:url('{art_path}')" if art_path else ""
         self.image_container.set_style(
-            f"background-position: center; background-size: cover; border-radius: 20px; background-image:url('{art_path}')"
+            f"background-position: center; background-size: cover; border-radius: 20px; {image}"
         )
 
 
@@ -358,22 +359,9 @@ class Player(Box):
         player = self._player_service._player
         self._service_handlers = []  # (service, handler id), released on destroy
 
-        def _set_initial_bg(
-            service: WallpaperService, full_path: str, preview_path: str
-        ):
-            self._set_background_image(preview_path)
-            return False
-
-        self._wallpaper_signal_id = self._wallpaper_service.connect(
-            "wallpaper-changed", _set_initial_bg
-        )
-
-        GLib.idle_add(
-            _set_initial_bg,
-            self._wallpaper_service,
-            self._wallpaper_service.get_wallpaper_path(),
-            self._wallpaper_service.get_preview_path(),
-        )
+        # the wallpaper is the background until (and whenever there is no) artwork
+        self._wallpaper_signal_id = None
+        self._follow_wallpaper()
 
         self.player_icon = Svg(
             name=player.props.player_name,
@@ -687,7 +675,51 @@ class Player(Box):
 
         GLib.idle_add(_update_metadata_label)
 
+    def _follow_wallpaper(self):
+        if not self._wallpaper_signal_id:
+            self._wallpaper_signal_id = self._wallpaper_service.connect(
+                "wallpaper-changed", self._on_wallpaper_changed
+            )
+        GLib.idle_add(
+            self._on_wallpaper_changed,
+            self._wallpaper_service,
+            self._wallpaper_service.get_wallpaper_path(),
+            self._wallpaper_service.get_preview_path(),
+        )
+
+    def _on_wallpaper_changed(
+        self, service: WallpaperService, full_path: str, preview_path: str | None
+    ):
+        self._set_background_image(preview_path)
+        return False
+
+    def _clear_artwork(self):
+        def _clear():
+            self._palette = None
+            for widget in (
+                self.play_pause_button,
+                self.prev_button,
+                self.next_button,
+                self.shuffle_button,
+                self.player_icon,
+                self.song,
+                self.artist,
+                self.position_label,
+                self.length_label,
+            ):
+                widget.set_style("")
+            self.audio_source.update_artwork(None)
+            self._apply_fallback_theme(self._theme_service.theme)
+            return False
+
+        GLib.idle_add(_clear)
+        self._follow_wallpaper()
+
     def _apply_artwork(self, source, art_path, _blurred_art_path=None):
+        if not art_path:
+            self._clear_artwork()
+            return
+
         # remove wallpaper connection
         if self._wallpaper_signal_id:
             self._wallpaper_service.disconnect(self._wallpaper_signal_id)
