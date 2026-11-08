@@ -1,7 +1,10 @@
 import os
 import copy
 import json
+import time
+import shutil
 import threading
+import subprocess
 from pathlib import Path
 from loguru import logger
 
@@ -166,6 +169,10 @@ class ConfigManager(Service):
         # a nested set() -> save() -> changed() loop on the same thread.
         self._in_set = False
 
+        # set while config.json exists but couldn't be read; the file is left
+        # alone until a save would replace it, which backs it up first
+        self._unreadable_file = False
+
         self._load()
         self._ensure_directories()
 
@@ -177,27 +184,35 @@ class ConfigManager(Service):
 
     def _load(self):
         """Load config from file, merge with defaults"""
+        loaded_data = None
+        self._unreadable_file = False
         if os.path.exists(CONFIG_FILE):
             try:
                 with open(CONFIG_FILE, "r") as f:
                     loaded_data = json.load(f)
-                    self._data, needs_save = self._deep_merge(
-                        DEFAULTS, copy.deepcopy(loaded_data)
-                    )
-                    self._drop_obsolete_keys()
-
-                    hydrate_binding_config(self._data.get("bindings", {}))
-                    self.resolved_bindings = build_resolved_binding_instances(
-                        self._data.get("bindings", {})
-                    )
-
-                    if needs_save or self._data != loaded_data:
-                        self._save_now()
+                if not isinstance(loaded_data, dict):
+                    raise TypeError("top level is not a JSON object")
+                self._data, _ = self._deep_merge(DEFAULTS, copy.deepcopy(loaded_data))
+                self._drop_obsolete_keys()
             except Exception as e:
-                logger.error(f"Error loading config.json: {e}")
-                self._data = copy.deepcopy(DEFAULTS)
-        else:
+                logger.error(f"Error loading config.json: {e}; using defaults")
+                self._unreadable_file = True
+                self._notify_unreadable(e)
+                loaded_data = None
+
+        if loaded_data is None:
             self._data = copy.deepcopy(DEFAULTS)
+
+        # every path needs resolved bindings, or the generated i3/sway
+        # config ends up with no Zenith keybindings at all
+        hydrate_binding_config(self._data.setdefault("bindings", {}))
+        self.resolved_bindings = build_resolved_binding_instances(
+            self._data["bindings"]
+        )
+
+        # write back merged defaults / a fresh file, but never over a file we
+        # couldn't read: the user is likely about to fix it by hand
+        if not self._unreadable_file and self._data != loaded_data:
             self._save_now()
 
         # fresh load invalidates any cached nodes from a previous state.
@@ -242,12 +257,58 @@ class ConfigManager(Service):
     def _save_now(self):
         with self._save_lock:
             os.makedirs(CONFIG_DIR, exist_ok=True)
+            if self._unreadable_file:
+                if not self._backup_unreadable_file():
+                    return  # keep the user's file rather than lose it
+                self._unreadable_file = False
+            # write-then-rename so a crash mid-save can't leave a truncated file
+            tmp_path = f"{CONFIG_FILE}.tmp"
             try:
-                with open(CONFIG_FILE, "w") as f:
+                with open(tmp_path, "w") as f:
                     json.dump(self._data, f, indent=4)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(tmp_path, CONFIG_FILE)
                 self._dirty = False
             except Exception as e:
                 logger.error(f"Error saving config.json: {e}")
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
+
+    def _backup_unreadable_file(self) -> bool:
+        if not os.path.exists(CONFIG_FILE):
+            return True
+        backup = f"{CONFIG_FILE}.broken-{time.strftime('%Y%m%d-%H%M%S')}"
+        try:
+            shutil.copy2(CONFIG_FILE, backup)
+        except OSError as e:
+            logger.error(f"Not saving: could not back up unreadable config.json: {e}")
+            return False
+        logger.warning(f"Saved the unreadable config.json as {backup} before saving")
+        return True
+
+    @staticmethod
+    def _notify_unreadable(error: Exception):
+        if shutil.which("notify-send"):
+            subprocess.Popen(
+                [
+                    "notify-send",
+                    "-u",
+                    "critical",
+                    "-a",
+                    "Zenith",
+                    "config.json could not be read",
+                    (
+                        f"{error}\n\nZenith is using default settings. Your file "
+                        "is untouched; fix it and restart the shell."
+                    ),
+                ],
+                start_new_session=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
 
     def _schedule_save(self):
         with self._save_lock:

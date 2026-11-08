@@ -17,6 +17,8 @@ gray/
 
 # Zenith config
 config/config.json
+config/config.json.tmp
+config/config.json.broken-*
 styles/colors.css
 
 # data
