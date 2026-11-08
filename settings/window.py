@@ -49,7 +49,7 @@ else:
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib  # type: ignore
+from gi.repository import Gdk, Gtk, GLib  # type: ignore
 
 
 class SquareFrame(Gtk.AspectFrame):
@@ -403,6 +403,7 @@ class SettingsWindow(Window):
             v_align="center",
             children=Box(
                 name="config-path-box",
+                style_classes=["has-action"],
                 spacing=10,
                 children=[
                     Label(name="config-path-label", label=CONFIG_FILE),
@@ -415,6 +416,7 @@ class SettingsWindow(Window):
                         orientation="v",
                         children=WigglyArrow(),
                     ),
+                    self._create_copy_path_button(),
                 ],
             ),
         )
@@ -424,6 +426,40 @@ class SettingsWindow(Window):
             spacing=5,
             children=[config_path_box, Box(h_expand=True), cancel_btn, save_btn],
         )
+
+    def _create_copy_path_button(self) -> Button:
+        self._copy_path_icon = MaterialIconLabel(
+            icon_text=icons.material.content_copy.symbol()
+        )
+        self._copy_path_reset_id = 0
+        return add_hover_cursor(
+            Button(
+                name="config-path-copy",
+                child=self._copy_path_icon,
+                tooltip_text="Copy config path",
+                v_align="center",
+                on_clicked=self._copy_config_path,
+            )
+        )
+
+    def _copy_config_path(self, _button):
+        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        clipboard.set_text(CONFIG_FILE, -1)
+        clipboard.store()  # keep it after settings closes (needs a clipboard manager)
+
+        self._copy_path_icon.set_icon(icons.material.check_material.symbol())
+        self._copy_path_icon.add_style_class("copied")
+
+        # restart the timer on repeated clicks so the tick doesn't flicker back early
+        if self._copy_path_reset_id:
+            GLib.source_remove(self._copy_path_reset_id)
+        self._copy_path_reset_id = GLib.timeout_add(1500, self._reset_copy_path_icon)
+
+    def _reset_copy_path_icon(self):
+        self._copy_path_icon.set_icon(icons.material.content_copy.symbol())
+        self._copy_path_icon.remove_style_class("copied")
+        self._copy_path_reset_id = 0
+        return GLib.SOURCE_REMOVE
 
     def _on_tab_clicked(self, tab_id: str):
         self.stack.set_visible_child_name(tab_id)

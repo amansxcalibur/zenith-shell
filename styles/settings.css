@@ -306,6 +306,30 @@
   color: var(--foreground);
 }
 
+/* room for the round copy button, which sits flush like agenda's pill buttons */
+#config-path-box.has-action {
+  padding: 4px 4px 4px 12px;
+}
+
+#config-path-copy {
+  all: unset;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 999px;
+  background-color: var(--surface-bright);
+  color: var(--foreground);
+  font-size: 18px;
+  transition: background-color 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#config-path-copy:hover {
+  background-color: var(--outline-variant);
+}
+
+#config-path-copy .copied {
+  color: var(--green-dim);
+}
+
 #settings-button-group-btn {
   background-color: var(--on-primary);
   border-radius: 5px;
