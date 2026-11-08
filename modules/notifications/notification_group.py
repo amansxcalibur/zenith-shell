@@ -26,6 +26,7 @@ from widgets.shapes.expressive.morphing_shapes import ExpressiveShape
 from services.animator import CubicBezierCurves
 from utils.helpers import toggle_class
 from utils.icon_resolver import IconResolver
+from config.info import TEMP_DIR
 import icons
 
 from .common import NotificationConfig
@@ -450,7 +451,7 @@ class NotificationWidget(Box):
                     GdkPixbuf.InterpType.BILINEAR,
                 )
                 pixbuf = scaled or pixbuf
-                tmp_dir = "/tmp/zenith-shell/notif-imgs"
+                tmp_dir = os.path.join(TEMP_DIR, "notif-imgs")
                 os.makedirs(tmp_dir, exist_ok=True)
                 with tempfile.NamedTemporaryFile(
                     suffix=".png",
@@ -483,6 +484,16 @@ class NotificationWidget(Box):
             self._closed_connection = None
 
         self._scaled_pixbuf = None
+
+        if self._image_path is not None:
+            try:
+                os.remove(self._image_path)
+            except FileNotFoundError:
+                pass
+            except OSError as e:
+                logger.warning(f"Could not remove notification image: {e}")
+            self._image_path = None
+
         logger.debug("NotificationWidget cleaned up")
 
 

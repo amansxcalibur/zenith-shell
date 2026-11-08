@@ -21,7 +21,7 @@ IPC_UTIL = (
     "swaymsg" if IS_WAYLAND else "i3-msg"
 )  # here till fabric i3 reconnection is fixed
 
-TEMP_DIR = f"/tmp/{SHELL_NAME}-shell"
+TEMP_DIR = os.path.join(GLib.get_user_runtime_dir(), f"{SHELL_NAME}-shell")
 HOME_DIR = os.path.expanduser("~")
 CACHE_DIR = os.path.expanduser(f"{GLib.get_user_cache_dir()}/{SHELL_NAME}-shell")
 ROOT_DIR = Path(__file__).resolve().parent.parent
