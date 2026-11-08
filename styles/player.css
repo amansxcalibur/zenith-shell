@@ -219,6 +219,15 @@
   margin-top: 5px;
 }
 
+/* edge dot of the mini switcher when more players are beyond it; the margins
+   keep a normal dot's 10x15px footprint so the column height never changes */
+.player-button.mini.more {
+  min-width: 6px;
+  min-height: 6px;
+  margin: 7px 2px 2px 2px;
+  border-radius: 3px;
+}
+
 .player-button.active {
   opacity: 1;
   /* min-width: 40px; */

@@ -398,7 +398,6 @@ class PlayerMini(Box):
     #         self._player_service._player.set_shuffle(False)
 
     def on_destroy(self, *_):
-        """Cleanup widget on destroy"""
         logger.debug(
             f"PlayerMini UI destroyed for {self._player_service._player.props.player_name}"
         )
@@ -470,6 +469,9 @@ class PlaceholderMini(Box):
         ]
 
 
+MAX_SWITCHER_DOTS = 3
+
+
 class PlayerContainerMini(Box):
     def __init__(self, **kwargs):
         super().__init__(name="player-container", style_classes="mini", **kwargs)
@@ -533,13 +535,11 @@ class PlayerContainerMini(Box):
         self.init_players()
 
     def init_players(self):
-        """Create UI instances of existing players"""
         self._services = self.manager.get_all_services()
         for service in self._services:
             self.on_new_player(self.manager, service, self._services[service])
 
     def on_new_player(self, manager, player_name: str, player_service: PlayerService):
-        """Called when PlayerManager creates a new PlayerService"""
         logger.info(f"Creating mini UI for player: {player_name}")
 
         # avoid duplicate UI creation
@@ -563,28 +563,20 @@ class PlayerContainerMini(Box):
             self.stack.remove(self.placeholder)
             self.stack.set_visible_child_name(player_name)
 
-        # add switch button
-        self.player_switch_container.add_center(
-            Button(
-                name=player_name,
-                style_classes=["player-button", "mini"],
-                on_clicked=lambda b: self.switch_player(player_name, b),
-            )
+        # add switch button; update_player_list decides which ones are shown
+        button = Button(
+            name=player_name,
+            style_classes=["player-button", "mini"],
+            on_clicked=lambda b: self.switch_player(player_name, b),
         )
+        button.set_no_show_all(True)  # a parent's show_all() must not reveal it
+        self.player_switch_container.add_center(button)
 
         self.update_player_list()
 
     def switch_player(self, player_name, button):
-        """Switch to a specific player"""
-
-        def _switch_idle():
-            self.stack.set_visible_child_name(player_name)
-
-            for btn in self.player_switch_container.center_children:
-                btn.remove_style_class("active")
-            button.add_style_class("active")
-
-        GLib.idle_add(_switch_idle)
+        # the dots follow in on_visible_child_changed
+        GLib.idle_add(self.stack.set_visible_child_name, player_name)
 
     def on_player_vanish(self, manager, player_name: str):
         """Called when a player disappears"""
@@ -622,7 +614,6 @@ class PlayerContainerMini(Box):
         self.update_player_list()
 
     def update_player_list(self):
-        """Update active state of player switch buttons"""
         curr = self.stack.get_visible_child()
         if not curr:
             return
@@ -630,17 +621,34 @@ class PlayerContainerMini(Box):
         curr_name = curr.get_name()
 
         def _update_buttons():
-            for btn in self.player_switch_container.center_children:
-                if btn.get_name() == curr_name:
-                    btn.add_style_class("active")
-                else:
-                    btn.remove_style_class("active")
+            buttons = list(self.player_switch_container.center_children)
+            names = [btn.get_name() for btn in buttons]
+            active = names.index(curr_name) if curr_name in names else 0
+
+            # keep the active dot in the middle where possible
+            first = min(max(active - 1, 0), max(len(buttons) - MAX_SWITCHER_DOTS, 0))
+            last = first + MAX_SWITCHER_DOTS - 1
+
+            for i, btn in enumerate(buttons):
+                btn.set_visible(first <= i <= last)
+                for style_class, on in (
+                    ("active", i == active),
+                    # edge dots shrink to hint at players beyond the window
+                    (
+                        "more",
+                        (i == first and first > 0)
+                        or (i == last and last < len(buttons) - 1),
+                    ),
+                ):
+                    if on:
+                        btn.add_style_class(style_class)
+                    else:
+                        btn.remove_style_class(style_class)
             return False
 
         GLib.idle_add(_update_buttons)
 
     def on_scroll(self, widget, event):
-        """Handle scroll events to switch between players"""
         match event.direction:
             case 0:
                 self.switch_relative_player(forward=False)
@@ -648,7 +656,6 @@ class PlayerContainerMini(Box):
                 self.switch_relative_player(forward=True)
 
     def switch_relative_player(self, forward=True):
-        """Switch to next/previous player"""
         if not self.player_widgets:
             return
 
@@ -675,7 +682,6 @@ class PlayerContainerMini(Box):
                 break
 
     def on_visible_child_changed(self, *args):
-        """Update mini tile icon when visible player changes"""
         curr_child = self.stack.get_visible_child()
         if not curr_child or not hasattr(curr_child, "get_name"):
             return
@@ -688,6 +694,7 @@ class PlayerContainerMini(Box):
             self.mini_tile_icon.set_from_string(getattr(svg, curr_player, svg.disc))
 
         GLib.idle_add(_update_mini_tile_icon)
+        self.update_player_list()
 
     def get_mini_view(self):
         return self.mini_tile_view
