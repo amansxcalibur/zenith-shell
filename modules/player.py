@@ -7,9 +7,14 @@ from fabric.widgets.overlay import Overlay
 from fabric.widgets.button import Button
 from fabric.widgets.centerbox import CenterBox
 
-from widgets.overrides import Svg
+import svg
+import icons
+
+from config.info import ROOT_DIR
+from config.config import config
 
 from modules.wiggle_bar import WigglyScale
+from modules.audio_panel import DEVICE_ICONS
 from modules.wallpaper import WallpaperService
 
 from services.volume_service import VolumeService
@@ -19,14 +24,10 @@ from services.player_service import PlayerManager, PlayerService, get_track_labe
 from utils.colors import get_css_variable, hex_to_rgb01
 from utils.helpers import format_accel_to_keybind
 
+from widgets.overrides import Svg
+from widgets.animated_scale import AnimatedScale
 from widgets.material_label import MaterialIconLabel
 from widgets.popup_window import PopSlot, FlyingOverlay
-from widgets.animated_scale import AnimatedScale
-
-import svg
-import icons
-from config.info import ROOT_DIR
-from config.config import config
 
 import gi
 
@@ -110,7 +111,6 @@ class PlayerSource(Button):
         self.quick_settings_slot = None  # stamped in by PopSlot
 
         MAX_AUDIO_DEVICE_NAME_CHARS = 14
-        device_name = self._volume_service.get_current_device_name()
 
         self.player_icon = Svg(
             name=self._player.props.player_name,
@@ -118,8 +118,11 @@ class PlayerSource(Button):
             style_classes="player-icon",
             svg_string=getattr(svg, self._player.props.player_name, svg.disc),
         )
+        self.audio_device_icon = MaterialIconLabel(
+            icon_text=icons.headphones.symbol(),
+            wght=600,
+        )
         self.audio_device_label = Label(
-            label=device_name,
             style="font-size: 13px;",
             max_chars_width=MAX_AUDIO_DEVICE_NAME_CHARS,
             ellipsization="end",
@@ -127,20 +130,14 @@ class PlayerSource(Button):
         self.audio_source = Box(
             name="source-name",
             spacing=5,
-            children=[
-                MaterialIconLabel(
-                    icon_text=icons.headphones.symbol(),
-                    wght=600,
-                ),
-                self.audio_device_label,
-            ],
+            children=[self.audio_device_icon, self.audio_device_label],
         )
 
         self.full_device_label = Label(
             h_align="start",
             style_classes="full-device-name",
-            label=device_name,
         )
+        self.on_audio_device_changed()
         self.volume_scale = PlayerAudioScaleMaterial3(service_instance=service)
         self.image_container = Box(
             style="background-position: center; background-size: cover; border-radius: 20px",
@@ -247,10 +244,15 @@ class PlayerSource(Button):
         self.audio_source_stack.set_visible_child(self.player_menu)
         self.quick_settings_slot.pop_out()
 
-    def on_audio_device_changed(self, _service, *_args):
-        name = self._volume_service.get_current_device_name()
-        self.audio_device_label.set_label(name)
-        self.full_device_label.set_label(name)
+    def on_audio_device_changed(self, *_args):
+        # what the controls popup calls it: the jack in use, e.g. "Headphones"
+        device = self._volume_service.get_current_device()
+        if device is None:  # not read yet
+            return
+        self.audio_device_icon.set_icon(DEVICE_ICONS[device.icon].symbol())
+        self.audio_device_label.set_label(device.label)
+        self.audio_device_label.set_tooltip_text(device.full_name)
+        self.full_device_label.set_label(device.full_name)
 
     def on_restored(self):
         self.toggle = False
@@ -346,9 +348,6 @@ class Player(Box):
 
         self._flying_overlay = FlyingOverlay.get_shared()
 
-        # GTK counts these in the font's average character width, 12px for the song
-        # and 10px for the artist. Both fill the 276px beside the play button, any
-        # more would widen the card.
         MAX_SONG_CHARS = 23
         MAX_ARTIST_CHARS = 27
         self.duration = 0.0
@@ -428,7 +427,6 @@ class Player(Box):
             on_clicked=lambda b, *_: self.handle_play_pause(),
         )
 
-        # overlaid so the glyph stays level with prev and next when the dot shows
         shuffle_dot = Box(name="shuffle-dot", h_align="center", v_align="end")
         shuffle_content = Overlay(
             child=Svg(

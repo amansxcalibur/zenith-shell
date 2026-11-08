@@ -2,7 +2,12 @@ from fabric.widgets.box import Box
 from fabric.widgets.revealer import Revealer
 from fabric.widgets.eventbox import EventBox
 
+import icons
+from modules.audio_panel import AudioPanel
+from widgets.track_decor import TrackDecor
+
 from modules.volume import (
+    FULL_VOLUME,
     VolumeSmall,
     VolumeSlider,
     VolumeMaterial3,
@@ -10,9 +15,19 @@ from modules.volume import (
     MicSlider,
     MicMaterial3,
 )
-from modules.brightness import BrightnessSlider, BrightnessSmall, BrightnessMaterial3
+from modules.brightness import (
+    BACKLIGHT_SUPPORTED,
+    BrightnessSlider,
+    BrightnessSmall,
+    BrightnessMaterial3,
+)
 from widgets.popup_window import SharedPopupWindow
-from services.volume_service import VolumeService
+from services.volume_service import (
+    MAX_MIC_VOLUME,
+    MAX_VOLUME,
+    MAX_VOLUME_REASON,
+    VolumeService,
+)
 from services.brightness_service import BrightnessService
 from config.config import config
 
@@ -87,15 +102,73 @@ class ControlsManager:
         self.popup_win = SharedPopupWindow()
         self.popup_win.add_child(
             pointing_widget=self.vol_brightness_box,
-            child=Box(
-                name="control-slider-mui-container",
-                spacing=7,
-                children=[
-                    self.popup_slider_mic,
-                    self.popup_slider_vol,
-                    self.popup_slider_brightness,
-                ],
+            child=self._build_popup(),
+        )
+
+    def _build_popup(self) -> Box:
+        volume_service = self.volume_manager.service
+
+        def volume_icon():
+            volume, muted = volume_service.get_current_volume()
+            if muted or volume <= 0:
+                return icons.volume_off
+            return icons.volume_down if volume < 0.5 else icons.volume_up
+
+        def brightness_icon():
+            value = self.popup_slider_brightness.get_value()
+            if value < 1 / 3:
+                return icons.brightness_low
+            if value < 2 / 3:
+                return icons.brightness_medium
+            return icons.brightness_high
+
+        mic_decor = TrackDecor(
+            self.popup_slider_mic,
+            icon=lambda: (
+                icons.mic_off if volume_service.get_mic_status()[1] else icons.mic
             ),
+        )
+        volume_decor = TrackDecor(
+            self.popup_slider_vol, icon=volume_icon, stops=[FULL_VOLUME]
+        )
+        TrackDecor(self.popup_slider_brightness, icon=brightness_icon)
+
+        # muting changes no value, so nothing else repaints the icon
+        volume_service.connect(
+            "speaker-volume-changed", lambda *_: volume_decor.refresh()
+        )
+        volume_service.connect("mic-volume-changed", lambda *_: mic_decor.refresh())
+
+        def set_shown(widget, shown):
+            widget.set_no_show_all(not shown)
+            widget.set_visible(shown)
+
+        volume_service.connect(
+            "mic-available-changed",
+            lambda _s, ok: set_shown(self.popup_slider_mic, ok),
+        )
+        set_shown(self.popup_slider_mic, volume_service.is_mic_available())
+        set_shown(self.popup_slider_brightness, BACKLIGHT_SUPPORTED)
+
+        return Box(
+            name="control-slider-mui-container",
+            spacing=8,
+            children=[
+                Box(
+                    name="control-sliders",
+                    spacing=7,
+                    # a device list opening grows the panel; not the sliders
+                    v_align="start",
+                    homogeneous=True,
+                    children=[
+                        self.popup_slider_mic,
+                        self.popup_slider_vol,
+                        self.popup_slider_brightness,
+                    ],
+                ),
+                Box(name="control-divider"),
+                AudioPanel(volume_service),
+            ],
         )
 
     # getters
@@ -193,12 +266,23 @@ class VolumeManager:
 
     def _init_widgets(self):
         volume_slider = VolumeSlider(min_value=0, max_value=1)
-        volume_overflow_slider = VolumeSlider(min_value=1, max_value=2)
-        self.mui_slider = VolumeMaterial3(min_value=0, max_value=2, orientation="v")
+        volume_overflow_slider = VolumeSlider(min_value=1, max_value=MAX_VOLUME)
+        self.mui_slider = VolumeMaterial3(
+            min_value=0, max_value=MAX_VOLUME, orientation="v"
+        )
+        # says why it stops there, once it does
+        self.mui_slider.connect(
+            "value-changed",
+            lambda s: s.set_tooltip_text(
+                MAX_VOLUME_REASON if s.get_value() >= MAX_VOLUME - 0.005 else None
+            ),
+        )
         volume_overflow_slider.add_style_class("vol-overflow-slider")
 
-        mic_slider = MicSlider(min_value=0, max_value=1)
-        self.mui_mic_slider = MicMaterial3(min_value=0, max_value=1, orientation="v")
+        mic_slider = MicSlider(min_value=0, max_value=MAX_MIC_VOLUME)
+        self.mui_mic_slider = MicMaterial3(
+            min_value=0, max_value=MAX_MIC_VOLUME, orientation="v"
+        )
 
         transition = "slide-down" if not config.VERTICAL else "slide-right"
 

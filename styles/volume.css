@@ -268,10 +268,10 @@ highlight {
   min-width: 40px;
   border-radius: 10px;
   min-height: 4px;
-  /* box-shadow: 0 0 0 4px var(--shadow); */
 }
 
-#control-slider-mui.vertical:hover slider {
+/* the handle thins at once while held, its gap to the fill staying */
+#control-slider-mui.vertical slider:active {
   min-height: 2px;
   box-shadow: 0 -1px 0 4px var(--shadow);
 }
@@ -304,9 +304,318 @@ highlight {
 }
 
 #control-slider-mui-container {
-  padding: 7px;
+  padding: 12px;
   background-color: var(--shadow);
+  /* the sliders' 12px corners plus the padding, so they stay concentric */
+  border-radius: 24px;
+}
+
+/* the controls popup; widgets/track_decor.py paints the sliders' icon,
+   value bubble and dots in these colours */
+#control-slider-mui.vertical {
+  color: var(--on-surface-variant);
+}
+#control-slider-mui.vertical.on-fill {
+  color: var(--on-primary);
+}
+#control-slider-mui.vertical.mute.on-fill {
+  color: var(--surface);
+}
+#control-slider-mui.vertical.vol-overflow-slider.on-fill {
+  color: var(--shadow);
+}
+#control-slider-mui.vertical.bubble {
+  background-color: var(--inverse-surface);
+  color: var(--inverse-on-surface);
+}
+
+/* between the sliders and the panel */
+#control-divider {
+  min-width: 1px;
+  margin: 6px 0;
+  background-color: var(--outline-variant);
+}
+
+/* the panel beside the sliders, modules/audio_panel.py */
+#audio-panel {
+  padding: 4px 4px 4px 0;
+}
+
+#panel-heading {
+  margin: 2px 0 0 4px;
+}
+#heading-icon {
+  color: var(--on-surface);
+  font-size: 18px;
+}
+#heading-title {
+  color: var(--on-surface);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+#panel-separator {
+  min-height: 1px;
+  margin: 2px 0;
+  background-color: var(--outline-variant);
+}
+
+/* a device's card; its header drops down the others */
+#device-card {
   border-radius: 17px;
+  background-color: var(--surface-container-high);
+  transition: border-radius 250ms cubic-bezier(0.2, 0, 0, 1);
+}
+#device-card.open {
+  border-radius: 24px;
+}
+#card-header {
+  padding: 6px 12px 6px 6px;
+  border-radius: 20px;
+  background-color: transparent;
+  transition: background-color 150ms ease-out;
+}
+#device-card:not(.static) #card-header:hover {
+  background-color: var(--surface-container-highest);
+}
+#card-icon-shape {
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: 12px;
+  background-color: var(--secondary-container);
+  transition: border-radius 250ms cubic-bezier(0.2, 0, 0, 1);
+}
+#device-card:not(.static) #card-header:hover #card-icon-shape {
+  border-radius: 17px;
+}
+#card-icon {
+  color: var(--on-secondary-container);
+  font-size: 20px;
+}
+#card-device {
+  color: var(--on-surface);
+  font-size: 14px;
+  font-weight: 600;
+}
+#card-level {
+  color: var(--on-surface-variant);
+  font-size: 13px;
+}
+#card-arrow {
+  color: var(--on-surface-variant);
+  font-size: 20px;
+}
+
+#card-options {
+  padding: 2px 6px 6px 6px;
+}
+#device-option {
+  padding: 8px 10px;
+  border-radius: 14px;
+  background-color: transparent;
+  transition: background-color 150ms ease-out;
+}
+#device-option:hover {
+  background-color: var(--surface-container-highest);
+}
+#device-option.active {
+  background-color: var(--secondary-container);
+}
+#option-icon,
+#option-check {
+  color: var(--primary);
+  font-size: 18px;
+}
+#device-option.active #option-icon,
+#device-option.active #option-check,
+#device-option.active label {
+  color: var(--on-secondary-container);
+}
+#option-name {
+  color: var(--on-surface);
+  font-size: 13px;
+}
+
+/* a line on what's going on, under a card */
+#status-row {
+  padding-left: 14px;
+}
+#status-icon {
+  color: var(--outline);
+  font-size: 22px;
+}
+#status-title {
+  color: var(--on-surface-variant);
+  font-size: 14px;
+  font-weight: 600;
+}
+#status-detail {
+  color: var(--outline);
+  font-size: 12px;
+}
+#status-row.alert #status-icon,
+#status-row.alert #status-title {
+  color: var(--error);
+}
+
+/* M3 expressive grouped list: tight gaps, small inner corners, round ends */
+#user-row:first-child,
+#app-card:first-child {
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+#user-row:last-child,
+#app-card:last-child {
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+
+/* something going on, nothing to worry about */
+#status-row.active #status-icon,
+#status-row.active #status-title {
+  color: var(--primary);
+}
+#status-row.active #status-more {
+  background-color: var(--primary-container);
+}
+#status-row.active #status-more:hover {
+  background-color: shade(var(--primary-container), 1.25);
+}
+#status-row.active #status-more-icon {
+  color: var(--on-primary-container);
+}
+
+/* opens the page of apps using it */
+#status-more {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  margin-right: 4px;
+  border-radius: 15px;
+  background-color: var(--error-container);
+  transition: background-color 150ms ease-out;
+}
+#status-more:hover {
+  background-color: shade(var(--error-container), 1.25);
+}
+#status-more-icon {
+  color: var(--on-error-container);
+  font-size: 20px;
+}
+
+/* the page of apps using the mic */
+#page-back {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  border-radius: 15px;
+  background-color: transparent;
+  transition: background-color 150ms ease-out;
+}
+#page-back:hover {
+  background-color: var(--surface-container-highest);
+}
+#page-back-icon {
+  color: var(--on-surface);
+  font-size: 20px;
+}
+#user-row {
+  padding: 8px 12px 8px 8px;
+  border-radius: 6px;
+  background-color: var(--surface-container-high);
+}
+#user-detail {
+  color: var(--on-surface-variant);
+  font-size: 13px;
+}
+
+/* on the dock's mic button, at its top end corner */
+#mic-in-use-dot {
+  background-color: var(--error);
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: 4px;
+  margin: 2px;
+  box-shadow: 0 0 0 2px var(--shadow);
+}
+
+/* an app playing */
+#app-card {
+  padding: 8px 12px 8px 8px;
+  border-radius: 6px;
+  background-color: var(--surface-container-high);
+}
+#app-icon-shape {
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: 12px;
+  background-color: var(--surface-container-highest);
+}
+#app-icon-fallback {
+  color: var(--primary);
+  font-size: 20px;
+}
+#app-name {
+  color: var(--on-surface);
+  font-size: 14px;
+  font-weight: 600;
+}
+#app-level {
+  color: var(--on-surface-variant);
+  font-size: 13px;
+  min-width: 34px;
+}
+
+#app-volume-slider,
+#app-volume-slider trough,
+#app-volume-slider highlight,
+#app-volume-slider slider {
+  all: unset;
+}
+/* M3 expressive, the thin size: a line for a handle, cut out of the track
+   by a gap in the card's colour, and a stop dot at the track's end */
+#app-volume-slider {
+  padding: 6px 0;
+}
+#app-volume-slider trough {
+  min-height: 8px;
+  border-radius: 4px;
+  background-color: var(--secondary-container);
+  background-image: radial-gradient(
+    circle closest-side,
+    var(--primary) 60%,
+    transparent 75%
+  );
+  background-size: 4px 4px;
+  background-repeat: no-repeat;
+  background-position: 97% 50%;
+}
+#app-volume-slider highlight {
+  border-radius: 4px 2px 2px 4px;
+  background-color: var(--primary);
+}
+#app-volume-slider slider {
+  min-width: 4px;
+  min-height: 22px;
+  margin: -7px 0;
+  border-radius: 2px;
+  background-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--surface-container-high);
+}
+/* thins at once while held, its gap staying */
+#app-volume-slider slider:active {
+  min-width: 2px;
+}
+#app-card.muted #app-volume-slider highlight,
+#app-card.muted #app-volume-slider slider {
+  background-color: var(--outline);
+}
+#app-card.muted #app-volume-slider trough {
+  background-image: radial-gradient(
+    circle closest-side,
+    var(--outline) 60%,
+    transparent 75%
+  );
 }
 
 #control-slider-label {

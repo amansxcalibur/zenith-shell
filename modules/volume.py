@@ -9,12 +9,15 @@ from fabric.widgets.eventbox import EventBox
 from widgets.overrides import Svg
 from widgets.material_label import MaterialIconLabel
 from widgets.animated_scale import AnimatedScale, AnimatedCircularScale
-from services.volume_service import VolumeService
+from services.volume_service import MAX_VOLUME, MAX_VOLUME_REASON, VolumeService
 from config.config import config
 import svg
 import icons
 
 from gi.repository import Gdk  # type: ignore
+
+FULL_VOLUME = 1.0  # 100%; past it the volume is boosted
+SNAP_DISTANCE = 0.03  # a drag this close to 100% stops on it
 
 
 class BaseAudioSlider(AnimatedScale):
@@ -147,10 +150,16 @@ class VolumeMaterial3(BaseMaterial3Slider):
     def __init__(self, orientation="h", **kwargs):
         super().__init__(orientation=orientation, **kwargs)
         self.volume_service.connect("speaker-volume-changed", self.on_value_changed)
+        self.boostable = self.max_value > FULL_VOLUME
 
     def set_volume_callback(self, source, _, value):
         self.update_from_user = True
+        if self.boostable and abs(value - FULL_VOLUME) < SNAP_DISTANCE:
+            self.set_value(FULL_VOLUME)
+            self.volume_service.set_volume(FULL_VOLUME)
+            return True  # keep GTK from moving it on to the pointer
         self.volume_service.set_volume(value)
+        return False
 
 
 class MicMaterial3(BaseMaterial3Slider):
@@ -261,6 +270,12 @@ class VolumeSmall(BaseAudioSmall):
         self._setup_event_box("vol-button")
         self.volume_service.connect("speaker-volume-changed", self.update_volume)
 
+    def update_volume(self, source, new_val, max_val, is_muted):
+        super().update_volume(source, new_val, max_val, is_muted)
+        # scrolling stops there; say why
+        at_limit = new_val is not None and new_val >= MAX_VOLUME - 0.005
+        self.vol_button.set_tooltip_text(MAX_VOLUME_REASON if at_limit else None)
+
     def toggle_mute_callback(self, event):
         self.volume_service.toggle_mute()
 
@@ -285,6 +300,22 @@ class MicSmall(BaseAudioSmall):
         )
         self._setup_event_box("mic-button")
         self.volume_service.connect("mic-volume-changed", self.update_volume)
+
+        # a red dot while an app records, named in the tooltip
+        self.in_use_dot = Box(name="mic-in-use-dot", h_align="end", v_align="start")
+        self.in_use_dot.set_no_show_all(True)
+        overlay = self.event_box.get_child()
+        overlay.add_overlay(self.in_use_dot)
+        overlay.set_overlay_pass_through(self.in_use_dot, True)
+        self.volume_service.connect(
+            "mic-users-changed", lambda _s, users: self.show_users(users)
+        )
+        self.show_users(self.volume_service.get_mic_users())
+
+    def show_users(self, users) -> None:
+        self.in_use_dot.set_visible(bool(users))
+        names = ", ".join(dict.fromkeys(user.app for user in users))
+        self.vol_button.set_tooltip_text(f"Mic in use by {names}" if users else None)
 
     def toggle_mute_callback(self, event):
         self.volume_service.toggle_mic_mute()
