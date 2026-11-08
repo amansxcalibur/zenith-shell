@@ -44,42 +44,42 @@ class AppLauncher(Box):
             "title": "Power",
             "cmd": ":p",
             "id": AppCommands.POWER,
-            "icon": icons.power,
+            "icon": icons.material.power,
             "keywords": ["shutdown", "restart", "sleep", "lock", "poweroff"],
         },
         {
             "title": "Player",
             "cmd": ":u",
             "id": AppCommands.PLAYER,
-            "icon": icons.disc,
+            "icon": icons.material.disc,
             "keywords": ["music", "audio", "media"],
         },
         {
             "title": "Dashboard",
             "cmd": ":d",
             "id": AppCommands.DASHBOARD,
-            "icon": icons.dashboard,
+            "icon": icons.material.dashboard,
             "keywords": ["home", "overview", "main"],
         },
         {
             "title": "Wallpapers",
             "cmd": ":w",
             "id": AppCommands.WALLPAPERS,
-            "icon": icons.wallpaper,
+            "icon": icons.material.wallpaper,
             "keywords": ["wallpaper", "background", "theme"],
         },
         {
             "title": "Clipboard",
             "cmd": ":c",
             "id": AppCommands.CLIPBOARD,
-            "icon": icons.content_copy,
+            "icon": icons.material.content_copy,
             "keywords": ["clipboard", "history", "copy", "paste"],
         },
         {
             "title": "Zenith Settings",
             "cmd": ":s",
             "id": AppCommands.SETTINGS,
-            "icon": icons.settings,
+            "icon": icons.material.settings,
             "keywords": ["settings", "prefs", "preferences", "config"],
         },
     ]
@@ -205,8 +205,8 @@ class AppLauncher(Box):
                 #         Box(
                 #             style="padding: 0 6px; background-color: var(--surface-semi-bright); border-radius: 20px; margin-bottom: 4px",
                 #             children=[
-                #                 MaterialIconLabel(icon_text=icons.north.symbol()),
-                #                 MaterialIconLabel(icon_text=icons.south.symbol()),
+                #                 MaterialIconLabel(icon_text=icons.material.north.symbol()),
+                #                 MaterialIconLabel(icon_text=icons.material.south.symbol()),
                 #                 Label(style="color: var(--outline);", label="nav"),
                 #             ],
                 #         ),
@@ -215,10 +215,10 @@ class AppLauncher(Box):
                 #             children=[
                 #                 Label(style="color: var(--outline); ", label="Shift+"),
                 #                 MaterialIconLabel(
-                #                     icon_text=icons.arrow_backward.symbol()
+                #                     icon_text=icons.material.arrow_backward.symbol()
                 #                 ),
                 #                 MaterialIconLabel(
-                #                     icon_text=icons.arrow_forward.symbol()
+                #                     icon_text=icons.material.arrow_forward.symbol()
                 #                 ),
                 #                 Label(style="color: var(--outline); ", label="modes"),
                 #             ],
@@ -241,7 +241,8 @@ class AppLauncher(Box):
                         Button(
                             name="close-button",
                             child=MaterialIconLabel(
-                                name="close-label", icon_text=icons.close.symbol()
+                                name="close-label",
+                                icon_text=icons.material.close.symbol(),
                             ),
                             tooltip_text="Exit",
                             on_clicked=lambda *_: self.close_launcher(),

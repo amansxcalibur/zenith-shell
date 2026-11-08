@@ -2,7 +2,7 @@ from dataclasses import dataclass, replace
 from collections.abc import Iterable, Mapping
 
 from .info import SHELL_NAME
-import icons.icons_material as icons  # type: ignore[attr-defined]
+import icons
 
 
 class KeybindingValidationError(Exception):
@@ -26,7 +26,7 @@ I3_KEYBINDINGS = [
         command=f'fabric-cli exec {SHELL_NAME} "pill.open()"',
         title="Open Pill",
         scope="i3",
-        icon=icons.pill.symbol(),
+        icon=icons.material.pill.symbol(),
     ),
     KeyBinding(
         action="pill.toggle_power_menu",
@@ -34,7 +34,7 @@ I3_KEYBINDINGS = [
         command=f'fabric-cli exec {SHELL_NAME} "pill.toggle_power_menu()"',
         title="Toggle Power Menu",
         scope="i3",
-        icon=icons.power.symbol(),
+        icon=icons.material.power.symbol(),
     ),
     KeyBinding(
         action="pill.cycle_modes",
@@ -42,7 +42,7 @@ I3_KEYBINDINGS = [
         command=f'fabric-cli exec {SHELL_NAME} "pill.cycle_modes()"',
         title="Cycle Pill Modes",
         scope="i3",
-        icon=icons.pill.symbol(),
+        icon=icons.material.pill.symbol(),
     ),
     KeyBinding(
         action="notifications.toggle",
@@ -50,7 +50,7 @@ I3_KEYBINDINGS = [
         command=f'fabric-cli exec {SHELL_NAME} "top_pill.toggle_notification()"',
         title="Toggle Notifications",
         scope="i3",
-        icon=icons.notifications.symbol(),
+        icon=icons.material.notifications.symbol(),
     ),
     KeyBinding(
         action="top_bar.toggle_detach",
@@ -58,7 +58,7 @@ I3_KEYBINDINGS = [
         command=f'fabric-cli exec {SHELL_NAME} "top_bar.toggle_detach()"',
         title="Toggle Controls Mode",
         scope="i3",
-        icon=icons.arrows_up_down_circle.symbol(),
+        icon=icons.material.arrows_up_down_circle.symbol(),
     ),
     KeyBinding(
         action="dock.toggle",
@@ -66,7 +66,7 @@ I3_KEYBINDINGS = [
         command=f'fabric-cli exec {SHELL_NAME} "dockBar.toggle_visibility()"',
         title="Toggle Dock Visibility",
         scope="i3",
-        icon=icons.dock_bottom.symbol(),
+        icon=icons.material.dock_bottom.symbol(),
     ),
     KeyBinding(
         action="pill.toggle_player",
@@ -74,7 +74,7 @@ I3_KEYBINDINGS = [
         command=f'fabric-cli exec {SHELL_NAME} "pill.toggle_player()"',
         title="Toggle Player",
         scope="i3",
-        icon=icons.disc.symbol(),
+        icon=icons.material.disc.symbol(),
     ),
 ]
 
@@ -85,7 +85,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Play / Pause",
         scope="player",
-        icon=icons.play_pause.symbol(),
+        icon=icons.material.play_pause.symbol(),
     ),
     KeyBinding(
         action="player.prev",
@@ -93,7 +93,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Previous Track",
         scope="player",
-        icon=icons.skip_prev.symbol(),
+        icon=icons.material.skip_prev.symbol(),
     ),
     KeyBinding(
         action="player.skip_backward",
@@ -101,7 +101,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Seek Backward",
         scope="player",
-        icon=icons.fast_rewind.symbol(),
+        icon=icons.material.fast_rewind.symbol(),
     ),
     KeyBinding(
         action="player.skip_forward",
@@ -109,7 +109,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Seek Forward",
         scope="player",
-        icon=icons.fast_forward.symbol(),
+        icon=icons.material.fast_forward.symbol(),
     ),
     KeyBinding(
         action="player.next",
@@ -117,7 +117,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Next Track",
         scope="player",
-        icon=icons.skip_next.symbol(),
+        icon=icons.material.skip_next.symbol(),
     ),
     KeyBinding(
         action="player.switch_next",
@@ -125,7 +125,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Next Player",
         scope="player",
-        icon=icons.transition_push.symbol(),
+        icon=icons.material.transition_push.symbol(),
     ),
     KeyBinding(
         action="player.switch_prev",
@@ -133,7 +133,7 @@ PLAYER_KEYBINDINGS = [
         command=None,
         title="Previous Player",
         scope="player",
-        icon=icons.transition_push.symbol(),
+        icon=icons.material.transition_push.symbol(),
     ),
 ]
 
@@ -144,7 +144,7 @@ WIFI_KEYBINDINGS = [
         command=None,
         title="Rescan Wi-Fi Networks",
         scope="wifi",
-        icon=icons.wifi.symbol(),
+        icon=icons.material.wifi.symbol(),
     ),
 ]
 
@@ -155,7 +155,7 @@ WALLPAPER_KEYBINDINGS = [
         command=None,
         title="Previous scheme",
         scope="wallpaper",
-        icon=icons.arrow_circle_up.symbol(),
+        icon=icons.material.arrow_circle_up.symbol(),
     ),
     KeyBinding(
         action="wallpaper.scheme_next",
@@ -163,7 +163,7 @@ WALLPAPER_KEYBINDINGS = [
         command=None,
         title="Next scheme",
         scope="wallpaper",
-        icon=icons.arrow_circle_down.symbol(),
+        icon=icons.material.arrow_circle_down.symbol(),
     ),
     KeyBinding(
         action="wallpaper.scheme_open",
@@ -171,7 +171,7 @@ WALLPAPER_KEYBINDINGS = [
         command=None,
         title="Open scheme list",
         scope="wallpaper",
-        icon=icons.arrow_drop_down_circle.symbol(),
+        icon=icons.material.arrow_drop_down_circle.symbol(),
     ),
     KeyBinding(
         action="wallpaper.move_up",
@@ -179,7 +179,7 @@ WALLPAPER_KEYBINDINGS = [
         command=None,
         title="Move up",
         scope="wallpaper",
-        icon=icons.north.symbol(),
+        icon=icons.material.north.symbol(),
     ),
     KeyBinding(
         action="wallpaper.move_down",
@@ -187,7 +187,7 @@ WALLPAPER_KEYBINDINGS = [
         command=None,
         title="Move down",
         scope="wallpaper",
-        icon=icons.south.symbol(),
+        icon=icons.material.south.symbol(),
     ),
     KeyBinding(
         action="wallpaper.move_left",
@@ -195,7 +195,7 @@ WALLPAPER_KEYBINDINGS = [
         command=None,
         title="Move left",
         scope="wallpaper",
-        icon=icons.west.symbol(),
+        icon=icons.material.west.symbol(),
     ),
     KeyBinding(
         action="wallpaper.move_right",
@@ -203,7 +203,7 @@ WALLPAPER_KEYBINDINGS = [
         command=None,
         title="Move right",
         scope="wallpaper",
-        icon=icons.east.symbol(),
+        icon=icons.material.east.symbol(),
     ),
     KeyBinding(
         action="wallpaper.activate",
@@ -211,7 +211,7 @@ WALLPAPER_KEYBINDINGS = [
         command=None,
         title="Set wallpaper",
         scope="wallpaper",
-        icon=icons.select_check_box.symbol(),
+        icon=icons.material.select_check_box.symbol(),
     ),
 ]
 
@@ -222,7 +222,7 @@ LAUNCHER_KEYBINDINGS = [
         command=None,
         title="Previous mode",
         scope="launcher",
-        icon=icons.arrow_circle_left.symbol(),
+        icon=icons.material.arrow_circle_left.symbol(),
     ),
     KeyBinding(
         action="launcher.mode_next",
@@ -230,7 +230,7 @@ LAUNCHER_KEYBINDINGS = [
         command=None,
         title="Next mode",
         scope="launcher",
-        icon=icons.arrow_circle_right.symbol(),
+        icon=icons.material.arrow_circle_right.symbol(),
     ),
     KeyBinding(
         action="launcher.move_up",
@@ -238,7 +238,7 @@ LAUNCHER_KEYBINDINGS = [
         command=None,
         title="Move up",
         scope="launcher",
-        icon=icons.north.symbol(),
+        icon=icons.material.north.symbol(),
     ),
     KeyBinding(
         action="launcher.move_down",
@@ -246,7 +246,7 @@ LAUNCHER_KEYBINDINGS = [
         command=None,
         title="Move down",
         scope="launcher",
-        icon=icons.south.symbol(),
+        icon=icons.material.south.symbol(),
     ),
     KeyBinding(
         action="launcher.activate",
@@ -254,7 +254,7 @@ LAUNCHER_KEYBINDINGS = [
         command=None,
         title="Launch App/Cmd",
         scope="launcher",
-        icon=icons.rocket_launch.symbol(),
+        icon=icons.material.rocket_launch.symbol(),
     ),
 ]
 
@@ -265,7 +265,7 @@ CLIPBOARD_KEYBINDINGS = [
         command=None,
         title="Move up",
         scope="clipboard",
-        icon=icons.north.symbol(),
+        icon=icons.material.north.symbol(),
     ),
     KeyBinding(
         action="clipboard.move_down",
@@ -273,7 +273,7 @@ CLIPBOARD_KEYBINDINGS = [
         command=None,
         title="Move down",
         scope="clipboard",
-        icon=icons.south.symbol(),
+        icon=icons.material.south.symbol(),
     ),
     KeyBinding(
         action="clipboard.activate",
@@ -281,7 +281,7 @@ CLIPBOARD_KEYBINDINGS = [
         command=None,
         title="Copy entry",
         scope="clipboard",
-        icon=icons.content_copy.symbol(),
+        icon=icons.material.content_copy.symbol(),
     ),
     KeyBinding(
         action="clipboard.expand",
@@ -289,7 +289,7 @@ CLIPBOARD_KEYBINDINGS = [
         command=None,
         title="Expand / collapse entry",
         scope="clipboard",
-        icon=icons.open_in_full.symbol(),
+        icon=icons.material.open_in_full.symbol(),
     ),
     KeyBinding(
         action="clipboard.delete",
@@ -297,7 +297,7 @@ CLIPBOARD_KEYBINDINGS = [
         command=None,
         title="Delete entry",
         scope="clipboard",
-        icon=icons.trash_material.symbol(),
+        icon=icons.material.trash_material.symbol(),
     ),
 ]
 
@@ -308,7 +308,7 @@ NOTIFICATIONS_KEYBINDINGS = [
         command=None,
         title="Clear all notifications",
         scope="notifications",
-        icon=icons.trash_material.symbol(),
+        icon=icons.material.trash_material.symbol(),
     ),
 ]
 

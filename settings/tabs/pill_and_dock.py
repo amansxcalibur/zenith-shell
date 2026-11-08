@@ -138,55 +138,55 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
         pill_positions = [
             {
                 "selected": False,
-                "icon": icons.north_west.symbol(),
+                "icon": icons.material.north_west.symbol(),
                 "text": "top-left",
                 "value": "top-left",
             },
             {
                 "selected": False,
-                "icon": icons.north.symbol(),
+                "icon": icons.material.north.symbol(),
                 "text": "top-center",
                 "value": "top-center",
             },
             {
                 "selected": False,
-                "icon": icons.north_east.symbol(),
+                "icon": icons.material.north_east.symbol(),
                 "text": "top-right",
                 "value": "top-right",
             },
             {
                 "selected": False,
-                "icon": icons.west.symbol(),
+                "icon": icons.material.west.symbol(),
                 "text": "left",
                 "value": "center-left",
             },
             {
                 "selected": False,
-                "icon": icons.center.symbol(),
+                "icon": icons.material.center.symbol(),
                 "text": "center",
                 "value": "center-center",
             },
             {
                 "selected": False,
-                "icon": icons.east.symbol(),
+                "icon": icons.material.east.symbol(),
                 "text": "right",
                 "value": "center-right",
             },
             {
                 "selected": False,
-                "icon": icons.south_west.symbol(),
+                "icon": icons.material.south_west.symbol(),
                 "text": "bottom-left",
                 "value": "bottom-left",
             },
             {
                 "selected": False,
-                "icon": icons.south.symbol(),
+                "icon": icons.material.south.symbol(),
                 "text": "bottom-center",
                 "value": "bottom-center",
             },
             {
                 "selected": False,
-                "icon": icons.south_east.symbol(),
+                "icon": icons.material.south_east.symbol(),
                 "text": "bottom-right",
                 "value": "bottom-right",
             },
@@ -195,19 +195,19 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
         dock_positions = [
             {
                 "selected": False,
-                "icon": icons.west.symbol(),
+                "icon": icons.material.west.symbol(),
                 "text": "left",
                 "value": "left",
             },
             {
                 "selected": False,
-                "icon": icons.south.symbol(),
+                "icon": icons.material.south.symbol(),
                 "text": "bottom",
                 "value": "bottom",
             },
             {
                 "selected": False,
-                "icon": icons.east.symbol(),
+                "icon": icons.material.east.symbol(),
                 "text": "right",
                 "value": "right",
             },
@@ -463,7 +463,7 @@ class ModulePill(EventBox):
         children = [
             MaterialIconLabel(
                 style_classes="module-drag-icon",
-                icon_text=icons.drag_indicator.symbol(),
+                icon_text=icons.material.drag_indicator.symbol(),
                 font_size=18,
             )
         ]
@@ -481,7 +481,7 @@ class ModulePill(EventBox):
                         child=MaterialIconLabel(
                             name="close-label",
                             style_classes="settings",
-                            icon_text=icons.close.symbol(),
+                            icon_text=icons.material.close.symbol(),
                         ),
                         on_clicked=lambda *_: on_remove(name),
                     )

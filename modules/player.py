@@ -119,7 +119,7 @@ class PlayerSource(Button):
             svg_string=getattr(svg, self._player.props.player_name, svg.disc),
         )
         self.audio_device_icon = MaterialIconLabel(
-            icon_text=icons.headphones.symbol(),
+            icon_text=icons.material.headphones.symbol(),
             wght=600,
         )
         self.audio_device_label = Label(
@@ -419,7 +419,7 @@ class Player(Box):
         self.play_pause_button = Button(
             name="pause-button",
             child=MaterialIconLabel(
-                name="pause-label", icon_text=icons.play_material.symbol()
+                name="pause-label", icon_text=icons.material.play_material.symbol()
             ),
             style_classes="pause-track",
             v_align="center",
@@ -454,7 +454,7 @@ class Player(Box):
             child=MaterialIconLabel(
                 name="play-previous",
                 style_classes=["material-icon"],
-                icon_text=icons.skip_prev.symbol(),
+                icon_text=icons.material.skip_prev.symbol(),
             ),
             on_clicked=lambda b, *_: self.handle_prev(),
         )
@@ -463,7 +463,7 @@ class Player(Box):
             child=MaterialIconLabel(
                 name="play-next",
                 style_classes=["material-icon"],
-                icon_text=icons.skip_next.symbol(),
+                icon_text=icons.material.skip_next.symbol(),
             ),
             on_clicked=lambda b, *_: self.handle_next(),
         )
@@ -812,7 +812,7 @@ class Player(Box):
 
     def _set_pause_ui(self):
         child = self.play_pause_button.get_child()
-        child.set_icon(icons.play_material.symbol())
+        child.set_icon(icons.material.play_material.symbol())
         child.set_name("pause-label")
         self.play_pause_button.add_style_class("pause-track")
         return False
@@ -824,7 +824,7 @@ class Player(Box):
 
     def _set_play_ui(self):
         child = self.play_pause_button.get_child()
-        child.set_icon(icons.pause_material.symbol())
+        child.set_icon(icons.material.pause_material.symbol())
         child.set_name("play-label")
         self.play_pause_button.remove_style_class("pause-track")
         return False
@@ -933,7 +933,7 @@ class Placeholder(Box):
                 v_align="end",
                 children=MaterialIconLabel(
                     name="placeholder-icon",
-                    icon_text=icons.disc.symbol(),
+                    icon_text=icons.material.disc.symbol(),
                     h_align="end",
                     v_align="end",
                     fill=1,

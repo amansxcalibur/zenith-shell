@@ -300,7 +300,7 @@ class WallpaperSelector(Box):
         self.scheme_dropdown.connect("changed", self.on_scheme_changed)
         self.scheme_dropdown.connect("notify::popup-shown", self._on_popup_shown)
 
-        self.mat_icon = Label(name="mat-label", markup=icons.palette.markup())
+        self.mat_icon = Label(name="mat-label", markup=icons.nerd.palette.markup())
 
         self.wall_dir_path_label = Label(
             style="color: var(--foreground); font-size: 14px",
@@ -331,7 +331,7 @@ class WallpaperSelector(Box):
         open_btn = Button(
             style_classes="launch-mode-btn",
             child=MaterialIconLabel(
-                icon_text=icons.folder_open.symbol(),
+                icon_text=icons.material.folder_open.symbol(),
                 FILL=1,
                 style="font-size: 20px; color: var(--primary)",
             ),
@@ -350,7 +350,9 @@ class WallpaperSelector(Box):
 
         close_btn = Button(
             name="close-button",
-            child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
+            child=MaterialIconLabel(
+                name="close-label", icon_text=icons.material.close.symbol()
+            ),
             tooltip_text="Exit",
             on_clicked=lambda *_: self._pill.open(),
         )
@@ -382,7 +384,7 @@ class WallpaperSelector(Box):
         btn = Button(
             style="margin: 18px; padding: 52px;",
             child=MaterialIconLabel(
-                icon_text=icons.add_material.symbol(),
+                icon_text=icons.material.add_material.symbol(),
                 FILL=0,
                 style="font-size: 120px; color: var(--surface)",
             ),
@@ -437,7 +439,7 @@ class WallpaperSelector(Box):
             style="padding: 20px 30px; color: var(--foreground)",
             spacing=8,
             children=[
-                MaterialIconLabel(icon_text=icons.wallpaper.symbol()),
+                MaterialIconLabel(icon_text=icons.material.wallpaper.symbol()),
                 MaterialFontLabel(
                     font_family="Google Sans Flex",
                     text="Choosing Wallpaper Folder...",

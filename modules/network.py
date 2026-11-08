@@ -376,17 +376,21 @@ class WifiButton(EventBox):
         if self.secured:
             children.append(
                 MaterialIconLabel(
-                    icon_text=icons.lock.symbol(),
+                    icon_text=icons.material.lock.symbol(),
                     style_classes=["ap-secure-icon"],
                     tooltip_text="Secured network",
                 )
             )
 
         self.edit_button, _ = _row_action_button(
-            icons.key.symbol(), "Change password", self._show_update_password_dialog
+            icons.material.key.symbol(),
+            "Change password",
+            self._show_update_password_dialog,
         )
         self.disconnect_button, self.disconnect_icon = _row_action_button(
-            icons.link_off.symbol(), "Disconnect", lambda *_: self.on_disconnect()
+            icons.material.link_off.symbol(),
+            "Disconnect",
+            lambda *_: self.on_disconnect(),
         )
 
         children += [self.edit_button, self.disconnect_button]
@@ -427,7 +431,9 @@ class WifiButton(EventBox):
             "Cancel" if is_connecting else "Disconnect"
         )
         self.disconnect_icon.set_icon(
-            icons.close.symbol() if is_connecting else icons.link_off.symbol()
+            icons.material.close.symbol()
+            if is_connecting
+            else icons.material.link_off.symbol()
         )
 
     @staticmethod
@@ -442,10 +448,10 @@ class WifiButton(EventBox):
 
     def _get_wifi_icon(self) -> str:
         return {
-            4: icons.wifi_4,
-            3: icons.wifi_3,
-            2: icons.wifi_2,
-            1: icons.wifi_1,
+            4: icons.material.wifi_4,
+            3: icons.material.wifi_3,
+            2: icons.material.wifi_2,
+            1: icons.material.wifi_1,
         }[self.strength_bucket(self.strength)].symbol()
 
     def _on_button_press(self, source: EventBox, event: Gdk.EventButton) -> bool:
@@ -637,7 +643,7 @@ class EthernetButton(EventBox):
         )
 
         self.disconnect_button, _ = _row_action_button(
-            icons.link_off.symbol(),
+            icons.material.link_off.symbol(),
             "Disconnect",
             lambda *_: self._disconnect_network(),
         )
@@ -655,7 +661,7 @@ class EthernetButton(EventBox):
         self._show_status(self.state)
 
     def _get_ethernet_icon(self) -> str:
-        return icons.lan.symbol()
+        return icons.material.lan.symbol()
 
     def _on_button_press(self, source: EventBox, event: Gdk.EventButton) -> bool:
         if event.button == 1:  # left click
@@ -835,11 +841,14 @@ class Network(TileSimpleWithMenu):
     }
 
     CONN_TYPE_META: ClassVar = {
-        ConnectionType.WIFI: {"text": "Wi-Fi", "icon": icons.wifi.symbol()},
-        ConnectionType.ETHERNET: {"text": "Ethernet", "icon": icons.lan.symbol()},
+        ConnectionType.WIFI: {"text": "Wi-Fi", "icon": icons.material.wifi.symbol()},
+        ConnectionType.ETHERNET: {
+            "text": "Ethernet",
+            "icon": icons.material.lan.symbol(),
+        },
         ConnectionType.NONE: {
             "text": "Internet",
-            "icon": icons.globe_2_question.symbol(),
+            "icon": icons.material.globe_2_question.symbol(),
         },
     }
 
@@ -958,7 +967,7 @@ class Network(TileSimpleWithMenu):
             title="Internet",
             label="Wi-Fi",
             status_label_widget=self.label,
-            markup=icons.wifi.symbol(),
+            markup=icons.material.wifi.symbol(),
             menu_children=self.menu,
             menu_loader=self.menu_loader,
             style_classes=["off"],
@@ -977,7 +986,7 @@ class Network(TileSimpleWithMenu):
                 on_clicked=lambda *_: on_clicked(),
                 child=MaterialIconLabel(
                     style_classes=["menu-icon"],
-                    icon_text=icons.refresh.symbol(),
+                    icon_text=icons.material.refresh.symbol(),
                 ),
                 tooltip_markup=tooltip,
             )

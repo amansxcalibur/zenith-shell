@@ -55,7 +55,7 @@ class Bluetooth(Tile):
         super().__init__(
             label="Bluetooth",
             props=self.label,
-            markup=icons.bluetooth.symbol(),
+            markup=icons.material.bluetooth.symbol(),
             menu_children=self.bluetooth_connections,
             menu_loader=loader,
             style_classes=["off"],
@@ -270,7 +270,7 @@ class BluetoothConnections(Box):
         self.client = BluetoothClient()
 
         self.scan_icon = MaterialIconLabel(
-            name="scan-icon", icon_text=icons.radar.symbol()
+            name="scan-icon", icon_text=icons.material.radar.symbol()
         )
         self.scan_label = Label(name="scan-label", label="")
         self.scan_label_revealer = Revealer(
@@ -297,7 +297,7 @@ class BluetoothConnections(Box):
         )
 
         self.refresh_icon = MaterialIconLabel(
-            name="scan-icon", icon_text=icons.refresh.symbol()
+            name="scan-icon", icon_text=icons.material.refresh.symbol()
         )
         self.refresh_button = add_hover_cursor(
             widget=Button(

@@ -19,9 +19,9 @@ from gi.repository import Gtk  # type: ignore
 
 class PowerProfilesSelector(EventBox):
     ICON_MAP: ClassVar[dict[str, str]] = {
-        "power-saver": icons.energy_savings_leaf,
-        "balanced": icons.balance,
-        "performance": icons.rocket_launch,
+        "power-saver": icons.material.energy_savings_leaf,
+        "balanced": icons.material.balance,
+        "performance": icons.material.rocket_launch,
     }
 
     def __init__(self, **kwargs):
@@ -33,7 +33,7 @@ class PowerProfilesSelector(EventBox):
 
         for profile_obj in self.service.profiles:
             profile = profile_obj["Profile"]
-            icon = self.ICON_MAP.get(profile, icons.balance)
+            icon = self.ICON_MAP.get(profile, icons.material.balance)
 
             btn = Button(
                 name=f"battery-{profile}",
@@ -80,7 +80,7 @@ class PowerProfilesSelector(EventBox):
         self.profile_icon = MaterialIconLabel(
             name="power-profile-icon",
             icon_text=self.ICON_MAP.get(
-                self.service.active_profile, icons.balance
+                self.service.active_profile, icons.material.balance
             ).symbol(),
         )
 
@@ -121,7 +121,7 @@ class PowerProfilesSelector(EventBox):
         new_mode = self.service.active_profile
 
         self.profile_label.set_label(new_mode)
-        icon = self.ICON_MAP.get(new_mode, icons.balance)
+        icon = self.ICON_MAP.get(new_mode, icons.material.balance)
         self.profile_icon.set_icon(icon.symbol())
 
         self.update_button_styles()

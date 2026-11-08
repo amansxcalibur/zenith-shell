@@ -121,7 +121,7 @@ def _resolve_app_icon(notification: Notification, size: int = 28) -> Gtk.Widget:
     # fallback
     fallback = MaterialIconLabel(
         name="notification-icon",
-        icon_text=icons.blur.symbol(),
+        icon_text=icons.material.blur.symbol(),
         style=f"margin: 0px; font-size: {int(size * 0.8)}px",
         v_align="center",
     )
@@ -297,7 +297,7 @@ class NotificationWidget(Box):
 
         # expander button
         self.revealer_btn_label = MaterialIconLabel(
-            icon_text=icons.arrow_forward.symbol(), angle=-90
+            icon_text=icons.material.arrow_forward.symbol(), angle=-90
         )
         self.revealer_btn = Button(
             name="notif-expander-btn",
@@ -375,7 +375,7 @@ class NotificationWidget(Box):
             v_align="start",
             child=MaterialIconLabel(
                 name="close-label-small",
-                icon_text=icons.close.symbol(),
+                icon_text=icons.material.close.symbol(),
             ),
             tooltip_text="Close",
             style_classes="critical" if self.urgency == 2 else "",
@@ -545,7 +545,7 @@ class NotificationGroup(AnimatedClippingBox):
 
         self._toggle_icon = MaterialIconLabel(
             style_classes="notif-toggle-arrow",
-            icon_text=icons.arrow_forward.symbol(),
+            icon_text=icons.material.arrow_forward.symbol(),
             angle=-90,  # pointing down = collapsed
         )
         self._toggle_btn = Button(
@@ -560,7 +560,7 @@ class NotificationGroup(AnimatedClippingBox):
                 spacing=4,
                 children=[
                     Label(label="Clear", style="color: var(--foreground)"),
-                    MaterialIconLabel(icon_text=icons.mop.symbol(), style="color: var(--foreground)"),
+                    MaterialIconLabel(icon_text=icons.material.mop.symbol(), style="color: var(--foreground)"),
                 ],
             ),
             tooltip_text="Dismiss all",

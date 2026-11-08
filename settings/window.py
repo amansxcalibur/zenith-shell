@@ -132,14 +132,14 @@ class SettingsWindow(Window):
                 TabConfig(
                     "dock_and_pill",
                     "Pill & Dock",
-                    icons.monitor.symbol(),
+                    icons.material.monitor.symbol(),
                     lambda: PillDockTab().get_widget(),
                     "Appearance",
                 ),
                 TabConfig(
                     "i3wm",
                     ("SwayFX" if is_swayfx() else "Sway") if IS_WAYLAND else "I3",
-                    icons.bento.symbol(),
+                    icons.material.bento.symbol(),
                     lambda: I3Tab().get_widget(),
                     "Appearance",
                 ),
@@ -148,14 +148,14 @@ class SettingsWindow(Window):
                 TabConfig(
                     "icon_variations",
                     "Icon Variations",
-                    icons.brightness_material.symbol(),
+                    icons.material.brightness_material.symbol(),
                     lambda: IconVariationsTab().get_widget(),
                     "Appearance",
                 ),
                 TabConfig(
                     "font_variations",
                     "Font Variations",
-                    icons.font.symbol(),
+                    icons.material.font.symbol(),
                     lambda: FontVariationsTab().get_widget(),
                     "Appearance",
                 ),
@@ -164,14 +164,14 @@ class SettingsWindow(Window):
                 TabConfig(
                     "key_bindings",
                     "Key Bindings",
-                    icons.dictionary.symbol(),
+                    icons.material.dictionary.symbol(),
                     lambda: self.key_bindings_tab.get_widget(),
                     "Appearance",
                 ),
                 TabConfig(
                     "launcher",
                     "Launcher",
-                    icons.apps.symbol(),
+                    icons.material.apps.symbol(),
                     lambda: LauncherTab().get_widget(),
                     "Appearance",
                 ),
@@ -257,7 +257,7 @@ class SettingsWindow(Window):
             child=MaterialIconLabel(
                 name="close-label",
                 style_classes="settings",
-                icon_text=icons.close.symbol(),
+                icon_text=icons.material.close.symbol(),
             ),
             on_clicked=lambda b: self.on_close(None),
         )
@@ -298,7 +298,9 @@ class SettingsWindow(Window):
                 child=Box(
                     spacing=6,
                     children=[
-                        MaterialIconLabel(icon_text=icons.info.symbol(), font_size=16),
+                        MaterialIconLabel(
+                            icon_text=icons.material.info.symbol(), font_size=16
+                        ),
                         Label(label=zenith_version()),
                     ],
                 ),

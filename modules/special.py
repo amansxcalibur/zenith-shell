@@ -162,7 +162,7 @@ class ActionButton(EventBox):
             child=MaterialIconLabel(
                 name="orientation-label",
                 FILL=0,
-                icon_text=(icons.planet.symbol()),
+                icon_text=(icons.material.planet.symbol()),
             ),
             on_clicked=lambda b, *_: restart_shell(),
         )
@@ -171,7 +171,7 @@ class ActionButton(EventBox):
             child=MaterialIconLabel(
                 name="orientation-label",
                 FILL=0,
-                icon_text=(icons.toggle_orientation.symbol()),
+                icon_text=(icons.material.toggle_orientation.symbol()),
             ),
             on_clicked=lambda b, *_: self.toggle_vertical(),
         )
@@ -180,7 +180,7 @@ class ActionButton(EventBox):
             child=MaterialIconLabel(
                 name="orientation-label",
                 FILL=0,
-                icon_text=(icons.rocket_launch.symbol()),
+                icon_text=(icons.material.rocket_launch.symbol()),
             ),
             on_clicked=lambda b, *_: self.start_launcher(),
         )
@@ -189,7 +189,7 @@ class ActionButton(EventBox):
             child=MaterialIconLabel(
                 name="orientation-label",
                 FILL=0,
-                icon_text=(icons.shutdown.symbol()),
+                icon_text=(icons.material.shutdown.symbol()),
             ),
             on_clicked=lambda b, *_: self.toggle_power_menu(),
         )

@@ -296,7 +296,7 @@ class MicSmall(BaseAudioSmall):
     def __init__(self, **kwargs):
         super().__init__(name="button-bar-mic", bar_name="button-mic", **kwargs)
         self.vol_label = MaterialIconLabel(
-            name="mic-label", icon_text=icons.mic.symbol()
+            name="mic-label", icon_text=icons.material.mic.symbol()
         )
         self._setup_event_box("mic-button")
         self.volume_service.connect("mic-volume-changed", self.update_volume)
@@ -327,7 +327,7 @@ class MicSmall(BaseAudioSmall):
         self.volume_service.set_mic_volume(val)
 
     def set_muted_icon(self):
-        self.vol_label.set_icon(icons.mic_off.symbol())
+        self.vol_label.set_icon(icons.material.mic_off.symbol())
 
     def set_unmuted_icon(self):
-        self.vol_label.set_icon(icons.mic.symbol())
+        self.vol_label.set_icon(icons.material.mic.symbol())

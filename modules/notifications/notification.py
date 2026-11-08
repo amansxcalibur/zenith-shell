@@ -80,7 +80,7 @@ class NotificationTile(TileSimple):
         )
         self.state = None
         super().__init__(
-            markup=icons.do_not_disturb_on.symbol(),
+            markup=icons.material.do_not_disturb_on.symbol(),
             label="Silent",
             status_label_widget=self.label,
             style_classes=["off"],
@@ -187,7 +187,7 @@ class ActiveNotificationWidget(EventBox):
 
         # TODO: implement real Revealer with animations and Pango pixel length(?)
         self.revealer_btn_label = MaterialIconLabel(
-            icon_text=icons.arrow_forward.symbol(),
+            icon_text=icons.material.arrow_forward.symbol(),
             angle=-90,
         )
         self.revealer_btn = Button(
@@ -275,7 +275,7 @@ class ActiveNotificationWidget(EventBox):
                                 name="close-button-small",
                                 child=MaterialIconLabel(
                                     name="close-label-small",
-                                    icon_text=icons.close.symbol(),
+                                    icon_text=icons.material.close.symbol(),
                                 ),
                                 tooltip_text="Close",
                                 style_classes="critical" if self.urgency == 2 else "",
@@ -699,7 +699,8 @@ class NotificationManager:
         self.silent_btn = Button(
             # name="notification-reveal-btn",
             child=MaterialIconLabel(
-                name="notification-reveal-label", icon_text=icons.notifications.symbol()
+                name="notification-reveal-label",
+                icon_text=icons.material.notifications.symbol(),
             ),
             tooltip_text="Show/Hide notifications",
             on_clicked=lambda *_: self.handle_silent_state_toggle(),
@@ -707,7 +708,8 @@ class NotificationManager:
         self.clear_btn = Button(
             # name="notification-reveal-btn",
             child=MaterialIconLabel(
-                name="notification-clear-label", icon_text=icons.trash_material.symbol()
+                name="notification-clear-label",
+                icon_text=icons.material.trash_material.symbol(),
             ),
             tooltip_text="Clear notifications",
             on_clicked=lambda *_: self.close_all_notifications(),
@@ -898,7 +900,9 @@ class NotificationManager:
     def _update_ui_state(self):
         widget = self.clear_btn.get_children()[0]
         icon = (
-            icons.trash_material.symbol() if self._is_open else icons.trash_up.symbol()
+            icons.material.trash_material.symbol()
+            if self._is_open
+            else icons.nerd.trash_up.symbol()
         )
         widget.set_icon(icon)
 

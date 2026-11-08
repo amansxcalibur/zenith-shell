@@ -297,19 +297,19 @@ class LauncherTab(BaseWidget, SectionBuilderMixin):
         self.container = Box(orientation="v", spacing=25)
 
         modules = [
-            {"module": "Dashboard", "text": ":d", "icon": icons.dashboard.symbol()},
-            {"module": "Wallpaper", "text": ":w", "icon": icons.wallpaper.symbol()},
-            {"module": "Player", "text": ":u", "icon": icons.disc.symbol()},
-            {"module": "Power", "text": ":p", "icon": icons.power.symbol()},
+            {"module": "Dashboard", "text": ":d", "icon": icons.material.dashboard.symbol()},
+            {"module": "Wallpaper", "text": ":w", "icon": icons.material.wallpaper.symbol()},
+            {"module": "Player", "text": ":u", "icon": icons.material.disc.symbol()},
+            {"module": "Power", "text": ":p", "icon": icons.material.power.symbol()},
             {
                 "module": "Clipboard",
                 "text": ":c",
-                "icon": icons.content_copy.symbol(),
+                "icon": icons.material.content_copy.symbol(),
             },
             {
                 "module": "Zenith Settings",
                 "text": ":s",
-                "icon": icons.settings.symbol(),
+                "icon": icons.material.settings.symbol(),
             },
         ]
 

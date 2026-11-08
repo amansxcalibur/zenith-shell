@@ -17,198 +17,167 @@ class MaterialIcon(Icon):
         )
 
 
-# dashboard
-arrow_forward: str = "\ue5e1"
-arrow_backward: str = "\ue2ea"
+_M = MaterialIcon
 
-add_material: str = "\ue145"
-add_circle: str = "\ue147"
+# Navigation / arrows
+arrow_forward: MaterialIcon = _M("\ue5e1")
+arrow_backward: MaterialIcon = _M("\ue2ea")
+arrow_back: MaterialIcon = _M("\ue5c4")
+arrow_circle_up: MaterialIcon = _M("\uf182")
+arrow_circle_down: MaterialIcon = _M("\uf181")
+arrow_circle_left: MaterialIcon = _M("\ueaa7")
+arrow_circle_right: MaterialIcon = _M("\ueaaa")
+arrow_drop_down_circle: MaterialIcon = _M("\ue5c6")
+arrows_up_down_circle: MaterialIcon = _M("\ue600")
+swap_vert: MaterialIcon = _M("\ue8d5")
+expand_more: MaterialIcon = _M("\ue5cf")
+expand_less: MaterialIcon = _M("\ue5ce")
+chevron_right: MaterialIcon = _M("\ue5cc")
 
-folder_open: str = "\ue2c8"
+# Compass / positions
+north: MaterialIcon = _M("\uf1e0")
+north_east: MaterialIcon = _M("\uf1e1")
+east: MaterialIcon = _M("\uf1df")
+south_east: MaterialIcon = _M("\uf1e4")
+south: MaterialIcon = _M("\uf1e3")
+south_west: MaterialIcon = _M("\uf1e5")
+west: MaterialIcon = _M("\uf1e6")
+north_west: MaterialIcon = _M("\uf1e2")
+center: MaterialIcon = _M("\ue3b4")
 
-device_thermostat: str = "\ue1ff"
+# Panels / apps
+dashboard: MaterialIcon = _M("\ue871")
+apps: MaterialIcon = _M("\ue5c3")
+home: MaterialIcon = _M("\ue88a")
+search: MaterialIcon = _M("\ue8b6")
+settings: MaterialIcon = _M("\ue8b8")
+wallpaper: MaterialIcon = _M("\ue1bc")
+hide_image: MaterialIcon = _M("\uf022")
+dictionary: MaterialIcon = _M("\uf539")
+font: MaterialIcon = _M("\ue167")
+monitor: MaterialIcon = _M("\uef5b")
+bento: MaterialIcon = _M("\uf1f4")
+pill: MaterialIcon = _M("\ue11f")
+dock_bottom: MaterialIcon = _M("\uf7e6")
+planet: MaterialIcon = _M("\uf387")
+explosion: MaterialIcon = _M("\uf685")
+editors_choice: MaterialIcon = _M("\uf528")
+rocket_launch: MaterialIcon = _M("\ueb9b")
+transition_push: MaterialIcon = _M("\uf50b")
+toggle_orientation: MaterialIcon = _M("\uf2d5")
 
-contrast: str = "\ueb37"
+# Actions
+add_material: MaterialIcon = _M("\ue145")
+add_circle: MaterialIcon = _M("\ue147")
+close: MaterialIcon = _M("\ue5cd")
+check_material: MaterialIcon = _M("\ue5ca")
+select_check_box: MaterialIcon = _M("\uf1fe")
+edit_material: MaterialIcon = _M("\ue3c9")
+content_copy: MaterialIcon = _M("\ue14d")
+trash_material: MaterialIcon = _M("\ue872")
+delete_sweep: MaterialIcon = _M("\ue16c")
+clear_all: MaterialIcon = _M("\ue0b8")
+mop: MaterialIcon = _M("\ue28d")
+refresh: MaterialIcon = _M("\ue5d5")
+sync_saved_locally: MaterialIcon = _M("\uf820")
+open_in_full: MaterialIcon = _M("\uf1ce")
+close_fullscreen: MaterialIcon = _M("\uf1cf")
+drag_indicator: MaterialIcon = _M("\ue945")
 
-wifi_off: str = "&#xecfa;"
-night_off: str = "&#xf162;"
-notifications_off: str = "&#xece9;"
-notifications: str = "\ue7f4"
-notifications_clear: str = "&#xf814;"
-clear_all: str = "\ue0b8"
-mop: str = "\ue28d"
+# Files
+folder_open: MaterialIcon = _M("\ue2c8")
+folder_material: MaterialIcon = _M("\ue2c7")
+image_material: MaterialIcon = _M("\ue3f4")
+description: MaterialIcon = _M("\ue873")
+code: MaterialIcon = _M("\ue86f")
+info: MaterialIcon = _M("\ue88e")
+warning: MaterialIcon = _M("\ue002")
 
-do_not_disturb_on: str = "\ue644"
+# Notifications
+notifications: MaterialIcon = _M("\ue7f4")
+notifications_off: MaterialIcon = _M("\uece9")
+notifications_clear: MaterialIcon = _M("\uf814")
+do_not_disturb_on: MaterialIcon = _M("\ue644")
 
-pill: str = "\ue11f"
-dock_bottom: str = "\uf7e6"
-power: str = "\ue63c"
-dashboard: str = "\ue871"
-wallpaper: str = "\ue1bc"
-hide_image: str = "\uf022"
-apps: str = "\ue5c3"
-dictionary: str = "\uf539"
-brightness_material: str = "\ue3ab"
-font: str = "\ue167"
-monitor: str = "\uef5b"
-home: str = "\ue88a"
-search: str = "\ue8b6"
-settings: str = "\ue8b8"
-edit_material: str = "\ue3c9"
-
-explosion: str = "\uf685"
-editors_choice: str = "\uf528"
-bento: str = "\uf1f4"
-
-east: str = "\uf1df"
-north_east: str = "\uf1e1"
-north: str = "\uf1e0"
-south: str = "\uf1e3"
-speed: str = "\ue9e4"
-history: str = "\ue889"
-schedule: str = "\ue8b5"
-warning: str = "\ue002"
-swap_vert: str = "\ue8d5"
-monitoring: str = "\uf190"
-leaderboard: str = "\uf20c"
-south_east: str = "\uf1e4"
-west: str = "\uf1e6"
-north_west: str = "\uf1e2"
-south_west: str = "\uf1e5"
-center: str = "\ue3b4"
-
-select_check_box: str = "\uf1fe"
-rocket_launch: str = "\ueb9b"
-
-arrows_up_down_circle: str = "\ue600"
-
-arrow_drop_down_circle: str = "\ue5c6"
-
-arrow_circle_up: str = "\uf182"
-arrow_circle_down: str = "\uf181"
-arrow_circle_right: str = "\ueaaa"
-arrow_circle_left: str = "\ueaa7"
-
-play_pause: str = "\uf137"
-skip_prev: str = "\ue045"
-skip_next: str = "\ue044"
-fast_rewind: str = "\ue020"
-fast_forward: str = "\ue01f"
-transition_push: str = "\uf50b"
-headphones: str = "\uf01f"
+# Network
+wifi: MaterialIcon = _M("\ue63e")
+wifi_1: MaterialIcon = _M("\ue4ca")
+wifi_2: MaterialIcon = _M("\ue4d9")
+wifi_3: MaterialIcon = _M("\uef16")
+wifi_4: MaterialIcon = _M("\uef10")
+wifi_off: MaterialIcon = _M("\uecfa")
+lan: MaterialIcon = _M("\ueb2f")
+link_off: MaterialIcon = _M("\ue16f")
+key: MaterialIcon = _M("\ue73c")
+globe_2_question: MaterialIcon = _M("\U000fffb6")
+radar: MaterialIcon = _M("\uf04e")
 
 # Bluetooth
-bluetooth: str = "\ue1a7"
-bluetooth_off: str = "&#xeceb;"
-bluetooth_searching: str = "\ue1aa"
+bluetooth: MaterialIcon = _M("\ue1a7")
+bluetooth_off: MaterialIcon = _M("\ueceb")
+bluetooth_searching: MaterialIcon = _M("\ue1aa")
 
-radar: str = "\uf04e"
+# Media / player
+disc: MaterialIcon = _M("\ue019")
+play_material: MaterialIcon = _M("\ue037")
+pause_material: MaterialIcon = _M("\ue034")
+play_pause: MaterialIcon = _M("\uf137")
+skip_prev: MaterialIcon = _M("\ue045")
+skip_next: MaterialIcon = _M("\ue044")
+fast_rewind: MaterialIcon = _M("\ue020")
+fast_forward: MaterialIcon = _M("\ue01f")
+shuffle_material: MaterialIcon = _M("\ue043")
+music_note: MaterialIcon = _M("\ue405")
+music_off: MaterialIcon = _M("\ue440")
 
-close: str = "\ue5cd"
-trash_material: str = "\ue872"
-content_copy: str = "\ue14d"
-delete_sweep: str = "\ue16c"
-open_in_full: str = "\uf1ce"
-close_fullscreen: str = "\uf1cf"
-arrow_back: str = "\ue5c4"
-image_material: str = "\ue3f4"
-description: str = "\ue873"
-folder_material: str = "\ue2c7"
-check_material: str = "\ue5ca"
-drag_indicator: str = "\ue945"
-code: str = "\ue86f"
-info: str = "\ue88e"
+# Audio
+volume_up: MaterialIcon = _M("\ue050")
+volume_down: MaterialIcon = _M("\ue04d")
+volume_off: MaterialIcon = _M("\ue04f")
+mic: MaterialIcon = _M("\ue029")
+mic_off: MaterialIcon = _M("\ue02b")
+headphones: MaterialIcon = _M("\uf01f")
+headset_mic: MaterialIcon = _M("\ue311")
+speaker: MaterialIcon = _M("\ue32d")
+tv: MaterialIcon = _M("\ue333")
+layers: MaterialIcon = _M("\ue53b")
 
-# player
-disc: str = "\ue019"
-play_material: str = "\ue037"
-pause_material: str = "\ue034"
-shuffle_material: str = "\ue043"
-
-# Weather
-humidity: str = "\uf163"
-wind: str = "\uefd8"
-pressure: str = "\ue94d"
+# Display
+brightness: MaterialIcon = _M("\ue3ab")
+brightness_material: MaterialIcon = _M("\ue3ab")
+brightness_low: MaterialIcon = _M("\uf7e8")
+brightness_medium: MaterialIcon = _M("\ue3ab")
+brightness_high: MaterialIcon = _M("\ue1ac")
+contrast: MaterialIcon = _M("\ueb37")
+blur: MaterialIcon = _M("\ue3a5")
+night_off: MaterialIcon = _M("\uf162")
 
 # Power
-lock: str = "\ue897"
-suspend: str = "\uef44"
-logout: str = "\ue9ba"
-reboot: str = "\uf053"
-shutdown: str = "\ue8ac"
+power: MaterialIcon = _M("\ue63c")
+lock: MaterialIcon = _M("\ue897")
+suspend: MaterialIcon = _M("\uef44")
+logout: MaterialIcon = _M("\ue9ba")
+reboot: MaterialIcon = _M("\uf053")
+shutdown: MaterialIcon = _M("\ue8ac")
+balance: MaterialIcon = _M("\ueaf6")
+energy_savings_leaf: MaterialIcon = _M("\uec1a")
 
-# spotify : str = "\uf2d5"
+# Metrics
+battery: MaterialIcon = _M("\uf304")
+battery_charging: MaterialIcon = _M("\uf250")
+cpu: MaterialIcon = _M("\ue322")
+disk: MaterialIcon = _M("\uf20e")
+memory: MaterialIcon = _M("\uf720")
+device_thermostat: MaterialIcon = _M("\ue1ff")
+speed: MaterialIcon = _M("\ue9e4")
+monitoring: MaterialIcon = _M("\uf190")
+leaderboard: MaterialIcon = _M("\uf20c")
 
-# controls
-brightness: str = "\ue3ab"
-mic: str = "\ue029"
-mic_off: str = "\ue02b"
-volume_up: str = "\ue050"
-volume_down: str = "\ue04d"
-volume_off: str = "\ue04f"
-brightness_low: str = "\uf7e8"
-brightness_medium: str = "\ue3ab"
-brightness_high: str = "\ue1ac"
-speaker: str = "\ue32d"
-tv: str = "\ue333"
-music_note: str = "\ue405"
-expand_more: str = "\ue5cf"
-expand_less: str = "\ue5ce"
-chevron_right: str = "\ue5cc"
-headset_mic: str = "\ue311"
-music_off: str = "\ue440"
-layers: str = "\ue53b"
-# vol_medium: str = "\ue04d"
+# Time
+history: MaterialIcon = _M("\ue889")
+schedule: MaterialIcon = _M("\ue8b5")
 
-# metrics
-battery: str = "\uf304"
-battery_charging: str = "\uf250"
-cpu: str = "\ue322"
-disk: str = "\uf20e"
-memory: str = "\uf720"
-
-blur: str = "\ue3a5"
-refresh: str = "\ue5d5"
-sync_saved_locally: str = "\uf820"
-
-planet: str = "\uf387"
-
-# wifi
-wifi: str = "\ue63e"
-wifi_1: str = "\ue4ca"
-wifi_2: str = "\ue4d9"
-wifi_3: str = "\uef16"
-wifi_4: str = "\uef10"
-
-lan: str = "\ueb2f"
-link_off: str = "\ue16f"
-key: str = "\ue73c"
-
-globe_2_question: str = "\U000fffb6"
-
-balance: str = "\ueaf6"
-energy_savings_leaf: str = "\uec1a"
-
-# Vertical
-toggle_orientation: str = "\uf2d5"
-
-# Parameters
-font_family: str = "Material Symbols Rounded"
-font_weight: str = "normal"
-
-# Pango markup btw
-span: str = f"<span font-family='{font_family}' font-weight='{font_weight}'>"
-
-exceptions: list[str] = ["font_family", "font_weight", "span"]
-
-
-def materialize_icons() -> None:
-    g = globals()
-    for name, value in list(g.items()):
-        if name.startswith("__"):
-            continue
-        if isinstance(value, str):
-            g[name] = MaterialIcon(value)
-
-
-materialize_icons()
+# Weather
+humidity: MaterialIcon = _M("\uf163")
+wind: MaterialIcon = _M("\uefd8")
+pressure: MaterialIcon = _M("\ue94d")

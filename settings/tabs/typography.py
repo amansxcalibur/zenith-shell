@@ -17,12 +17,12 @@ from gi.repository import Gtk  # type: ignore
 
 class IconVariationsTab(BaseWidget, SliderControlMixin):
     DEMO_ICONS: ClassVar = [
-        icons.home.symbol(),
-        icons.search.symbol(),
-        icons.settings.symbol(),
-        icons.arrow_forward.symbol(),
-        icons.edit_material.symbol(),
-        icons.brightness_material.symbol(),
+        icons.material.home.symbol(),
+        icons.material.search.symbol(),
+        icons.material.settings.symbol(),
+        icons.material.arrow_forward.symbol(),
+        icons.material.edit_material.symbol(),
+        icons.material.brightness_material.symbol(),
     ]
 
     def __init__(self, **kwargs):
@@ -58,7 +58,7 @@ class IconVariationsTab(BaseWidget, SliderControlMixin):
             spacing=5,
             children=[
                 MaterialIconLabel(
-                    icon_text=icons.home.symbol(),
+                    icon_text=icons.material.home.symbol(),
                     font_size=48,
                     FILL=fill,
                     wght=wght,
@@ -70,7 +70,7 @@ class IconVariationsTab(BaseWidget, SliderControlMixin):
 
     def _add_interactive_demo(self):
         self.icon_widget = MaterialIconLabel(
-            icon_text=icons.home.symbol(), font_size=64, fill=1, wght=400
+            icon_text=icons.material.home.symbol(), font_size=64, fill=1, wght=400
         )
         icon_box = Box(
             orientation="v", style="min-width: 140px", children=self.icon_widget

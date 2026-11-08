@@ -119,7 +119,7 @@ class BrightnessSmall(Box):
             name="brightness-label",
             FILL=0,
             wght=600,
-            icon_text=icons.brightness.symbol(),
+            icon_text=icons.material.brightness.symbol(),
         )
         self.progress_bar = AnimatedCircularScale(
             name="button-brightness",

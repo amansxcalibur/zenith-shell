@@ -14,7 +14,7 @@ class ThemeSwitchTile(TileSimple):
         )
         self.state = None
         super().__init__(
-            markup=icons.contrast.symbol(),
+            markup=icons.material.contrast.symbol(),
             label="Dark Theme",
             status_label_widget=self.label,
             style_classes=["off"],

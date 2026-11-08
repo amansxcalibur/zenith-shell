@@ -163,13 +163,13 @@ class Dashboard(Box):
                                 spacing=2,
                                 children=[
                                     MaterialIconLabel(
-                                        icon_text=icons.edit_material.symbol(),
+                                        icon_text=icons.material.edit_material.symbol(),
                                         style="font-size:28px; color:var(--foreground)",
                                     ),
                                     add_hover_cursor(
                                         Button(
                                             child=MaterialIconLabel(
-                                                icon_text=icons.settings.symbol(),
+                                                icon_text=icons.material.settings.symbol(),
                                                 style="font-size:28px; color:var(--foreground);",
                                             ),
                                             on_clicked=open_settings,
@@ -204,7 +204,7 @@ class Dashboard(Box):
                         center_children=MaterialIconLabel(
                             style_classes="scale-icon",
                             FILL=0,
-                            icon_text=icons.brightness.symbol(),
+                            icon_text=icons.material.brightness.symbol(),
                         ),
                     ),
                     self.brightness_revealer_mui,

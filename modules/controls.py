@@ -111,21 +111,25 @@ class ControlsManager:
         def volume_icon():
             volume, muted = volume_service.get_current_volume()
             if muted or volume <= 0:
-                return icons.volume_off
-            return icons.volume_down if volume < 0.5 else icons.volume_up
+                return icons.material.volume_off
+            return (
+                icons.material.volume_down if volume < 0.5 else icons.material.volume_up
+            )
 
         def brightness_icon():
             value = self.popup_slider_brightness.get_value()
             if value < 1 / 3:
-                return icons.brightness_low
+                return icons.material.brightness_low
             if value < 2 / 3:
-                return icons.brightness_medium
-            return icons.brightness_high
+                return icons.material.brightness_medium
+            return icons.material.brightness_high
 
         mic_decor = TrackDecor(
             self.popup_slider_mic,
             icon=lambda: (
-                icons.mic_off if volume_service.get_mic_status()[1] else icons.mic
+                icons.material.mic_off
+                if volume_service.get_mic_status()[1]
+                else icons.material.mic
             ),
         )
         volume_decor = TrackDecor(

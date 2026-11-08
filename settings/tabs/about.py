@@ -173,7 +173,7 @@ class AboutTab(BaseWidget):
                             spacing=8,
                             children=[
                                 MaterialIconLabel(
-                                    icon_text=icons.code.symbol(), font_size=17
+                                    icon_text=icons.material.code.symbol(), font_size=17
                                 ),
                                 Label(label="Source code"),
                             ],

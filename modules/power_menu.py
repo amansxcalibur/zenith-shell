@@ -18,27 +18,27 @@ class PowerMenu(Box):
         self.btn_lock = Button(
             style_classes="menu-item",
             on_clicked=self.lock,
-            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.lock.symbol()),
+            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.material.lock.symbol()),
         )
         self.btn_suspend = Button(
             style_classes="menu-item",
             on_clicked=self.suspend,
-            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.suspend.symbol()),
+            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.material.suspend.symbol()),
         )
         self.btn_logout = Button(
             style_classes="menu-item",
             on_clicked=self.logout,
-            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.logout.symbol()),
+            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.material.logout.symbol()),
         )
         self.btn_reboot = Button(
             style_classes="menu-item",
             on_clicked=self.reboot,
-            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.reboot.symbol()),
+            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.material.reboot.symbol()),
         )
         self.btn_shutdown = Button(
             style_classes="menu-item",
             on_clicked=self.shutdown,
-            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.shutdown.symbol()),
+            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.material.shutdown.symbol()),
         )
 
         self.children = [

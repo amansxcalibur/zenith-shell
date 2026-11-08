@@ -19,12 +19,12 @@ APP_ICON_SIZE = 24  # px
 NAME_CHARS = 26
 
 DEVICE_ICONS = {
-    "headphones": icons.headphones,
-    "headset": icons.headset_mic,
-    "bluetooth": icons.bluetooth,
-    "hdmi": icons.tv,
-    "speaker": icons.speaker,
-    "mic": icons.mic,
+    "headphones": icons.material.headphones,
+    "headset": icons.material.headset_mic,
+    "bluetooth": icons.material.bluetooth,
+    "hdmi": icons.material.tv,
+    "speaker": icons.material.speaker,
+    "mic": icons.material.mic,
 }
 
 
@@ -77,7 +77,7 @@ def _app_icon(stream: AppStream) -> Gtk.Widget:
             return image
     return MaterialIconLabel(
         name="app-icon-fallback",
-        icon_text=icons.music_note.symbol(),
+        icon_text=icons.material.music_note.symbol(),
         h_align="center",
         h_expand=True,
     )
@@ -91,14 +91,14 @@ class DeviceCard(Box):
 
         self.icon = MaterialIconLabel(
             name="card-icon",
-            icon_text=icons.speaker.symbol(),
+            icon_text=icons.material.speaker.symbol(),
             h_align="center",
             h_expand=True,
         )
         self.device = _name_label("card-device")
         self.level = _name_label("card-level")
         self.arrow = MaterialIconLabel(
-            name="card-arrow", icon_text=icons.expand_more.symbol()
+            name="card-arrow", icon_text=icons.material.expand_more.symbol()
         )
         self.header = Button(
             name="card-header",
@@ -130,7 +130,9 @@ class DeviceCard(Box):
         self.dropdown.set_reveal_child(open_)
         _toggle_class(self, "open", open_)
         self.arrow.set_icon(
-            (icons.expand_less if open_ else icons.expand_more).symbol()
+            (
+                icons.material.expand_less if open_ else icons.material.expand_more
+            ).symbol()
         )
 
     def show_devices(self, devices: list[SoundDevice]) -> None:
@@ -162,7 +164,7 @@ class DeviceCard(Box):
             self.set_open(False)
 
         check = MaterialIconLabel(
-            name="option-check", icon_text=icons.check_material.symbol()
+            name="option-check", icon_text=icons.material.check_material.symbol()
         )
         button = Button(
             name="device-option",
@@ -189,7 +191,9 @@ class DeviceCard(Box):
 class StatusRow(Box):
     def __init__(self, on_more=None, more_tooltip: str | None = None):
         super().__init__(name="status-row", spacing=12)
-        self.icon = MaterialIconLabel(name="status-icon", icon_text=icons.mic.symbol())
+        self.icon = MaterialIconLabel(
+            name="status-icon", icon_text=icons.material.mic.symbol()
+        )
         self.title = _name_label("status-title")
         self.detail = _name_label("status-detail")
         # given on_more, a round button on the end opens more on what's in
@@ -201,7 +205,8 @@ class StatusRow(Box):
                 v_align="center",
                 tooltip_text=more_tooltip,
                 child=MaterialIconLabel(
-                    name="status-more-icon", icon_text=icons.chevron_right.symbol()
+                    name="status-more-icon",
+                    icon_text=icons.material.chevron_right.symbol(),
                 ),
                 on_clicked=lambda *_: on_more(),
             )
@@ -327,10 +332,10 @@ class AudioPanel(Box):
             orientation="v",
             spacing=6,
             children=[
-                _heading(icons.mic, "Microphone"),
+                _heading(icons.material.mic, "Microphone"),
                 self.input_card,
                 self.mic_status,
-                _heading(icons.volume_up, "Sound"),
+                _heading(icons.material.volume_up, "Sound"),
                 self.output_card,
                 self.apps_status,
             ],
@@ -382,7 +387,7 @@ class AudioPanel(Box):
                             tooltip_text="Back",
                             child=MaterialIconLabel(
                                 name="page-back-icon",
-                                icon_text=icons.arrow_back.symbol(),
+                                icon_text=icons.material.arrow_back.symbol(),
                             ),
                             on_clicked=lambda *_: self.show_page("main"),
                         ),
@@ -422,11 +427,11 @@ class AudioPanel(Box):
         users = list(dict.fromkeys(user.app for user in streams))
         if users:
             self.mic_status.set_status(
-                icons.mic, "In use", ", ".join(users), alert=True
+                icons.material.mic, "In use", ", ".join(users), alert=True
             )
         else:
             self.mic_status.set_status(
-                icons.mic_off,
+                icons.material.mic_off,
                 "Not in use",
                 "No apps are using it",
             )
@@ -450,14 +455,14 @@ class AudioPanel(Box):
         if names:
             count = len(apps)
             self.apps_status.set_status(
-                icons.music_note,
+                icons.material.music_note,
                 f"{count} app{'s' if count > 1 else ''} playing",
                 ", ".join(names),
                 active=True,
             )
         else:
             self.apps_status.set_status(
-                icons.music_off, "Nothing playing", "No apps playing audio"
+                icons.material.music_off, "Nothing playing", "No apps playing audio"
             )
             if self.stack.get_visible_child_name() == "apps":
                 self.show_page("main")  # nothing left to list

@@ -27,7 +27,7 @@ from gi.repository import Gtk  # type: ignore
 class TileSimple(ClippingBox):
     def __init__(
         self,
-        markup: str = icons.blur.symbol(),
+        markup: str = icons.material.blur.symbol(),
         label: str = "__",
         status_label_widget: Label | None = None,
         **kwargs,
@@ -152,7 +152,7 @@ class TileSimple(ClippingBox):
 class TileSimpleWithMenu(ClippingBox):
     def __init__(
         self,
-        markup: str = icons.blur.symbol(),
+        markup: str = icons.material.blur.symbol(),
         label: str = "__",
         title: str = "",
         status_label_widget: Label | None = None,
@@ -243,7 +243,7 @@ class TileSimpleWithMenu(ClippingBox):
             child=MaterialIconLabel(
                 name="close-label",
                 style_classes="settings",
-                icon_text=icons.close.symbol(),
+                icon_text=icons.material.close.symbol(),
             ),
             tooltip_text="Exit",
             on_clicked=self.handle_menu_click,
@@ -364,7 +364,7 @@ class Tile(ClippingBox):
     def __init__(
         self,
         title: str = "",
-        markup: str = icons.blur.symbol(),
+        markup: str = icons.material.blur.symbol(),
         label: str = "__",
         menu_children=None,
         props: Label = None,
@@ -453,7 +453,7 @@ class Tile(ClippingBox):
             child=MaterialIconLabel(
                 name="close-label",
                 style_classes="settings",
-                icon_text=icons.close.symbol(),
+                icon_text=icons.material.close.symbol(),
             ),
             tooltip_text="Exit",
             on_clicked=self.handle_menu_click,

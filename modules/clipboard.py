@@ -108,7 +108,7 @@ class ClipboardHistory(Box):
                 MaterialIconLabel(
                     name="clipboard-empty-icon",
                     style="margin-top: 20px",  # cuz of the page spacing between the entry and list box
-                    icon_text=icons.content_copy.symbol(),
+                    icon_text=icons.material.content_copy.symbol(),
                     h_align="center",
                 ),
                 self.empty_label,
@@ -152,17 +152,19 @@ class ClipboardHistory(Box):
             spacing=4,
             children=[
                 self._icon_button(
-                    icons.arrow_back, "Back to list", lambda *_: self._collapse()
+                    icons.material.arrow_back,
+                    "Back to list",
+                    lambda *_: self._collapse(),
                 ),
                 self.detail_info,
                 Box(h_expand=True),
                 self._icon_button(
-                    icons.content_copy,
+                    icons.material.content_copy,
                     "Copy to clipboard",
                     lambda *_: self._copy(self._expanded),
                 ),
                 self._icon_button(
-                    icons.trash_material,
+                    icons.material.trash_material,
                     "Delete from history",
                     lambda *_: self._delete_current(),
                     style_classes="danger",
@@ -195,7 +197,7 @@ class ClipboardHistory(Box):
         self.search_entry.connect("notify::text", lambda *_: self._on_search())
 
         mode_icon = MaterialIconLabel(
-            name="clipboard-mode-icon", icon_text=icons.content_copy.symbol()
+            name="clipboard-mode-icon", icon_text=icons.material.content_copy.symbol()
         )
         mode_icon.set_tooltip_text("Clipboard history")
 
@@ -210,7 +212,7 @@ class ClipboardHistory(Box):
                 children=[
                     MaterialIconLabel(
                         name="clipboard-clear-icon",
-                        icon_text=icons.delete_sweep.symbol(),
+                        icon_text=icons.material.delete_sweep.symbol(),
                     ),
                     clear_label,
                 ],
@@ -226,7 +228,9 @@ class ClipboardHistory(Box):
         )
         close_btn = Button(
             name="close-button",
-            child=MaterialIconLabel(name="close-label", icon_text=icons.close.symbol()),
+            child=MaterialIconLabel(
+                name="close-label", icon_text=icons.material.close.symbol()
+            ),
             tooltip_text="Close",
             on_clicked=lambda *_: self._pill.close(),
         )
@@ -432,9 +436,9 @@ class ClipboardHistory(Box):
             )
             names.set_xalign(0)
             icon = (
-                icons.folder_material
+                icons.material.folder_material
                 if len(paths) == 1 and os.path.isdir(paths[0])
-                else icons.description
+                else icons.material.description
             )
             title_row = Box(
                 spacing=6,
@@ -486,12 +490,12 @@ class ClipboardHistory(Box):
             v_align="start",
             children=[
                 self._icon_button(
-                    icons.open_in_full,
+                    icons.material.open_in_full,
                     "Expand",
                     lambda *_: self._expand(entry),
                 ),
                 self._icon_button(
-                    icons.trash_material,
+                    icons.material.trash_material,
                     "Delete from history",
                     lambda *_: self._delete(entry),
                     style_classes="danger",

@@ -34,7 +34,7 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
         lockscreen_options = [
             {
                 "selected": False,
-                "icon": icons.explosion.symbol(),
+                "icon": icons.material.explosion.symbol(),
                 "text": "zenith-lockscreen (WIP)",
                 "value": "zenith",
             },
@@ -43,7 +43,7 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
             lockscreen_options.append(
                 {
                     "selected": False,
-                    "icon": icons.editors_choice.symbol(),
+                    "icon": icons.material.editors_choice.symbol(),
                     "text": locker,
                     "value": locker,
                 }

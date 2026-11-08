@@ -53,9 +53,15 @@ class MetricsSmall(Button):
         super().__init__(name="metrics-small", **kwargs)
         self.service = MetricsProvider()
 
-        self.cpu = MetricItem(icons.cpu.symbol(), "cpu", self.BAR_SIZE, vertical)
-        self.ram = MetricItem(icons.memory.symbol(), "ram", self.BAR_SIZE, vertical)
-        self.disk = MetricItem(icons.disk.symbol(), "disk", self.BAR_SIZE, vertical)
+        self.cpu = MetricItem(
+            icons.material.cpu.symbol(), "cpu", self.BAR_SIZE, vertical
+        )
+        self.ram = MetricItem(
+            icons.material.memory.symbol(), "ram", self.BAR_SIZE, vertical
+        )
+        self.disk = MetricItem(
+            icons.material.disk.symbol(), "disk", self.BAR_SIZE, vertical
+        )
 
         self.main_box = Box(
             orientation="v" if vertical else "h",
@@ -97,7 +103,7 @@ class Battery(Button):
             angle=90,
             name="bat-icon",
             style_classes="metrics-icon",
-            icon_text=icons.battery.symbol(),
+            icon_text=icons.material.battery.symbol(),
         )
         self.bat_circle = CircularProgressBar(
             name="metrics-circle",
@@ -185,13 +191,13 @@ class Battery(Button):
         is_full = rounded_pct == 100
 
         if is_full:
-            icon = icons.battery.symbol()
+            icon = icons.material.battery.symbol()
             status_text = "Fully Charged"
         elif is_charging:
-            icon = icons.battery_charging.symbol()
+            icon = icons.material.battery_charging.symbol()
             status_text = "Charging"
         else:
-            icon = icons.battery.symbol()
+            icon = icons.material.battery.symbol()
             status_text = "Discharging" if not is_low else "Low Battery"
 
         self.bat_icon.set_icon(icon)

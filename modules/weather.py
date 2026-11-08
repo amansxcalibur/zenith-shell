@@ -227,7 +227,7 @@ class WeatherMini(EventBox):
         self.refresh_btn = Button(
             name="weather-mini",
             child=MaterialIconLabel(
-                name="weather-refresh-label", icon_text=icons.refresh.symbol()
+                name="weather-refresh-label", icon_text=icons.material.refresh.symbol()
             ),
             on_clicked=self.service._fetch_weather,
         )
@@ -389,13 +389,13 @@ class WeatherCard(Box):
                             orientation="v",
                             children=[
                                 self._create_metric_row(
-                                    self.humidity_label, icons.humidity.symbol()
+                                    self.humidity_label, icons.material.humidity.symbol()
                                 ),
                                 self._create_metric_row(
-                                    self.wind_label, icons.wind.symbol()
+                                    self.wind_label, icons.material.wind.symbol()
                                 ),
                                 self._create_metric_row(
-                                    self.pressure_label, icons.pressure.symbol()
+                                    self.pressure_label, icons.material.pressure.symbol()
                                 ),
                             ],
                         ),

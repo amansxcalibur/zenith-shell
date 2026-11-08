@@ -50,7 +50,7 @@ class LowBatteryBanner(Revealer):
         close_btn = Button(
             name="close-button-small",
             child=MaterialIconLabel(
-                name="close-label-small", icon_text=icons.close.symbol()
+                name="close-label-small", icon_text=icons.material.close.symbol()
             ),
             tooltip_text="Exit",
             on_clicked=lambda *_: self.close_notification(),
@@ -63,7 +63,7 @@ class LowBatteryBanner(Revealer):
                 MaterialIconLabel(
                     name="notification-icon",
                     h_align=True,
-                    icon_text=icons.blur.symbol(),
+                    icon_text=icons.material.blur.symbol(),
                 ),
                 Box(h_expand=True, children=self.content_box),
                 Box(children=close_btn),

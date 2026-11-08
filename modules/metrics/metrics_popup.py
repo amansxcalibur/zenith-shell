@@ -221,7 +221,7 @@ class Metrics(Box):
 
         self.cpu_temp_label = Label(label="--", style_classes="roboto")
         self.temp_icon, self.temp_shape = self._make_badge(
-            icons.device_thermostat.symbol()
+            icons.material.device_thermostat.symbol()
         )
         self.temp_state_label = self._make_tile_caption()
         self.load_now_label = Label(
@@ -245,10 +245,10 @@ class Metrics(Box):
             max_chars_width=13,
         )
         self.cpu_panel_icon = MaterialIconLabel(
-            icon_text=icons.cpu.symbol(), font_size=14
+            icon_text=icons.material.cpu.symbol(), font_size=14
         )
         self.mem_panel_icon = MaterialIconLabel(
-            icon_text=icons.memory.symbol(), font_size=14
+            icon_text=icons.material.memory.symbol(), font_size=14
         )
 
         self.freq_bar = LinearProgress(size=BAR_SIZE)
@@ -356,7 +356,9 @@ class Metrics(Box):
             size=(width, -1),
             spacing=8,
             children=[
-                MaterialIconLabel(icon_text=icons.history.symbol(), font_size=14),
+                MaterialIconLabel(
+                    icon_text=icons.material.history.symbol(), font_size=14
+                ),
                 slider,
                 value_label,
             ],
@@ -427,7 +429,7 @@ class Metrics(Box):
             h_align="center",
             spacing=4,
             children=[
-                MaterialIconLabel(icon_text=icons.cpu.symbol()),
+                MaterialIconLabel(icon_text=icons.material.cpu.symbol()),
                 Label(label="CPU"),
             ],
         )
@@ -470,7 +472,7 @@ class Metrics(Box):
                         h_align="center",
                         spacing=4,
                         children=[
-                            MaterialIconLabel(icon_text=icons.disk.symbol()),
+                            MaterialIconLabel(icon_text=icons.material.disk.symbol()),
                             Label(label="Disk"),
                         ],
                     ),
@@ -513,7 +515,7 @@ class Metrics(Box):
                     style="margin-bottom: 4px;",
                     children=[
                         MaterialIconLabel(
-                            icon_text=icons.leaderboard.symbol(), font_size=14
+                            icon_text=icons.material.leaderboard.symbol(), font_size=14
                         ),
                         Label(label="Top", h_align="start", h_expand=True),
                         *self.sort_buttons.values(),
@@ -557,7 +559,7 @@ class Metrics(Box):
     def _build_network_panel(self) -> Overlay:
         panel = self._graph_panel(
             self.net_graph,
-            MaterialIconLabel(icon_text=icons.lan.symbol(), font_size=14),
+            MaterialIconLabel(icon_text=icons.material.lan.symbol(), font_size=14),
             "Network",
             detail=self.net_peak_label,
         )
@@ -589,13 +591,15 @@ class Metrics(Box):
                 ("memory", self.mem_panel_icon, "Memory"),
                 (
                     "network",
-                    MaterialIconLabel(icon_text=icons.lan.symbol(), font_size=14),
+                    MaterialIconLabel(
+                        icon_text=icons.material.lan.symbol(), font_size=14
+                    ),
                     "Network",
                 ),
                 (
                     "details",
                     MaterialIconLabel(
-                        icon_text=icons.monitoring.symbol(), font_size=14
+                        icon_text=icons.material.monitoring.symbol(), font_size=14
                     ),
                     "Details",
                 ),
@@ -655,8 +659,8 @@ class Metrics(Box):
                 spacing=12,
                 children=[
                     self.cpu_name_label,
-                    self._stat(icons.schedule.symbol(), self.uptime_label),
-                    self._stat(icons.apps.symbol(), self.tasks_label),
+                    self._stat(icons.material.schedule.symbol(), self.uptime_label),
+                    self._stat(icons.material.apps.symbol(), self.tasks_label),
                 ],
             ),
             "details",
@@ -741,7 +745,7 @@ class Metrics(Box):
                         self.temp_state_label,
                     ),
                     tile(
-                        self._make_badge(icons.speed.symbol())[0],
+                        self._make_badge(icons.material.speed.symbol())[0],
                         "Speed",
                         self.freq_label,
                         self.freq_bar,
@@ -749,13 +753,13 @@ class Metrics(Box):
                 ),
                 tile_row(
                     tile(
-                        self._make_badge(icons.leaderboard.symbol())[0],
+                        self._make_badge(icons.material.leaderboard.symbol())[0],
                         f"Load · {self._threads} threads",
                         self.load_now_label,
                         self.load_trend_label,
                     ),
                     tile(
-                        self._make_badge(icons.swap_vert.symbol())[0],
+                        self._make_badge(icons.material.swap_vert.symbol())[0],
                         "Swap",
                         self.swap_label,
                         self.swap_bar,
@@ -805,10 +809,12 @@ class Metrics(Box):
                     detail=self.cpu_split_label,
                 ),
                 self._strip(
-                    MaterialIconLabel(icon_text=icons.speed.symbol(), font_size=14),
+                    MaterialIconLabel(
+                        icon_text=icons.material.speed.symbol(), font_size=14
+                    ),
                     self.freq_bar,
                     self.freq_label,
-                    self._stat(icons.monitoring.symbol(), self.load_label),
+                    self._stat(icons.material.monitoring.symbol(), self.load_label),
                     v_expand=True,
                 ),
             ],
@@ -820,13 +826,13 @@ class Metrics(Box):
                 self._build_disk_rings(),
                 self._strip(
                     self._stat(
-                        icons.south.symbol(),
+                        icons.material.south.symbol(),
                         self.disk_read_label,
                         h_expand=True,
                         tooltip_text="Disk read",
                     ),
                     self._stat(
-                        icons.north.symbol(),
+                        icons.material.north.symbol(),
                         self.disk_write_label,
                         tooltip_text="Disk write",
                     ),
@@ -847,7 +853,9 @@ class Metrics(Box):
                     footer=self._build_memory_footer(),
                 ),
                 self._strip(
-                    MaterialIconLabel(icon_text=icons.swap_vert.symbol(), font_size=14),
+                    MaterialIconLabel(
+                        icon_text=icons.material.swap_vert.symbol(), font_size=14
+                    ),
                     Label(label="Swap", style_classes="roboto"),
                     self.swap_bar,
                     self.swap_label,
@@ -858,8 +866,8 @@ class Metrics(Box):
 
         self.children = [
             self._strip(
-                self._stat(icons.schedule.symbol(), self.uptime_label),
-                self._stat(icons.apps.symbol(), self.tasks_label),
+                self._stat(icons.material.schedule.symbol(), self.uptime_label),
+                self._stat(icons.material.apps.symbol(), self.tasks_label),
                 Box(h_expand=True),
                 self._make_history_slider(COLUMN_MIDDLE + COLUMN_RIGHT + SECTION_GAP),
             ),
@@ -922,7 +930,9 @@ class Metrics(Box):
 
     def _update_details(self, cpu: float) -> None:
         self.cpu_value_label.set_label(f"{cpu:.0f}%")
-        self._set_panel_alert(self.cpu_panel_icon, icons.cpu.symbol(), self._cpu_hot)
+        self._set_panel_alert(
+            self.cpu_panel_icon, icons.material.cpu.symbol(), self._cpu_hot
+        )
 
         self.uptime_label.set_label(format_duration(self.service.get_uptime()))
         self.tasks_label.set_label(f"{self.service.get_task_count()} tasks")
@@ -976,7 +986,7 @@ class Metrics(Box):
     def _update_memory(self, mem: float) -> None:
         self.mem_value_label.set_label(f"{mem:.0f}%")
         self._set_panel_alert(
-            self.mem_panel_icon, icons.memory.symbol(), mem >= USAGE_ALERT
+            self.mem_panel_icon, icons.material.memory.symbol(), mem >= USAGE_ALERT
         )
 
         used, cache, free, total = self.service.get_mem_breakdown()
@@ -1007,7 +1017,7 @@ class Metrics(Box):
     @staticmethod
     def _set_panel_alert(icon: MaterialIconLabel, normal_symbol: str, alert: bool):
         """Alerts are never color alone: the panel's icon becomes a warning sign."""
-        icon.set_icon(icons.warning.symbol() if alert else normal_symbol)
+        icon.set_icon(icons.material.warning.symbol() if alert else normal_symbol)
         _set_class(icon, "metrics-alert-icon", alert)
 
     def _set_process_key(self, key: str) -> None:

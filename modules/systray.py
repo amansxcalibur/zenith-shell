@@ -46,7 +46,7 @@ class NotificationIndicator(Box):
             child=MaterialIconLabel(
                 name="systray-notif-icon",
                 font_size=18,
-                icon_text=icons.notifications.symbol(),
+                icon_text=icons.material.notifications.symbol(),
             ),
             overlays=self.overlayed_widget,
             h_align="center" if vertical else None,

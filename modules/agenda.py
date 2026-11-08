@@ -174,11 +174,13 @@ class AgendaItem(Gtk.ListBoxRow):
 
     def _build_action_revealer(self):
         self.remove_background_button = _make_icon_button(
-            icons.hide_image, "Remove Background Image", self._on_remove_background
+            icons.material.hide_image,
+            "Remove Background Image",
+            self._on_remove_background,
         )
         self.remove_background_button.set_no_show_all(True)
         self.background_button = _make_icon_button(
-            icons.wallpaper, "Set Background Image", self._on_select_background
+            icons.material.wallpaper, "Set Background Image", self._on_select_background
         )
 
         self.action_revealer = Revealer(
@@ -192,7 +194,7 @@ class AgendaItem(Gtk.ListBoxRow):
                         name="agenda-btn-group",
                         children=[
                             _make_icon_button(
-                                icons.edit_material,
+                                icons.material.edit_material,
                                 "Edit Task",
                                 self._on_edit_requested,
                             ),
@@ -204,7 +206,7 @@ class AgendaItem(Gtk.ListBoxRow):
                         children=[
                             self.remove_background_button,
                             _make_icon_button(
-                                icons.trash_material,
+                                icons.material.trash_material,
                                 "Delete Task",
                                 lambda: self.stack.set_visible_child_name("delete"),
                             )
@@ -283,7 +285,7 @@ class AgendaItem(Gtk.ListBoxRow):
             children=[
                 MaterialIconLabel(
                     style_classes="agenda-icon",
-                    icon_text=icons.drag_indicator.symbol(),
+                    icon_text=icons.material.drag_indicator.symbol(),
                 ),
                 self.drag_label,
             ],
@@ -479,7 +481,7 @@ class AgendaApp(Box):
         self.trigger_box = Button(
             name="add-new-agenda-btn",
             h_align="end",
-            child=MaterialIconLabel(icon_text=icons.add_material.symbol()),
+            child=MaterialIconLabel(icon_text=icons.material.add_material.symbol()),
             on_clicked=self._show_editor,
         )
 
@@ -524,8 +526,12 @@ class AgendaApp(Box):
         self.input_stack.set_visible_child_name("trigger")
 
     def _build_actions_pill(self):
-        self.copy_icon = MaterialIconLabel(icon_text=icons.content_copy.symbol())
-        self.edit_icon = MaterialIconLabel(icon_text=icons.edit_material.symbol())
+        self.copy_icon = MaterialIconLabel(
+            icon_text=icons.material.content_copy.symbol()
+        )
+        self.edit_icon = MaterialIconLabel(
+            icon_text=icons.material.edit_material.symbol()
+        )
         self.copy_btn = Button(
             name="agenda-pill-btn",
             child=self.copy_icon,
@@ -567,9 +573,12 @@ class AgendaApp(Box):
         clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         clipboard.set_text(data, -1)
         clipboard.store()  # keep it after we lose focus (needs a clipboard manager)
-        self.copy_icon.set_text(icons.check_material.symbol())
+        self.copy_icon.set_text(icons.material.check_material.symbol())
         GLib.timeout_add(
-            750, lambda: self.copy_icon.set_text(icons.content_copy.symbol()) and False
+            750,
+            lambda: (
+                self.copy_icon.set_text(icons.material.content_copy.symbol()) and False
+            ),
         )
 
     def _toggle_reorder(self, _widget):

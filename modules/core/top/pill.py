@@ -136,7 +136,7 @@ class TopPill(Window, Service):
 
         self.pill_close_btn = Button(
             child=MaterialIconLabel(
-                name="close-control-label", icon_text=icons.close.symbol()
+                name="close-control-label", icon_text=icons.material.close.symbol()
             ),
             tooltip_text="Close",
             on_clicked=lambda *_: self.close(),

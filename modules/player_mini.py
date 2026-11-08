@@ -103,7 +103,7 @@ class PlayerMini(Box):
             child=MaterialIconLabel(
                 name="play-pause-label",
                 style_classes="mini",
-                icon_text=icons.play_material.symbol(),
+                icon_text=icons.material.play_material.symbol(),
             ),
             style_classes="mini",
             tooltip_text="Play/Pause",
@@ -115,7 +115,7 @@ class PlayerMini(Box):
             child=MaterialIconLabel(
                 name="play-previous",
                 style_classes="mini",
-                icon_text=icons.skip_prev.symbol(),
+                icon_text=icons.material.skip_prev.symbol(),
             ),
             on_clicked=lambda b, *_: self.handle_prev(),
         )
@@ -125,14 +125,14 @@ class PlayerMini(Box):
             child=MaterialIconLabel(
                 name="play-next",
                 style_classes="mini",
-                icon_text=icons.skip_next.symbol(),
+                icon_text=icons.material.skip_next.symbol(),
             ),
             on_clicked=lambda b, *_: self.handle_next(),
         )
 
         # self.shuffle_button = Button(
         #     name="shuffle-button",
-        #     child=Label(name="shuffle", markup=icons.shuffle.markup()),
+        #     child=Label(name="shuffle", markup=icons.nerd.shuffle.markup()),
         #     on_clicked=lambda b, *_: self.handle_shuffle(b),
         # )
 
@@ -289,7 +289,9 @@ class PlayerMini(Box):
 
     def on_pause(self, sender):
         def _set_pause_markup():
-            self.play_pause_button.get_child().set_icon(icons.play_material.symbol())
+            self.play_pause_button.get_child().set_icon(
+                icons.material.play_material.symbol()
+            )
 
         GLib.idle_add(_set_pause_markup)
 
@@ -299,7 +301,9 @@ class PlayerMini(Box):
 
     def on_play(self, sender):
         def _set_play_markup():
-            self.play_pause_button.get_child().set_icon(icons.pause_material.symbol())
+            self.play_pause_button.get_child().set_icon(
+                icons.material.pause_material.symbol()
+            )
 
         GLib.idle_add(_set_play_markup)
 
@@ -312,11 +316,11 @@ class PlayerMini(Box):
 
     #     def _update_shuffle_status():
     #         if not status:
-    #             self.shuffle_button.get_child().set_markup(icons.shuffle.markup())
+    #             self.shuffle_button.get_child().set_markup(icons.nerd.shuffle.markup())
     #             self.shuffle_button.get_child().set_name("shuffle")
     #         else:
     #             self.shuffle_button.get_child().set_markup(
-    #                 icons.disable_shuffle.markup()
+    #                 icons.nerd.disable_shuffle.markup()
     #             )
     #             self.shuffle_button.get_child().set_name("disable-shuffle")
 
@@ -341,10 +345,14 @@ class PlayerMini(Box):
         )
 
         def _set_play_ui():
-            self.play_pause_button.get_child().set_icon(icons.pause_material.symbol())
+            self.play_pause_button.get_child().set_icon(
+                icons.material.pause_material.symbol()
+            )
 
         def _set_pause_ui():
-            self.play_pause_button.get_child().set_icon(icons.play_material.symbol())
+            self.play_pause_button.get_child().set_icon(
+                icons.material.play_material.symbol()
+            )
 
         if is_playing:
             GLib.idle_add(_set_pause_ui)
