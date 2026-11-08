@@ -93,7 +93,7 @@ def generate_lockscreen_image(image_path: str | Path) -> Path | None:
 
             scale = max(width / iw, height / ih)
             new_size = (int(iw * scale), int(ih * scale))
-            img = img.resize(new_size, Image.LANCZOS)
+            img = img.resize(new_size, Image.Resampling.LANCZOS)
 
             # Center crop
             left = (img.width - width) // 2
