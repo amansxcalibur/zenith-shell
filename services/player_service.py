@@ -139,20 +139,19 @@ class PlayerService(Service):
         self._is_cleaning_up = False
         self._signal_ids = []  # track signal connection IDs
 
-        if player.props.player_name in config.ALLOWED_PLAYERS:
-            # store signal IDs for proper disconnection
-            self._signal_ids.append(
-                self._player.connect("playback-status::playing", self.on_play)
-            )
-            self._signal_ids.append(
-                self._player.connect("playback-status::paused", self.on_pause)
-            )
-            self._signal_ids.append(self._player.connect("shuffle", self.on_shuffle))
-            self._signal_ids.append(self._player.connect("metadata", self.on_metadata))
-            self._signal_ids.append(self._player.connect("seeked", self.on_seeked))
-            logger.info(
-                f"Connected {len(self._signal_ids)} signals for {player.props.player_name}"
-            )
+        # store signal IDs for proper disconnection
+        self._signal_ids.append(
+            self._player.connect("playback-status::playing", self.on_play)
+        )
+        self._signal_ids.append(
+            self._player.connect("playback-status::paused", self.on_pause)
+        )
+        self._signal_ids.append(self._player.connect("shuffle", self.on_shuffle))
+        self._signal_ids.append(self._player.connect("metadata", self.on_metadata))
+        self._signal_ids.append(self._player.connect("seeked", self.on_seeked))
+        logger.info(
+            f"Connected {len(self._signal_ids)} signals for {player.props.player_name}"
+        )
 
         self.status = self._player.props.playback_status
         self.poll_progress()
@@ -569,18 +568,37 @@ class PlayerManager(Service):
         self._manager.connect(
             "player-vanished", self._on_player_vanished, self._manager
         )
+        config.connect("changed", self._on_config_changed)
         self.init_all_players()
         logger.info("PlayerManager initialized")
 
         self._initialized = True
 
+    @staticmethod
+    def _is_ignored(player_name: str) -> bool:
+        return player_name in (config.IGNORED_PLAYERS or [])
+
     def init_all_players(self):
         logger.info("Initializing all existing players")
         for player_obj in self._manager.props.player_names:
-            name_str = player_obj.name
-            if name_str in config.ALLOWED_PLAYERS:
-                logger.info(f"Initializing existing player: {name_str}")
-                self._create_and_register_player(player_obj)
+            if self._is_ignored(player_obj.name):
+                continue
+            if player_obj.instance in self._services:
+                continue
+            logger.info(f"Initializing existing player: {player_obj.instance}")
+            self._create_and_register_player(player_obj)
+
+    def _on_config_changed(self, _config, keys, _value):
+        if list(keys) == ["system", "IGNORED_PLAYERS"]:
+            GLib.idle_add(self._sync_ignored_players)
+
+    def _sync_ignored_players(self):
+        for instance, service in list(self._services.items()):
+            if self._is_ignored(service._player.props.player_name):
+                logger.info(f"Player {instance} is now ignored, removing")
+                self._unregister_player(instance)
+        self.init_all_players()
+        return GLib.SOURCE_REMOVE
 
     def _create_and_register_player(self, name_obj):
         instance = name_obj.instance
@@ -612,30 +630,29 @@ class PlayerManager(Service):
         name_str = name.name
         logger.info(f"Player appeared: {name_str}")
 
-        if name_str in config.ALLOWED_PLAYERS:
-            self._create_and_register_player(name)
-        else:
-            logger.debug(f"Player {name_str} not in allowed list")
+        if self._is_ignored(name_str):
+            logger.debug(f"Player {name_str} is ignored")
+            return
+        self._create_and_register_player(name)
 
     def _on_player_vanished(self, sender, player, manager):
         instance = player.props.player_instance
         logger.info(f"Player vanished: {instance}")
+        self._unregister_player(instance)
 
-        # clean up the service
-        if instance in self._services:
-            try:
-                player_service = self._services[instance]
-                player_service.cleanup()
-                del self._services[instance]
-                logger.info(f"Cleaned up service for {instance}")
-            except Exception as e:
-                logger.error(f"Error cleaning up service for {instance}: {e}")
+    def _unregister_player(self, instance: str):
+        # players that were never registered (e.g. ignored ones) have no UI to remove
+        service = self._services.pop(instance, None)
+        self._player_objects.pop(instance, None)
+        if service is None:
+            return
 
-        # remove player object reference
-        if instance in self._player_objects:
-            del self._player_objects[instance]
+        try:
+            service.cleanup()
+            logger.info(f"Cleaned up service for {instance}")
+        except Exception as e:
+            logger.error(f"Error cleaning up service for {instance}: {e}")
 
-        # emit signal
         self.player_vanish(instance)
 
     def get_player_service(self, player_instance: str) -> PlayerService | None:

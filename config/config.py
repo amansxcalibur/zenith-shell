@@ -31,7 +31,8 @@ DEFAULTS = {
         "LOCKSCREEN": "i3lock",
         "WEATHER_LOCATION": "auto",
         "BRIGHTNESS_DEV": "auto",
-        "ALLOWED_PLAYERS": ["vlc", "cmus", "firefox", "spotify", "chromium"],
+        # MPRIS player names to hide; every other player is shown
+        "IGNORED_PLAYERS": ["playerctld", "kdeconnect", "plasma-browser-integration"],
     },
     "theme": {"mode": "dark", "scheme": "fidelity"},
     "paths": {"WALLPAPERS_DIR": "~/Pictures/Wallpapers/"},
@@ -69,6 +70,9 @@ DEFAULTS = {
 # Keys under `paths` that are directories to be auto-created by _ensure_directories.
 # Anything not listed here (e.g. a future `paths.SOME_FILE`) is left alone.
 _DIRECTORY_PATH_KEYS = {}
+
+# Keys removed from DEFAULTS; stripped from existing config files on load.
+_OBSOLETE_KEYS = [("system", "ALLOWED_PLAYERS")]
 
 _SAVE_DEBOUNCE_SECONDS = 0.5  # (seconds)
 
@@ -180,6 +184,7 @@ class ConfigManager(Service):
                     self._data, needs_save = self._deep_merge(
                         DEFAULTS, copy.deepcopy(loaded_data)
                     )
+                    self._drop_obsolete_keys()
 
                     hydrate_binding_config(self._data.get("bindings", {}))
                     self.resolved_bindings = build_resolved_binding_instances(
@@ -197,6 +202,16 @@ class ConfigManager(Service):
 
         # fresh load invalidates any cached nodes from a previous state.
         self._node_cache.clear()
+
+    def _drop_obsolete_keys(self):
+        """Remove keys that are no longer read, so they don't linger in config.json."""
+        for path in _OBSOLETE_KEYS:
+            *parents, leaf = path
+            node = self._data
+            for key in parents:
+                node = node.get(key) if isinstance(node, dict) else None
+            if isinstance(node, dict) and node.pop(leaf, None) is not None:
+                logger.info(f"Removed obsolete config key {'.'.join(path)}")
 
     @staticmethod
     def _deep_merge(defaults, user_data):
@@ -452,12 +467,12 @@ class ConfigManager(Service):
         self.set("paths.WALLPAPERS_DIR", value)
 
     @property
-    def ALLOWED_PLAYERS(self):
-        return self.get("system.ALLOWED_PLAYERS")
+    def IGNORED_PLAYERS(self) -> list[str]:
+        return self.get("system.IGNORED_PLAYERS")
 
-    @ALLOWED_PLAYERS.setter
-    def ALLOWED_PLAYERS(self, value):
-        self.set("system.ALLOWED_PLAYERS", value)
+    @IGNORED_PLAYERS.setter
+    def IGNORED_PLAYERS(self, value):
+        self.set("system.IGNORED_PLAYERS", value)
 
 
 config = ConfigManager()
