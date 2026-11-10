@@ -20,6 +20,7 @@ MAX_VOLUME_REASON = (
 )
 MAX_MIC_VOLUME = 1.0  # what the mic's slider shows
 MAX_APP_VOLUME = 1.0
+RECONNECT_DELAY_S = 2  # between attempts to reach a sound server that went away
 
 
 def _limit(volume: float, limit: float, current: float) -> float:
@@ -259,27 +260,39 @@ class VolumeService(Service):
         threading.Thread(target=self._monitor_volume, daemon=True).start()
 
     def _monitor_volume(self):
-        try:
-            with pulsectl.Pulse("volume-service") as pulse:
-                self._pulse = pulse
+        # the sound server could restart
+        self._reported_outage = False
+        while not self._stop_monitoring.is_set():
+            try:
+                self._listen()
+            except Exception as e:
+                # once per outage, not every attempt
+                if not self._reported_outage:
+                    logger.error(f"No sound server, will keep retrying: {e}")
+                    self._reported_outage = True
+            finally:
+                self._pulse = None
+            self._stop_monitoring.wait(RECONNECT_DELAY_S)
+
+    def _listen(self):
+        with pulsectl.Pulse("volume-service") as pulse:
+            self._pulse = pulse
+            self._reported_outage = False
+            logger.info("Connected to the sound server")
+            self._update_current_volume()
+            # server: the default device changing; card: a jack being
+            # plugged in or pulled out
+            pulse.event_mask_set(
+                "sink", "source", "sink_input", "source_output", "server", "card"
+            )
+            pulse.event_callback_set(self._on_pulse_event)
+            while not self._stop_monitoring.is_set():
+                if not self._stale:
+                    pulse.event_listen()
+                # a burst (a jack replugged) settles over several events;
+                # read again until one comes through without any more
+                self._stale = False
                 self._update_current_volume()
-                # server: the default device changing; card: a jack being
-                # plugged in or pulled out
-                pulse.event_mask_set(
-                    "sink", "source", "sink_input", "source_output", "server", "card"
-                )
-                pulse.event_callback_set(self._on_pulse_event)
-                while not self._stop_monitoring.is_set():
-                    if not self._stale:
-                        pulse.event_listen()
-                    # a burst (a jack replugged) settles over several events;
-                    # read again until one comes through without any more
-                    self._stale = False
-                    self._update_current_volume()
-        except Exception as e:
-            logger.error(f"Failed to monitor volume: {e}")
-        finally:
-            self._pulse = None
 
     def _on_pulse_event(self, event):
         relevant_facilities = {
