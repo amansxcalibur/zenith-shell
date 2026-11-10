@@ -348,16 +348,25 @@ def apply_keybinding_overrides(
 
 
 def hydrate_binding_config(bindings: dict) -> dict:
-    i3_dict = bindings.setdefault("i3", {})
-    modules_dict = bindings.setdefault("modules", {})
+    """Fill in every missing binding with its default, in place."""
+
+    def table(parent: dict, name: str) -> dict:
+        if not isinstance(parent.get(name), dict):
+            parent[name] = {}
+        return parent[name]
+
+    i3_dict = table(bindings, "i3")
+    modules_dict = table(bindings, "modules")
 
     for binding in get_all_keybindings_default():
         if binding.scope == "i3":
-            i3_dict.setdefault(binding.action, binding.key)
+            scope_dict = i3_dict
         elif binding.scope is not None:
-            modules_dict.setdefault(binding.scope, {}).setdefault(
-                binding.action, binding.key
-            )
+            scope_dict = table(modules_dict, binding.scope)
+        else:
+            continue
+        if not isinstance(scope_dict.get(binding.action), str):
+            scope_dict[binding.action] = binding.key
 
     return bindings
 

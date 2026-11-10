@@ -84,6 +84,30 @@ _SAVE_DEBOUNCE_SECONDS = 0.5  # (seconds)
 #       Something like that should be done during install. Perhaps a better architecture...
 
 
+def _kind_name(default) -> str:
+    """How to describe the expected type to someone editing config.json."""
+    if isinstance(default, bool):
+        return "true or false"
+    if isinstance(default, (int, float)):
+        return "a number"
+    if isinstance(default, str):
+        return "text"
+    if isinstance(default, list):
+        return "a list"
+    return "an object"
+
+
+def _same_kind(value, default) -> bool:
+    """Whether a loaded value can stand in for its default."""
+    if default is None:
+        return True
+    if isinstance(default, bool):
+        return isinstance(value, bool)
+    if isinstance(default, (int, float)):
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    return isinstance(value, type(default))
+
+
 class ConfigNode:
     """A scoped proxy for reading/writing a specific branch of the config tree."""
 
@@ -192,12 +216,36 @@ class ConfigManager(Service):
                     loaded_data = json.load(f)
                 if not isinstance(loaded_data, dict):
                     raise TypeError("top level is not a JSON object")
-                self._data, _ = self._deep_merge(DEFAULTS, copy.deepcopy(loaded_data))
+                rejected: list[str] = []
+                self._data, _ = self._deep_merge(
+                    DEFAULTS, copy.deepcopy(loaded_data), rejected=rejected
+                )
                 self._drop_obsolete_keys()
+                if rejected:
+                    logger.warning(
+                        "config.json: wrong type for "
+                        f"{'; '.join(rejected)}; using the defaults for those"
+                    )
+                    # as with an unreadable file: leave it for the user to fix,
+                    # and back it up if a save has to replace it
+                    self._unreadable_file = True
+                    self._notify(
+                        "config.json has invalid values",
+                        (
+                            f"Using the defaults for: {'; '.join(rejected)}.\n\n"
+                            "Your file is untouched; fix it and restart the shell."
+                        ),
+                    )
             except Exception as e:
                 logger.error(f"Error loading config.json: {e}; using defaults")
                 self._unreadable_file = True
-                self._notify_unreadable(e)
+                self._notify(
+                    "config.json could not be read",
+                    (
+                        f"{e}\n\nZenith is using default settings. Your file "
+                        "is untouched; fix it and restart the shell."
+                    ),
+                )
                 loaded_data = None
 
         if loaded_data is None:
@@ -229,8 +277,11 @@ class ConfigManager(Service):
                 logger.info(f"Removed obsolete config key {'.'.join(path)}")
 
     @staticmethod
-    def _deep_merge(defaults, user_data):
-        """Recursively merges user data into defaults, tracking if missing keys were added."""
+    def _deep_merge(defaults, user_data, rejected=None, _path=()):
+        """Recursively merges user data into defaults, tracking if missing keys were added.
+
+        A value whose type doesn't match its default (`"bar": null`) keeps the
+        default; its dotted path is appended to `rejected`."""
         merged = copy.deepcopy(defaults)
         needs_save = False
 
@@ -241,9 +292,15 @@ class ConfigManager(Service):
                 and isinstance(value, dict)
             ):
                 merged[key], sub_needs_save = ConfigManager._deep_merge(
-                    merged[key], value
+                    merged[key], value, rejected, (*_path, key)
                 )
                 needs_save = needs_save or sub_needs_save
+            elif key in merged and not _same_kind(value, merged[key]):
+                if rejected is not None:
+                    rejected.append(
+                        f"{'.'.join((*_path, key))} "
+                        f"(should be {_kind_name(merged[key])})"
+                    )
             else:
                 if key not in merged or merged[key] != value:
                     merged[key] = copy.deepcopy(value)
@@ -286,11 +343,11 @@ class ConfigManager(Service):
         except OSError as e:
             logger.error(f"Not saving: could not back up unreadable config.json: {e}")
             return False
-        logger.warning(f"Saved the unreadable config.json as {backup} before saving")
+        logger.warning(f"Kept the previous config.json as {backup} before saving")
         return True
 
     @staticmethod
-    def _notify_unreadable(error: Exception):
+    def _notify(summary: str, body: str):
         if shutil.which("notify-send"):
             subprocess.Popen(
                 [
@@ -299,11 +356,9 @@ class ConfigManager(Service):
                     "critical",
                     "-a",
                     "Zenith",
-                    "config.json could not be read",
-                    (
-                        f"{error}\n\nZenith is using default settings. Your file "
-                        "is untouched; fix it and restart the shell."
-                    ),
+                    summary,
+                    # notification bodies are markup
+                    GLib.markup_escape_text(body),
                 ],
                 start_new_session=True,
                 stdout=subprocess.DEVNULL,
