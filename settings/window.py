@@ -546,4 +546,6 @@ class SettingsWindow(Window):
 
         except Exception as e:
             logger.error(f"Failed to save: {e}")
-            exec_shell_command_async(f"notify-send 'Zenith Settings' '{e}'")
+            exec_shell_command_async(
+                ["notify-send", "Zenith Settings", GLib.markup_escape_text(str(e))]
+            )

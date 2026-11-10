@@ -96,10 +96,15 @@ class BaseDialog(Gtk.Dialog):
 
     @staticmethod
     def show_notification(title: str, message: str = "") -> None:
-        if message:
-            exec_shell_command_async(f"notify-send '{title}' '{message}'")
-        else:
-            exec_shell_command_async(f"notify-send 'NM-Service' '{title}'")
+        # argv, not a command line: SSIDs contain quotes and spaces. Escaped
+        # because notification bodies are markup.
+        summary, body = (title, message) if message else ("NM-Service", title)
+        try:
+            exec_shell_command_async(
+                ["notify-send", summary, GLib.markup_escape_text(body)]
+            )
+        except GLib.Error as e:
+            logger.warning(f"Could not send notification: {e}")
 
 
 class PasswordDialog(BaseDialog):

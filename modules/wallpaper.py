@@ -171,7 +171,9 @@ class WallpaperService(Service):
                 return
 
             # apply wallpaper
-            exec_shell_command_async(f"{feh_bin} --zoom fill --bg-fill '{full_path}'")
+            exec_shell_command_async(
+                [feh_bin, "--zoom", "fill", "--bg-fill", full_path]
+            )
 
     def set_wallpaper_path(self, full_path: str, preview_path: str | None):
         self._set_state(full_path, preview_path)
