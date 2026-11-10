@@ -35,7 +35,7 @@ def lock_screen():
 
 def get_cached_lockscreen(
     wallpaper: Path,
-) -> Path:
+) -> Path | None:
     # width, height = get_screen_resolution()
 
     # mtime = int(wallpaper.stat().st_mtime)
@@ -63,13 +63,17 @@ def _lock_with_external_locker() -> None:
         )
         return
 
-    wallpaper = WallpaperService().get_wallpaper_path()
-    if wallpaper is None:
-        subprocess.Popen([lock_app], start_new_session=True)
-        return
+    # the image is decoration: whatever goes wrong with it, still lock
+    cached_img = None
+    try:
+        wallpaper = WallpaperService().get_wallpaper_path()
+        if wallpaper is not None:
+            cached_img = get_cached_lockscreen(Path(wallpaper))
+    except Exception as e:
+        logger.warning(f"Locking without an image: {e}")
 
-    cached_img = get_cached_lockscreen(Path(wallpaper))
-    subprocess.Popen([lock_app, "-i", str(cached_img)], start_new_session=True)
+    background = ["-i", str(cached_img)] if cached_img else ["-c", "141315"]
+    subprocess.Popen([lock_app, *background], start_new_session=True)
 
 
 def get_available_external_locker() -> str | None:
@@ -80,11 +84,11 @@ def get_available_external_locker() -> str | None:
 
 
 def generate_lockscreen_image(image_path: str | Path) -> Path | None:
+    tmp = LOCKSCREEN_IMG_FILE.with_suffix(".tmp")
+    tmp_blurred = LOCKSCREEN_BLURRED_IMG_FILE.with_suffix(".tmp")
     try:
         LOCKSCREEN_RESOURCE_DIR.mkdir(parents=True, exist_ok=True)
 
-        tmp = LOCKSCREEN_IMG_FILE.with_suffix(".tmp")
-        tmp_blurred = LOCKSCREEN_BLURRED_IMG_FILE.with_suffix(".tmp")
         width, height = get_screen_resolution_i3()
 
         with Image.open(image_path) as img:
@@ -124,6 +128,9 @@ def generate_lockscreen_image(image_path: str | Path) -> Path | None:
 
     except Exception as e:
         logger.error(f"Lockscreen generation failed for {image_path}: {e}")
-        if tmp.exists():
-            tmp.unlink(missing_ok=True)
-        raise
+        for leftover in (tmp, tmp_blurred):
+            try:
+                leftover.unlink(missing_ok=True)
+            except OSError:
+                pass
+        return None
