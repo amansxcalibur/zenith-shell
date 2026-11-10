@@ -32,23 +32,15 @@ DEFAULTS = {
         "SILENT": False,
         "VERTICAL": False,
         "LOCKSCREEN": "i3lock",
-        "WEATHER_LOCATION": "auto",
         "BRIGHTNESS_DEV": "auto",
         # MPRIS player names to hide; every other player is shown
         "IGNORED_PLAYERS": ["playerctld", "kdeconnect", "plasma-browser-integration"],
     },
     "theme": {"mode": "dark", "scheme": "fidelity"},
     "paths": {"WALLPAPERS_DIR": "~/Pictures/Wallpapers/"},
-    "dashboard": {
-        "WIDGETS_ENABLED": ["clock", "weather"],
-        "REFRESH_INTERVAL": 5000,
-        "SHOW_NOTIFICATIONS": True,
-    },
     "screen_corners": {"enabled": False, "props": {"radius": 20}},
     "bar": {
         "POSITION": "bottom",
-        "HEIGHT": 32,
-        "SPACING": 8,
         "PADDING": 6,  # px around each dock module
         "BORDER": True,  # line around the dock and the pill
         "ACTION": "restart",  # what the dock's action button does
@@ -65,7 +57,6 @@ DEFAULTS = {
     "pill": {"POSITION": {"x": "center", "y": "bottom"}},
     "network": {"wifi": {"enabled": True}},
     "bluetooth": {"enabled": False},
-    "top_bar": {"POSITION": "top", "HEIGHT": 32, "SPACING": 8},
     "top_pill": {"POSITION": {"x": "center", "y": "top"}},
     "bindings": {"i3": {}, "modules": {}},
 }
@@ -75,7 +66,15 @@ DEFAULTS = {
 _DIRECTORY_PATH_KEYS = {}
 
 # Keys removed from DEFAULTS; stripped from existing config files on load.
-_OBSOLETE_KEYS = [("system", "ALLOWED_PLAYERS")]
+_OBSOLETE_KEYS = [
+    ("system", "ALLOWED_PLAYERS"),
+    # never read
+    ("system", "WEATHER_LOCATION"),
+    ("dashboard",),
+    ("bar", "HEIGHT"),
+    ("bar", "SPACING"),
+    ("top_bar",),
+]
 
 _SAVE_DEBOUNCE_SECONDS = 0.5  # (seconds)
 
@@ -565,14 +564,6 @@ class ConfigManager(Service):
     @BRIGHTNESS_DEV.setter
     def BRIGHTNESS_DEV(self, value):
         self.set("system.BRIGHTNESS_DEV", value)
-
-    @property
-    def BAR_HEIGHT(self):
-        return self.get("bar.HEIGHT")
-
-    @BAR_HEIGHT.setter
-    def BAR_HEIGHT(self, value):
-        self.set("bar.HEIGHT", value)
 
     @property
     def WALLPAPERS_DIR(self) -> str:
