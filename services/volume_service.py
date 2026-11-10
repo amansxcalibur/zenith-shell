@@ -10,22 +10,14 @@ from gi.repository import GLib  # type: ignore
 
 PA_INVALID_INDEX = 0xFFFFFFFF  # a source's monitor_of_sink when it's a real input
 
-# how far our controls go: PipeWire stops pulse clients (us) at 152.5%,
-# +11 dB, pulse's "UI max". Past it a sound only gets louder through wpctl,
-# and distorts
-MAX_VOLUME = 1.525
-MAX_VOLUME_REASON = (
-    "Goes up to 152%: the most PipeWire lets apps set (+11 dB).\n"
-    "Past 100% the sound is boosted, and can distort."
-)
-MAX_MIC_VOLUME = 1.0  # what the mic's slider shows
+MAX_VOLUME = 1.5
+MAX_VOLUME_REASON = "Goes up to 150%.\nPast 100% the sound is boosted, and can distort."
+MAX_MIC_VOLUME = 1.0
 MAX_APP_VOLUME = 1.0
 RECONNECT_DELAY_S = 2  # between attempts to reach a sound server that went away
 
 
 def _limit(volume: float, limit: float, current: float) -> float:
-    """volume, kept within 0..limit, but a level something else (wpctl) took
-    past the limit is only ever brought down, never yanked to it."""
     volume = max(volume, 0.0)
     if volume > limit:
         volume = max(limit, min(volume, current))
@@ -46,8 +38,6 @@ class AudioDevice:
 
 @dataclass(frozen=True)
 class SoundDevice:
-    """An output or an input."""
-
     name: str  # pulse's id for it
     description: str  # what to call it
     icon: str  # "headphones", "headset", "bluetooth", "hdmi", "speaker" or "mic"
@@ -56,7 +46,6 @@ class SoundDevice:
 
     @property
     def label(self) -> str:
-        """What to call it: the jack in use says more than the card's name."""
         return self.port or self.description
 
     @property
@@ -150,6 +139,19 @@ def _app_stream(info, volume=True) -> AppStream:
     )
 
 
+class _Volume(pulsectl.PulseVolumeInfo):
+    """Overrides PulseVolumeInfo.to_struct from pulsectl 24.12.0, which cuts every
+    value to 152.5% (PA_VOLUME_UI_MAX) before sending it, with no error. Our
+    limit lives in _limit instead."""
+
+    # override
+    def to_struct(self):
+        return pulsectl._pulsectl.PA_CVOLUME(
+            len(self.values),
+            tuple(round(v * pulsectl._pulsectl.PA_VOLUME_NORM) for v in self.values),
+        )
+
+
 def _run_in_thread(fn):
     # fire and forget
     threading.Thread(target=fn, daemon=True).start()
@@ -166,10 +168,7 @@ def _pulse_set_volume(
             with pulsectl.Pulse(client_name) as pulse:
                 name = getattr(pulse.server_info(), server_key)
                 device = lookup(pulse, name)
-                pulse.volume_set(
-                    device,
-                    pulsectl.PulseVolumeInfo([volume] * len(device.volume.values)),
-                )
+                pulse.volume_set(device, _Volume([volume] * len(device.volume.values)))
         except Exception as e:
             logger.error(f"[{client_name}] Failed to set volume: {e}")
 
@@ -430,8 +429,6 @@ class VolumeService(Service):
         return self._mic_users
 
     def set_default_output(self, name: str):
-        """Switch output, taking what's playing along."""
-
         def _run():
             try:
                 with pulsectl.Pulse("output-switcher") as pulse:
@@ -446,8 +443,6 @@ class VolumeService(Service):
         _run_in_thread(_run)
 
     def set_default_input(self, name: str):
-        """Switch mic, taking what's recording from the old one along."""
-
         def _run():
             try:
                 with pulsectl.Pulse("input-switcher") as pulse:
@@ -471,8 +466,9 @@ class VolumeService(Service):
             try:
                 with pulsectl.Pulse("app-volume-setter") as pulse:
                     stream = pulse.sink_input_info(index)
-                    pulse.volume_set_all_chans(
-                        stream, _limit(volume, MAX_APP_VOLUME, stream.volume.value_flat)
+                    volume_ = _limit(volume, MAX_APP_VOLUME, stream.volume.value_flat)
+                    pulse.volume_set(
+                        stream, _Volume([volume_] * len(stream.volume.values))
                     )
             except Exception as e:
                 logger.error(f"[app-volume-setter] Failed to set volume: {e}")
