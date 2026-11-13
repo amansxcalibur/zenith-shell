@@ -21,7 +21,12 @@ from types import SimpleNamespace
 SHELL_NAME = "zenith-shell"
 
 HOME = Path.home()
-INSTALL_DIR = Path(os.environ.get("ZENITH_DIR", HOME / ".config" / SHELL_NAME))
+INSTALL_DIR = Path(
+    os.environ.get(
+        "ZENITH_DIR",
+        Path(os.environ.get("XDG_DATA_HOME", HOME / ".local" / "share")) / SHELL_NAME,
+    )
+)
 VENV_DIR = INSTALL_DIR / ".venv"
 VENDOR_DIR = INSTALL_DIR / "vendors"
 BIN_DIR = HOME / ".local" / "bin"
@@ -34,8 +39,7 @@ STATE_FILE = (
 LOG_FILE = (
     Path(os.environ.get("XDG_CACHE_HOME", HOME / ".cache")) / SHELL_NAME / "install.log"
 )
-# where `uninstall` keeps your settings if you ask it to (restored on the next fresh install)
-BACKUP_DIR = HOME / ".config" / f"{SHELL_NAME}-backup"
+CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / SHELL_NAME
 # The running shell's process title. main.py sets it from config.info.SHELL_NAME ("zenith")
 # + "-shell", so it equals the installer's SHELL_NAME. The launcher uses the same pattern.
 SHELL_PROCESS = f"^{SHELL_NAME}( |$)"
@@ -452,7 +456,7 @@ def save_state(
     state["packages"] = sorted(set(state.get("packages", [])) | set(packages or []))
     state["tools"] = sorted(set(state.get("tools", [])) | set(tools or []))
     state["distro"] = distro
-    state["updated"] = datetime.datetime.now().isoformat(timespec="seconds")  # noqa: DTZ005
+    state["updated"] = datetime.datetime.now().isoformat(timespec="seconds")
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
     STATE_FILE.write_text(json.dumps(state, indent=2))
 
@@ -573,7 +577,6 @@ class Backend:
         raise NotImplementedError
 
     def check_packages(self, missing: list[str]) -> list[Problem]:
-        """Verify every package we are about to install actually exists."""
         raise NotImplementedError
 
     def install_packages(self, plan: Plan) -> None:
@@ -592,7 +595,6 @@ class Backend:
         return []
 
     def plan_notes(self, plan: Plan) -> list[str]:
-        """Extra lines for the Plan panel."""
         return []
 
     def uninstall_tools(self, names: list[str]) -> None:
@@ -659,7 +661,6 @@ class Backend:
 
         problems += self.system_checks(plan)
 
-        # network
         hosts: list[str] = []
         if command in ("install", "update"):
             hosts.append("https://pypi.org")  # pip install -r requirements.txt
@@ -679,7 +680,6 @@ class Backend:
                 )
             )
 
-        # do all packages exist on this system?
         if plan.missing_pkgs:
             problems += self.check_packages(plan.missing_pkgs)
         return problems

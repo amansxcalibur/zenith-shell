@@ -1,6 +1,5 @@
 import argparse
 import collections
-import datetime
 import difflib
 import os
 import shutil
@@ -235,16 +234,6 @@ def step_completions() -> None:
         shutil.copyfile(source_dir / source, target)
         installed.append(shell)
     ok(f"Tab completion: {', '.join(installed) or 'no supported shell found'}")
-
-
-def step_restore_config() -> None:
-    """Fresh install after `uninstall` that kept the settings -> put them back."""
-    backup = c.BACKUP_DIR / "config.json"
-    target = c.INSTALL_DIR / "config" / "config.json"
-    if backup.exists() and not c.STATE_FILE.exists() and not target.exists():
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(backup, target)
-        ok(f"Restored your previous settings from {backup}")
 
 
 def step_bootstrap(wms: list[str]) -> None:
@@ -528,8 +517,6 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
             ("Launcher", lambda p: step_launchers()),
             ("Tab completion", lambda p: step_completions()),
         ]
-        if command == "install":
-            steps.append(("Your settings", lambda p: step_restore_config()))
     elif configure and not c.venv_ok():  # bootstrap runs inside the virtualenv
         steps.append(("Python environment", lambda p: step_python_env(backend)))
     if configure:
@@ -786,19 +773,9 @@ def remove_tree(path: Path) -> None:
         )
 
 
-def backup_config(config: Path) -> Path:
-    c.BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-    dest = c.BACKUP_DIR / "config.json"
-    if dest.exists():
-        stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")  # noqa: DTZ005
-        dest.rename(c.BACKUP_DIR / f"config.{stamp}.json")
-    shutil.copy2(config, dest)
-    return dest
-
-
 def cmd_uninstall(args, backend) -> int:
     state = c.load_state()
-    config = c.INSTALL_DIR / "config" / "config.json"
+    config = c.CONFIG_DIR / "config.json"
     launchers = [
         p
         for p in (c.BIN_DIR / c.SHELL_NAME, c.BIN_DIR / f"{c.SHELL_NAME}-setup")
@@ -851,14 +828,12 @@ def cmd_uninstall(args, backend) -> int:
         info("Dry run – nothing was changed.")
         return 0
 
-    keep_config = config.exists() and c.confirm(
-        f"Keep your settings ({config})?", default=True
+    keep_config = not c.CONFIG_DIR.exists() or c.confirm(
+        f"Keep your settings ({c.CONFIG_DIR})?", default=True
     )
     if not c.confirm("Uninstall Zenith Shell now?", default=False):
         info("Aborted.")
         return 1
-
-    saved: Path | None = None
 
     def stop_processes() -> None:
         ok("Stopped running instances" if c.stop_shell() else "Nothing was running")
@@ -867,11 +842,6 @@ def cmd_uninstall(args, backend) -> int:
         if any(name != "matugen" for name in built):
             c.ensure_sudo()
         backend.uninstall_tools(built)
-
-    def save_config() -> None:
-        nonlocal saved
-        saved = backup_config(config)
-        ok(f"Settings saved to {saved}")
 
     def remove_launchers() -> None:
         for path in [*launchers, *completions]:
@@ -888,12 +858,14 @@ def cmd_uninstall(args, backend) -> int:
         steps.append(
             ("Removing source-built tools", remove_built_tools)
         )  # needs vendors/, so before the next steps
-    if keep_config:
-        steps.append(("Saving your settings", save_config))
     steps += [
         ("Removing launchers", remove_launchers),
         ("Removing fonts", remove_fonts),
         ("Removing Zenith Shell", lambda: remove_tree(c.INSTALL_DIR)),
+    ]
+    if not keep_config:
+        steps.append(("Removing your settings", lambda: remove_tree(c.CONFIG_DIR)))
+    steps += [
         (
             "Cleaning up",
             lambda: [remove_tree(c.STATE_FILE.parent), remove_tree(c.LOG_FILE.parent)],
@@ -907,10 +879,8 @@ def cmd_uninstall(args, backend) -> int:
 
     print()
     ok("Zenith Shell has been removed.")
-    if saved:
-        info(
-            f"Your settings are in {saved} and come back automatically on the next fresh install."
-        )
+    if keep_config and config.exists():
+        info(f"Your settings are kept in {config}.")
     if mentions:
         panel(
             "Leftover references – edit these by hand",

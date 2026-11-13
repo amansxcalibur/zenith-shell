@@ -14,7 +14,7 @@ from .bindings import (
     hydrate_binding_config,
     build_resolved_binding_instances,
 )
-from .info import TEMP_DIR, CACHE_DIR, CONFIG_DIR, CONFIG_FILE
+from .info import TEMP_DIR, CACHE_DIR, USER_CONFIG_DIR, CONFIG_FILE
 
 from gi.repository import GLib  # type: ignore
 
@@ -33,7 +33,6 @@ DEFAULTS = {
         "VERTICAL": False,
         "LOCKSCREEN": "i3lock",
         "BRIGHTNESS_DEV": "auto",
-        # MPRIS player names to hide; every other player is shown
         "IGNORED_PLAYERS": ["playerctld", "kdeconnect", "plasma-browser-integration"],
     },
     "theme": {"mode": "dark", "scheme": "fidelity"},
@@ -41,9 +40,9 @@ DEFAULTS = {
     "screen_corners": {"enabled": False, "props": {"radius": 20}},
     "bar": {
         "POSITION": "bottom",
-        "PADDING": 6,  # px around each dock module
-        "BORDER": True,  # line around the dock and the pill
-        "ACTION": "restart",  # what the dock's action button does
+        "PADDING": 2,
+        "BORDER": False,
+        "ACTION": "restart",
         "modules": {
             "left": [
                 "actions",
@@ -68,7 +67,6 @@ _DIRECTORY_PATH_KEYS = {}
 # Keys removed from DEFAULTS; stripped from existing config files on load.
 _OBSOLETE_KEYS = [
     ("system", "ALLOWED_PLAYERS"),
-    # never read
     ("system", "WEATHER_LOCATION"),
     ("dashboard",),
     ("bar", "HEIGHT"),
@@ -76,7 +74,7 @@ _OBSOLETE_KEYS = [
     ("top_bar",),
 ]
 
-_SAVE_DEBOUNCE_SECONDS = 0.5  # (seconds)
+_SAVE_DEBOUNCE_SECONDS = 0.5
 
 
 # TODO: Config shouldn't really create the 'paths'. It should point to the expected path.
@@ -116,12 +114,6 @@ class ConfigNode:
         self._listeners: list = []
 
     def connect(self, callback):
-        """
-        Register `callback(relative_path: list[str], new_value) -> None` to be
-        called whenever a value at or under this node's path changes. Fires
-        only for changes within this branch, not the whole tree. Returns the
-        callback so it can be passed to disconnect().
-        """
         self._listeners.append(callback)
         return callback
 
@@ -148,7 +140,6 @@ class ConfigNode:
         keys = self._resolve_path(path)
         current = self._root.get(self._key_path + keys, default)
 
-        # auto-expand paths
         if self._key_path and self._key_path[0] == "paths" and isinstance(current, str):
             return os.path.expanduser(current)
 
@@ -160,7 +151,6 @@ class ConfigNode:
     def set(self, path, value):
         keys = self._resolve_path(path)
 
-        # Delegate the actual setting to the root
         absolute_path = self._key_path + keys
         self._root.set(absolute_path, value)
 
@@ -183,7 +173,6 @@ class ConfigManager(Service):
         self._node_cache = {}
         self.resolved_bindings = {}
 
-        # debounced-save machinery
         self._save_lock = threading.RLock()
         self._save_timer: threading.Timer | None = None
         self._dirty = False
@@ -206,7 +195,6 @@ class ConfigManager(Service):
         return list(path)
 
     def _load(self):
-        """Load config from file, merge with defaults"""
         loaded_data = None
         self._unreadable_file = False
         if os.path.exists(CONFIG_FILE):
@@ -262,11 +250,9 @@ class ConfigManager(Service):
         if not self._unreadable_file and self._data != loaded_data:
             self._save_now()
 
-        # fresh load invalidates any cached nodes from a previous state.
         self._node_cache.clear()
 
     def _drop_obsolete_keys(self):
-        """Remove keys that are no longer read, so they don't linger in config.json."""
         for path in _OBSOLETE_KEYS:
             *parents, leaf = path
             node = self._data
@@ -312,7 +298,7 @@ class ConfigManager(Service):
 
     def _save_now(self):
         with self._save_lock:
-            os.makedirs(CONFIG_DIR, exist_ok=True)
+            os.makedirs(USER_CONFIG_DIR, exist_ok=True)
             if self._unreadable_file:
                 if not self._backup_unreadable_file():
                     return  # keep the user's file rather than lose it
@@ -390,15 +376,12 @@ class ConfigManager(Service):
                 self._save_now()
 
     def _ensure_directories(self):
-        # System/Cache Directories
-        for directory in [TEMP_DIR, CACHE_DIR, CONFIG_DIR]:
+        for directory in [TEMP_DIR, CACHE_DIR, USER_CONFIG_DIR]:
             path = Path(directory).expanduser()
             if not path.exists():
                 path.mkdir(parents=True, exist_ok=True)
                 logger.info(f"Created system directory: {path}")
 
-        # Config Directories - only for keys explicitly known to hold a
-        # directory path, so a future paths.SOME_FILE isn't mkdir'd by mistake.
         user_paths = self._data.get("paths", {})
         for key, folder_path in user_paths.items():
             if key not in _DIRECTORY_PATH_KEYS:
@@ -414,7 +397,6 @@ class ConfigManager(Service):
                     logger.warning(f"Could not create {path}: {e}")
 
     def get(self, path: str | list[str], default=None):
-        """Get an absolute config value."""
         keys = self._resolve_path(path)
         current = self._data
 
@@ -437,15 +419,11 @@ class ConfigManager(Service):
         return current
 
     def set(self, path: str | list[str], value):
-        """Set an absolute config value and notify listeners."""
         keys = self._resolve_path(path)
         if not keys:
             return
 
         if self._in_set:
-            # A `changed` handler tried to call set() re-entrantly on the same
-            # thread. Log and proceed rather than deadlocking or corrupting
-            # state, but this almost always indicates a bug in the caller.
             logger.warning(
                 f"Reentrant config.set() detected for path {keys}; "
                 "a `changed` handler is calling set() again on the same thread."
@@ -463,7 +441,6 @@ class ConfigManager(Service):
                 )
 
         current = self._data
-        # second-to-last key
         for key in keys[:-1]:
             if key not in current or not isinstance(current[key], dict):
                 current[key] = {}
@@ -504,13 +481,7 @@ class ConfigManager(Service):
                 GLib.idle_add(node._dispatch, keys[depth:], value)
 
     def get_node(self, path: str | list[str]) -> ConfigNode:
-        """
-        Returns a scoped ConfigNode for the given path. This is a pure read —
-        it never writes to disk or mutates self._data. If the path doesn't
-        exist yet, the returned node simply proxies gets/sets to where that
-        data would live; the first real .set() on it (or on a descendant)
-        is what actually materializes and persists it.
-        """
+        """Pure read: a missing path is only created by the first set() on the node."""
         keys = self._resolve_path(path)
 
         cache_key = tuple(keys)
@@ -538,8 +509,6 @@ class ConfigManager(Service):
 
     def get_all_scoped_bindings(self, scope: str) -> list[KeyBinding]:
         return list(self.resolved_bindings.get(scope, {}).values())
-
-    # --- Convenience Properties ---
 
     @property
     def SILENT(self):

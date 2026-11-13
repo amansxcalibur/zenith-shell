@@ -3,7 +3,7 @@
 set -euo pipefail
 
 REPO_URL="${ZENITH_REPO:-https://github.com/amansxcalibur/zenith-shell.git}"
-INSTALL_DIR="${ZENITH_DIR:-$HOME/.config/zenith-shell}"
+INSTALL_DIR="${ZENITH_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/zenith-shell}"
 export ZENITH_DIR="$INSTALL_DIR"
 export ZENITH_PROG="install.sh"
 

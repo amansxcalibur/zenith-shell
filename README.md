@@ -73,8 +73,8 @@ bash install.sh
 Or clone the repository and run the installer from there:
 
 ```bash
-git clone https://github.com/amansxcalibur/zenith-shell ~/.config/zenith-shell
-~/.config/zenith-shell/installer/install.sh
+git clone https://github.com/amansxcalibur/zenith-shell ~/.local/share/zenith-shell
+~/.local/share/zenith-shell/installer/install.sh
 ```
 
 </details>
@@ -110,7 +110,7 @@ source ~/.bashrc
 If Zenith does not start as expected, run `zenith-shell setup doctor` to check for missing dependencies. See [Troubleshooting](#troubleshooting) for other common issues.
 
 > [!TIP]
-> **For best visual results**: Start with the sample `picom` configurations and GLSL shaders located in `~/.config/zenith-shell/config/picom/`.
+> **For best visual results on i3wm**: Start with the sample [`picom` configurations and GLSL shaders](https://github.com/amansxcalibur/zenith-shell/tree/main/config/picom).
 
 ## Usage
 
@@ -138,7 +138,7 @@ Tab completion works in bash, zsh, and fish once you open a new terminal. On zsh
 All settings live in one file:
 
 ```
-~/.config/zenith-shell/config/config.json
+~/.config/zenith-shell/config.json
 ```
 
 Change them with `zenith-shell settings`, which shows this path at the bottom with a button to copy it, or edit the file by hand and restart the shell.
@@ -168,7 +168,7 @@ zenith-shell setup uninstall --purge   # also remove fabric-cli, gray, gtk-sessi
 
 Built tools are kept by default because other Fabric-based shells may use them. Decide on `--purge` up front: their build files are deleted with Zenith, so they can't be removed later.
 
-- **Config:** you're asked whether to keep `config.json`. A kept copy goes to `~/.config/zenith-shell-backup/` and is restored on the next install.
+- **Config:** you're asked whether to keep your settings. If you keep them, `~/.config/zenith-shell/` is left in place and used again on the next install.
 - **System packages** are never removed. The exact removal command is printed for you to review and run.
 - **Leftovers:** i3/sway config lines and symlinks that point at Zenith are listed for you to remove.
 - **Local changes:** if the install directory has edits or unpushed commits, you're warned, and `--yes` refuses to continue.
