@@ -1,4 +1,4 @@
-# thankyou gummy (@muhchaudhary); rewriiten
+# thankyou gummy (@muhchaudhary); completely rewritten
 
 import os
 import re
@@ -14,10 +14,13 @@ from gi.repository import Gio  # type: ignore
 
 MIN_SEARCH_LENGTH = 3
 
-# Gio.DesktopAppInfo becomes an alias of GioUnix.DesktopAppInfo once anything
-# (fabric does) imports GioUnix, and on GLib 2.80 its bound methods then fail
-# with "takes exactly 1 argument". Calling them unbound works either way.
-_DesktopAppInfo = Gio.DesktopAppInfo
+try:
+    gi.require_version("GioUnix", "2.0")
+    from gi.repository import GioUnix  # type: ignore
+
+    _DesktopAppInfo = GioUnix.DesktopAppInfo
+except (ValueError, ImportError):
+    _DesktopAppInfo = Gio.DesktopAppInfo
 
 
 def _dai(method: str, app: Gio.AppInfo, *args):
