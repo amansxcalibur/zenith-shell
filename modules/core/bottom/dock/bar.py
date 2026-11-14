@@ -323,8 +323,9 @@ class DockBar(Window):
     def set_pill_docked(self, docked: bool):
         self._pill_is_docked = docked
 
+    # both run on every pill drag motion and resize; act only on a change
     def override_close(self):
-        if not self.placement.seats_pill:
+        if not self.placement.seats_pill or not self._pill_is_docked:
             return
         self._pill_is_docked = False
         self.stack.set_visible_child(self.compact)
@@ -334,17 +335,14 @@ class DockBar(Window):
         )
 
     def override_reset(self):
-        if not self.placement.seats_pill:
+        if not self.placement.seats_pill or self._pill_is_docked:
             return
-        if not self._pill_is_docked:
-            # reopen around the centre the hole closed to
-            target = self.pill_hole.target
-            size = (
-                self.pill_dock.get_preferred_width().natural_width + 2 * PILL_HOLE_EXTRA
-            )
-            self.pill_hole.animate_to(
-                start=target.start + (target.size - size) / 2, size=size
-            )
+        # reopen around the centre the hole closed to
+        target = self.pill_hole.target
+        size = self.pill_dock.get_preferred_width().natural_width + 2 * PILL_HOLE_EXTRA
+        self.pill_hole.animate_to(
+            start=target.start + (target.size - size) / 2, size=size
+        )
         self._pill_is_docked = True
         self.stack.set_visible_child(self.pill_slot)
         if self.is_open:
