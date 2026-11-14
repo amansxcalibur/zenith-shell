@@ -92,7 +92,9 @@ class I3(FabricI3):
             FabricI3.SOCKET_PATH = None
             try:
                 path = self.lookup_socket()
-            except I3SocketNotFoundError:
+                with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as probe:
+                    probe.connect(path)
+            except (I3SocketNotFoundError, OSError):
                 if attempts > 0:
                     return True
                 logger.error(
