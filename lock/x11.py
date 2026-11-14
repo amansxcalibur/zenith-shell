@@ -11,7 +11,7 @@ from fabric.utils.helpers import get_relative_path, monitor_file
 
 from .authenticator import Authenticator
 from .entry import PasswordEntry
-from .ui import LockContent
+from .ui import LockContent, background_style
 from .xkb import KeyTranslator, enable_xkb
 from .supervisor import (
     APP_NAME,
@@ -72,13 +72,17 @@ class DisplayWatch:
 class X11Guard:
     """Input grabs, key translation and keep-on-top, on one X connection."""
 
-    def __init__(self, xid: int, on_key, on_lost):
+    def __init__(self, xid: int, on_key, on_lost, on_root_resize):
         self.on_key = on_key
+        self.on_root_resize = on_root_resize
         self.xid = xid
 
         self.display = Display()
         enable_xkb(self.display)  # group/level info in key event state
         self.root = self.display.screen().root
+        geom = self.root.get_geometry()
+        # tracked from events: querying during a hotplug modeset blocks
+        self.root_size = (geom.width, geom.height)
         self.win = self.display.create_resource_object("window", xid)
         self.translator = KeyTranslator()
         self.cursor = self._blank_cursor()
@@ -86,12 +90,17 @@ class X11Guard:
         self.keyboard_grabbed = False
         self.pointer_grabbed = False
 
-        # raise whenever any top-level window maps/moves/restacks, and when we
-        # become obscured. Event masks are per connection, so they have to be
-        # selected on the connection that reads the events.
-        # we lowkey aggressive ;)
-        self.root.change_attributes(event_mask=X.SubstructureNotifyMask)
-        self.win.change_attributes(event_mask=X.VisibilityChangeMask)
+        # raise over anything that maps, moves, restacks or obscures us, and
+        # cover the root as soon as it grows (hotplug)
+        # we lowky aggressive ;)
+        self.root.change_attributes(
+            event_mask=X.SubstructureNotifyMask | X.StructureNotifyMask
+        )
+        # fills newly covered areas until GTK paints
+        self.win.change_attributes(
+            event_mask=X.VisibilityChangeMask,
+            background_pixel=self.display.screen().black_pixel,
+        )
 
         self.watch = DisplayWatch(self.display, self._on_event, on_lost)
         self.raise_window()
@@ -152,12 +161,21 @@ class X11Guard:
         self.win.configure(stack_mode=X.Above)
         self.display.flush()
 
+    def cover_root(self, width: int, height: int):
+        self.win.configure(x=0, y=0, width=width, height=height, stack_mode=X.Above)
+        self.display.flush()
+
     def _on_event(self, event):
         etype = event.type
         if etype == X.KeyPress:
             self._on_keypress(event)
+        elif etype == X.ConfigureNotify and event.window.id == self.root.id:
+            self.root_size = (event.width, event.height)
+            self.cover_root(event.width, event.height)
+            # deferred so the relayout doesn't delay raises over new windows
+            GLib.idle_add(lambda: self.on_root_resize() and False)
         elif etype in (X.MapNotify, X.ConfigureNotify, X.CirculateNotify):
-            # ignore our own restacks, we don't wanna loop forever
+            # skip our own restacks, or this loops
             if event.window.id != self.xid:
                 self.raise_window()
         elif etype == X.UnmapNotify:
@@ -181,9 +199,6 @@ class X11Guard:
 
 class LockScreen(Gtk.Window):
     def __init__(self):
-        # POPUP = override-redirect: the WM never manages or moves it, and it
-        # maps even while another window is fullscreen. Default (non-RGBA)
-        # visual so a compositor can never show the desktop through it.
         super().__init__(type=Gtk.WindowType.POPUP, title="Lock Screen")
         self.set_decorated(False)
         self.set_resizable(False)
@@ -192,13 +207,7 @@ class LockScreen(Gtk.Window):
         self.guard: X11Guard | None = None
         self.authenticator = Authenticator(pwd.getpwuid(os.getuid()).pw_name)
 
-        self.pad_left = Box()
-        self.pad_right = Box()
-        self.pad_top = Box(orientation="v")
-        self.pad_bottom = Box(orientation="v")
-        for pad in (self.pad_left, self.pad_right, self.pad_top, self.pad_bottom):
-            # visibility is managed by _update_monitor_geometry, not show_all()
-            pad.set_no_show_all(True)
+        self.tiles: list[Box] = []
 
         self._build_ui()
         self._update_monitor_geometry()
@@ -224,14 +233,11 @@ class LockScreen(Gtk.Window):
             on_success=lambda: self._finish(EXIT_UNLOCKED),
         )
 
-        middle_row = Box(children=[self.pad_left, self.center_box, self.pad_right])
-        # opaque everywhere, including the pads over non-primary monitors
-        main = Box(
-            orientation="v",
-            style="background-color: var(--background);",
-            children=[self.pad_top, middle_row, self.pad_bottom],
+        self.layout = Gtk.Fixed()
+        self.layout.put(self.center_box, 0, 0)
+        self.add(
+            Box(style="background-color: var(--background);", children=[self.layout])
         )
-        self.add(main)
 
     def _set_bypass_compositor(self):
         display = Display()
@@ -250,17 +256,24 @@ class LockScreen(Gtk.Window):
 
     # geometry
 
-    def _get_primary_geometry(self, root_width: int, root_height: int):
-        """(x, y, w, h) of the primary monitor. GDK falls back to monitor 0
-        itself; with zero monitors (mid hotplug/undock) cover the root."""
+    def _get_monitor_geometries(self, root_width: int, root_height: int):
+        """(primary, others) as (x, y, w, h); the root if there are no monitors."""
         display = Gdk.Display.get_default()
-        monitor = display.get_primary_monitor() or display.get_monitor(0)
-        if monitor is None:
-            return 0, 0, root_width, root_height
-        geom = monitor.get_geometry()
-        return geom.x, geom.y, geom.width, geom.height
+        primary = display.get_primary_monitor() or display.get_monitor(0)
+        if primary is None:
+            return (0, 0, root_width, root_height), []
+        others = []
+        for i in range(display.get_n_monitors()):
+            monitor = display.get_monitor(i)
+            if monitor is not None and monitor != primary:
+                g = monitor.get_geometry()
+                others.append((g.x, g.y, g.width, g.height))
+        g = primary.get_geometry()
+        return (g.x, g.y, g.width, g.height), others
 
     def _get_root_size(self) -> tuple[int, int]:
+        if self.guard is not None:
+            return self.guard.root_size
         display = Display()
         try:
             geom = display.screen().root.get_geometry()
@@ -270,19 +283,20 @@ class LockScreen(Gtk.Window):
 
     def _update_monitor_geometry(self, *_):
         root_width, root_height = self._get_root_size()
-        mon_x, mon_y, mon_w, mon_h = self._get_primary_geometry(root_width, root_height)
+        primary, others = self._get_monitor_geometries(root_width, root_height)
+        mon_x, mon_y, mon_w, mon_h = primary
 
-        pads = (
-            (self.pad_left, mon_x, -1),
-            (self.pad_right, root_width - (mon_x + mon_w), -1),
-            (self.pad_top, -1, mon_y),
-            (self.pad_bottom, -1, root_height - (mon_y + mon_h)),
-        )
-        for pad, width, height in pads:
-            pad.set_size_request(width, height)
-            pad.set_visible(max(width, height) > 0)
+        for tile in self.tiles:
+            tile.destroy()
+        self.tiles = []
+        for x, y, w, h in others:
+            tile = Box(style=background_style(), size=(w, h))
+            self.layout.put(tile, x, y)
+            tile.show()
+            self.tiles.append(tile)
 
         self.center_box.set_size_request(mon_w, mon_h)
+        self.layout.move(self.center_box, mon_x, mon_y)
         self.set_size_request(root_width, root_height)
         self.resize(root_width, root_height)
         self.move(0, 0)
@@ -298,6 +312,7 @@ class LockScreen(Gtk.Window):
             self.get_window().get_xid(),
             on_key=self.entry.handle_key,
             on_lost=lambda: self._finish(1),
+            on_root_resize=self._update_monitor_geometry,
         )
         self.guard.steal_focus()
 
@@ -338,7 +353,7 @@ class LockScreen(Gtk.Window):
 
 def run() -> int:
     try:
-        # open_client=False: Fabric's DBus client exposes Execute/Evaluate (arbitrary
+        # open_client=False: fabric's DBus client exposes Execute/Evaluate (arbitrary
         # Python), which would let any process on the session bus unlock us
         app = Application(APP_NAME, open_client=False)
     except ValueError:

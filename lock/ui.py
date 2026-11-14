@@ -17,7 +17,7 @@ RED = (1, 0, 0)
 BLUE = (0, 0, 1)
 
 
-def _background_style() -> str:
+def background_style() -> str:
     # read the cached images directly: WallpaperService would (re)start swaybg
     for image in (LOCKSCREEN_BLURRED_IMG_FILE, LOCKSCREEN_IMG_FILE):
         if image.exists():
@@ -82,7 +82,7 @@ class LockContent(CenterBox):
 
         super().__init__(
             spacing=10,
-            style=_background_style(),
+            style=background_style(),
             center_children=[
                 Box(
                     spacing=10,
