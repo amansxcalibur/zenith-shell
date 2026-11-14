@@ -39,6 +39,7 @@ class SharedPopupWindow(Window):
     HIDE_DELAY_MS = 300
     POPUP_OFFSET = 3  # pixels between the dock and the popup
     WINDOW_PADDING = 5  # the popup's own padding, around its child
+    PAINT_TIMEOUT_MS = 200  # longest the contents stay hidden awaiting a paint
 
     # animation constants
     ANIMATION_BEZIER = (0.15, 0.88, 0.68, 0.95)
@@ -102,6 +103,12 @@ class SharedPopupWindow(Window):
         # size sent via move_resize whose allocation hasn't arrived yet
         self._pending_size = None
 
+        # X11: waiting for the first paint after a show (see _hide_until_painted)
+        self._paint_draw_hook = None
+        self._paint_size = None
+        self._paint_idle_ref = None
+        self._paint_timeout_ref = None
+
         # hover state tracking
         self.is_hover_popup = False
         self.is_hover_widget = False
@@ -113,9 +120,7 @@ class SharedPopupWindow(Window):
         # widget-popup mapping
         self.child_pointing_widget_dict = {}
 
-        self._animations_enabled = (
-            power_profiles_service.active_profile != "power-saver"
-        )
+        self._animations_enabled = self._should_animate()
         power_profiles_service.connect("changed", self._on_power_profile_changed)
 
         self._initialize_animators()
@@ -149,10 +154,13 @@ class SharedPopupWindow(Window):
     #     )
     #     ...
 
+    @staticmethod
+    def _should_animate() -> bool:
+        # X11 keeps gliding and interpolating its size in power-saver
+        return not IS_WAYLAND or power_profiles_service.active_profile != "power-saver"
+
     def _on_power_profile_changed(self, *_):
-        self._animations_enabled = (
-            power_profiles_service.active_profile != "power-saver"
-        )
+        self._animations_enabled = self._should_animate()
         duration = self.DEFAULT_TRANSITION_DURATION if self._animations_enabled else 0
         self.stack.set_transition_duration(duration)
         self.revealer.set_transition_duration(duration)
@@ -225,20 +233,109 @@ class SharedPopupWindow(Window):
             next_visible_child = self.child_pointing_widget_dict[source]
             self.stack.set_visible_child(next_visible_child)
 
-            was_already_visible = self.get_visible()
-
             def _set_position():
                 along = self._calculate_popup_position()
                 if along is not None:
-                    if was_already_visible and self._animations_enabled:
+                    if self._animations_enabled:
                         self.animate_to_position(along)
                     else:
                         self.place_popup(along)
                 return False
 
-            GLib.idle_add(_set_position)
+            if self.get_visible():
+                GLib.idle_add(_set_position)
+            else:
+                # an idle would run after the window has been shown where
+                # its last child left it
+                self._place_before_show()
 
         self._handle_window_visibility()
+
+    def _place_before_show(self):
+        along = self._calculate_popup_position()
+        if along is None:
+            return
+        self.target_along = along
+
+        # unmapped, the stack has already switched to the new child
+        _, nat = self.get_preferred_size()
+        width, height = nat.width, nat.height
+        self._pending_size = None
+        self._committed_size = (width, height)
+
+        if IS_WAYLAND:
+            self._set_along_margin(along, width, height)
+        else:
+            self.move(*self._x11_position(along, width, height))
+            self._hide_until_painted(width, height)
+
+    def _set_contents_hidden(self, hidden: bool) -> bool:
+        """X11: hide the window's contents through the compositor."""
+        xwindow = getattr(self, "_xwindow", None)
+        if xwindow is None:  # no Xlib, or not drawn even once
+            return False
+
+        # GTK's own opacity is applied when it paints, which is too late here
+        atom = self._xdisplay.intern_atom("_NET_WM_WINDOW_OPACITY")
+        if hidden:
+            cardinal = self._xdisplay.intern_atom("CARDINAL")
+            xwindow.change_property(atom, cardinal, 32, [0])
+        else:
+            xwindow.delete_property(atom)
+        self._xdisplay.flush()
+        return True
+
+    def _hide_until_painted(self, width: int, height: int):
+        # A window shown at a new size gets a fresh, uninitialised buffer, and
+        # the compositor can present it before our first paint: a frame of
+        # white noise whenever the child changed while the popup was hidden.
+        self._cancel_paint_wait()
+        if not self._set_contents_hidden(True):
+            return
+        self._paint_size = (width, height)
+        self._paint_draw_hook = self.connect_after("draw", self._on_paint_after_show)
+        self._paint_timeout_ref = GLib.timeout_add(
+            self.PAINT_TIMEOUT_MS, self._on_paint_timeout
+        )
+
+    def _on_paint_after_show(self, *_):
+        alloc = self.get_allocation()
+        # the first draw can still be at the previous child's size
+        if self._paint_size in (None, (alloc.width, alloc.height)):
+            self.disconnect(self._paint_draw_hook)
+            self._paint_draw_hook = None
+            # once this frame is painted; a default idle waits behind the
+            # frames that follow
+            self._paint_idle_ref = GLib.idle_add(
+                self._show_contents, priority=GLib.PRIORITY_HIGH
+            )
+        return False
+
+    def _on_paint_timeout(self):
+        self._paint_timeout_ref = None
+        if self._paint_draw_hook is None:
+            return False
+        # never painted at the expected size: settle for the next paint at
+        # any size. A blocked main loop can bring us here before the first.
+        self._paint_size = None
+        self.queue_draw()
+        return False
+
+    def _show_contents(self):
+        self._paint_idle_ref = None  # this source ends by returning False
+        self._cancel_paint_wait()
+        self.get_display().sync()  # the paint goes out on GDK's connection first
+        self._set_contents_hidden(False)
+        return False
+
+    def _cancel_paint_wait(self):
+        if self._paint_draw_hook is not None:
+            self.disconnect(self._paint_draw_hook)
+            self._paint_draw_hook = None
+        for ref in (self._paint_idle_ref, self._paint_timeout_ref):
+            if ref is not None:
+                GLib.source_remove(ref)
+        self._paint_idle_ref = self._paint_timeout_ref = None
 
     def _update_pointing_widget(self, source):
         if (
@@ -474,16 +571,18 @@ class SharedPopupWindow(Window):
                 win.move(*self._x11_position(along, width, height))
 
     def do_check_resize(self):
-        if not IS_WAYLAND and getattr(self, "pointing_widget", None) and self.get_mapped():
+        if (
+            not IS_WAYLAND
+            and getattr(self, "pointing_widget", None)
+            and self.get_mapped()
+        ):
             try:
                 _, nat = self.get_preferred_size()
                 win = self.get_window()
                 # compare against what we last sent; the GdkWindow size lags
                 # until ConfigureNotify, which would resend the same request
                 if win and (nat.width, nat.height) != self._current_size():
-                    x, y = self._x11_position(
-                        self.target_along, nat.width, nat.height
-                    )
+                    x, y = self._x11_position(self.target_along, nat.width, nat.height)
                     win.move_resize(x, y, nat.width, nat.height)
                     self._pending_size = (nat.width, nat.height)
             except Exception as e:
