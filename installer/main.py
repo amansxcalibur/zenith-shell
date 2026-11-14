@@ -2,6 +2,7 @@ import argparse
 import collections
 import difflib
 import os
+import re
 import shutil
 import sys
 import time
@@ -99,8 +100,45 @@ def step_python_env(backend, upgrade_pip: bool = True) -> None:
             [py, "-m", "pip", "install", "-r", requirements],
             label="Installing Python requirements",
         )
+        sync_git_pins(py, requirements)
     else:
         warn("requirements.txt not found, skipping Python deps.")
+
+
+GIT_PIN = re.compile(r"^\s*([A-Za-z0-9._-]+)\s*@\s*(git\+\S+?)@([0-9a-f]{7,40})\s*$")
+
+
+def git_pins(requirements: Path) -> list[tuple[str, str]]:
+    pins = []
+    for line in requirements.read_text().splitlines():
+        if match := GIT_PIN.match(line):
+            pins.append((match.group(1), line.strip()))
+    return pins
+
+
+def installed_commit(py: Path, name: str) -> str | None:
+    code = (
+        "import json, sys, importlib.metadata as m\n"
+        "try:\n"
+        "    d = json.loads(m.distribution(sys.argv[1]).read_text('direct_url.json'))\n"
+        "    print(d['vcs_info']['commit_id'])\n"
+        "except Exception:\n"
+        "    pass\n"
+    )
+    rc, out = c.capture([py, "-c", code, name])
+    return out.strip() or None if rc == 0 else None
+
+
+def sync_git_pins(py: Path, requirements: Path) -> None:
+    for name, line in git_pins(requirements):
+        wanted = GIT_PIN.match(line).group(3)
+        have = installed_commit(py, name)
+        if have and have.startswith(wanted):
+            continue
+        run(
+            [py, "-m", "pip", "install", "--force-reinstall", "--no-deps", line],
+            label=f"Updating {name} to {wanted[:7]}",
+        )
 
 
 def step_fonts() -> None:
