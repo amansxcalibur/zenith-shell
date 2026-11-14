@@ -3,7 +3,7 @@ cffi==2.1.1
 charset-normalizer==3.5.2
 click==8.5.1
 expressive-shapes==0.2.0
-fabric @ git+https://github.com/Fabric-Development/fabric.git@b7b0f9975f0cf161ccf81c1adfb181230d553f79
+fabric @ git+https://github.com/Fabric-Development/fabric.git@094db66e54bcfc0d30a910090fbfef3447c9a5c9
 i3ipc==2.2.1
 idna==3.20
 loguru==0.7.3
