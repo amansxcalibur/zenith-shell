@@ -221,8 +221,6 @@ class WallpaperSelector(Box):
         self._pill = window
         super().__init__(
             name="wallpapers",
-            spacing=10,
-            orientation="v",
             h_expand=False,
             v_expand=False,
             **kwargs,
@@ -267,7 +265,6 @@ class WallpaperSelector(Box):
 
         self.scrolled_window = ScrolledWindow(
             name="scrolled-window",
-            spacing=10,
             h_expand=True,
             v_expand=True,
             style_classes="launcher",
@@ -300,10 +297,7 @@ class WallpaperSelector(Box):
         for key, display_name in self.SCHEMES.items():
             self.scheme_dropdown.append(key, display_name)
         self.scheme_dropdown.set_active_id(self.DEFAULT_SCHEME)
-        self.scheme_dropdown.connect("changed", self.on_scheme_changed)
         self.scheme_dropdown.connect("notify::popup-shown", self._on_popup_shown)
-
-        self.mat_icon = Label(name="mat-label", markup=icons.nerd.palette.markup())
 
         self.wall_dir_path_label = Label(
             style="color: var(--foreground); font-size: 14px",
@@ -313,20 +307,16 @@ class WallpaperSelector(Box):
         )
         self.launcher_options_revealer = Revealer(
             child=Box(
-                spacing=5,
-                name="launch-options-box",
+                orientation="v",
                 style="padding: 0 8px;",
-                children=Box(
-                    orientation="v",
-                    children=[
-                        Label(
-                            label="Current folder:",
-                            h_align="start",
-                            style="color: var(--outline); font-size: 13px; margin-bottom: -4px",
-                        ),
-                        self.wall_dir_path_label,
-                    ],
-                ),
+                children=[
+                    Label(
+                        label="Current folder:",
+                        h_align="start",
+                        style="color: var(--outline); font-size: 13px; margin-bottom: -4px",
+                    ),
+                    self.wall_dir_path_label,
+                ],
             ),
             transition_type="slide-left",
             transition_duration=150,
@@ -406,7 +396,6 @@ class WallpaperSelector(Box):
             v_align="center",
             v_expand=True,
             orientation="v",
-            style="color: var(--primary);",
             children=[
                 shape,
                 MaterialFontLabel(
@@ -709,18 +698,12 @@ class WallpaperSelector(Box):
             orientation="v",
             children=[
                 Box(name="badge-hole", h_expand=True, v_expand=True),
-                Box(
-                    name="badge-label-container",
+                MaterialFontLabel(
+                    name="badge-label",
                     h_expand=True,
-                    children=MaterialFontLabel(
-                        name="badge-label",
-                        h_expand=True,
-                        h_align="center",
-                        v_align="end",
-                        font_family="Google Sans Flex",
-                        wght=600,
-                        text="CURRENT",
-                    ),
+                    font_family="Google Sans Flex",
+                    wght=600,
+                    text="CURRENT",
                 ),
             ],
         )
@@ -736,9 +719,7 @@ class WallpaperSelector(Box):
 
         box = ClippingBox(
             name="wallpaper-thumbnail-clipper",
-            orientation=Gtk.Orientation.VERTICAL,
             children=Overlay(child=image, overlays=badge),
-            spacing=4,
         )
         child = Gtk.FlowBoxChild()
         child.set_name("wallpaper-thumbnail-container")
@@ -849,9 +830,6 @@ class WallpaperSelector(Box):
             return False
 
         GLib.idle_add(_sync)
-
-    def on_scheme_changed(self, combo):
-        logger.debug(f"Color scheme selected: {combo.get_active_id()}")
 
     def _cycle_scheme(self, delta: int):
         ids = list(self.SCHEMES)
