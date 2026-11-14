@@ -162,7 +162,7 @@ def get_screen_resolution_gdk() -> tuple[int, int]:
 
 def get_screen_resolution_i3() -> tuple[int, int]:
     from fabric.i3.service import I3MessageType
-    from fabric.i3.widgets import get_i3_connection
+    from services.i3 import get_i3_connection
 
     i3_conn = get_i3_connection()
     i3_response = i3_conn.send_command("", I3MessageType.GET_OUTPUTS)

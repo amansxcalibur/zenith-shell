@@ -14,7 +14,7 @@ from config.bindings import (
 from modules.core.bottom.dock.placement import DOCK_THICKNESS
 from utils.colors import get_css_variable, hex_to_rgb01
 
-from fabric.i3.widgets import get_i3_connection
+from services.i3 import get_i3_connection
 from fabric.utils import exec_shell_command_async
 
 WM = "sway" if IS_WAYLAND else "i3"
