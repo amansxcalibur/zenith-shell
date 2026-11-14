@@ -177,6 +177,7 @@ class Pill(Window, Service):
             # the window covers the monitor and never resizes; the pill moves
             # and resizes inside it (see AnchorCanvas)
             geo = Gdk.Display.get_default().get_primary_monitor().get_geometry()
+            self.monitor_geometry = geo
             self._canvas_origin = (geo.x, geo.y)
             self.canvas = AnchorCanvas(self.pill_container, geo.width, geo.height)
             self.children = self.canvas

@@ -70,13 +70,8 @@ class ShellWindowManager:
     def _remove_size_groups(self):
         self.pill_size_group.remove_widget(self.pill.pill_container)
 
-    def _get_monitor_geometry(self, widget):
-        display = Gdk.Display.get_default()
-        win = widget.get_window()
-        if not win:
-            return Gdk.Rectangle()
-        monitor = display.get_monitor_at_window(win)
-        return monitor.get_geometry()
+    def _get_monitor_geometry(self) -> Gdk.Rectangle:
+        return self.pill.monitor_geometry
 
     def _bottom_offset(self) -> int:
         # room above a bottom dock; 0 when the dock is hidden or on a side
@@ -111,7 +106,7 @@ class ShellWindowManager:
         if not self.dockBar.placement.seats_pill:
             return
 
-        geo = self._get_monitor_geometry(self.pill)
+        geo = self._get_monitor_geometry()
         win_w, win_h = self.pill.get_pill_size()
 
         # x and y are root coordinates; the monitor may not start at 0,0
@@ -129,7 +124,7 @@ class ShellWindowManager:
 
     def _snap_targets(self, win_w: int, win_h: int):
         """Root coordinates of each snap column and row for a pill this size."""
-        geo = self._get_monitor_geometry(self.pill)
+        geo = self._get_monitor_geometry()
         insets = self.dockBar.insets
         available_height = geo.height - self._bottom_offset()
 
