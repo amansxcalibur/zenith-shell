@@ -1,8 +1,3 @@
-"""Ask i3/sway which keybindings clash, so includes and $mod need no parsing of our own.
-
-Standard library only: the installer imports this before the virtualenv exists.
-"""
-
 import os
 import re
 import shutil

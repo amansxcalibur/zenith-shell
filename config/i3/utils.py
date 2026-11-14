@@ -14,8 +14,7 @@ from config.bindings import (
 from modules.core.bottom.dock.placement import DOCK_THICKNESS
 from utils.colors import get_css_variable, hex_to_rgb01
 
-from services.i3 import get_i3_connection
-from fabric.utils import exec_shell_command_async
+from services.i3 import I3, get_i3_connection
 
 WM = "sway" if IS_WAYLAND else "i3"
 CONFIG_DIR = Path.home() / f".config/{WM}"
@@ -228,7 +227,7 @@ def generate_i3_gaps_and_borders_config():
         for prop, val in gaps_config.get_node("props").get_all().items():
             lines.append(f"gaps {prop} {val}px")
             if IS_WAYLAND and os.environ.get("SWAYSOCK"):
-                exec_shell_command_async(f"swaymsg gaps {prop} all set {val}")
+                I3.send_command(f"gaps {prop} all set {val}")
         lines.append("")
 
     # sway reserves room through the dock's exclusive zone, i3 only does that

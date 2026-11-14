@@ -4,10 +4,9 @@ from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.core.service import Service, Signal
-from fabric.utils.helpers import exec_shell_command_async
 
 from config.config import config
-from config.info import USERNAME, HOSTNAME, IS_WAYLAND, IPC_UTIL
+from config.info import USERNAME, HOSTNAME, IS_WAYLAND
 
 from modules.dashboard import Dashboard
 from modules.power_menu import PowerMenu
@@ -24,6 +23,7 @@ from modules.core.bottom.dock.placement import (
     current_placement,
 )
 
+from services.i3 import I3
 from services.power_profiles import power_profiles_service
 
 from utils.colors import bind_theme
@@ -233,13 +233,13 @@ class Pill(Window, Service):
         if IS_WAYLAND:
             GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.EXCLUSIVE)
             return
-        exec_shell_command_async(f'{IPC_UTIL} [window_role="^{self.WIN_ROLE}$"] focus')
+        I3.send_command(f'[window_role="^{self.WIN_ROLE}$"] focus')
 
     def unfocus_pill(self):
         if IS_WAYLAND:
             GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.NONE)
             return
-        exec_shell_command_async(f"{IPC_UTIL} focus mode_toggle")
+        I3.send_command("focus mode_toggle")
 
     def _is_over_dock(self) -> bool:
         return (
