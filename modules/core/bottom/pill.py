@@ -36,13 +36,14 @@ from widgets.elastic.elastic_stack import ElasticStack
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib  # type: ignore
+from gi.repository import Gdk, GLib  # type: ignore
 
 if IS_WAYLAND:
     from gi.repository import GtkLayerShell  # type: ignore
     from fabric.widgets.wayland import WaylandWindow as Window
 else:
     from widgets.overrides import PatchedX11Window as Window
+    from widgets.anchor_canvas import AnchorCanvas
 
 if TYPE_CHECKING:
     from .dock.bar import DockBar
@@ -102,10 +103,11 @@ class Pill(Window, Service):
             "last_x": 0,
             "last_y": 0,
         }
-        # self._animations_enabled = (
-        #     power_profiles_service.active_profile != "power-saver"
-        # )
-        self._animations_enabled = True
+        self._animations_enabled = (
+            True
+            if IS_WAYLAND
+            else (power_profiles_service.active_profile != "power-saver")
+        )
 
         # pill-compact
         self.active_window = ActiveWindow()
@@ -168,7 +170,21 @@ class Pill(Window, Service):
                 self.lift_box,
             ],
         )
-        self.children = self.pill_container
+        self.canvas: AnchorCanvas | None = None
+        if IS_WAYLAND:
+            self.children = self.pill_container
+        else:
+            # the window covers the monitor and never resizes; the pill moves
+            # and resizes inside it (see AnchorCanvas)
+            geo = Gdk.Display.get_default().get_primary_monitor().get_geometry()
+            self._canvas_origin = (geo.x, geo.y)
+            self.canvas = AnchorCanvas(self.pill_container, geo.width, geo.height)
+            self.children = self.canvas
+            self.move(geo.x, geo.y)
+            # mapping resets the input shape to the whole window
+            self.connect_after(
+                "map-event", lambda *_: self.canvas.reapply_input_shape()
+            )
 
         self.add_keybinding("Escape", lambda *_: self.close())
 
@@ -202,13 +218,11 @@ class Pill(Window, Service):
                 GLib.idle_add(self.clipboard.focus_search)
 
     def _on_power_profile_changed(self, *_):
-        # self._animations_enabled = (
-        #     power_profiles_service.active_profile != "power-saver"
-        # )
-        # self.stack.set_bounce(self._animations_enabled)
-
-        # temporarily allowing always
-        ...
+        if not IS_WAYLAND:
+            self._animations_enabled = (
+                power_profiles_service.active_profile != "power-saver"
+            )
+            self.stack.set_bounce(self._animations_enabled)
 
     def focus_pill(self):
         if IS_WAYLAND:
@@ -242,8 +256,6 @@ class Pill(Window, Service):
         # above the hole's floor by the same gap as its walls
         self._set_lift(DOCK_EDGE_BAND + PILL_HOLE_EXTRA if self._is_over_dock() else 0)
 
-    # deferred to idle: callers (e.g. a snap) update the dock's anchors/geometry
-    # right after this, and the dock reads them when it opens/closes
     def open_dock(self):
         if self.dock_bar is not None:
             GLib.idle_add(self._run_dock, self.dock_bar.open)
@@ -431,18 +443,33 @@ class Pill(Window, Service):
         GtkLayerShell.set_margin(self, GtkLayerShell.Edge.RIGHT, right_margin)
 
     def get_current_position(self) -> tuple[int, int]:
-        # top left coordinates
-        if not IS_WAYLAND:
-            return self.get_position()
+        # top left coordinates of the pill itself
+        if self.canvas is not None:
+            x, y = self.canvas.get_child_position()
+            return x + self._canvas_origin[0], y + self._canvas_origin[1]
         success, x, y = get_absolute_wayland_widget_position(self)
         return (x, y) if success else (0, 0)
 
     def set_current_position(self, x, y):
-        if IS_WAYLAND:
+        if self.canvas is not None:
+            self.canvas.move_child(
+                int(x) - self._canvas_origin[0], int(y) - self._canvas_origin[1]
+            )
+        elif IS_WAYLAND:
             GtkLayerShell.set_margin(self, GtkLayerShell.Edge.LEFT, int(x))
             GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, int(y))
-        else:
-            self.move(int(x), int(y))
+
+    def get_pill_size(self) -> tuple[int, int]:
+        if self.canvas is not None and (rect := self.canvas.child_rect):
+            return rect[2], rect[3]
+        if self.canvas is not None:
+            _, nat = self.pill_container.get_preferred_size()
+            return nat.width, nat.height
+        return self.get_size()
+
+    def to_canvas(self, x: int, y: int) -> tuple[int, int]:
+        """Root coordinates to the canvas's own (X11 only)."""
+        return x - self._canvas_origin[0], y - self._canvas_origin[1]
 
     def get_position_config(self) -> dict:
         return config.get("pill.POSITION")

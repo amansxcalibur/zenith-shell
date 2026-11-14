@@ -35,7 +35,7 @@ class ShellWindowManager:
         self.pill = pill
         self.dockBar = dockBar
 
-        self.pill_start_x, self.pill_start_y = self.pill.get_position()
+        self.pill_start_x, self.pill_start_y = self.pill.get_current_position()
         self.pill_target_x = self.pill_start_x
         self.pill_target_y = self.pill_start_y
 
@@ -54,10 +54,11 @@ class ShellWindowManager:
         # Connect signals
         self.pill.connect("on-drag", self._set_dock_state)
         self.pill.connect("on-drag-end", lambda w, state: self._snap_pill())
-        self.pill.connect("size-allocate", self._on_pill_resized)
+        self.pill.pill_container.connect("size-allocate", self._on_pill_resized)
         self.dockBar.connect("insets-changed", self._on_dock_insets_changed)
 
         self._disconnect_geometry_enforcement(self.pill)
+        self.pill.canvas.set_placement_func(self._placement_for_size)
 
     def _setup_size_groups(self):
         # only a dock that seats the pill has a slot to match its width
@@ -85,29 +86,40 @@ class ShellWindowManager:
     def _on_dock_insets_changed(self, *args):
         self._snap_pill()
 
-    def _on_pill_resized(self, widget, allocation):
-        # Currently dragging, don't snap
+    def _is_dragging(self) -> bool:
         drag_state = self.pill.get_drag_state()
-        if drag_state and drag_state.get("dragging"):
-            return
+        return bool(drag_state and drag_state.get("dragging"))
 
-        if self.animator.playing:
-            return
+    def _placement_for_size(self, win_w: int, win_h: int) -> tuple[int, int] | None:
+        # the canvas asks with every new size, in the frame that paints it;
+        # dragging and the snap animation move the pill themselves
+        if self._is_dragging() or self.animator.playing:
+            return None
+        return self.pill.to_canvas(
+            *self._target_position(
+                win_w, win_h, self.pill._pos["x"], self.pill._pos["y"]
+            )
+        )
 
-        self._snap_pill(animate=False, fixed=True)
+    def _on_pill_resized(self, widget, allocation):
+        if self._is_dragging() or self.animator.playing:
+            return
+        # the canvas has placed it already; only the dock needs to know
+        self._set_dock_state(None, None, *self.pill.get_current_position())
 
     def _set_dock_state(self, source, drag_state, x: int, y: int):
         if not self.dockBar.placement.seats_pill:
             return
 
         geo = self._get_monitor_geometry(self.pill)
-        win_w, win_h = self.pill.get_size()
+        win_w, win_h = self.pill.get_pill_size()
 
-        dock_top = geo.height - self.dockBar.surface.thickness - self.DOCK_GAP
+        # x and y are root coordinates; the monitor may not start at 0,0
+        dock_top = geo.y + geo.height - self.dockBar.surface.thickness - self.DOCK_GAP
         pill_is_in_dock_zone = (y + win_h) > dock_top and (
             # judge by the pill's centre: a wide centred pill has its left
             # edge outside the middle half of the screen
-            geo.width // 4 < x + win_w // 2 < 3 * geo.width // 4
+            geo.width // 4 < x - geo.x + win_w // 2 < 3 * geo.width // 4
         )
 
         if pill_is_in_dock_zone:
@@ -115,71 +127,73 @@ class ShellWindowManager:
         else:
             self.dockBar.override_close()
 
-    def _snap_pill(self, animate: bool = True, fixed: bool = False):
-        drag_state = self.pill.get_drag_state()
-        if drag_state and drag_state.get("dragging"):
-            return
-
+    def _snap_targets(self, win_w: int, win_h: int):
+        """Root coordinates of each snap column and row for a pill this size."""
         geo = self._get_monitor_geometry(self.pill)
-        win_x, win_y = self.pill.get_position()
-        win_w, win_h = self.pill.get_size()
-
         insets = self.dockBar.insets
-        dock_offset = self._bottom_offset()
-        available_height = geo.height - dock_offset
+        available_height = geo.height - self._bottom_offset()
 
-        # snap coordinates
         x_targets = {
-            "left": insets.left,
-            "center": (geo.width - win_w) // 2,
-            "right": geo.width - win_w - insets.right,
+            "left": geo.x + insets.left,
+            "center": geo.x + (geo.width - win_w) // 2,
+            "right": geo.x + geo.width - win_w - insets.right,
         }
-
         y_targets = {
-            "top": 0,
-            "center": (available_height - win_h) // 2,
-            "bottom": available_height - win_h,
+            "top": geo.y,
+            "center": geo.y + (available_height - win_h) // 2,
+            "bottom": geo.y + available_height - win_h,
         }
+        return x_targets, y_targets
 
-        if not fixed:
-            target_x_name = min(x_targets, key=lambda k: abs(win_x - x_targets[k]))
-            target_y_name = min(y_targets, key=lambda k: abs(win_y - y_targets[k]))
-
-            self.pill.set_position_config(target_x_name, target_y_name)
-
-            target_x = x_targets[target_x_name]
-            target_y = y_targets[target_y_name]
-
-        else:
-            target_x_name = self.pill._pos["x"]
-            target_y_name = self.pill._pos["y"]
-
-            target_x = x_targets[target_x_name]
-            target_y = y_targets[target_y_name]
+    def _target_position(
+        self, win_w: int, win_h: int, x_name: str, y_name: str
+    ) -> tuple[int, int]:
+        x_targets, y_targets = self._snap_targets(win_w, win_h)
+        target_x, target_y = x_targets[x_name], y_targets[y_name]
 
         # bottom center sits INSIDE the dock; the dock's module rows clip
         # under the hole when the pill is wider than the free space
-        if (
-            self.dockBar.placement.seats_pill
-            and target_y_name == "bottom"
-            and target_x_name == "center"
+        if self.dockBar.placement.seats_pill and (x_name, y_name) == (
+            "center",
+            "bottom",
         ):
-            target_y += dock_offset
+            target_y += self._bottom_offset()
+
+        return target_x, target_y
+
+    def _snap_pill(self, animate: bool = True, fixed: bool = False):
+        if self._is_dragging():
+            return
+
+        win_x, win_y = self.pill.get_current_position()
+        win_w, win_h = self.pill.get_pill_size()
+
+        if fixed:
+            target_x_name = self.pill._pos["x"]
+            target_y_name = self.pill._pos["y"]
+        else:
+            x_targets, y_targets = self._snap_targets(win_w, win_h)
+            target_x_name = min(x_targets, key=lambda k: abs(win_x - x_targets[k]))
+            target_y_name = min(y_targets, key=lambda k: abs(win_y - y_targets[k]))
+            self.pill.set_position_config(target_x_name, target_y_name)
+
+        target_x, target_y = self._target_position(
+            win_w, win_h, target_x_name, target_y_name
+        )
 
         if animate:
             self._animate_to_position(target_x, target_y)
         else:
             self.animator.pause()
-            self.pill.move(target_x, target_y)
+            self.pill.set_current_position(target_x, target_y)
 
         self._set_dock_state(None, None, target_x, target_y)
 
     def _animate_to_position(self, target_x, target_y):
-        drag_state = self.pill.get_drag_state()
-        if drag_state and drag_state.get("dragging"):
+        if self._is_dragging():
             return
 
-        self.pill_start_x, self.pill_start_y = self.pill.get_position()
+        self.pill_start_x, self.pill_start_y = self.pill.get_current_position()
         self.pill_target_x = target_x
         self.pill_target_y = target_y
 
@@ -200,7 +214,7 @@ class ShellWindowManager:
             self.pill_start_y
             + (self.pill_target_y - self.pill_start_y) * progress_percent
         )
-        self.pill.move(current_x, current_y)
+        self.pill.set_current_position(current_x, current_y)
 
     def _disconnect_geometry_enforcement(self, widget):
         # Disable builtin geometry hooks to allow custom placement and prevent jitter.
