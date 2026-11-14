@@ -565,14 +565,17 @@ highlight {
   font-size: 13px;
 }
 
-/* on the dock's mic button, at its top end corner */
 #mic-in-use-dot {
-  background-color: var(--error);
+  background-color: #ff1f1f;
   min-width: 8px;
   min-height: 8px;
   border-radius: 4px;
   margin: 2px;
   box-shadow: 0 0 0 2px var(--shadow);
+}
+
+.light #mic-in-use-dot {
+  background-color: #e00000;
 }
 
 /* an app playing */

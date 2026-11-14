@@ -157,3 +157,7 @@
 #wallpaper-choose-dir-dialog {
   background-color: var(--surface-bright);
 }
+
+#wallpaper-dir-shape {
+  color: var(--primary);
+}

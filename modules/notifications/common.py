@@ -5,7 +5,7 @@ from config.config import config
 class NotificationConfig:
     WIDTH = 360
     MAX_CHARS_PER_LINE = 27
-    MAX_CHARS_PER_COLLAPSED_LINE = 33
+    MAX_CHARS_PER_COLLAPSED_LINE = 38
     LINE_LIMIT = 3
     IMAGE_SIZE = 48
     TIMEOUT = 5 * 1000  # 5 seconds

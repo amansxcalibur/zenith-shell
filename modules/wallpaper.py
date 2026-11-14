@@ -379,13 +379,14 @@ class WallpaperSelector(Box):
             child=MaterialIconLabel(
                 icon_text=icons.material.add_material.symbol(),
                 FILL=0,
-                style="font-size: 120px; color: var(--surface)",
+                style="font-size: 120px; color: var(--on-primary-container)",
             ),
             on_clicked=lambda *_: self.prompt_for_dir(),
         )
         self._no_focus(btn)
         shape = InteractiveMorphShape(
-            clip=True, shape_start=pill, shape_end=sunny, child=btn
+            name="wallpaper-dir-shape",
+            clip=True, shape_start=pill, shape_end=sunny, child=btn,
         )
         btn.connect("enter-notify-event", shape.play_forward)
         btn.connect("leave-notify-event", shape.play_backward)
