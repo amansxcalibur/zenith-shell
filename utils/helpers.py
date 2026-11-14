@@ -27,6 +27,9 @@ def _remap_closed_windows():
     from gi.repository import GtkLayerShell  # type: ignore
 
     monitor = display.get_monitor(0)
+    logger.info(
+        f"A monitor went away; showing {len(_closed_windows)} shell windows again on the remaining one"
+    )
     while _closed_windows:
         window = _closed_windows.pop()
         GtkLayerShell.set_monitor(window, monitor)

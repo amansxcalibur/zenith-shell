@@ -145,6 +145,7 @@ def supervise(daemonize: bool = False) -> int:
         logger.info("Lock screen already running")
         return EXIT_ALREADY_RUNNING
 
+    logger.info("Starting the lock screen")
     ready_fd = None
     if daemonize:
         ready_r, ready_w = os.pipe()

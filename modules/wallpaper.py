@@ -134,7 +134,7 @@ class WallpaperService(Service):
             if preview_path:
                 self.wallpaper_changed(full_path, str(preview_path))
 
-            logger.info(f"Restored wallpaper: {full_path}")
+            logger.debug(f"Restored wallpaper: {full_path}")
 
         except Exception as e:
             logger.error(f"Failed to initialize wallpaper: {e}")
@@ -144,6 +144,7 @@ class WallpaperService(Service):
         self._preview_path = str(preview_path) if preview_path else None
 
     def apply_wallpaper(self, full_path: str):
+        logger.info(f"Wallpaper: {full_path}")
         if IS_WAYLAND:
             swaybg_bin = shutil.which("swaybg")
             if not swaybg_bin:
@@ -564,9 +565,9 @@ class WallpaperSelector(Box):
         if path:
             config.WALLPAPERS_DIR = path
             self._refresh_dir_state()
-            logger.info(f"New wallpaper directory selected: {path}")
+            logger.debug(f"New wallpaper directory selected: {path}")
         else:
-            logger.info("Wallpaper directory selection canceled.")
+            logger.debug("Wallpaper directory selection canceled.")
         self.focus_search()
 
     def _build_dir_dialog(self, parent: Gtk.Window) -> Gtk.FileChooserDialog:
@@ -850,7 +851,7 @@ class WallpaperSelector(Box):
         GLib.idle_add(_sync)
 
     def on_scheme_changed(self, combo):
-        logger.info(f"Color scheme selected: {combo.get_active_id()}")
+        logger.debug(f"Color scheme selected: {combo.get_active_id()}")
 
     def _cycle_scheme(self, delta: int):
         ids = list(self.SCHEMES)

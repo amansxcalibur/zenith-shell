@@ -114,7 +114,7 @@ class BaseMaterial3Slider(AnimatedScale):
 
     def on_value_changed(self, source, new_val, max_val, is_muted):
         if self.is_muted != is_muted:
-            logger.info(f"toggling mute {is_muted}")  # Fixed loguru formatting here
+            logger.debug(f"toggling mute {is_muted}")  # Fixed loguru formatting here
             self.is_muted = is_muted
             self.handle_mute_toggle(is_muted)
         self.update_volume(new_val, is_muted)

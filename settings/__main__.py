@@ -1,9 +1,12 @@
 import builtins
 
+from loguru import logger
+
 from fabric import Application
 from fabric.utils import get_relative_path, monitor_file
 
 from config.info import SHELL_NAME, ROOT_DIR
+from utils.log import setup_logging
 from .window import SettingsWindow
 
 from gi.repository import Gio, GLib  # type: ignore
@@ -11,6 +14,8 @@ from gi.repository import Gio, GLib  # type: ignore
 
 def main():
     import setproctitle
+
+    setup_logging()
 
     setproctitle.setproctitle(SHELL_NAME + "-settings")
     GLib.set_prgname(SHELL_NAME + "-settings")
@@ -22,6 +27,7 @@ def main():
     # `python -m settings` is runpy's, so we gotta expose via builtins to make it visible.
     builtins.settings_window = win
     win.show_all()
+    logger.info("Settings opened")
     app.add_window(win)
 
     def load_css(monitor_file, file, other_file, event_type):

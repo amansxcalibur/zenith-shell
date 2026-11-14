@@ -239,7 +239,7 @@ class ConnectionStateMachine:
         return False
 
     def _schedule_cleanup(self, ssid: str) -> None:
-        logger.info(f"Scheduling cleanup for failed profile: {ssid}")
+        logger.debug(f"Scheduling cleanup for failed profile: {ssid}")
         GLib.timeout_add(
             NetworkConstants.CLEANUP_DELAY_MS,
             self.network_service._cleanup_connection_profile,
@@ -628,7 +628,7 @@ class WifiDevice(NetworkDevice):
             return ConnectionResult.CONNECTION_FAILED
 
         if self.active_ssid == ssid:
-            logger.info(f"Already connected to {ssid}")
+            logger.debug(f"Already connected to {ssid}")
             return ConnectionResult.ALREADY_CONNECTED
 
         ap = self.ap_manager.find_by_ssid(ssid)
@@ -645,7 +645,7 @@ class WifiDevice(NetworkDevice):
             else:
                 is_secured = ap.get_wpa_flags() != 0 or ap.get_rsn_flags() != 0
                 if is_secured and not password:
-                    logger.info(f"Password required for new connection to {ssid}")
+                    logger.debug(f"Password required for new connection to {ssid}")
                     return ConnectionResult.PASSWORD_REQUIRED
 
                 return self._create_and_activate_connection(ssid, password, ap)
@@ -688,7 +688,7 @@ class WifiDevice(NetworkDevice):
     def _activate_existing_connection(
         self, connection: NM.Connection, ssid: str, password: Optional[str]
     ) -> ConnectionResult:
-        logger.info(f"Activating existing connection: {ssid}")
+        logger.debug(f"Activating existing connection: {ssid}")
 
         if password:
             if not self.profile_manager.update_password(connection, password):
@@ -729,7 +729,7 @@ class WifiDevice(NetworkDevice):
     def _create_and_activate_connection(
         self, ssid: str, password: Optional[str], ap: NM.AccessPoint
     ) -> ConnectionResult:
-        logger.info(f"Creating new connection: {ssid}")
+        logger.debug(f"Creating new connection: {ssid}")
 
         connection = self.profile_manager.create(ssid, password)
 
@@ -803,7 +803,7 @@ class WifiDevice(NetworkDevice):
             connection = self.profile_manager.find_by_ssid(ssid)
 
             if connection:
-                logger.info(f"Deleting failed connection profile for {ssid}")
+                logger.debug(f"Deleting failed connection profile for {ssid}")
                 connection.delete_async(None, None, None)
             else:
                 logger.debug(f"No connection profile found to clean up for {ssid}")

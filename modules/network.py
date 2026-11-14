@@ -714,7 +714,7 @@ class EthernetButton(EventBox):
     def _disconnect_network(self) -> None:
         success = self.device.disconnect_network()
         if success:
-            logger.info(f"Disconnecting from {self.name}")
+            logger.debug(f"Disconnecting from {self.name}")
         else:
             logger.warning("Failed to disconnect")
 
@@ -1393,7 +1393,7 @@ class Network(TileSimpleWithMenu):
             self._primary_device_singal_id = device.connect(
                 "state-changed", lambda *_: self._sync_tile()
             )
-            logger.info(f"Updating primary connection -> status: {device.state}")
+            logger.debug(f"Updating primary connection -> status: {device.state}")
 
         self._sync_tile()
 
@@ -1445,7 +1445,7 @@ class Network(TileSimpleWithMenu):
             self._show_password_dialog(ssid, "Incorrect password. Please try again.")
 
         elif result == ConnectionResult.SUCCESS:
-            logger.info(f"Successfully connected to {ssid}")
+            logger.debug(f"Successfully connected to {ssid}")
             BaseDialog.show_notification(f"Connected to {ssid}")
 
             if self.password_dialog:
@@ -1468,7 +1468,7 @@ class Network(TileSimpleWithMenu):
                 self._show_password_dialog(ssid)
 
             elif result == ConnectionResult.ALREADY_CONNECTED:
-                logger.info(f"Already connected to {ssid}")
+                logger.debug(f"Already connected to {ssid}")
 
             elif result == ConnectionResult.NETWORK_NOT_FOUND:
                 self._show_connect_failure(ssid, self.CONNECTION_FAILURES[result])

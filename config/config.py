@@ -237,6 +237,10 @@ class ConfigManager(Service):
 
         if loaded_data is None:
             self._data = copy.deepcopy(DEFAULTS)
+            if not self._unreadable_file:
+                logger.info(f"No {CONFIG_FILE} yet; using the defaults")
+        else:
+            logger.info(f"Loaded {CONFIG_FILE}")
 
         # every path needs resolved bindings, or the generated i3/sway
         # config ends up with no Zenith keybindings at all
@@ -312,6 +316,7 @@ class ConfigManager(Service):
                     os.fsync(f.fileno())
                 os.replace(tmp_path, CONFIG_FILE)
                 self._dirty = False
+                logger.info(f"Saved {CONFIG_FILE}")
             except Exception as e:
                 logger.error(f"Error saving config.json: {e}")
                 try:

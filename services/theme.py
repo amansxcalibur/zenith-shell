@@ -38,6 +38,7 @@ class ThemeService(Service):
         if self._apply(value):
             self._theme = value
             self.theme_config.set("mode", value.value)
+            logger.info(f"Theme mode: {value.value}")
             self.emit("theme-changed", value)
 
     def __new__(cls, *args, **kwargs):
@@ -123,7 +124,7 @@ class ThemeService(Service):
             def on_matugen_finish(p, r):
                 try:
                     p.wait_check_finish(r)
-                    logger.info("Theme updated")
+                    logger.info(f"Generated the {scheme} color scheme from {image_path_str}")
                     self.theme_config.set(
                         "scheme", scheme
                     )  # set() handles same value skips

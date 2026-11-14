@@ -1,9 +1,11 @@
 import sys
 
 from config.info import IS_WAYLAND
+from utils.log import setup_logging
 
 
 def main() -> int:
+    setup_logging()
     if "--child" in sys.argv[1:]:
         if IS_WAYLAND:
             from .wayland import run

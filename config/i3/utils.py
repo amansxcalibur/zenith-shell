@@ -34,6 +34,8 @@ def _reload_i3():
         )
         if not success:
             logger.error("{} config failed to reload: {}", WM, i3_resp.reply)
+        else:
+            logger.info("Reloaded the {} config", WM)
     except Exception as e:
         logger.error("Error reloading {} config: {}", WM, e)
 
@@ -208,6 +210,7 @@ def generate_i3_keybinds_config(reload: bool = False):
         with open(temp_path, "w") as f:
             f.write(config_str)
         os.replace(temp_path, KEYBINDS_CONF_PATH)
+        logger.info("Wrote {} keybindings to {}", WM, KEYBINDS_CONF_PATH)
 
         if reload:
             _reload_i3()
@@ -298,6 +301,7 @@ def generate_i3_general_config(reload: bool = False):
         with open(temp_path, "w") as f:
             f.write("\n".join(lines) + "\n")
         os.replace(temp_path, GENERAL_CONF_PATH)
+        logger.info("Wrote {} gaps and borders to {}", WM, GENERAL_CONF_PATH)
 
         if reload:
             _reload_i3()

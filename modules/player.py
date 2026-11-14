@@ -1017,7 +1017,7 @@ class PlayerContainer(Box):
             self.on_new_player(self.manager, service, self._services[service])
 
     def on_new_player(self, manager, player_name: str, player_service: PlayerService):
-        logger.info(f"Creating widget for player: {player_name}")
+        logger.debug(f"Creating widget for player: {player_name}")
 
         # avoid duplicate widget creation
         if player_name in self.player_widgets:
@@ -1061,7 +1061,7 @@ class PlayerContainer(Box):
         GLib.idle_add(_switch)
 
     def on_player_vanish(self, manager, player_name: str):
-        logger.info(f"Removing UI for player: {player_name}")
+        logger.debug(f"Removing UI for player: {player_name}")
 
         if player_name not in self.player_widgets:
             logger.warning(f"No UI found for {player_name}")
@@ -1188,7 +1188,7 @@ class PlayerContainer(Box):
                 break
 
     def cleanup(self):
-        logger.info("Cleaning up PlayerContainer")
+        logger.debug("Cleaning up PlayerContainer")
 
         # unregister keybindings
         try:
@@ -1211,4 +1211,4 @@ class PlayerContainer(Box):
         except Exception as e:
             logger.error(f"Error cleaning up manager: {e}")
 
-        logger.info("PlayerContainer cleanup complete")
+        logger.debug("PlayerContainer cleanup complete")

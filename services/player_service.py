@@ -164,7 +164,7 @@ class PlayerService(Service):
         self._signal_ids.append(self._player.connect("shuffle", self.on_shuffle))
         self._signal_ids.append(self._player.connect("metadata", self.on_metadata))
         self._signal_ids.append(self._player.connect("seeked", self.on_seeked))
-        logger.info(
+        logger.debug(
             f"Connected {len(self._signal_ids)} signals for {player.props.player_name}"
         )
 
@@ -339,7 +339,7 @@ class PlayerService(Service):
         self._metadata = metadata
         keys = metadata.keys()
         title, artist = get_track_labels(metadata)
-        logger.info(f"{artist} - {title}")
+        logger.debug(f"{artist} - {title}")
         self._refresh_can_shuffle()
         self.meta_change(metadata, player)
         self._handle_artwork(metadata, keys)
@@ -367,7 +367,7 @@ class PlayerService(Service):
             return
 
         self._current_artwork_hash = artwork_hash
-        logger.info(f"Processing new artwork: {art_url}")
+        logger.debug(f"Processing new artwork: {art_url}")
 
         parsed = urllib.parse.urlparse(art_url)
 
@@ -403,7 +403,7 @@ class PlayerService(Service):
         self._artwork_clear_id = 0
         if self._is_cleaning_up:
             return GLib.SOURCE_REMOVE
-        logger.info("Track has no artwork, falling back to the wallpaper")
+        logger.debug("Track has no artwork, falling back to the wallpaper")
         # also marks any artwork still being processed as stale
         self._current_artwork_hash = ""
         self._artwork_track = None
@@ -560,7 +560,7 @@ class PlayerService(Service):
                     temp_file.write_bytes(data)
                     temp_file.replace(local_arturl)
 
-                    logger.info(f"Downloaded artwork: {local_arturl}")
+                    logger.debug(f"Downloaded artwork: {local_arturl}")
             else:
                 logger.debug(f"Using cached artwork: {local_arturl}")
 
@@ -578,7 +578,7 @@ class PlayerService(Service):
             return
 
         self._is_cleaning_up = True
-        logger.info(f"Cleaning up PlayerService for {self._player.props.player_name}")
+        logger.debug(f"Cleaning up PlayerService for {self._player.props.player_name}")
 
         self._stop_polling()
         self._cancel_artwork_clear()
@@ -598,7 +598,7 @@ class PlayerService(Service):
         self._current_artwork_path = ""
         self._current_theme = None
 
-        logger.info(f"Cleanup complete for {self._player.props.player_name}")
+        logger.debug(f"Cleanup complete for {self._player.props.player_name}")
 
 
 class PlayerManager(Service):
@@ -633,7 +633,7 @@ class PlayerManager(Service):
         )
         config.connect("changed", self._on_config_changed)
         self.init_all_players()
-        logger.info("PlayerManager initialized")
+        logger.debug("PlayerManager initialized")
 
         self._initialized = True
 
@@ -642,13 +642,13 @@ class PlayerManager(Service):
         return player_name in (config.IGNORED_PLAYERS or [])
 
     def init_all_players(self):
-        logger.info("Initializing all existing players")
+        logger.debug("Initializing all existing players")
         for player_obj in self._manager.props.player_names:
             if self._is_ignored(player_obj.name):
                 continue
             if player_obj.instance in self._services:
                 continue
-            logger.info(f"Initializing existing player: {player_obj.instance}")
+            logger.debug(f"Initializing existing player: {player_obj.instance}")
             self._create_and_register_player(player_obj)
 
     def _on_config_changed(self, _config, keys, _value):
@@ -658,7 +658,7 @@ class PlayerManager(Service):
     def _sync_ignored_players(self):
         for instance, service in list(self._services.items()):
             if self._is_ignored(service._player.props.player_name):
-                logger.info(f"Player {instance} is now ignored, removing")
+                logger.debug(f"Player {instance} is now ignored, removing")
                 self._unregister_player(instance)
         self.init_all_players()
         return GLib.SOURCE_REMOVE
@@ -682,7 +682,7 @@ class PlayerManager(Service):
             self._services[instance] = player_service
             self._player_objects[instance] = player
 
-            logger.info(f"Registered player service for {instance}")
+            logger.debug(f"Registered player service for {instance}")
             # emit signal
             self.new_player(instance, player_service)
 
@@ -712,7 +712,7 @@ class PlayerManager(Service):
 
         try:
             service.cleanup()
-            logger.info(f"Cleaned up service for {instance}")
+            logger.debug(f"Cleaned up service for {instance}")
         except Exception as e:
             logger.error(f"Error cleaning up service for {instance}: {e}")
 
@@ -725,7 +725,7 @@ class PlayerManager(Service):
         return self._services.copy()
 
     def cleanup_all(self):
-        logger.info("Cleaning up all players")
+        logger.debug("Cleaning up all players")
         for player_name, service in list(self._services.items()):
             try:
                 service.cleanup()
@@ -734,4 +734,4 @@ class PlayerManager(Service):
 
         self._services.clear()
         self._player_objects.clear()
-        logger.info("All players cleaned up")
+        logger.debug("All players cleaned up")

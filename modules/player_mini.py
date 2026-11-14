@@ -540,7 +540,7 @@ class PlayerContainerMini(Box):
             self.on_new_player(self.manager, service, self._services[service])
 
     def on_new_player(self, manager, player_name: str, player_service: PlayerService):
-        logger.info(f"Creating mini UI for player: {player_name}")
+        logger.debug(f"Creating mini UI for player: {player_name}")
 
         # avoid duplicate UI creation
         if player_name in self.player_widgets:
@@ -580,7 +580,7 @@ class PlayerContainerMini(Box):
 
     def on_player_vanish(self, manager, player_name: str):
         """Called when a player disappears"""
-        logger.info(f"Removing mini UI for player: {player_name}")
+        logger.debug(f"Removing mini UI for player: {player_name}")
 
         if player_name not in self.player_widgets:
             logger.warning(f"No mini UI found for {player_name}")
@@ -700,7 +700,7 @@ class PlayerContainerMini(Box):
         return self.mini_tile_view
 
     def cleanup(self):
-        logger.info("Cleaning up PlayerContainerMini")
+        logger.debug("Cleaning up PlayerContainerMini")
 
         # cleanup all widgets
         for player_name, widget in list(self.player_widgets.items()):
@@ -717,4 +717,4 @@ class PlayerContainerMini(Box):
         except Exception as e:
             logger.error(f"Error cleaning up manager: {e}")
 
-        logger.info("PlayerContainerMini cleanup complete")
+        logger.debug("PlayerContainerMini cleanup complete")

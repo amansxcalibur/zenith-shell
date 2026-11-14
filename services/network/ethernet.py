@@ -49,7 +49,7 @@ class EthernetDevice(NetworkDevice):
             existing = self._find_connection_profile()
 
             if existing:
-                logger.info(f"Activating existing profile for {iface}")
+                logger.debug(f"Activating existing profile for {iface}")
                 self.client.activate_connection_async(
                     existing,
                     self.device,
@@ -59,7 +59,7 @@ class EthernetDevice(NetworkDevice):
                     iface,
                 )
             else:
-                logger.info(f"No profile found for {iface}, creating one")
+                logger.debug(f"No profile found for {iface}, creating one")
                 connection = self._create_connection_profile()
                 self.client.add_and_activate_connection_async(
                     connection,
