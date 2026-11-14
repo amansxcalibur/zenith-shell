@@ -21,6 +21,7 @@ from modules.metrics.metrics import MetricsSmall, Battery
 
 from utils.colors import bind_theme
 from utils.cursor import add_hover_cursor
+from utils.helpers import keep_window
 
 from widgets.edge_clip_viewport import EdgeClipViewport
 
@@ -92,6 +93,8 @@ class DockBar(Window):
         pill.dock_bar = self  # lets the pill open/close us directly
 
         bind_theme(self)
+        # an unplugged monitor closes our layer surface (see keep_window)
+        self.connect("delete-event", lambda *_: keep_window(self))
 
         self.is_open = False
         self._pill_is_docked = True

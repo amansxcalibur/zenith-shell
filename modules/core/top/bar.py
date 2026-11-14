@@ -14,7 +14,7 @@ from config.config import config
 from config.info import IS_WAYLAND
 
 from utils.colors import bind_theme
-from utils.helpers import toggle_class
+from utils.helpers import keep_window, toggle_class
 from utils.cursor import add_hover_cursor
 
 from widgets.clipping_box import ClippingBox
@@ -509,4 +509,4 @@ class TopBar(Window):
 
     def on_delete_event(self, *_):
         # don't close me :(
-        return True
+        return keep_window(self)

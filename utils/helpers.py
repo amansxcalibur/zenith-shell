@@ -13,6 +13,48 @@ from config.info import ROOT_DIR, IS_WAYLAND, SHELL_NAME
 from gi.repository import Gdk, Gio, GLib  # type: ignore
 
 
+_closed_windows: set = set()
+_remap_source: int = 0
+_remap_display_hooked = False
+
+
+def _remap_closed_windows():
+    global _remap_source
+    _remap_source = 0
+    display = Gdk.Display.get_default()
+    if display is None or display.get_n_monitors() == 0:
+        return False  # "monitor-added" brings us back
+    from gi.repository import GtkLayerShell  # type: ignore
+
+    monitor = display.get_monitor(0)
+    while _closed_windows:
+        window = _closed_windows.pop()
+        GtkLayerShell.set_monitor(window, monitor)
+        window.hide()
+        window.show()
+    return False
+
+
+def _schedule_remap(*_):
+    global _remap_source
+    if _closed_windows and not _remap_source:
+        # let GDK drop the removed monitor before we map again
+        _remap_source = GLib.timeout_add(500, _remap_closed_windows)
+
+
+def keep_window(window) -> bool:
+    # when all monitors are unplugged, windows are destroyed cuz no layer. So we
+    # don't let gtk destroy the window and map it back again when a monitor arrives
+    global _remap_display_hooked
+    if IS_WAYLAND and window.get_visible():
+        if not _remap_display_hooked:
+            Gdk.Display.get_default().connect("monitor-added", _schedule_remap)
+            _remap_display_hooked = True
+        _closed_windows.add(window)
+        _schedule_remap()
+    return True
+
+
 def toggle_class(widget, remove, add):
     widget.remove_style_class(remove)
     widget.add_style_class(add)

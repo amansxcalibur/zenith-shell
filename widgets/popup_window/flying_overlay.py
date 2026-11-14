@@ -6,6 +6,7 @@ from fabric.core.service import Signal, Service
 
 from services.animator import Animator
 from utils.colors import bind_theme
+from utils.helpers import keep_window
 from config.info import IS_WAYLAND
 
 import gi
@@ -23,10 +24,10 @@ else:
     from widgets.overrides import PatchedX11Window as Window
 
 
-# The slot (dashboard) and the overlay are separate surfaces. Moving the widget
-# between them leaves a gap where neither has painted it yet (the overlay needs
-# a configure roundtrip on first show; the slot must re-layout and repaint), so
-# a snapshot "ghost" stays on the *old* surface until the *new* one has painted.
+# Moving the widget between a PopSlot and a FlyingOverlay leaves a gap 
+# where neither has painted it yet, so a snapshot "ghost" stays on the 
+# *old* surface until the *new* one has painted.
+# Although I gotta say it's pretty cute when the slot used to "blink"
 HANDOFF_FRAMES = 2  # 1 paint + 1 frame of margin for the compositor
 HANDOFF_TIMEOUT_MS = 150  # fallback if the receiving window never paints
 
@@ -181,6 +182,8 @@ class FlyingOverlay(Window, Service):
             )
 
         bind_theme(self)
+        # don't close me :(
+        self.connect("delete-event", lambda *_: keep_window(self))
 
         # recomputed every pop
         display = Gdk.Display.get_default()

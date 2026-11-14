@@ -12,7 +12,7 @@ from services.animator import Animator
 from services.power_profiles import power_profiles_service
 
 from utils.colors import bind_theme
-from utils.helpers import get_absolute_wayland_widget_position
+from utils.helpers import keep_window, get_absolute_wayland_widget_position
 from widgets.clipping_box import ClippingBox
 
 import gi
@@ -622,4 +622,4 @@ class SharedPopupWindow(Window):
 
     def on_delete_event(self, *_):
         # don't close me :(
-        return True
+        return keep_window(self)

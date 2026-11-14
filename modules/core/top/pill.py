@@ -14,7 +14,7 @@ from config.info import SHELL_NAME, IS_WAYLAND, IPC_UTIL
 from modules.notifications.notification import NotificationManager
 
 from utils.colors import bind_theme
-from utils.helpers import get_absolute_wayland_widget_position
+from utils.helpers import keep_window, get_absolute_wayland_widget_position
 
 import gi
 
@@ -366,4 +366,4 @@ class TopPill(Window, Service):
 
     def on_delete_event(self, *_):
         # don't close me :(
-        return True
+        return keep_window(self)

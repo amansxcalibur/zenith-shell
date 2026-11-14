@@ -2,6 +2,7 @@ from fabric.widgets.box import Box
 from fabric.widgets.shapes import Corner
 
 from config.info import IS_WAYLAND
+from utils.helpers import keep_window
 
 if IS_WAYLAND:
     from fabric.widgets.wayland import WaylandWindow as Window
@@ -95,4 +96,4 @@ class Corners(Window):
 
     def on_delete_event(self, *_):
         # don't close me :(
-        return True
+        return keep_window(self)

@@ -27,7 +27,11 @@ from modules.core.bottom.dock.placement import (
 from services.power_profiles import power_profiles_service
 
 from utils.colors import bind_theme
-from utils.helpers import open_settings, get_absolute_wayland_widget_position
+from utils.helpers import (
+    keep_window,
+    open_settings,
+    get_absolute_wayland_widget_position,
+)
 
 from widgets.clipping_box import BorderedClippingBox, ClippingBox
 from widgets.elastic.elastic_stack import ElasticStack
@@ -485,4 +489,4 @@ class Pill(Window, Service):
 
     def on_delete_event(self, *_):
         # don't close me :(
-        return True
+        return keep_window(self)

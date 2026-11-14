@@ -1,3 +1,5 @@
+from gi.repository import Gdk  # type: ignore
+
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
@@ -11,9 +13,11 @@ from modules.controls import ControlsManager
 from services.metrics import MetricsProvider
 
 from utils.colors import bind_theme
+from utils.helpers import keep_window
 from widgets.material_label import MaterialIconLabel
 
 if IS_WAYLAND:
+    from gi.repository import GtkLayerShell  # type: ignore
     from fabric.widgets.wayland import WaylandWindow as Window
 else:
     from widgets.overrides import PatchedX11Window as Window
@@ -96,7 +100,9 @@ class LowBatteryBanner(Revealer):
 
 
 class TransientWindow(Window):
-    def __init__(self, **kwargs):
+    def __init__(self, shell_window=None, **kwargs):
+        # the OSD opens on this window's monitor instead of the focused one
+        self._shell_window = shell_window
         if IS_WAYLAND:
             super().__init__(
                 name="notification-popup",
@@ -119,6 +125,8 @@ class TransientWindow(Window):
             )
 
         bind_theme(self)
+        # an unplugged monitor closes our layer surface (see keep_window)
+        self.connect("delete-event", lambda *_: keep_window(self))
 
         self.controls = ControlsManager()
 
@@ -145,7 +153,20 @@ class TransientWindow(Window):
     # reveal before revealer animation
     def _on_reveal_intent(self, revealer, _):
         if revealer.get_reveal_child():
+            if not self.get_visible():
+                self._follow_shell_monitor()
             self.set_visible(True)
+
+    def _follow_shell_monitor(self):
+        if not IS_WAYLAND or self._shell_window is None:
+            return
+        win = self._shell_window.get_window()
+        if win is None:
+            return
+        monitor = Gdk.Display.get_default().get_monitor_at_window(win)
+        if monitor is not None:
+            # fabric's `monitor` property is an int and drops a Gdk.Monitor
+            GtkLayerShell.set_monitor(self, monitor)
 
     # hide after revealer animation
     def _on_reveal_finished(self, revealer, _):
