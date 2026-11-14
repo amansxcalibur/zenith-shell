@@ -1,3 +1,4 @@
+import json
 import platform
 import subprocess
 from functools import lru_cache
@@ -41,11 +42,24 @@ def _git(*args: str) -> str | None:
 
 
 @lru_cache(maxsize=1)
+def _version_info() -> dict:
+    try:
+        info = json.loads((ROOT_DIR / "version.json").read_text())
+    except (OSError, ValueError):
+        return {}
+    return info if isinstance(info, dict) else {}
+
+
 def zenith_version() -> str:
-    tag = _git("describe", "--tags", "--abbrev=0")
-    if not tag:
+    version = _version_info().get("version")
+    if not isinstance(version, str) or not version:
         return UNRELEASED_VERSION
-    return tag if tag.startswith("v") else f"v{tag}"
+    return version if version.startswith("v") else f"v{version}"
+
+
+def zenith_release_name() -> str | None:
+    name = _version_info().get("name")
+    return name if isinstance(name, str) and name else None
 
 
 def _package_version(name: str) -> str:
@@ -111,7 +125,11 @@ class AboutTab(BaseWidget):
                     h_align="start",
                     style="margin: 4px 0 8px 0;",
                     children=Label(
-                        name="about-version", label=zenith_version(), selectable=True
+                        name="about-version",
+                        label=" · ".join(
+                            filter(None, [zenith_version(), zenith_release_name()])
+                        ),
+                        selectable=True,
                     ),
                 ),
                 _details_grid(

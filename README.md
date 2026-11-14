@@ -17,8 +17,8 @@
 
 I've had a **LOT** of fun working with fabric and building this. I hope you do too :)
 
-> [!WARNING]
-> Zenith is nearing its first **stable release**. Installers are available, but some breaking changes may still occur. :)
+> [!NOTE]
+> Zenith has reached its first release! Happy ricing! :)
 
 ## Showcase
 

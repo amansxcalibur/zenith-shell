@@ -217,7 +217,10 @@ Usage:
 EOF
         ;;
     -V|--version)
-        echo "zenith-shell $(git describe --tags --always --dirty 2>/dev/null || echo unknown)"
+        version=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' version.json 2>/dev/null)
+        name=$(sed -n 's/.*"name": *"\([^"]*\)".*/\1/p' version.json 2>/dev/null)
+        commit=$(git rev-parse --short HEAD 2>/dev/null)
+        echo "zenith-shell ${version:-unknown}${name:+ $name}${commit:+ ($commit)}"
         ;;
     lock)
         # foreground + exec: xss-lock and swayidle -w watch this process,
