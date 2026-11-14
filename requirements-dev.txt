@@ -6,7 +6,6 @@ click==8.5.1
 expressive-shapes==0.2.0
 fabric @ git+https://github.com/Fabric-Development/fabric.git@094db66e54bcfc0d30a910090fbfef3447c9a5c9
 gengir==1.0.3
-i3ipc==2.2.1
 idna==3.20
 line_profiler==5.1.0
 loguru==0.7.3
