@@ -128,7 +128,7 @@ class AgendaItem(Gtk.ListBoxRow):
 
     def _build_display(self):
         self.label = Label(
-            label=self.text, h_align="start", line_wrap="word-char", max_chars_width=30
+            label=self.text, h_align="start", line_wrap="word-char", max_chars_width=40
         )
         self.clipping_wrapper = AnimatedClippingBox(
             max_height=22,
@@ -275,7 +275,7 @@ class AgendaItem(Gtk.ListBoxRow):
             h_align="start",
             h_expand=True,
             ellipsization="end",
-            max_chars_width=30,
+            max_chars_width=40,
         )
         # ellipsizing alone still renders every "\n" line; force one line
         self.drag_label.set_single_line_mode(True)
@@ -295,7 +295,12 @@ class AgendaItem(Gtk.ListBoxRow):
         return next((ln for ln in self.text.splitlines() if ln.strip()), self.text)
 
     def set_reorder_mode(self, on: bool):
-        self.drag_label.set_label(self._mini_text())  # text may have been edited
+        if on:
+            # Refresh only when entering: notes can't be edited while dragging.
+            # Setting it on the way out would leave the drag page un-laid-out
+            # right as the stack snapshots it for the crossfade, causing
+            # "gtk_widget_draw: assertion '!widget->priv->alloc_needed'" criticals.
+            self.drag_label.set_label(self._mini_text())
         self.stack.set_visible_child_name("drag" if on else "display")
         if on:
             self.action_revealer.set_reveal_child(False)
