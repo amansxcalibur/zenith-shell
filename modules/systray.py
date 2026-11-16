@@ -20,8 +20,6 @@ from gi.repository import Gray, Gtk, Gdk, GdkPixbuf, GLib  # type: ignore
 
 class NotificationIndicator(Box):
     def __init__(self, vertical: bool = False):
-        # vertical: the button takes the rail's width, the icon stays centred
-        # with the unread dot next to it
         super().__init__(orientation="v" if vertical else "h")
         self.unread_notif_indicator = Box(
             name="notif-unread-indicator",
@@ -82,6 +80,7 @@ class SystemTray(Box):
         )
         self.pixel_size = pixel_size
         self._path_themes: dict[str, Gtk.IconTheme] = {}
+        self._menu_accels = Gtk.AccelGroup()
         self.watcher = Gray.Watcher()
         self.watcher.connect("item-added", self.on_item_added)
 
@@ -99,6 +98,11 @@ class SystemTray(Box):
 
     def on_item_added(self, _, identifier: str):
         item = self.watcher.get_item_for_identifier(identifier)
+        if menu := item.get_menu():
+            # dbusmenu adds a menu entry's keyboard shortcut to the client's accel
+            # group, and GTK criticals when there is none. The group isn't attached
+            # to any window, so the shortcuts only show as labels and never fire.
+            menu.get_client().set_accel_group(self._menu_accels)
         item_button = self.do_bake_item_button(item)
         item.connect("removed", lambda *args: self.on_item_removed(item_button))
         self.clipper.add(item_button)
