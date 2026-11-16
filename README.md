@@ -9,6 +9,9 @@
      <a href="https://ko-fi.com/amansxcalibur">
           <img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/badges/kofi.svg">
      </a>
+    <a href="https://discord.gg/j6uwk2f2Zv">
+          <img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/badges/discord.svg">
+     </a>
      <br>
      <sub>Donations through Ko-Fi are welcome!
 </div>
