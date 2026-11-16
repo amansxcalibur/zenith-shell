@@ -850,6 +850,8 @@ class Player(Box):
 
     def _set_pause_ui(self):
         child = self.play_pause_button.get_child()
+        if child is None:  # queued before the player vanished and was destroyed
+            return False
         child.set_icon(icons.material.play_material.symbol())
         child.set_name("pause-label")
         self.play_pause_button.add_style_class("pause-track")
@@ -862,6 +864,8 @@ class Player(Box):
 
     def _set_play_ui(self):
         child = self.play_pause_button.get_child()
+        if child is None:  # queued before the player vanished and was destroyed
+            return False
         child.set_icon(icons.material.pause_material.symbol())
         child.set_name("play-label")
         self.play_pause_button.remove_style_class("pause-track")

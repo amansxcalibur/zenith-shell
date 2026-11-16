@@ -291,9 +291,6 @@ class PlayerMini(Box):
         GLib.idle_add(self._update_controls)
 
     def _update_controls(self):
-        # players can change what they allow without changing track (e.g. the
-        # end of a playlist), so this also runs on play/pause
-        # self.wiggly.set_sensitive(self._player_service.can_seek)
         self.next_button.set_sensitive(self._player_service.can_go_next)
         self.play_pause_button.set_sensitive(
             self._player_service.can_play or self._player_service.can_pause
@@ -303,13 +300,14 @@ class PlayerMini(Box):
         # self.shuffle_button.set_sensitive(self._player_service.can_shuffle)
         return False
 
-    def on_pause(self, sender):
-        def _set_pause_markup():
-            self.play_pause_button.get_child().set_icon(
-                icons.material.play_material.symbol()
-            )
+    def _set_play_icon(self, icon) -> bool:
+        child = self.play_pause_button.get_child()
+        if child is not None:  # queued before the player vanished and was destroyed
+            child.set_icon(icon.symbol())
+        return False
 
-        GLib.idle_add(_set_pause_markup)
+    def on_pause(self, sender):
+        GLib.idle_add(self._set_play_icon, icons.material.play_material)
         GLib.idle_add(self._update_controls)
 
         # self.wiggly._dragging = True
@@ -317,12 +315,7 @@ class PlayerMini(Box):
         # self.wiggly.pause = True
 
     def on_play(self, sender):
-        def _set_play_markup():
-            self.play_pause_button.get_child().set_icon(
-                icons.material.pause_material.symbol()
-            )
-
-        GLib.idle_add(_set_play_markup)
+        GLib.idle_add(self._set_play_icon, icons.material.pause_material)
         GLib.idle_add(self._update_controls)
 
         # self.wiggly.pause = False
@@ -363,14 +356,10 @@ class PlayerMini(Box):
         )
 
         def _set_play_ui():
-            self.play_pause_button.get_child().set_icon(
-                icons.material.pause_material.symbol()
-            )
+            return self._set_play_icon(icons.material.pause_material)
 
         def _set_pause_ui():
-            self.play_pause_button.get_child().set_icon(
-                icons.material.play_material.symbol()
-            )
+            return self._set_play_icon(icons.material.play_material)
 
         if is_playing:
             GLib.idle_add(_set_pause_ui)
