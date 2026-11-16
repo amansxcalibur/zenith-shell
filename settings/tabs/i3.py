@@ -138,12 +138,19 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
         ]
 
         self.demo_container.children = [self.demo_window_left, self.demo_inner_stack]
+        self._demo_padding = state.get(["i3", "gaps", "props", "outer"])
+        self._demo_radius = state.get(["screen_corners", "props", "radius"])
+        self._update_demo_container_style()
 
         self.all_windows_list = [
             self.demo_window_left,
             self.demo_window_right_top,
             self.demo_window_right_bottom,
         ]
+        self._win_border = state.get(["i3", "borders", "props", "border_width"])
+        self._win_radius = state.get(["i3", "borders", "props", "corner_radius"])
+        for event_box in self.all_windows_list:
+            self._style_demo_window(event_box.get_children()[0])
 
         # border settings
         borders_enabled_switch = self._create_switch(
@@ -183,7 +190,7 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
                 "Corner Radius",
                 0,
                 50,
-                None,
+                self._on_border_radius_changed,
                 state.get(["i3", "borders", "props", "corner_radius"]),
             )
             if is_swayfx()
@@ -380,25 +387,54 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
 
     def _on_outer_gap_changed(self, scale):
         val = int(scale.get_value())
-        self.demo_container.set_style(f"padding: {val}px;")
+        self._demo_padding = val
+        self._update_demo_container_style()
         state.update(["i3", "gaps", "props", "outer"], val)
 
     def _on_border_width_changed(self, scale):
         val = int(scale.get_value())
+        self._win_border = val
+        for event_box in self.all_windows_list:
+            self._style_demo_window(event_box.get_children()[0])
+        state.update(["i3", "borders", "props", "border_width"], val)
 
-        for window in self.all_windows_list:
+    def _on_border_radius_changed(self, scale):
+        val = int(scale.get_value())
+        self._win_radius = val
+        for event_box in self.all_windows_list:
+            self._style_demo_window(event_box.get_children()[0])
+        state.update(["i3", "borders", "props", "corner_radius"], val)
+
+    def _style_demo_window(self, window):
+        # set_style replaces the whole style string, so border and radius
+        # must always be applied together.
+        rules = []
+        if self._win_border is not None:
             color = (
                 "var(--primary)"
                 if "active" in window.get_style_context().list_classes()
                 else "var(--surface-bright)"
             )
-            window.get_children()[0].set_style(f"border: {val}px solid {color};")
+            rules.append(f"border: {self._win_border}px solid {color};")
+        if self._win_radius is not None:
+            rules.append(f"border-radius: {self._win_radius}px;")
+        window.set_style(" ".join(rules))
 
-        state.update(["i3", "borders", "props", "border_width"], val)
+    def _update_demo_container_style(self):
+        # set_style replaces the whole style string, so padding (outer gap)
+        # and radius (screen corners) must be applied together.
+        rules = []
+        if self._demo_padding is not None:
+            rules.append(f"padding: {self._demo_padding}px;")
+        if self._demo_radius is not None:
+            rules.append(f"border-radius: {self._demo_radius}px;")
+        self.demo_container.set_style(" ".join(rules))
 
     def _on_corner_radius_changed(self, scale):
         val = int(scale.get_value())
         self.corner_demo.set_style(f"border-radius: {val}px")
+        self._demo_radius = val
+        self._update_demo_container_style()
         state.update(["screen_corners", "props", "radius"], val)
 
     def _create_demo_window(self, is_active=False):
@@ -425,16 +461,11 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
         return event_box
 
     def _set_window_active(self, target_window, active: bool = True):
-        border_width = state.get(["i3", "borders", "props", "border_width"])
-
         if active:
             target_window.add_style_class("active")
-            target_window.set_style(f"border: {border_width}px solid var(--primary);")
         else:
             target_window.remove_style_class("active")
-            target_window.set_style(
-                f"border: {border_width}px solid var(--surface-bright);"
-            )
+        self._style_demo_window(target_window)
 
     def _on_toggle(self, switch, pspec, path):
         state.update(path, switch.get_active())

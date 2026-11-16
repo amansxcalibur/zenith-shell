@@ -254,6 +254,15 @@ def generate_i3_gaps_and_borders_config():
         lines.append("default_floating_border none")
         lines.append("")
 
+        radius = border_config.get("props.corner_radius")
+        if radius is not None and is_swayfx():
+            lines.append("# swayfx")
+            lines.append("# swayfx only")
+            lines.append(f"corner_radius {radius}")
+            lines.append("")
+            if os.environ.get("SWAYSOCK"):
+                I3.send_command(f"corner_radius {radius}")
+
         if border_config.get("props.smart_borders"):
             lines.append("smart_borders on")
             lines.append("")
@@ -268,6 +277,7 @@ def generate_i3_gaps_and_borders_config():
         if is_swayfx():
             config_block.extend(
                 [
+                    "    # swayfx only",
                     "    shadows disable",
                     "    blur disable",
                 ]
