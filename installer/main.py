@@ -647,6 +647,12 @@ def cmd_update(args, backend) -> int:
             "The checkout has no upstream branch (detached HEAD?). "
             f"Fix with: git -C {c.INSTALL_DIR} checkout main"
         )
+    branch = git_out("rev-parse", "--abbrev-ref", "HEAD")
+    if branch != "main" or upstream != "origin/main":
+        raise InstallError(
+            f"Updates only follow origin/main, but this checkout is on '{branch}' "
+            f"(tracking {upstream}). Nothing was changed."
+        )
     suffix = " (dry run)" if args.dry_run else ""
     panel(
         f"Zenith Shell: update{suffix}",
