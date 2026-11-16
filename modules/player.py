@@ -79,8 +79,14 @@ class PlayerAudioScaleMaterial3(AnimatedScale):
         self.percentage = self.current / self.max
         self.update_from_user = False
         self.ui_updating = False
-        self.service_instance._player.connect("volume", self.update_slider)
+        self._volume_handler = self.service_instance._player.connect(
+            "volume", self.update_slider
+        )
         self.connect("change-value", self.set_audio)
+        self.connect("destroy", self._on_destroy)
+
+    def _on_destroy(self, *_):
+        self.service_instance._player.disconnect(self._volume_handler)
 
     def update_slider(self, source, new_value):
         if self.ui_updating:
