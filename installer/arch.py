@@ -162,7 +162,7 @@ class ArchBackend(Backend):
     def system_checks(self, plan: Plan) -> list[Problem]:
         problems: list[Problem] = []
         if not have("pacman"):
-            problems.append(Problem("pacman not found – is this really Arch?"))
+            problems.append(Problem("pacman not found. Is this really Arch?"))
         if Path("/var/lib/pacman/db.lck").exists():
             problems.append(
                 Problem(

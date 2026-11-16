@@ -19,8 +19,6 @@ from gi.repository import Gtk, GLib, Gdk  # type: ignore
 
 
 class BaseWidget(ABC):
-    """Base class for all custom widgets with common patterns"""
-
     def __init__(self):
         self.container = None
         self._build_ui()
@@ -35,8 +33,6 @@ class BaseWidget(ABC):
 
 
 class LayoutBuilder:
-    """Utility class for building common layouts"""
-
     def section(
         heading: str,
         body: Gtk.Widget | Iterable[Gtk.Widget],
@@ -71,7 +67,7 @@ class LayoutBuilder:
         current = {"wght": 450.0, "slnt": 0.0}
         target = {"wght": 450.0, "slnt": 0.0}
 
-        STEP = 0.45  # speed (0–1)
+        STEP = 0.45  # speed (0-1)
         INTERVAL = 16  # ~60fps
 
         def animate():

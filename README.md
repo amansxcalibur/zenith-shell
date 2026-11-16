@@ -18,7 +18,7 @@
 I've had a **LOT** of fun working with fabric and building this. I hope you do too :)
 
 > [!NOTE]
-> Zenith has reached its first release! Happy ricing! :)
+> Zenith has reached its first release! Happy ricing :)
 
 ## Showcase
 

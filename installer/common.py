@@ -379,7 +379,7 @@ def ensure_sudo() -> None:
         stderr=subprocess.DEVNULL,
     )
     if cached.returncode != 0:
-        info("Administrator rights are needed – asking once, up front.")
+        info("Root privileges are needed.")
         if subprocess.run(["sudo", "-v"], check=False).returncode != 0:
             raise InstallError("sudo authentication failed.")
 
@@ -530,7 +530,7 @@ class Tool:
     feature: str = "core"
     requires: tuple[
         str, ...
-    ] = ()  # build prerequisites (commands) – checked in PRE-FLIGHT
+    ] = ()  # build prerequisites (commands); checked in PRE-FLIGHT
     build: str = ""  # name of the backend method that builds it
     hosts: tuple[str, ...] = ()  # extra URLs that must be reachable
     files: tuple[
@@ -641,7 +641,7 @@ class Backend:
                 )
             )
 
-        # build prerequisites (cargo, go...) – only demanded when the tool is actually missing
+        # build prerequisites (cargo, go...); only demanded when the tool is actually missing
         fixers = self.prereq_fixers()
         seen: set[str] = set()
         for tool in plan.tools:

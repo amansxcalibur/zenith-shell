@@ -301,7 +301,7 @@ def report_problems(problems) -> None:
         lines += [f"    {DIM}{hint}{NC}" for hint in problem.hint.splitlines()]
     plural = "" if len(problems) == 1 else "s"
     panel(
-        f"{len(problems)} problem{plural} found – stopped before installing anything",
+        f"{len(problems)} problem{plural} found. Nothing was installed",
         lines,
         RED,
     )
@@ -333,7 +333,7 @@ def preflight_stage(backend, plan, command):
     if problems:
         report_problems(problems)
         raise SystemExit(1)
-    ok("All checks passed – nothing should surprise you later.")
+    ok("All checks passed. Nothing should surprise you later.")
     return plan
 
 
@@ -435,7 +435,7 @@ def cmd_doctor(args, backend) -> int:
     if not on_path:
         fixes.append('add to your shell rc: export PATH="$HOME/.local/bin:$PATH"')
 
-    panel(f"Doctor – {'+'.join(wms)}", lines, YELLOW if fixes else GREEN)
+    panel(f"Doctor: {'+'.join(wms)}", lines, YELLOW if fixes else GREEN)
     for fix in fixes:
         info(f"Fix with:  {fix}")
     return 1 if fixes else 0
@@ -479,7 +479,7 @@ def notices(plan) -> None:
         if not c.have("picom"):
             lines += [
                 "",
-                "Picom is not installed – compositor effects are disabled by default.",
+                "Picom is not installed, so compositor effects are disabled by default.",
             ]
         panel("Picom (compositor)", lines, YELLOW)
     if str(c.BIN_DIR) not in c.ORIGINAL_PATH.split(":"):
@@ -511,7 +511,7 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
     started = time.time()
     if command in ("sync", "update") and not c.INSTALL_DIR.exists():
         raise InstallError(
-            "Zenith Shell is not installed yet – run `install.sh` first."
+            "Zenith Shell is not installed yet. Run `install.sh` first."
         )
 
     wms = c.resolve_wms(args.wm)
@@ -522,7 +522,7 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
         print(f"{BLUE}{LOGO}{NC}", end="")
     suffix = " (dry run)" if args.dry_run else ""
     panel(
-        f"Zenith Shell – {command}{suffix}",
+        f"Zenith Shell: {command}{suffix}",
         [
             f"Distro  : {backend.pretty}",
             f"WM(s)   : {', '.join(wms)}",
@@ -576,11 +576,11 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
         ok(f"Everything for {'+'.join(wms)} is already installed.")
         return report_keybinding_conflicts(wms)
     if args.dry_run:
-        info("Dry run – nothing was changed.")
+        info("Dry run: nothing was changed.")
         return 0
     if command == "install" and c.shell_running():
         warn(
-            "Zenith Shell is running. A full install replaces its code and Python packages – "
+            "Zenith Shell is running. A full install replaces its code and Python packages, so "
             "restart it afterwards: zenith-shell restart"
         )
     if command != "update" and not c.confirm(
@@ -610,7 +610,7 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
         print(f"To start, run: {BOLD}zenith-shell{NC}, or restart your session.")
     if c.shell_running():
         info(
-            f"Zenith Shell is still running the old components – apply the changes with: {BOLD}zenith-shell restart{NC}"
+            f"Zenith Shell is still running the old components. Apply the changes with: {BOLD}zenith-shell restart{NC}"
         )
     if command != "update":
         notices(plan)
@@ -635,7 +635,7 @@ def cmd_update(args, backend) -> int:
     """
     if not (c.INSTALL_DIR / ".git").is_dir():
         raise InstallError(
-            f"{c.INSTALL_DIR} is not a git checkout – nothing to update. Run install.sh instead."
+            f"{c.INSTALL_DIR} is not a git checkout, so there is nothing to update. Run install.sh instead."
         )
     if args.after_pull:
         return cmd_install_or_sync(args, backend, "update")
@@ -649,7 +649,7 @@ def cmd_update(args, backend) -> int:
         )
     suffix = " (dry run)" if args.dry_run else ""
     panel(
-        f"Zenith Shell – update{suffix}",
+        f"Zenith Shell: update{suffix}",
         [
             f"Checkout : {c.INSTALL_DIR}",
             f"Tracking : {upstream}",
@@ -665,7 +665,7 @@ def cmd_update(args, backend) -> int:
 
     if incoming == 0:
         if c.load_state().get("pending_update"):
-            warn("A previous update did not finish – resuming it.")
+            warn("A previous update did not finish. Resuming it.")
             return cmd_install_or_sync(args, backend, "update")
         ok(f"Already up to date ({old}).")
         if local_ahead:
@@ -715,7 +715,7 @@ def cmd_update(args, backend) -> int:
             YELLOW,
         )
     if args.dry_run:
-        info("Dry run – nothing was pulled. (Only `git fetch` ran.)")
+        info("Dry run: nothing was pulled (only `git fetch` ran).")
         return 0
     if c.shell_running():
         info(
@@ -837,6 +837,16 @@ def cmd_uninstall(args, backend) -> int:
         )
     dot = SYM["dot"]
 
+    purge = args.purge
+    if built and not purge and not args.dry_run and not c.OPTS.yes:
+        # Built tools can't be tracked once state is deleted, so ask now.
+        # Default No: other Fabric-based shells may use them.
+        purge = c.confirm(
+            f"Also remove tools built from source ({', '.join(built)})? "
+            "Other Fabric-based shells may use them.",
+            default=False,
+        )
+
     lines = [f"{dot} stop running Zenith Shell processes"]
     if c.INSTALL_DIR.is_symlink():
         lines.append(f"{dot} delete the {c.INSTALL_DIR} symlink (its target is kept)")
@@ -854,19 +864,19 @@ def cmd_uninstall(args, backend) -> int:
         f"{dot} delete fonts in {FONT_DIR}",
         f"{dot} delete installer state and logs",
     ]
-    if built and args.purge:
+    if built and purge:
         lines.append(f"{dot} remove tools built from source: {', '.join(built)}")
     elif built:
         lines.append(
             f"{DIM}Tools built from source are kept ({', '.join(built)}); "
-            f"other Fabric-based shells may use them. To remove them, use --purge now: "
+            f"other Fabric-based shells may use them. To remove them, use --purge: "
             f"they can't be tracked after this uninstall.{NC}"
         )
     lines.append(f"{DIM}System packages are never removed automatically.{NC}")
     panel("Uninstall plan", lines, YELLOW)
 
     if args.dry_run:
-        info("Dry run – nothing was changed.")
+        info("Dry run: nothing was changed.")
         return 0
 
     keep_config = not c.CONFIG_DIR.exists() or c.confirm(
@@ -895,7 +905,7 @@ def cmd_uninstall(args, backend) -> int:
             run(["fc-cache", "-f"], check=False, label="Updating font cache")
 
     steps = [("Stopping Zenith Shell", stop_processes)]
-    if args.purge and built:
+    if purge and built:
         steps.append(
             ("Removing source-built tools", remove_built_tools)
         )  # needs vendors/, so before the next steps
@@ -924,7 +934,7 @@ def cmd_uninstall(args, backend) -> int:
         info(f"Your settings are kept in {config}.")
     if mentions:
         panel(
-            "Leftover references – edit these by hand",
+            "Leftover references: edit these by hand",
             [str(p) for p in mentions]
             + [
                 "",
@@ -938,7 +948,7 @@ def cmd_uninstall(args, backend) -> int:
         panel(
             "Packages the installer added (kept)",
             [
-                f"{DIM}Other software may depend on these – review before removing:{NC}",
+                f"{DIM}Other software may depend on these. Review before removing:{NC}",
                 "",
                 f"{backend.REMOVE_CMD} {' '.join(pkgs)}",
             ],

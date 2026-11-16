@@ -54,7 +54,7 @@ done
 [[ $EUID -ne 0 ]] || die "Do not run as root. sudo is requested automatically when needed."
 
 detect_distro() {
-    [[ -r /etc/os-release ]] || die "Cannot read /etc/os-release – unsupported system."
+    [[ -r /etc/os-release ]] || die "Cannot read /etc/os-release. Unsupported system."
     local id like
     id=$(. /etc/os-release; echo "${ID:-}")
     like=$(. /etc/os-release; echo "${ID_LIKE:-}")
@@ -118,7 +118,7 @@ if $DRY_RUN; then
     fi
     TMP_CHECKOUT="$(mktemp -d)"
     trap 'rm -rf "$TMP_CHECKOUT"' EXIT
-    git clone --depth=1 --quiet "$REPO_URL" "$TMP_CHECKOUT" || die "git clone failed – check your connection."
+    git clone --depth=1 --quiet "$REPO_URL" "$TMP_CHECKOUT" || die "git clone failed. Check your connection."
     rc=0
     python3 "$TMP_CHECKOUT/installer/main.py" "$@" || rc=$?
     exit "$rc"
@@ -148,7 +148,7 @@ elif [[ -e "$INSTALL_DIR" ]]; then
 else
     info "Cloning Zenith Shell..."
     mkdir -p "$(dirname "$INSTALL_DIR")"
-    git clone --depth=1 "$REPO_URL" "$INSTALL_DIR" || die "git clone failed – check your connection."
+    git clone --depth=1 "$REPO_URL" "$INSTALL_DIR" || die "git clone failed. Check your connection."
 fi
 
 [[ -f "$INSTALL_DIR/installer/main.py" ]] || die "installer/main.py not found in $INSTALL_DIR."
