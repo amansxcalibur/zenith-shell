@@ -166,6 +166,7 @@ energy_savings_leaf: MaterialIcon = _M("\uec1a")
 # Metrics
 battery: MaterialIcon = _M("\uf304")
 battery_charging: MaterialIcon = _M("\uf250")
+bolt: MaterialIcon = _M("\uea0b")
 cpu: MaterialIcon = _M("\ue322")
 disk: MaterialIcon = _M("\uf20e")
 memory: MaterialIcon = _M("\uf720")

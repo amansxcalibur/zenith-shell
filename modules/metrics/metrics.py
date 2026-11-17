@@ -6,11 +6,12 @@ from fabric.widgets.revealer import Revealer
 from fabric.widgets.circularprogressbar import CircularProgressBar
 
 import icons
+from services.metrics import MetricsProvider
 from widgets.popup_window import SharedPopupWindow
 from widgets.material_label import MaterialIconLabel
-from services.metrics import MetricsProvider
 
 from .metrics_popup import Metrics
+from .battery_popup import BatteryPopup
 
 from gi.repository import GLib  # type: ignore
 
@@ -153,6 +154,9 @@ class Battery(Button):
         self.connect("leave-notify-event", self.on_mouse_leave)
         self.service.connect("battery-changed", self.update_battery)
 
+        self.popup_win = SharedPopupWindow()
+        self.popup_win.add_child(pointing_widget=self, child=BatteryPopup())
+
     def _format_percentage(self, value: int) -> str:
         return f"{value}" if self._vertical else f"{value}%"
 
@@ -190,18 +194,12 @@ class Battery(Button):
         is_low = rounded_pct <= 15 and not is_charging
         is_full = rounded_pct == 100
 
-        if is_full:
-            icon = icons.material.battery.symbol()
-            status_text = "Fully Charged"
-        elif is_charging:
+        if is_charging and not is_full:
             icon = icons.material.battery_charging.symbol()
-            status_text = "Charging"
         else:
             icon = icons.material.battery.symbol()
-            status_text = "Discharging" if not is_low else "Low Battery"
 
         self.bat_icon.set_icon(icon)
-        self.set_tooltip_markup(status_text)
 
         if is_low:
             self.bat_icon.add_style_class("alert")

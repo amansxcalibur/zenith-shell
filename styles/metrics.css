@@ -324,3 +324,47 @@
 .light .metrics-main-label {
   color: var(--on-primary);
 }
+
+/* battery popup */
+#bat-popup {
+  padding: 10px;
+}
+#bat-tank {
+  background-color: var(--surface-bright);
+  border-radius: 20px;
+}
+#bat-tank-space {
+  min-width: 180px;
+  min-height: 180px;
+}
+#bat-tank-fill {
+  background-color: var(--primary);
+}
+#bat-tank-fill.charging {
+  background-color: var(--green);
+}
+#bat-tank-fill.low {
+  background-color: var(--error);
+}
+#bat-tank-corner {
+  margin: 0 14px 10px 0;
+}
+#bat-tank-status {
+  font-size: 13px;
+  color: var(--foreground);
+}
+#bat-tank-percent {
+  font-size: 52px;
+  color: var(--foreground);
+}
+#bat-tank-bolt {
+  font-size: 36px;
+  margin-right: 2px;
+  color: var(--foreground);
+}
+#bat-tank-corner .on-fill {
+  color: var(--on-primary);
+}
+#bat-tank-corner.low .on-fill {
+  color: var(--on-error);
+}
