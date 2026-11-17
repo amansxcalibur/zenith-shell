@@ -8,8 +8,8 @@ from loguru import logger
 from fabric.core.service import Service, Signal, Property
 from fabric.utils.helpers import exec_shell_command_async
 
-from config.info import CONFIG_DIR, ROOT_DIR
 from config.config import config
+from config.info import CONFIG_DIR, ROOT_DIR
 
 
 class ThemeMode(StrEnum):
@@ -53,6 +53,7 @@ class ThemeService(Service):
 
         super().__init__()
 
+        self._matugen_proc = None
         self.theme_config = config.get_node("theme")
         theme_val = self.theme_config.get("mode")
 
@@ -119,12 +120,22 @@ class ThemeService(Service):
         )
 
         try:
+            if self._matugen_proc is not None:
+                self._matugen_proc.force_exit()
             process, _ = exec_shell_command_async(command)
+            self._matugen_proc = process
 
             def on_matugen_finish(p, r):
+                if p is not self._matugen_proc:
+                    logger.debug(
+                        f"Discarded superseded matugen run for {image_path_str}"
+                    )
+                    return
                 try:
                     p.wait_check_finish(r)
-                    logger.info(f"Generated the {scheme} color scheme from {image_path_str}")
+                    logger.info(
+                        f"Generated the {scheme} color scheme from {image_path_str}"
+                    )
                     self.theme_config.set(
                         "scheme", scheme
                     )  # set() handles same value skips

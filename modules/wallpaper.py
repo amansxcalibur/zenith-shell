@@ -4,7 +4,9 @@ import shutil
 import subprocess
 from pathlib import Path
 from loguru import logger
+from functools import partial
 from PIL import Image, ImageOps
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from expressive_shapes.shapes import sunny, pill
 
@@ -20,14 +22,13 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.core.service import Service, Signal
 from fabric.utils.helpers import exec_shell_command_async
 
-from widgets.clipping_box import ClippingBox
-from widgets.material_label import MaterialFontLabel, MaterialIconLabel
-from widgets.shapes.expressive.morphing_shapes import InteractiveMorphShape
-
 import icons
+
 from config.config import config
 from config.info import CACHE_DIR, IS_WAYLAND
+
 from services.theme import ThemeService
+
 from utils.colors import bind_theme
 from utils.helpers import hash_file
 from utils.lock import (
@@ -35,6 +36,10 @@ from utils.lock import (
     LOCKSCREEN_IMG_FILE,
     LOCKSCREEN_BLURRED_IMG_FILE,
 )
+
+from widgets.clipping_box import ClippingBox
+from widgets.material_label import MaterialFontLabel, MaterialIconLabel
+from widgets.shapes.expressive.morphing_shapes import InteractiveMorphShape
 
 import gi
 
@@ -68,7 +73,7 @@ def generate_wallpaper_preview(image_path: str | Path) -> Path | None:
 
         with Image.open(image_path) as img:
             img.thumbnail((400, 200))
-            # atomic save - write to temp first to prevent half-baked images
+            # atomic save
             img.save(WP_PREVIEW_TEMP, "PNG")
 
         # replace temp
@@ -96,7 +101,11 @@ class WallpaperService(Service):
             cls._instance._wallpaper_path = None
             cls._instance._preview_path = None
             cls._instance._initialized = False
+            # one worker: restore and pick jobs run strictly in order, so the
+            # latest pick's files are always written last
             cls._instance._executor = ThreadPoolExecutor(max_workers=1)
+            cls._instance._pick_id = 0
+            cls._instance._feh_proc = None
         return cls._instance
 
     def initialize(self):
@@ -128,12 +137,7 @@ class WallpaperService(Service):
             )
 
             self.apply_wallpaper(full_path)
-
-            self._set_state(full_path, preview_path)
-
-            if preview_path:
-                self.wallpaper_changed(full_path, str(preview_path))
-
+            self.set_wallpaper_path(full_path, preview_path)
             logger.debug(f"Restored wallpaper: {full_path}")
 
         except Exception as e:
@@ -171,14 +175,35 @@ class WallpaperService(Service):
                 )
                 return
 
-            # apply wallpaper
-            exec_shell_command_async(
+            if self._feh_proc is not None:
+                self._feh_proc.force_exit()
+            self._feh_proc, _ = exec_shell_command_async(
                 [feh_bin, "--zoom", "fill", "--bg-fill", full_path]
             )
 
-    def set_wallpaper_path(self, full_path: str, preview_path: str | None):
-        self._set_state(full_path, preview_path)
-        self.wallpaper_changed(full_path, preview_path)
+    def set_wallpaper_path(self, full_path: str, preview_path: Path | str | None):
+        def _commit():
+            self._set_state(full_path, preview_path)
+            if self._preview_path:
+                self.wallpaper_changed(full_path, self._preview_path)
+            return False
+
+        GLib.idle_add(_commit)
+
+    def queue_pick(self, *jobs: Callable[[], object]) -> None:
+        # latest queue used, stale ones dropped
+        self._pick_id += 1
+        pick_id = self._pick_id
+        for job in jobs:
+            self._executor.submit(self._run_if_current, pick_id, job)
+
+    def _run_if_current(self, pick_id: int, job: Callable[[], object]) -> None:
+        if pick_id != self._pick_id:
+            return
+        try:
+            job()
+        except Exception as e:
+            logger.error(f"Wallpaper job failed: {e}")
 
     def get_wallpaper_path(self) -> str | None:
         return self._wallpaper_path
@@ -230,6 +255,7 @@ class WallpaperSelector(Box):
         self.executor = ThreadPoolExecutor(max_workers=5)
         self.file_monitor = None
         self._scan_generation = 0
+        self._current_path: str | None = None
 
         # main thread only. _names is kept sorted and mirrors FlowBox order,
         # so get_children() order == display order.
@@ -296,7 +322,13 @@ class WallpaperSelector(Box):
         self._no_focus_recursive(self.scheme_dropdown)
         for key, display_name in self.SCHEMES.items():
             self.scheme_dropdown.append(key, display_name)
-        self.scheme_dropdown.set_active_id(self.DEFAULT_SCHEME)
+
+        saved = str(self.theme_service.theme_config.get("scheme") or "")
+        if saved and not saved.startswith("scheme-"):
+            saved = f"scheme-{saved}"
+        self.scheme_dropdown.set_active_id(
+            saved if saved in self.SCHEMES else self.DEFAULT_SCHEME
+        )
         self.scheme_dropdown.connect("notify::popup-shown", self._on_popup_shown)
 
         self.wall_dir_path_label = Label(
@@ -608,6 +640,8 @@ class WallpaperSelector(Box):
             logger.error(f"Failed to list wallpapers dir: {e}")
             return
 
+        self._prune_thumbnails(files)
+
         for file_name in files:
             if generation != self._scan_generation:
                 return
@@ -628,6 +662,25 @@ class WallpaperSelector(Box):
             return
         GLib.idle_add(self._add_thumbnail_to_ui, file_name, image_bytes, generation)
 
+    @staticmethod
+    def _prune_thumbnails(files: list[str]):
+        """Drop cached thumbnails with no file in the current folder maps to (edited,
+        deleted, or from another folder). The cache key is path + mtime."""
+        keep = set()
+        for file_name in files:
+            try:
+                src = os.path.join(config.WALLPAPERS_DIR, file_name)
+                keep.add(get_thumbnail_cache_path(src).name)
+            except OSError:
+                continue
+        removed = 0
+        for thumb in WP_THUMBS_DIR.glob("*.png"):
+            if thumb.name not in keep:
+                thumb.unlink(missing_ok=True)
+                removed += 1
+        if removed:
+            logger.debug(f"Pruned {removed} stale wallpaper thumbnails")
+
     @classmethod
     def _write_thumbnail(cls, src, cache):
         size = (cls.IMG_THUMB_SIZE, cls.IMG_THUMB_SIZE)
@@ -647,7 +700,7 @@ class WallpaperSelector(Box):
 
         self._remove_child(file_name)  # file changed on disk: replace, don't duplicate
         child = self._create_flowbox_child(
-            pixbuf, file_name, is_current=file_name == self._current_name()
+            pixbuf, file_name, is_current=self._is_current(file_name)
         )
         # sorted insert: threads finish in arbitrary order
         pos = bisect.bisect(self._names, file_name)
@@ -795,42 +848,41 @@ class WallpaperSelector(Box):
         if selected:
             self.on_wallpaper_selected(self.viewport, selected[0])
 
-    def _current_name(self) -> str:
-        path = self.wallpaper_service.get_wallpaper_path()
-        return os.path.basename(path) if path else ""
+    @staticmethod
+    def _full_path(file_name: str) -> str:
+        return os.path.normpath(os.path.join(config.WALLPAPERS_DIR, file_name))
+
+    def _is_current(self, file_name: str) -> bool:
+        # full path, so a same-named file in another folder isn't marked
+        current = self._current_path or self.wallpaper_service.get_wallpaper_path()
+        return bool(current) and os.path.normpath(current) == self._full_path(file_name)
 
     def on_wallpaper_selected(self, flowbox, child):
-        file_name = child.file_name
-        full_path = os.path.join(config.WALLPAPERS_DIR, file_name)
+        full_path = self._full_path(child.file_name)
         scheme = self.scheme_dropdown.get_active_id()
 
         self.wallpaper_service.apply_wallpaper(full_path)
+        # preview before the lockscreen: it's what the user sees (player bg)
+        self.wallpaper_service.queue_pick(
+            partial(save_wallpaper_history, full_path),
+            partial(self.theme_service.generate_theme, full_path, scheme),
+            partial(self._make_preview, full_path),
+            partial(generate_lockscreen_image, full_path),
+        )
 
-        self.executor.submit(save_wallpaper_history, full_path)
-        self.executor.submit(self.theme_service.generate_theme, full_path, scheme)
-        self.executor.submit(generate_lockscreen_image, full_path)
-        future = self.executor.submit(generate_wallpaper_preview, full_path)
-        future.add_done_callback(lambda fut: self._on_preview_ready(full_path, fut))
-
-        self.update_badge_visibility(target_file_name=file_name)
+        self._current_path = full_path
+        self.update_badge_visibility()
         self.focus_search()
 
-    def _on_preview_ready(self, full_path, fut):
-        try:
-            preview_path = fut.result()
-        except Exception as e:
-            logger.error(f"Preview generation failed: {e}")
-            return
+    def _make_preview(self, full_path: str):
+        preview_path = generate_wallpaper_preview(full_path)
         if preview_path:
-            self.wallpaper_service.set_wallpaper_path(full_path, str(preview_path))
+            self.wallpaper_service.set_wallpaper_path(full_path, preview_path)
 
-    def update_badge_visibility(self, target_file_name: str | None = None):
-        if target_file_name is None:
-            target_file_name = self._current_name()
-
+    def update_badge_visibility(self):
         def _sync():
             for name, child in self._children.items():
-                child.badge.set_visible(name == target_file_name)
+                child.badge.set_visible(self._is_current(name))
             return False
 
         GLib.idle_add(_sync)
