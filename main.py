@@ -16,6 +16,7 @@ from modules.corners import Corners
 from modules.core.top.bar import TopBar
 from modules.core.top.pill import TopPill
 from services.theme import ThemeMode, ThemeService
+from services.update_check import UpdateChecker
 from utils.helpers import sync_settings_theme
 from modules.core.bottom.pill import Pill
 from modules.wallpaper import WallpaperService
@@ -202,6 +203,8 @@ if __name__ == "__main__":
     app.style_monitor = monitor_file(get_relative_path("./styles"))
     app.style_monitor.connect("changed", set_css)
     set_css(None, None, None, Gio.FileMonitorEvent.CHANGES_DONE_HINT)
+
+    app.update_checker = UpdateChecker()
 
     logger.info(f"{SHELL_NAME} is ready")
     app.run()

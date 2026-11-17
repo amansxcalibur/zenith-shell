@@ -30,6 +30,7 @@ DEFAULTS = {
     },
     "system": {
         "SILENT": False,
+        "UPDATE_CHECK": True,
         "VERTICAL": False,
         "LOCKSCREEN": "i3lock",
         "BRIGHTNESS_DEV": "auto",

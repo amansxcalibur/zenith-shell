@@ -9,12 +9,16 @@ from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 
 import icons
+
 from config.info import IS_WAYLAND, ROOT_DIR
 from config.i3.utils import is_swayfx
+
 from utils.cursor import add_hover_cursor
+
 from widgets.material_label import MaterialFontLabel, MaterialIconLabel
 from widgets.zenith_logo import ZenithLogo
 
+from ..state import state
 from ..base import BaseWidget, LayoutBuilder
 
 import gi
@@ -155,6 +159,53 @@ class AboutTab(BaseWidget):
                     Box(v_align="center", children=ZenithLogo(size=210)),
                     summary,
                 ],
+            )
+        )
+
+        update_switch = Gtk.Switch(
+            name="matugen-switcher",
+            active=bool(state.get(["system", "UPDATE_CHECK"])),
+        )
+        update_switch.set_valign(Gtk.Align.CENTER)
+        update_switch.connect(
+            "notify::active",
+            lambda switch, _pspec: state.update(
+                ["system", "UPDATE_CHECK"], switch.get_active()
+            ),
+        )
+
+        height_strut = Label(label="", style_classes="settings-height-strut")
+        height_strut.set_opacity(0)
+
+        update_row = Box(
+            style_classes=["settings-item", "settings-item-wide"],
+            spacing=14,
+            children=[
+                MaterialIconLabel(
+                    icon_text=icons.material.update.symbol(),
+                    font_size=17,
+                    h_expand=False,
+                ),
+                Box(
+                    orientation="v",
+                    h_expand=True,
+                    v_align="center",
+                    children=[
+                        Label(label="Check for updates", h_align="start"),
+                        Label(
+                            label="Major and minor releases",
+                            style_classes="module-hint",
+                            h_align="start",
+                        ),
+                    ],
+                ),
+                Box(children=[height_strut, update_switch]),
+            ],
+        )
+        self.container.add(
+            LayoutBuilder.section(
+                "Updates",
+                LayoutBuilder.settings_list([update_row], lambda row: row),
             )
         )
 

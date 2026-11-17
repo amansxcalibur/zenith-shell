@@ -152,11 +152,19 @@
   border-radius: 5px;
   padding: 10px;
 }
-
-.settings-value {
+.settings-item.settings-item-wide {
+  padding: 10px 20px;
+}
+.settings-value,
+.settings-height-strut {
   background-color: var(--surface-bright);
   padding: 10px 15px;
   border-radius: 20px;
+}
+/* invisible: only lends a row the value pill's height */
+.settings-height-strut {
+  padding-left: 0;
+  padding-right: 0;
 }
 .light .settings-value {
   background-color: var(--primary);
