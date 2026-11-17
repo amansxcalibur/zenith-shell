@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -19,17 +20,21 @@ from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
 from fabric.notifications.service import Notification
 
+import icons
+
+from config.info import TEMP_DIR
+
+from services.animator import CubicBezierCurves
+
+from utils.helpers import toggle_class
+from utils.icon_resolver import IconResolver
+
 from widgets.rounded_image import RoundedImage
 from widgets.material_label import MaterialIconLabel
 from widgets.clipping_box import AnimatedClippingBox
 from widgets.shapes.expressive.morphing_shapes import ExpressiveShape
-from services.animator import CubicBezierCurves
-from utils.helpers import toggle_class
-from utils.icon_resolver import IconResolver
-from config.info import TEMP_DIR
-import icons
 
-from .common import NotificationConfig
+from .common import CollapsingBox, NotificationConfig, motion_scale
 
 import gi
 
@@ -135,7 +140,7 @@ def _resolve_app_icon(notification: Notification, size: int = 28) -> Gtk.Widget:
     return fallback
 
 
-class NotificationWidget(Box):
+class NotificationWidget(CollapsingBox):
     PAGE_COLLAPSED = "collapsed"
     PAGE_EXPANDED = "expanded"
 
@@ -151,6 +156,7 @@ class NotificationWidget(Box):
         super().__init__(name="notification-widget", **kwargs)
 
         self._notification = notification
+        self.on_close_request = None
         self._closed_connection = None
         self._scaled_pixbuf = None
         self.timestamp = notification.time
@@ -298,7 +304,7 @@ class NotificationWidget(Box):
     def _build_expanded_page(self, notification: Notification) -> Box:
         summary = notification.summary or ""
         body = notification.body or ""
-        time_text = datetime.fromtimestamp(self.timestamp).strftime("%H:%M")  # noqa: DTZ006
+        time_text = datetime.fromtimestamp(self.timestamp).strftime("%H:%M")
         max_c = NotificationConfig.MAX_CHARS_PER_LINE
 
         # expander button
@@ -385,11 +391,7 @@ class NotificationWidget(Box):
             ),
             tooltip_text="Close",
             style_classes="critical" if self.urgency == 2 else "",
-            on_clicked=lambda *_: (
-                self._notification.close()
-                if hasattr(self._notification, "close")
-                else None
-            ),
+            on_clicked=lambda *_: self._request_close(),
         )
 
         self._timestamp_label = Label(
@@ -467,6 +469,16 @@ class NotificationWidget(Box):
 
         return None
 
+    def _close_notification(self) -> None:
+        if hasattr(self._notification, "close"):
+            self._notification.close()
+
+    def _request_close(self) -> None:
+        if self.on_close_request is not None:
+            self.on_close_request(self)
+        else:
+            self.animate_exit(self._close_notification)
+
     def _on_notification_closed(self, *_):
         try:
             self.destroy()
@@ -515,6 +527,10 @@ class NotificationGroup(AnimatedClippingBox):
     def latest_timestamp(self) -> float:
         return self._latest_timestamp
 
+    @property
+    def exiting(self) -> bool:
+        return self._exiting
+
     @staticmethod
     def _set_widget_expand_style(widget: NotificationWidget, expanded: bool) -> None:
         add_class, remove_class = (
@@ -546,6 +562,10 @@ class NotificationGroup(AnimatedClippingBox):
         self._expanded = False  # start collapsed
         self._toggle_generation = 0
         self._batch_removing = False
+        self._exiting = False  # animate_out running
+        self._entering = False  # animate_in running
+        self._cancel_enter: Callable[[], None] | None = None
+        self._exit_callbacks: list[Callable[[], None]] = []
         self._current_icon_source: str | None = None
 
         self._icon_slot = Box(
@@ -576,11 +596,14 @@ class NotificationGroup(AnimatedClippingBox):
                 spacing=4,
                 children=[
                     Label(label="Clear", style="color: var(--foreground)"),
-                    MaterialIconLabel(icon_text=icons.material.mop.symbol(), style="color: var(--foreground)"),
+                    MaterialIconLabel(
+                        icon_text=icons.material.mop.symbol(),
+                        style="color: var(--foreground)",
+                    ),
                 ],
             ),
             tooltip_text="Dismiss all",
-            on_clicked=self._dismiss_all,
+            on_clicked=lambda *_: self.animate_out(1, self._dismiss_all),
         )
 
         self.timestamp_label = Label(
@@ -650,7 +673,9 @@ class NotificationGroup(AnimatedClippingBox):
         # init collapsed state
         GLib.idle_add(lambda: self._toggle_expand(self._toggle_btn, self._expanded))
 
-    def add_widget(self, widget: ActiveNotificationWidget) -> None:
+    def add_widget(
+        self, widget: ActiveNotificationWidget, animate: bool = False
+    ) -> None:
         notif = widget._notification
         if notif.id in self._notif_ids:
             return
@@ -663,6 +688,7 @@ class NotificationGroup(AnimatedClippingBox):
         else:
             new_widget.add_style_class("contract")
 
+        new_widget.on_close_request = self._close_widget_animated
         new_widget.connect("destroy", self._on_widget_destroyed)
 
         insert_key = self._sort_key(new_widget)
@@ -679,6 +705,10 @@ class NotificationGroup(AnimatedClippingBox):
 
         gtk_position = len(self._widgets) - 1 - idx
         self._children_box.reorder_child(new_widget, gtk_position)
+
+        if animate and self.get_mapped() and not self._entering:
+            # the row grows in; the group's height follows it
+            new_widget.animate_enter()
 
         self._sync_header()
         self._refresh_height()
@@ -734,7 +764,7 @@ class NotificationGroup(AnimatedClippingBox):
 
         top = self._top_widget()
         self.timestamp_label.set_label(
-            datetime.fromtimestamp(self.latest_timestamp).strftime("%H:%M")  # noqa: DTZ006
+            datetime.fromtimestamp(self.latest_timestamp).strftime("%H:%M")
         )
         if top:
             self._sync_icon(top._notification)
@@ -758,6 +788,8 @@ class NotificationGroup(AnimatedClippingBox):
         return _resolve_app_icon(self._widgets[0]._notification, 18)
 
     def _refresh_height(self) -> None:
+        if self._exiting or self._entering:
+            return  # the exit/enter animation owns the height (live target)
         if self._expanded:
             self.refresh()
         else:
@@ -778,6 +810,8 @@ class NotificationGroup(AnimatedClippingBox):
                 self.set_max_height(self._compute_collapsed_height())
 
     def _toggle_expand(self, btn, state: bool | None = None) -> None:
+        if self._exiting:
+            return
         self._expanded = state if state is not None else not self._expanded
         self._toggle_icon.set_angle(90 if self._expanded else -90)
 
@@ -794,8 +828,7 @@ class NotificationGroup(AnimatedClippingBox):
         for widget in self._widgets:
             widget.set_expanded(self._expanded)
 
-        if not self.get_mapped():
-            # nothing on screen to animate: snap to the end state
+        if not self.get_mapped() or self._entering:
             self._snap_to_state()
             return
 
@@ -843,6 +876,121 @@ class NotificationGroup(AnimatedClippingBox):
         else:
             self._revealed = False
             self.set_max_height(self._compute_collapsed_height())
+
+    def _close_widget_animated(self, widget: NotificationWidget) -> None:
+        if widget not in self._widgets or widget.exiting or self._exiting:
+            return
+        if len(self._widgets) == 1:
+            self.animate_out(1, widget._close_notification)
+            return
+
+        def _done() -> None:
+            if widget in self._widgets:
+                widget._close_notification()
+
+        widget.animate_exit(_done)
+
+    def _settled_height(self) -> int:
+        if self._expanded:
+            return Box.do_get_preferred_height(self)[1]
+        return self._compute_collapsed_height()
+
+    def animate_in(self) -> None:
+        if self._entering or self._exiting:
+            return
+        self._entering = True
+        self.set_opacity(0.0)
+        self._forced_height = 0
+        self.queue_resize()
+
+        def _start(*_) -> bool:
+            if not self._entering:
+                return False
+            if self.get_allocated_width() <= 1:
+                return True  # not laid out yet
+
+            estimate = max(self._settled_height(), 1)
+            prev = (
+                self.animator.duration,
+                self.animator.max_overshoot_value,
+            )
+
+            def _fade(animator, _pspec) -> None:
+                self.set_opacity(max(0.0, min(1.0, animator.value / estimate * 1.5)))
+
+            fade_id = self.animator.connect("notify::value", _fade)
+
+            def _cleanup() -> None:
+                self._cancel_enter = None
+                self._entering = False
+                self.animator.disconnect(fade_id)
+                self.animator.duration, self.animator.max_overshoot_value = prev
+                self.set_opacity(1.0)
+
+            def _done() -> None:
+                _cleanup()
+                self._forced_height = None
+                self._snap_to_state()
+
+            self._cancel_enter = _cleanup
+            self._revealed = self._expanded
+            self.animator.bezier_curve = CubicBezierCurves.EXPRESSIVE
+            self.animator.duration = 0.4 * motion_scale()
+            self.animator.max_overshoot_value = 8
+            self._animate(0, self._settled_height, _done)
+            return False
+
+        self.add_tick_callback(_start)
+
+    def animate_out(self, delay_ms: int, on_done: Callable[[], None]) -> None:
+        if self._exiting:
+            # already leaving: just get told when it's done
+            self._exit_callbacks.append(on_done)
+            return
+        self._exiting = True
+        self._exit_callbacks = [on_done]
+        self.queue_resize()  # lets the carousel re-check overflow right away
+
+        def _finish() -> None:
+            callbacks, self._exit_callbacks = self._exit_callbacks, []
+            for callback in callbacks:
+                callback()
+            self._exiting = False
+            if self._widgets and self.get_parent() is not None:
+                # something failed to close: bring the group back
+                self.set_opacity(1.0)
+                self._forced_height = None
+                self._snap_to_state()
+
+        def _start() -> bool:
+            if self._cancel_enter is not None:
+                self._cancel_enter()
+            height = self.get_allocated_height()
+            if height <= 0 or not self.get_mapped():
+                _finish()
+                return GLib.SOURCE_REMOVE
+
+            def _fade(animator, _pspec) -> None:
+                self.set_opacity(
+                    max(0.0, min(1.0, animator.value / height * 1.6 - 0.6))
+                )
+
+            fade_id = self.animator.connect("notify::value", _fade)
+            prev_duration = self.animator.duration
+
+            def _done() -> None:
+                self.animator.disconnect(fade_id)
+                self.animator.duration = prev_duration
+                _finish()
+
+            self._revealed = False
+            self._max_height = height
+            self.animator.bezier_curve = CubicBezierCurves.EMPHASIS
+            self.animator.duration = 0.32 * motion_scale()
+            self._animate(height, 0, _done)
+            return GLib.SOURCE_REMOVE
+
+        GLib.timeout_add(max(delay_ms, 1), _start)
 
     def _dismiss_all(self, *_) -> None:
         # one header sync + height update at the end instead of one per widget

@@ -48,22 +48,32 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.notifications import Notifications, Notification
 from fabric.utils import invoke_repeater
 
+import icons
+
+from config.config import config
+from config.info import IS_WAYLAND
+
 from modules.tile import TileSimple
+
+from services.animator import Animator
+
 from widgets.rounded_image import RoundedImage
 from widgets.material_label import MaterialIconLabel
 from widgets.shapes.expressive.morphing_shapes import ExpressiveShape
 from widgets.clipping_box import ClippingBox, OddlySpecificClippingBox
-from services.animator import Animator
+
 from utils.helpers import format_accel_to_keybind
-import icons
-from config.config import config
-from config.info import IS_WAYLAND
+
+from .notification_group import NotificationGroup
+from .common import (
+    CollapsingBox,
+    NotificationConfig,
+    NotificationNotifier,
+    motion_scale,
+)
 
 if IS_WAYLAND:
     from widgets.wayland_scrolled_window import AutoSizingScrolledWindow
-
-from .notification_group import NotificationGroup
-from .common import NotificationConfig, NotificationNotifier
 
 import gi
 
@@ -157,11 +167,15 @@ class ActiveNotificationWidget(EventBox):
         self._on_press_connection = None
         self._closed_connection = None
         self._timeout_repeater_id = None
+        self._closing = False  # "closed" received; collapsing before teardown
         self._scaled_pixbuf = None
-        self.timestamp = datetime.now()  # noqa: DTZ005
+        self.timestamp = datetime.now()
         self.urgency = notification.urgency
 
-        body_container = Box(name="notification-box", orientation="v", spacing=10)
+        body_container = CollapsingBox(
+            name="notification-box", orientation="v", spacing=10
+        )
+        self._body = body_container
         content_box = Box(spacing=10)
 
         try:
@@ -279,7 +293,9 @@ class ActiveNotificationWidget(EventBox):
                                 ),
                                 tooltip_text="Close",
                                 style_classes="critical" if self.urgency == 2 else "",
-                                on_clicked=lambda *_: self._notification.close(),
+                                on_clicked=lambda *_: self.animate_close(
+                                    self._notification.close
+                                ),
                             ),
                             Box(),
                         ],
@@ -363,11 +379,43 @@ class ActiveNotificationWidget(EventBox):
             GLib.source_remove(self._timeout_repeater_id)
             self._timeout_repeater_id = None
 
+    def animate_close(self, on_done) -> None:
+        if self._body.exiting:
+            return
+        # no timeout / move-to-history while leaving
+        if self._timeout_repeater_id is not None:
+            GLib.source_remove(self._timeout_repeater_id)
+            self._timeout_repeater_id = None
+
+        def _done() -> None:
+            if self.get_parent() is not None:
+                on_done()
+
+        self._body.animate_exit(_done)
+
     def _on_notification_closed(self, *_):
+        if self._closing:
+            return
+        self._closing = True
+        try:
+            self._on_close_callback(self)  # drop from the active list right away
+        except Exception as e:
+            logger.error(f"Error in on_close_callback: {e}")
+
+        if self._body.exiting or not self.get_mapped() or self.get_parent() is None:
+            # already collapsed (X button / clear-all) or not on screen
+            self._teardown()
+            return
+        if self._timeout_repeater_id is not None:
+            GLib.source_remove(self._timeout_repeater_id)
+            self._timeout_repeater_id = None
+        # closed by the app (or from history): leave with the same collapse
+        self._body.animate_exit(self._teardown)
+
+    def _teardown(self) -> None:
         try:
             if parent := self.get_parent():
                 parent.remove(self)
-            self._on_close_callback(self)
             self.destroy()
         except Exception as e:
             logger.error(f"Error in _on_notification_closed: {e}")
@@ -515,15 +563,27 @@ class NotificationGroupCarousal(Box):
         current = {g.app_name for g in groups}
         changed = False
 
+        # icons left of the view are scrolled past; removing one shifts the row
+        # left under a fixed scroll value, so the visible icons would jump and
+        # then animate back. Pull the scroll value back by the same amount.
+        shift = 0.0
+        view_left = self._hadj.get_value()
         for app_name in list(self._icons.keys()):
             if app_name not in current:
                 icon = self._icons.pop(app_name)
+                alloc = icon.get_allocation()
+                if icon.get_mapped() and alloc.x + alloc.width <= view_left + 0.5:
+                    shift += alloc.width + self.SPACING
                 if icon.get_parent() is self._icon_row:
                     self._icon_row.remove(icon)
                 # destroys the app icon as well from NotificationGroup. So you'll have
                 # to re-resolve it again (done by NotificationGroup.get_icon()).
                 icon.destroy()
                 changed = True
+
+        if shift:
+            self._animator.stop()
+            self._hadj.set_value(max(0.0, view_left - shift))
 
         for group in groups:
             if group.app_name not in self._icons:
@@ -558,6 +618,10 @@ class NotificationGroupCarousal(Box):
         for child in self._main_viewport.get_children():
             app_name = getattr(child, "app_name", None)
             if app_name is None or app_name not in self._icons:
+                continue
+            # a group collapsing away ends up 0px tall right at the bottom edge,
+            # which would count as "scrolled out of view" and flash the row in
+            if getattr(child, "exiting", False) or child.get_allocated_height() <= 1:
                 continue
             if child.get_allocation().y >= bottom:
                 overflow_order.append(app_name)
@@ -628,6 +692,8 @@ class NotificationManager:
         self._notification_service = None
         self._active_notifications = []
         self._is_open = False  # single source of truth for panel visibility
+        self._clearing = False  # clear-all animation running
+        self._arrivals: list[float] = []  # recent arrival times, for burst mode
 
         try:
             self._notification_service = Notifications()
@@ -779,6 +845,17 @@ class NotificationManager:
         # if self.silent_btn is not None:
         #     self.silent_btn.add_style_class("active")
 
+    # burst mode: this many arrivals within the window = a flood. Motion is
+    # skipped until it calms down, so animations never pile up.
+    BURST_COUNT = 3
+    BURST_WINDOW = 0.5  # seconds
+
+    def _note_arrival(self) -> bool:
+        now = time.monotonic()
+        self._arrivals = [t for t in self._arrivals if now - t < self.BURST_WINDOW]
+        self._arrivals.append(now)
+        return len(self._arrivals) >= self.BURST_COUNT
+
     def _handle_notification_added(self, source, notification_id: int):
         if not self._notification_service:
             return
@@ -791,25 +868,43 @@ class NotificationManager:
                 logger.warning(f"Failed to get notification with ID: {notification_id}")
                 return
 
+            burst = self._note_arrival()
             notification_widget = ActiveNotificationWidget(
                 notification=notification,
-                timeout_callback=self._move_to_revealer,
+                timeout_callback=self._retire_popup,
                 on_close_callback=self.close_active_notification,
             )
 
             if config.SILENT or self._is_open:
-                self._move_to_revealer(notification_widget=notification_widget)
+                # arriving while the panel is open: grow into it
+                self._move_to_revealer(
+                    notification_widget=notification_widget,
+                    animate=self._is_open
+                    and not burst
+                    and self.notification_history.get_mapped(),
+                )
             else:
                 if (
                     len(self._active_notifications)
                     >= NotificationConfig.MAX_ACTIVE_NOTIFS
                 ):
-                    active_children = self.active_notifications_box.get_children()
-                    self._move_to_revealer(active_children[len(active_children) - 1])
+                    # popups already leaving don't count
+                    active_children = [
+                        c
+                        for c in self.active_notifications_box.get_children()
+                        if c in self._active_notifications
+                    ]
+                    if burst:
+                        # flood: straight to history, no exit animation
+                        self._move_to_revealer(active_children[-1])
+                    else:
+                        self._retire_popup(active_children[-1])
                 self._active_notifications.append(notification_widget)
                 self.active_notifications_box.pack_end(
                     notification_widget, True, None, 0
                 )
+                if not burst:
+                    notification_widget._body.animate_enter()
 
             self._update_ui_state()
 
@@ -817,13 +912,26 @@ class NotificationManager:
             logger.error(f"Failed to handle notification: {e}")
 
     def close_active_notification(self, notification_widget: ActiveNotificationWidget):
+        # the widget removes itself from the box once its exit animation is done
         if notification_widget in self._active_notifications:
             self._active_notifications.remove(notification_widget)
-            self.active_notifications_box.remove(notification_widget)
 
         self._update_ui_state()
 
-    def _move_to_revealer(self, notification_widget: ActiveNotificationWidget) -> None:
+    def _retire_popup(self, notification_widget: ActiveNotificationWidget) -> None:
+        if notification_widget not in self._active_notifications:
+            return  # already leaving
+        if self._is_open or not notification_widget.get_mapped():
+            self._move_to_revealer(notification_widget)
+            return
+        self._active_notifications.remove(notification_widget)
+        notification_widget.animate_close(
+            lambda: self._move_to_revealer(notification_widget)
+        )
+
+    def _move_to_revealer(
+        self, notification_widget: ActiveNotificationWidget, animate: bool = False
+    ) -> None:
         try:
             if notification_widget._on_press_connection:
                 notification_widget.disconnect(notification_widget._on_press_connection)
@@ -831,7 +939,8 @@ class NotificationManager:
 
             if notification_widget in self._active_notifications:
                 self._active_notifications.remove(notification_widget)
-            self.active_notifications_box.remove(notification_widget)
+            if notification_widget.get_parent() is self.active_notifications_box:
+                self.active_notifications_box.remove(notification_widget)
 
             app_name = notification_widget._notification.app_name
             if app_name not in self._groups:
@@ -841,8 +950,11 @@ class NotificationManager:
                 group.connect("timestamp-change", lambda *_: self._resort_viewport())
                 self._groups[app_name] = group
                 self.viewport.add(group)
+                if animate:
+                    group.animate_in()
+                    animate = False  # the group's own entry covers its first row
 
-            self._groups[app_name].add_widget(notification_widget)
+            self._groups[app_name].add_widget(notification_widget, animate=animate)
 
             # mark read
             if (
@@ -942,13 +1054,105 @@ class NotificationManager:
             logger.error(f"Failed to toggle notification stack: {e}")
 
     def close_all_notifications(self, *_) -> None:
-        # iterate over a COPY!!!
-        for widget in self._active_notifications[:]:
+        if self._clearing:
+            return
+        if self._is_open:
+            leaving = self._take_visible_groups()
+            # stagger bottom-up: the lowest group leaves first (siblings share a
+            # parent, so allocation y is their on-screen order)
+            leaving.sort(key=lambda g: g.get_allocation().y, reverse=True)
+        else:
+            leaving = [w for w in self._active_notifications if w.get_mapped()]
+            leaving.sort(key=lambda w: w.get_allocation().y)
+        if not leaving:
+            self._close_all_now()
+            return
+
+        # items leave one after another (staggered), the real teardown runs
+        # once the last one is gone
+        self._clearing = True
+        remaining = [len(leaving)]
+
+        def _finish() -> bool:
+            if self._clearing:
+                self._clearing = False
+                self._close_all_now()
+            return GLib.SOURCE_REMOVE
+
+        def _item_done(dismiss) -> None:
+            # dismiss each item as soon as its own animation ends; waiting for
+            # the last one would let finished items pop back in meanwhile
+            try:
+                dismiss()
+            except Exception as e:
+                logger.error(f"Failed to dismiss notification(s): {e}")
+            remaining[0] -= 1
+            if remaining[0] == 0:
+                _finish()
+
+        # the whole stagger fits in a fixed budget, so many groups don't drag on
+        step = int(min(45, 240 // max(len(leaving) - 1, 1)) * motion_scale())
+        for index, item in enumerate(leaving):
+            delay = index * step
+            if self._is_open:
+                item.animate_out(delay, lambda g=item: _item_done(g._dismiss_all))
+            else:
+                GLib.timeout_add(
+                    max(delay, 1),
+                    lambda w=item: (
+                        w.animate_close(lambda: _item_done(w._notification.close))
+                        or GLib.SOURCE_REMOVE
+                    ),
+                )
+
+        # safety net: an interrupted animation must never leave clear-all stuck
+        GLib.timeout_add(step * len(leaving) + 1000, _finish)
+
+    def _take_visible_groups(self) -> list[NotificationGroup]:
+        vadj = self.scrolled_window.get_vadjustment()
+        top = vadj.get_value()
+        bottom = top + vadj.get_page_size()
+
+        visible, hidden, removed_above = [], [], 0
+        for group in self._groups.values():
+            if not group.get_mapped():
+                hidden.append(group)
+                continue
+            alloc = group.get_allocation()
+            if alloc.y + alloc.height <= top:
+                hidden.append(group)
+                removed_above += alloc.height + NotificationConfig.SPACING
+            elif alloc.y >= bottom:
+                hidden.append(group)
+            else:
+                visible.append(group)
+
+        for group in hidden:
+            try:
+                group._dismiss_all()
+            except Exception as e:
+                logger.error(f"Failed to dismiss group {group.app_name}: {e}")
+
+        if removed_above:
+            # content above the view is gone: scroll up by the same amount so
+            # the visible groups stay where they are
+            vadj.set_value(max(0.0, top - removed_above))
+
+        return [g for g in visible if g.get_parent() is not None]
+
+    def _close_all_now(self) -> None:
+        # iterate over a COPY!!! popups mid-exit are only in the box, not the list
+        popups = self._active_notifications[:]
+        popups += [
+            c for c in self.active_notifications_box.get_children() if c not in popups
+        ]
+        for widget in popups:
             try:
                 widget._notification.close()
             except Exception:
                 try:
-                    self._active_notifications.remove(widget)
+                    if widget in self._active_notifications:
+                        self._active_notifications.remove(widget)
                     if widget.get_parent():
                         widget.get_parent().remove(widget)
                     widget.cleanup()
@@ -983,5 +1187,5 @@ class NotificationManager:
                 logger.error("Failed to disconnect notification added handler")
             self._notification_service = None
 
-        self.close_all_notifications()
+        self._close_all_now()
         super().destroy()

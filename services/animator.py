@@ -6,6 +6,7 @@ from gi.repository import GLib, Gtk  # type: ignore
 class CubicBezierCurves(tuple, Enum):
     EXPRESSIVE = (0.42, 1.67, 0.21, 1.0)
     EMPHASIS = (0.27, 1.0, 0.18, 1.0)
+    STANDARD = (0.2, 0.0, 0.0, 1.0)
 
 class Animator(Service):
     @Signal
