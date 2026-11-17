@@ -1,6 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "name": "endorsi",
-  "notify": false,
-  "notes": ""
+  "notes": "Battery popup, animated notifications, release update alerts, live corner radius previews (applied on SwayFX), plus fixes."
 }
