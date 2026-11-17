@@ -126,9 +126,8 @@ if __name__ == "__main__":
     dockBar = DockBar(pill=pill)
     bottom_window_manager = ShellWindowManager(pill=pill, dockBar=dockBar)
 
-    controls_transient_window = TransientWindow(shell_window=pill)
-
     top_pill = TopPill()
+    controls_transient_window = TransientWindow(shell_window=top_pill)
     top_bar = TopBar(pill=top_pill)
     top_window_manager = ShellTopWindowManager(
         pill=top_pill, dockBar=top_bar, main_dock=dockBar

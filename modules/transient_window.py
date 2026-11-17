@@ -6,14 +6,17 @@ from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
 
 import icons
+
 from config.config import config
 from config.info import IS_WAYLAND
 
 from modules.controls import ControlsManager
+
 from services.metrics import MetricsProvider
 
 from utils.colors import bind_theme
-from utils.helpers import keep_window
+from utils.helpers import keep_window, get_absolute_wayland_widget_position
+
 from widgets.material_label import MaterialIconLabel
 
 if IS_WAYLAND:
@@ -41,7 +44,7 @@ class LowBatteryBanner(Revealer):
         self.provider.connect("battery-changed", self.check_low_bat)
 
         self.dismissed = False
-        self.low_bat_msg = Label(name="notif-low-bat-msg", label="Low Battery fam (<15%)")
+        self.low_bat_msg = Label(name="notif-low-bat-msg", label="Low Battery (<15%)")
 
         self.content_box = Box(
             orientation="v",
@@ -101,19 +104,20 @@ class LowBatteryBanner(Revealer):
 
 class TransientWindow(Window):
     def __init__(self, shell_window=None, **kwargs):
-        # the OSD opens on this window's monitor instead of the focused one
+        # the OSD hangs off this window (the top pill):
         self._shell_window = shell_window
         if IS_WAYLAND:
             super().__init__(
                 name="notification-popup",
                 layer="overlay",
                 keyboard_mode="on-demand",
-                anchor="top",
+                anchor="top left",
                 exclusivity="none",
                 margin=(0, 0, 0, 0),
                 visible=False,
                 **kwargs,
             )
+            GtkLayerShell.set_exclusive_zone(self, -1)
         else:
             super().__init__(
                 name="notification-popup",
@@ -123,6 +127,10 @@ class TransientWindow(Window):
                 visible=False,
                 **kwargs,
             )
+            # disconnect the X11Window geometry enforcement hook
+            if self._size_allocate_hook:
+                self.handler_disconnect(self._size_allocate_hook)
+                self._size_allocate_hook = None
 
         bind_theme(self)
         # an unplugged monitor closes our layer surface (see keep_window)
@@ -142,6 +150,14 @@ class TransientWindow(Window):
             revealer.connect("notify::reveal-child", self._on_reveal_intent)
             revealer.connect("notify::child-revealed", self._on_reveal_finished)
 
+        # follow the pill as it resizes or gets dragged, and our own size
+        self.connect("size-allocate", lambda *_: self._follow_shell_position())
+        if shell_window is not None:
+            shell_window.connect(
+                "size-allocate", lambda *_: self._follow_shell_position()
+            )
+            shell_window.connect("on-drag", lambda *_: self._follow_shell_position())
+
         self.children = Box(
             orientation="v",
             style="min-height:1px",
@@ -156,6 +172,7 @@ class TransientWindow(Window):
             if not self.get_visible():
                 self._follow_shell_monitor()
             self.set_visible(True)
+            self._follow_shell_position()
 
     def _follow_shell_monitor(self):
         if not IS_WAYLAND or self._shell_window is None:
@@ -167,6 +184,36 @@ class TransientWindow(Window):
         if monitor is not None:
             # fabric's `monitor` property is an int and drops a Gdk.Monitor
             GtkLayerShell.set_monitor(self, monitor)
+
+    def _follow_shell_position(self):
+        pill = self._shell_window
+        if pill is None or not self.get_visible():
+            return
+        pill_alloc = pill.get_allocation()
+        own_w, own_h = self.get_allocated_width(), self.get_allocated_height()
+        at_bottom = config.get("top_pill.POSITION.y") == "bottom"
+
+        if IS_WAYLAND:
+            ok, pill_x, pill_y = get_absolute_wayland_widget_position(pill)
+            win = pill.get_window()
+            if not ok or win is None:
+                return
+            geo = Gdk.Display.get_default().get_monitor_at_window(win).get_geometry()
+            pill_x, pill_y = pill_x - geo.x, pill_y - geo.y
+        else:
+            pill_x, pill_y = pill.get_position()
+
+        x = max(0, pill_x + (pill_alloc.width - own_w) // 2)
+        y = pill_y - own_h if at_bottom else pill_y + pill_alloc.height
+        y = max(0, y)
+
+        if IS_WAYLAND:
+            if GtkLayerShell.get_margin(self, GtkLayerShell.Edge.LEFT) != x:
+                GtkLayerShell.set_margin(self, GtkLayerShell.Edge.LEFT, x)
+            if GtkLayerShell.get_margin(self, GtkLayerShell.Edge.TOP) != y:
+                GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, y)
+        elif self.get_position() != (x, y):
+            self.move(x, y)
 
     # hide after revealer animation
     def _on_reveal_finished(self, revealer, _):
