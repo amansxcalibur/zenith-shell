@@ -1,6 +1,7 @@
 from loguru import logger
+from typing import Any, ClassVar
 from dataclasses import dataclass
-from typing import Optional, Any, Callable
+from collections.abc import Callable
 
 from fabric.core.service import Signal, Property
 
@@ -17,7 +18,7 @@ import gi
 
 try:
     gi.require_version("NM", "1.0")
-    from gi.repository import NM, GLib, GObject
+    from gi.repository import NM, GLib, GObject  # type: ignore
 except ValueError:
     logger.error("Failed to load NetworkManager bindings")
     raise
@@ -56,8 +57,8 @@ class NetworkInfo:
 class NetworkInfoFactory:
     @staticmethod
     def from_access_point(
-        ap: NM.AccessPoint, active_ssid: Optional[str] = None
-    ) -> Optional[NetworkInfo]:
+        ap: NM.AccessPoint, active_ssid: str | None = None
+    ) -> NetworkInfo | None:
         """Create NetworkInfo from NM.AccessPoint"""
         try:
             if not ap or not ap.get_ssid():
@@ -85,7 +86,7 @@ class NetworkInfoFactory:
 
 
 class SignalStrengthMapper:
-    ICON_MAP = {
+    ICON_MAP: ClassVar[dict[int, str]] = {
         80: "network-wireless-signal-excellent-symbolic",
         60: "network-wireless-signal-good-symbolic",
         40: "network-wireless-signal-ok-symbolic",
@@ -114,9 +115,7 @@ class AccessPointManager:
     def update(self, new_list: list[NM.AccessPoint]) -> None:
         self.ap_list = new_list
 
-    def get_unique_networks(
-        self, active_ssid: Optional[str] = None
-    ) -> list[NetworkInfo]:
+    def get_unique_networks(self, active_ssid: str | None = None) -> list[NetworkInfo]:
         # deduplicate by SSID
         ap_dict: dict[str, NM.AccessPoint] = {}
 
@@ -148,7 +147,7 @@ class AccessPointManager:
 
         return networks
 
-    def find_by_ssid(self, ssid: str) -> Optional[NM.AccessPoint]:
+    def find_by_ssid(self, ssid: str) -> NM.AccessPoint | None:
         for ap in self.ap_list:
             try:
                 if not ap or not ap.get_ssid():
@@ -209,13 +208,13 @@ class ConnectionStateMachine:
             if pending.is_new:
                 self._schedule_cleanup(ssid)
 
-    def check_disconnected_state(self, current_ssid: Optional[str]) -> None:
+    def check_disconnected_state(self, current_ssid: str | None) -> None:
         """Check if any pending connections failed when device disconnected"""
         for ssid in list(self.pending.keys()):
             if ssid != current_ssid:
                 reason = ConnectionResult.CONNECTION_FAILED
-                if self.network_service.wifi_dev:
-                    state_reason = self.network_service.wifi_dev.get_state_reason()
+                if self.network_service.device:
+                    state_reason = self.network_service.device.get_state_reason()
                     if state_reason == NM.DeviceStateReason.NO_SECRETS:
                         reason = ConnectionResult.INVALID_PASSWORD
 
@@ -225,8 +224,8 @@ class ConnectionStateMachine:
         # mark all pending connections when device enters FAILED state
         for ssid in list(self.pending.keys()):
             reason = ConnectionResult.CONNECTION_FAILED
-            if self.network_service.wifi_dev:
-                state_reason = self.network_service.wifi_dev.get_state_reason()
+            if self.network_service.device:
+                state_reason = self.network_service.device.get_state_reason()
                 if state_reason == NM.DeviceStateReason.NO_SECRETS:
                     reason = ConnectionResult.INVALID_PASSWORD
 
@@ -248,10 +247,10 @@ class ConnectionStateMachine:
 
 
 class ConnectionProfileManager:
-    def __init__(self, client: Optional[NM.Client]):
+    def __init__(self, client: NM.Client | None):
         self.client = client
 
-    def find_by_ssid(self, ssid: str) -> Optional[NM.Connection]:
+    def find_by_ssid(self, ssid: str) -> NM.Connection | None:
         if not self.client:
             return None
 
@@ -293,9 +292,7 @@ class ConnectionProfileManager:
         # Return first match
         return matches[0]
 
-    def create(
-        self, ssid: str, password: Optional[str]
-    ) -> Optional[NM.SimpleConnection]:
+    def create(self, ssid: str, password: str | None) -> NM.SimpleConnection | None:
         try:
             connection = NM.SimpleConnection.new()
 
@@ -380,18 +377,19 @@ class ConnectionProfileManager:
                     if wifi and wifi.get_ssid():
                         ssid = NM.utils_ssid_to_utf8(wifi.get_ssid().get_data())
                         saved_ssids.add(ssid)
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Skipping unreadable connection profile: {e}")
                     continue
         except Exception as e:
             logger.error(f"Error getting saved networks: {e}")
 
-        return sorted(list(saved_ssids))
+        return sorted(saved_ssids)
 
 
 class ScanManager:
     def __init__(
         self,
-        wifi_dev: Optional[NM.DeviceWifi],
+        wifi_dev: NM.DeviceWifi | None,
         on_start: Callable[[], None],
         on_complete: Callable[[], None],
         on_list_changed: Callable[[], None],
@@ -401,14 +399,14 @@ class ScanManager:
         self.on_complete = on_complete
         self.on_list_changed = on_list_changed
         self._is_scanning = False
-        self._scan_timeout_id: Optional[int] = None
-        self._debounce_id: Optional[int] = None
+        self._scan_timeout_id: int | None = None
+        self._debounce_id: int | None = None
 
     @property
     def is_scanning(self) -> bool:
         return self._is_scanning
 
-    def update_device(self, wifi_dev: Optional[NM.DeviceWifi]) -> None:
+    def update_device(self, wifi_dev: NM.DeviceWifi | None) -> None:
         self.wifi_dev = wifi_dev
 
     def request_scan(self) -> bool:
@@ -496,12 +494,10 @@ class WifiDevice(NetworkDevice):
     @Signal
     def ap_change(self) -> None:
         """Emitted when access points list changes"""
-        ...
 
     @Signal
     def scan_state_change(self, scanning: bool) -> None:
         """Emitted when a requested scan starts and when its results are in"""
-        ...
 
     @Signal
     def connection_result(
@@ -512,7 +508,7 @@ class WifiDevice(NetworkDevice):
     def active_ssid(self) -> str | None:
         return self._extract_ssid_from_ap(self.get_active_access_point())
 
-    def __init__(self, device: NM.DeviceWifi, client: Optional[NM.Client]):
+    def __init__(self, device: NM.DeviceWifi, client: NM.Client | None):
         super().__init__(device)
         self.client = client
 
@@ -590,7 +586,7 @@ class WifiDevice(NetworkDevice):
             return []
         return self.device.get_access_points()
 
-    def get_active_access_point(self) -> Optional[NM.AccessPoint]:
+    def get_active_access_point(self) -> NM.AccessPoint | None:
         if not self.device:
             return None
         return self.device.get_active_access_point()
@@ -600,7 +596,7 @@ class WifiDevice(NetworkDevice):
             return None
         return self.device.get_active_connection()
 
-    def get_state_reason(self) -> Optional[int]:
+    def get_state_reason(self) -> int | None:
         if not self.device:
             return None
         try:
@@ -608,13 +604,13 @@ class WifiDevice(NetworkDevice):
         except Exception:
             return None
 
-    def get_path(self) -> Optional[str]:
+    def get_path(self) -> str | None:
         return self.device.get_path() if self.device else None
 
     def connect_to_network(
         self,
         ssid: str,
-        password: Optional[str] = None,  # required for new connections
+        password: str | None = None,  # required for new connections
         force_new: bool = False,  # force creation of new connection profile
     ) -> ConnectionResult:
         ssid = ssid.strip()
@@ -686,13 +682,12 @@ class WifiDevice(NetworkDevice):
         return self.profile_manager.get_saved_ssids()
 
     def _activate_existing_connection(
-        self, connection: NM.Connection, ssid: str, password: Optional[str]
+        self, connection: NM.Connection, ssid: str, password: str | None
     ) -> ConnectionResult:
         logger.debug(f"Activating existing connection: {ssid}")
 
-        if password:
-            if not self.profile_manager.update_password(connection, password):
-                logger.warning("Failed to update password in existing connection")
+        if password and not self.profile_manager.update_password(connection, password):
+            logger.warning("Failed to update password in existing connection")
 
         try:
             self.client.activate_connection_async(
@@ -727,7 +722,7 @@ class WifiDevice(NetworkDevice):
             self.connection_result(ssid, ConnectionResult.CONNECTION_FAILED, str(e))
 
     def _create_and_activate_connection(
-        self, ssid: str, password: Optional[str], ap: NM.AccessPoint
+        self, ssid: str, password: str | None, ap: NM.AccessPoint
     ) -> ConnectionResult:
         logger.debug(f"Creating new connection: {ssid}")
 
@@ -821,7 +816,7 @@ class WifiDevice(NetworkDevice):
         )
         self._update_connection_state(new_state)
 
-    def _on_active_ap_change(self, source: Optional[NM.DeviceWifi], pspec: Any) -> None:
+    def _on_active_ap_change(self, source: NM.DeviceWifi | None, pspec: Any) -> None:
         self._update_ap_list()
         self._update_connection_state()
 
@@ -838,7 +833,7 @@ class WifiDevice(NetworkDevice):
             return NM.DeviceState.UNKNOWN
         return self.device.get_state()
 
-    def _update_connection_state(self, new_state: Optional[int] = None) -> None:
+    def _update_connection_state(self, new_state: int | None = None) -> None:
         dev = self.device
         if not dev:
             self._emit_state(DeviceStatus.NO_DEVICE, "")
@@ -881,7 +876,7 @@ class WifiDevice(NetworkDevice):
             logger.error(f"Error updating AP list: {e}")
 
     @staticmethod
-    def _extract_ssid_from_ap(ap: Optional[NM.AccessPoint]) -> Optional[str]:
+    def _extract_ssid_from_ap(ap: NM.AccessPoint | None) -> str | None:
         if not ap or not ap.get_ssid():
             return None
 
