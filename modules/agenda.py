@@ -1,5 +1,6 @@
 import os
 import glob
+import shutil
 import json
 import uuid
 import cairo
@@ -17,7 +18,7 @@ from fabric.widgets.checkbutton import CheckButton
 from fabric.widgets.scrolledwindow import ScrolledWindow
 
 import icons
-from config.info import DATA_DIR, CACHE_DIR, IS_WAYLAND
+from config.info import DATA_DIR, CACHE_DIR, USER_CONFIG_DIR, IS_WAYLAND
 from services.animator import CubicBezierCurves
 
 from utils.colors import bind_theme
@@ -34,8 +35,8 @@ from gi.repository import Gtk, Gdk, Pango, GdkPixbuf, GLib  # type: ignore
 DND_TARGET = "agenda-row"
 ANIMATION_MS = 180  # rows and drop gaps opening and closing
 
-
-DATA_FILE = os.path.join(DATA_DIR, "agenda.json")
+DATA_FILE = os.path.join(USER_CONFIG_DIR, "data", "agenda.json")
+LEGACY_DATA_FILE = os.path.join(DATA_DIR, "agenda.json")
 AGENDA_CACHE_DIR = os.path.join(CACHE_DIR, "agenda")
 BACKGROUND_PREFIX = "bg_crop_"
 THUMB_W, THUMB_H = 500, 100
@@ -43,8 +44,29 @@ THUMB_W, THUMB_H = 500, 100
 os.makedirs(AGENDA_CACHE_DIR, exist_ok=True)
 
 
+def _migrate_legacy_data_file():
+    global DATA_FILE
+    if not os.path.exists(LEGACY_DATA_FILE):
+        return
+    if os.path.exists(DATA_FILE):
+        logger.warning(
+            f"Both {LEGACY_DATA_FILE} and {DATA_FILE} exist; using the latter"
+        )
+        return
+    try:
+        os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
+        shutil.move(LEGACY_DATA_FILE, DATA_FILE)
+        logger.info(f"Moved the agenda to {DATA_FILE}")
+    except OSError as e:
+        # keep using the old file rather than starting an empty one
+        logger.error(f"Couldn't move {LEGACY_DATA_FILE} to {DATA_FILE}: {e}")
+        DATA_FILE = LEGACY_DATA_FILE
+
+
 def ensure_data_file():
-    os.makedirs(DATA_DIR, exist_ok=True)
+    # before creating an empty file, or the old one would never move over
+    _migrate_legacy_data_file()
+    os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
     if not os.path.exists(DATA_FILE):
         with open(DATA_FILE, "w") as f:
             json.dump([], f)
@@ -889,7 +911,7 @@ class AgendaApp(Box):
             logger.warning("Not saving the agenda, as it failed to load")
             return
 
-        os.makedirs(DATA_DIR, exist_ok=True)
+        os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
         rows = self._rows()
         items = [{"text": row.text, "image": row.image_path} for row in rows]
 

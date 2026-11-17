@@ -886,7 +886,7 @@ def cmd_uninstall(args, backend) -> int:
         return 0
 
     keep_config = not c.CONFIG_DIR.exists() or c.confirm(
-        f"Keep your settings ({c.CONFIG_DIR})?", default=True
+        f"Keep your settings and agenda ({c.CONFIG_DIR})?", default=True
     )
     if not c.confirm("Uninstall Zenith Shell now?", default=False):
         info("Aborted.")
@@ -921,7 +921,9 @@ def cmd_uninstall(args, backend) -> int:
         ("Removing Zenith Shell", lambda: remove_tree(c.INSTALL_DIR)),
     ]
     if not keep_config:
-        steps.append(("Removing your settings", lambda: remove_tree(c.CONFIG_DIR)))
+        steps.append(
+            ("Removing your settings and agenda", lambda: remove_tree(c.CONFIG_DIR))
+        )
     steps += [
         (
             "Cleaning up",
@@ -937,7 +939,7 @@ def cmd_uninstall(args, backend) -> int:
     print()
     ok("Zenith Shell has been removed.")
     if keep_config and config.exists():
-        info(f"Your settings are kept in {config}.")
+        info(f"Your settings and agenda are kept in {config}.")
     if mentions:
         panel(
             "Leftover references: edit these by hand",
