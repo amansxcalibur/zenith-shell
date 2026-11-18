@@ -186,7 +186,6 @@ class PlayerMini(Box):
 
         self.duration = 0.0
 
-        # connect to service signals
         self._player_service.connect("pause", self.on_pause)
         self._player_service.connect("play", self.on_play)
         self._player_service.connect("meta-change", self.on_metadata)
@@ -233,18 +232,21 @@ class PlayerMini(Box):
             self._wallpaper_signal_id = self._wallpaper_service.connect(
                 "wallpaper-changed", self._on_wallpaper_changed
             )
+        # read the paths when this runs, not when it's queued: the wallpaper
+        # may be restored in between, and a stale None would wipe it
         GLib.idle_add(
-            self._on_wallpaper_changed,
-            self._wallpaper_service,
-            self._wallpaper_service.get_wallpaper_path(),
-            self._wallpaper_service.get_preview_path(),
+            lambda: self._on_wallpaper_changed(
+                self._wallpaper_service,
+                self._wallpaper_service.get_wallpaper_path(),
+                self._wallpaper_service.get_preview_path(),
+            )
         )
 
     def _on_wallpaper_changed(
         self, service: WallpaperService, full_path: str, preview_path: str | None
     ):
-        apply_filter_to_player_art(self, preview_path)
         if preview_path:
+            apply_filter_to_player_art(self, preview_path)
             self.album_cover.set_style(f"background-image:url('{preview_path}')")
         return False
 
@@ -405,8 +407,10 @@ class PlaceholderMini(Box):
         self.album_cover = Box(style_classes="album-image")
 
         def _set_initial_bg(
-            service: WallpaperService, full_path: str, preview_path: str
+            service: WallpaperService, full_path: str, preview_path: str | None
         ):
+            if not preview_path:
+                return False  # not restored yet; wallpaper-changed will follow
             apply_filter_to_player_art(self, preview_path)
             self.album_cover.set_style(f"background-image:url('{preview_path}')")
             return False
@@ -415,11 +419,14 @@ class PlaceholderMini(Box):
             "wallpaper-changed", _set_initial_bg
         )
 
+        # read the paths when this runs, not when it's queued: the wallpaper
+        # may be restored in between, and a stale None would wipe it
         GLib.idle_add(
-            _set_initial_bg,
-            self._wallpaper_service,
-            self._wallpaper_service.get_wallpaper_path(),
-            self._wallpaper_service.get_preview_path(),
+            lambda: _set_initial_bg(
+                self._wallpaper_service,
+                self._wallpaper_service.get_wallpaper_path(),
+                self._wallpaper_service.get_preview_path(),
+            )
         )
 
         self.player_name = Svg(
@@ -531,28 +538,22 @@ class PlayerContainerMini(Box):
     def on_new_player(self, manager, player_name: str, player_service: PlayerService):
         logger.debug(f"Creating mini UI for player: {player_name}")
 
-        # avoid duplicate UI creation
         if player_name in self.player_widgets:
             logger.warning(f"Mini UI for {player_name} already exists, skipping")
             return
 
-        # create widget with the service
         player_widget = PlayerMini(player_service=player_service)
         # player_widget.wiggly_bar.queue_draw()
         player_widget.set_name(player_name)
-
-        # store reference
         self.player_widgets[player_name] = player_widget
 
         logger.debug(f"Stacking mini: {player_name}")
         self.stack.add_named(player_widget, player_name)
 
-        # remove placeholder if this is the first player
         if len(self.player_widgets) == 1:
             self.stack.remove(self.placeholder)
             self.stack.set_visible_child_name(player_name)
 
-        # add switch button; update_player_list decides which ones are shown
         button = Button(
             name=player_name,
             style_classes=["player-button", "mini"],
@@ -568,7 +569,6 @@ class PlayerContainerMini(Box):
         GLib.idle_add(self.stack.set_visible_child_name, player_name)
 
     def on_player_vanish(self, manager, player_name: str):
-        """Called when a player disappears"""
         logger.debug(f"Removing mini UI for player: {player_name}")
 
         if player_name not in self.player_widgets:
@@ -577,7 +577,6 @@ class PlayerContainerMini(Box):
 
         # get the widget
         player_widget = self.player_widgets[player_name]
-
         self.stack.remove(player_widget)
 
         # remove switch button

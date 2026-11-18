@@ -75,9 +75,19 @@ def get_player_property(bus_name, prop, on_result, *, unpack=True):
     )
 
 
+def _filename_from_url(url: str) -> str:
+    parsed = urllib.parse.urlparse(url)
+    # only local files btw
+    if parsed.scheme != "file":
+        return ""
+    return urllib.parse.unquote(parsed.path).rsplit("/", 1)[-1]
+
+
 def get_track_labels(metadata) -> tuple[str, str]:
     keys = metadata.keys()
     title = metadata["xesam:title"] if "xesam:title" in keys else ""
+    if not title and "xesam:url" in keys:
+        title = _filename_from_url(metadata["xesam:url"])
     artists = metadata["xesam:artist"] if "xesam:artist" in keys else []
     return title or "Unknown Title", artists[0] if artists else "Unknown Artist"
 

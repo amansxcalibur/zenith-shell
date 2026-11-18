@@ -686,11 +686,14 @@ class Player(Box):
             self._wallpaper_signal_id = self._wallpaper_service.connect(
                 "wallpaper-changed", self._on_wallpaper_changed
             )
+        # read the paths when this runs, not when it's queued: the wallpaper
+        # may be restored in between, and a stale None would wipe it
         GLib.idle_add(
-            self._on_wallpaper_changed,
-            self._wallpaper_service,
-            self._wallpaper_service.get_wallpaper_path(),
-            self._wallpaper_service.get_preview_path(),
+            lambda: self._on_wallpaper_changed(
+                self._wallpaper_service,
+                self._wallpaper_service.get_wallpaper_path(),
+                self._wallpaper_service.get_preview_path(),
+            )
         )
 
     def _on_wallpaper_changed(
@@ -962,11 +965,14 @@ class Placeholder(Box):
             "theme-changed", lambda _, mode: self._paint_background(mode)
         )
 
+        # read the paths when this runs, not when it's queued: the wallpaper
+        # may be restored in between, and a stale None would wipe it
         GLib.idle_add(
-            _set_initial_bg,
-            self._wallpaper_service,
-            self._wallpaper_service.get_wallpaper_path(),
-            self._wallpaper_service.get_preview_path(),
+            lambda: _set_initial_bg(
+                self._wallpaper_service,
+                self._wallpaper_service.get_wallpaper_path(),
+                self._wallpaper_service.get_preview_path(),
+            )
         )
 
         self.children = [

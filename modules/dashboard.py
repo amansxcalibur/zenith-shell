@@ -94,9 +94,9 @@ class Dashboard(Box):
 
         self.update_dots()
 
-        self.dark_theme_tile = ThemeSwitchTile()
         self.caffeine_tile = CaffeineTile()
         self.airplane_tile = AirplaneModeTile()
+        self.dark_theme_tile = ThemeSwitchTile()
 
         self.tiles = Box(
             spacing=3,
@@ -113,15 +113,10 @@ class Dashboard(Box):
                 Box(
                     spacing=3,
                     children=[
-                        self.dark_theme_tile,
                         self.silent,
-                        self.caffeine_tile,
+                        self.dark_theme_tile,
                         self.airplane_tile,
-                        # Box(style='background-color:white; min-height:60px; min-width:140px; border-radius:20px;'),
-                        # Box(style='background-color:white; min-height:60px; min-width:70px; border-radius:20px;'),
-                        # Box(style='background-color:white; min-height:60px; min-width:78px; border-radius:20px;'),
-                        # Box(style='background-color:white; min-height:60px; min-width:78px; border-radius:20px;'),
-                        # Box(style='background-color:white; min-height:60px; min-width:78px; border-radius:20px;'),
+                        self.caffeine_tile,
                     ],
                 ),
             ],
@@ -147,8 +142,6 @@ class Dashboard(Box):
                                 style="color:var(--foreground); margin-bottom:3px; font-family: Roboto Flex",
                             ),
                             AgendaApp(),
-                            # self.notification_box,
-                            # self.notification_box_2,
                         ],
                     ),
                     Box(
