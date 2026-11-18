@@ -13,6 +13,7 @@ import icons
 
 from config.config import config
 from modules.tile import Tile
+from services.rfkill import RfkillService, TYPE_BLUETOOTH
 
 from widgets.clipping_box import ClippingBox
 from widgets.material_label import MaterialIconLabel
@@ -38,6 +39,7 @@ UPDATE_DIALOG_WIDTH = 350
 MAX_DEVICE_NAME_CHARS = 24
 FAILURE_DISPLAY_MS = 5000
 POWER_CHANGE_TIMEOUT_MS = 5000
+RFKILL_SETTLE_MS = 300
 
 
 class Bluetooth(Tile):
@@ -427,8 +429,41 @@ class BluetoothConnections(Box):
             self._power_timeout_id = GLib.timeout_add(
                 POWER_CHANGE_TIMEOUT_MS, self._on_power_change_timeout
             )
-            self.client.toggle_power()
+            if state and self._bluetooth_soft_blocked():
+                self._power_on_after_unblock()
+            else:
+                self.client.toggle_power()
             config.set("bluetooth.enabled", state)
+
+    @staticmethod
+    def _bluetooth_soft_blocked() -> bool:
+        rfkill = RfkillService()
+        return any(
+            radio_type == TYPE_BLUETOOTH and soft and not hard
+            for radio_type, soft, hard in rfkill.devices.values()
+        )
+
+    def _power_on_after_unblock(self):
+        rfkill = RfkillService()
+        handler_id = None
+
+        def on_rfkill_changed(*_):
+            if self._bluetooth_soft_blocked():
+                return
+            rfkill.disconnect(handler_id)
+            # hci0 needs a moment after the unblock before BlueZ can power it
+            GLib.timeout_add(RFKILL_SETTLE_MS, self._power_on)
+
+        handler_id = rfkill.connect("changed", on_rfkill_changed)
+        # on failure the power timeout resyncs the UI
+        if not rfkill.set_blocked(
+            TYPE_BLUETOOTH, False, on_failed=lambda: rfkill.disconnect(handler_id)
+        ):
+            rfkill.disconnect(handler_id)
+
+    def _power_on(self) -> bool:
+        self.client.powered = True
+        return False
 
     def _on_power_change_timeout(self) -> bool:
         # eg: blocked by rfkill, show what the adapter is actually doing

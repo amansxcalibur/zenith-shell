@@ -16,6 +16,7 @@ from modules.weather import WeatherPill
 from modules.bluetooth import Bluetooth
 from modules.wavy_clock import WavyClock
 from modules.theme import ThemeSwitchTile
+from modules.quick_toggles import CaffeineTile, AirplaneModeTile
 from modules.player_mini import PlayerContainerMini
 from modules.notifications.notification import NotificationTile
 
@@ -94,6 +95,8 @@ class Dashboard(Box):
         self.update_dots()
 
         self.dark_theme_tile = ThemeSwitchTile()
+        self.caffeine_tile = CaffeineTile()
+        self.airplane_tile = AirplaneModeTile()
 
         self.tiles = Box(
             spacing=3,
@@ -110,15 +113,10 @@ class Dashboard(Box):
                 Box(
                     spacing=3,
                     children=[
-                        self.silent,
-                        CenterBox(
-                            name="dashabord-center-tile",
-                            h_expand=True,
-                            center_children=Label(
-                                label="~", style="font-size:25px; color: var(--outline)"
-                            ),
-                        ),
                         self.dark_theme_tile,
+                        self.silent,
+                        self.caffeine_tile,
+                        self.airplane_tile,
                         # Box(style='background-color:white; min-height:60px; min-width:140px; border-radius:20px;'),
                         # Box(style='background-color:white; min-height:60px; min-width:70px; border-radius:20px;'),
                         # Box(style='background-color:white; min-height:60px; min-width:78px; border-radius:20px;'),

@@ -72,6 +72,26 @@
   transition: all;
 }
 
+/* icon-only quick toggles */
+.tile.small {
+  all: unset;
+  min-width: 62px;
+  min-height: 62px;
+  border-radius: 50px;
+  background-color: var(--surface-bright);
+  transition: border-radius 0.25s cubic-bezier(0.5, 0.25, 0, 1);
+}
+.light .tile.small {
+  background-color: var(--true-surface-bright);
+}
+.tile.small.on {
+  border-radius: 16px;
+  background-color: var(--primary);
+}
+.tile.small:disabled {
+  opacity: 0.5;
+}
+
 .tile-icon {
   font-size: 26px;
   padding: 0 4px;

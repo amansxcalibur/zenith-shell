@@ -149,6 +149,43 @@ class TileSimple(ClippingBox):
         self.status_label_widget_revealer.reveal()
 
 
+class TileSmall(Button):
+    """An icon-only toggle tile, for quick switches that don't need a label.
+    The name and state go in the tooltip; subclasses override
+    `handle_state_toggle` and call `set_state` with the real state."""
+
+    def __init__(self, markup: str, label: str, **kwargs):
+        self.icon = MaterialIconLabel(style_classes="tile-icon", icon_text=markup)
+        super().__init__(
+            style_classes=["tile", "small", "off"],
+            h_expand=True,
+            child=self.icon,
+            on_clicked=self.handle_state_toggle,
+            **kwargs,
+        )
+        self.label = label
+        self.state = False
+        self.set_state(False)
+        add_hover_cursor(self)
+
+    def set_state(self, active: bool, status: str | None = None):
+        self.state = active
+        if active:
+            self.add_style_class("on")
+            self.remove_style_class("off")
+        else:
+            self.add_style_class("off")
+            self.remove_style_class("on")
+        self.set_tooltip_text(f"{self.label}: {status or ('On' if active else 'Off')}")
+
+    def handle_state_toggle(self, *_):
+        # overridden
+        self.set_state(not self.state)
+
+    def close(self):
+        pass
+
+
 class TileSimpleWithMenu(ClippingBox):
     def __init__(
         self,

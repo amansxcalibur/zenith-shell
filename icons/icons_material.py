@@ -113,6 +113,7 @@ link_off: MaterialIcon = _M("\ue16f")
 key: MaterialIcon = _M("\ue73c")
 globe_2_question: MaterialIcon = _M("\U000fffb6")
 radar: MaterialIcon = _M("\uf04e")
+airplane: MaterialIcon = _M("\ue195")
 
 # Bluetooth
 bluetooth: MaterialIcon = _M("\ue1a7")
@@ -163,6 +164,7 @@ reboot: MaterialIcon = _M("\uf053")
 shutdown: MaterialIcon = _M("\ue8ac")
 balance: MaterialIcon = _M("\ueaf6")
 energy_savings_leaf: MaterialIcon = _M("\uec1a")
+coffee: MaterialIcon = _M("\uefef")
 
 # Metrics
 battery: MaterialIcon = _M("\uf304")
