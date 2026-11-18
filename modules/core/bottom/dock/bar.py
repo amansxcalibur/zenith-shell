@@ -15,17 +15,20 @@ from modules.systray import SystemTray
 from modules.weather import WeatherMini
 from modules.special import ActionButton
 from modules.controls import ControlsManager
+from modules.calendar_popup import CalendarPopup
 from modules.workspaces.workspaces import Workspaces
 from modules.power_profiles import PowerProfilesSelector
 from modules.metrics.metrics import MetricsSmall, Battery
 
 from utils.colors import bind_theme
-from utils.cursor import add_hover_cursor
 from utils.helpers import keep_window
+from utils.cursor import add_hover_cursor
 
 from widgets.edge_clip_viewport import EdgeClipViewport
+from widgets.popup_window.shared_popup_window import SharedPopupWindow
 
 from .hole_controller import HoleController
+from .surface import HOLE_FLARE, DockSurface
 from .placement import (
     DOCK_PADDING,
     PILL_HOLE_EXTRA,
@@ -34,7 +37,6 @@ from .placement import (
     DockInsets,
     current_placement,
 )
-from .surface import HOLE_FLARE, DockSurface
 
 import gi
 
@@ -78,8 +80,6 @@ class DockBar(Window):
                 layer="bottom",
                 title=self.WIN_ROLE,
                 geometry=self.placement.edge.value,
-                # i3 only reserves room for "dock" windows at the top or bottom;
-                # on a side the window floats and i3's gaps make the room
                 type_hint="notification" if self.placement.vertical else "dock",
                 visible=True,
                 all_visible=True,
@@ -93,7 +93,6 @@ class DockBar(Window):
         pill.dock_bar = self  # lets the pill open/close us directly
 
         bind_theme(self)
-        # an unplugged monitor closes our layer surface (see keep_window)
         self.connect("delete-event", lambda *_: keep_window(self))
 
         self.is_open = False
@@ -131,14 +130,7 @@ class DockBar(Window):
                 style_classes="vertical" if vertical else "",
                 orientation="v" if vertical else "h",
                 v_expand=True,
-                children=DateTime(
-                    name="date-time",
-                    formatters=(
-                        ["%H\n%M"]
-                        if vertical
-                        else ["%I:%M %p", "%H:%M", "%A", "%m-%d-%Y"]
-                    ),
-                ),
+                children=self._date_time(vertical),
             ),
             "actions": lambda: add_hover_cursor(
                 ActionButton(
@@ -152,6 +144,25 @@ class DockBar(Window):
 
         self.modules_start = self._load_modules(config.get("bar.modules.left"))
         self.modules_end = self._load_modules(config.get("bar.modules.right"))[::-1]
+
+    def _date_time(self, vertical: bool) -> DateTime:
+        date_time = DateTime(
+            name="date-time",
+            formatters=(
+                ["%H\n%M"] if vertical else ["%I:%M %p", "%H:%M", "%A", "%m-%d-%Y"]
+            ),
+        )
+        calendar_popup = CalendarPopup()
+        popup_win = SharedPopupWindow()
+
+        def _on_enter(*_):
+            if not (popup_win.get_visible() and popup_win.pointing_widget is date_time):
+                calendar_popup.show_today()
+
+        # before add_child, so this runs ahead of the popup's own hover handler
+        date_time.connect("enter-notify-event", _on_enter)
+        popup_win.add_child(pointing_widget=date_time, child=calendar_popup)
+        return date_time
 
     def _load_modules(self, names: list[str]) -> list[Box]:
         modules = []

@@ -32,6 +32,7 @@ arrows_up_down_circle: MaterialIcon = _M("\ue600")
 swap_vert: MaterialIcon = _M("\ue8d5")
 expand_more: MaterialIcon = _M("\ue5cf")
 expand_less: MaterialIcon = _M("\ue5ce")
+chevron_left: MaterialIcon = _M("\ue5cb")
 chevron_right: MaterialIcon = _M("\ue5cc")
 
 # Compass / positions

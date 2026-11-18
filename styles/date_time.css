@@ -19,3 +19,100 @@
   border-radius: 17px;
   background-color: var(--shadow);
 }
+
+/* calendar popup */
+#calendar-popup {
+  background-color: var(--shadow);
+  border-radius: 20px;
+  padding: 10px;
+}
+
+.calendar-tile {
+  background-color: var(--surface-semi-bright);
+  border-radius: 20px;
+  padding: 10px 14px;
+}
+
+#calendar-clock {
+  padding: 8px;
+}
+
+#calendar-month-tile {
+  padding: 8px 10px 10px 10px;
+}
+
+#calendar-weekday {
+  font-size: 13px;
+  color: var(--outline);
+}
+
+#calendar-date {
+  font-size: 20px;
+  color: var(--foreground);
+}
+
+#calendar-week {
+  font-size: 12px;
+  color: var(--on-primary);
+  background-color: var(--primary);
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+
+#calendar-month-btn {
+  all: unset;
+  padding: 4px 10px;
+  border-radius: 14px;
+}
+
+#calendar-month-btn:hover {
+  background-color: var(--surface-bright);
+}
+
+#calendar-month {
+  font-size: 15px;
+  color: var(--foreground);
+}
+
+#calendar-month.current {
+  color: var(--primary);
+}
+
+.calendar-nav-btn {
+  all: unset;
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: 14px;
+}
+
+.calendar-nav-btn:hover {
+  background-color: var(--surface-bright);
+}
+
+.calendar-nav-btn label {
+  font-size: 20px;
+  color: var(--foreground);
+}
+
+.calendar-weekday-name {
+  font-size: 12px;
+  color: var(--outline);
+  min-height: 26px;
+}
+
+.calendar-day {
+  font-size: 13px;
+  color: var(--foreground);
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: 17px;
+}
+
+.calendar-day.other-month {
+  color: var(--outline);
+}
+
+.calendar-day.today {
+  background-color: var(--primary);
+  color: var(--on-primary);
+}
