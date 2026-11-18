@@ -326,12 +326,12 @@
 }
 
 /* battery popup */
-#bat-popup {
+/* #bat-popup {
   padding: 10px;
-}
+} */
 #bat-tank {
   background-color: var(--surface-bright);
-  border-radius: 20px;
+  border-radius: 14px;
 }
 #bat-tank-space {
   min-width: 180px;

@@ -3,12 +3,12 @@ from fabric.widgets.label import Label
 from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.revealer import Revealer
-from fabric.widgets.circularprogressbar import CircularProgressBar
 
 import icons
 from services.metrics import MetricsProvider
 from widgets.popup_window import SharedPopupWindow
 from widgets.material_label import MaterialIconLabel
+from widgets.gapped_circular_progress_bar import GappedCircularProgressBar
 
 from .metrics_popup import Metrics
 from .battery_popup import BatteryPopup
@@ -27,7 +27,7 @@ class MetricItem(Box):
         self.icon = MaterialIconLabel(
             name=f"{style_class}-icon", FILL=0, wght=600, icon_text=icon_symbol
         )
-        self.circle = CircularProgressBar(
+        self.circle = GappedCircularProgressBar(
             name="metrics-circle",
             value=0,
             size=bar_size,
@@ -106,7 +106,7 @@ class Battery(Button):
             style_classes="metrics-icon",
             icon_text=icons.material.battery.symbol(),
         )
-        self.bat_circle = CircularProgressBar(
+        self.bat_circle = GappedCircularProgressBar(
             name="metrics-circle",
             value=0,
             size=self.BAR_SIZE,
