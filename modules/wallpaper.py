@@ -1,6 +1,7 @@
 import os
 import bisect
 import shutil
+import signal
 import subprocess
 from pathlib import Path
 from loguru import logger
@@ -25,6 +26,8 @@ from fabric.utils.helpers import exec_shell_command_async
 import icons
 
 from config.config import config
+from config.i3.utils import glass_mode
+from widgets.glass_well import glass_file_chooser
 from config.info import CACHE_DIR, IS_WAYLAND
 
 from services.theme import ThemeService
@@ -53,6 +56,9 @@ WP_PREVIEW_DIR = WP_CACHE / "previews"
 WP_HISTORY = Path(CACHE_DIR) / "current_wallpaper.txt"
 WP_PREVIEW_FILE = WP_PREVIEW_DIR / "low_rez.png"
 WP_PREVIEW_TEMP = WP_PREVIEW_DIR / "low_rez.tmp.png"
+
+# how long the old swaybg stays up under the new one while it loads the image
+SWAYBG_HANDOVER_MS = 1500
 
 IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp")
 
@@ -158,14 +164,19 @@ class WallpaperService(Service):
                 )
                 return
 
-            # apply wallpaper
-            subprocess.run(["pkill", "-x", "swaybg"], check=False)
-            subprocess.Popen(
+            old_pids = subprocess.run(
+                ["pgrep", "-x", "swaybg"], check=False, capture_output=True, text=True
+            ).stdout.split()
+            proc = subprocess.Popen(
                 [swaybg_bin, "-i", full_path, "-m", "fill"],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 start_new_session=True,
             )
+            if old_pids:
+                GLib.timeout_add(
+                    SWAYBG_HANDOVER_MS, self._stop_old_swaybg, proc, old_pids
+                )
         else:
             feh_bin = shutil.which("feh")
             if not feh_bin:
@@ -180,6 +191,17 @@ class WallpaperService(Service):
             self._feh_proc, _ = exec_shell_command_async(
                 [feh_bin, "--zoom", "fill", "--bg-fill", full_path]
             )
+
+    @staticmethod
+    def _stop_old_swaybg(proc: subprocess.Popen, old_pids: list[str]) -> bool:
+        # if the new one failed (a bad image), keep the old wallpaper up
+        if proc.poll() is None:
+            for pid in old_pids:
+                try:
+                    os.kill(int(pid), signal.SIGTERM)
+                except (ProcessLookupError, ValueError):
+                    pass
+        return False
 
     def set_wallpaper_path(self, full_path: str, preview_path: Path | str | None):
         def _commit():
@@ -330,6 +352,9 @@ class WallpaperSelector(Box):
             saved if saved in self.SCHEMES else self.DEFAULT_SCHEME
         )
         self.scheme_dropdown.connect("notify::popup-shown", self._on_popup_shown)
+        menu = self.scheme_dropdown.get_popup_accessible()
+        if glass_mode() and menu is not None:
+            menu.get_widget().get_style_context().add_class("glass")
 
         self.wall_dir_path_label = Label(
             style="color: var(--foreground); font-size: 14px",
@@ -604,6 +629,8 @@ class WallpaperSelector(Box):
         )
         bind_theme(dialog)  # adds "light", which the filechooser styles key off
         dialog.get_style_context().add_class("file-chooser-dialog")
+        if glass_mode():
+            glass_file_chooser(dialog)
         if IS_WAYLAND:
             dialog.get_style_context().add_class("wayland")
         dialog.set_visual(dialog.get_screen().get_rgba_visual())  # rounded corners

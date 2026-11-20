@@ -9,6 +9,7 @@ import icons
 
 from config.config import config
 from config.info import SHELL_NAME, IS_WAYLAND
+from config.i3.utils import glass_mode
 
 from modules.notifications.notification import NotificationManager
 
@@ -52,6 +53,7 @@ class TopPill(Window, Service):
         if IS_WAYLAND:
             super().__init__(
                 layer="overlay",
+                title=self.WIN_ROLE,
                 keyboard_mode="on-demand",
                 anchor=f"{pill_config_node.get('POSITION.y')} {pill_config_node.get('POSITION.x')}",
                 exclusivity="none",
@@ -73,6 +75,8 @@ class TopPill(Window, Service):
                 all_visible=True,
             )
         self.set_role(self.WIN_ROLE)
+        if glass_mode():
+            self.add_style_class("glass")
 
         bind_theme(self)
 

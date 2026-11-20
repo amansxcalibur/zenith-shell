@@ -1,6 +1,7 @@
 import os
 import re
 import colorsys
+import functools
 from pathlib import Path
 from loguru import logger
 
@@ -274,7 +275,17 @@ def generate_i3_gaps_and_borders_config():
             "    floating enable",
             "    border none",
         ]
-        if is_swayfx():
+        if glass_mode():
+            # the window's corners follow #settings, so the blur fits it
+            config_block.extend(
+                [
+                    "    # swayfx only: glass mode",
+                    "    shadows disable",
+                    "    blur enable",
+                    f"    corner_radius {SETTINGS_CORNER_RADIUS}",
+                ]
+            )
+        elif is_swayfx():
             config_block.extend(
                 [
                     "    # swayfx only",
@@ -284,6 +295,44 @@ def generate_i3_gaps_and_borders_config():
             )
         config_block.append("}")
         lines.append("\n".join(config_block))
+
+        if glass_mode():
+            # the shell's file choosers (agenda image, wallpaper folder): blurred
+            # like the settings window, rounded to .file-chooser-dialog
+            lines.append(
+                f'for_window [app_id="{SHELL_NAME}-core" title="^Select "] {{\n'
+                "    shadows disable\n"
+                "    blur enable\n"
+                f"    corner_radius {FILE_DIALOG_CORNER_RADIUS}\n"
+                "}"
+            )
+
+        if glass_mode():
+            # ignore_transparent keeps the blur to what each surface paints, so
+            # the dock's holes and the pill's corners stay clear
+            lines.append("")
+            lines.append("# swayfx only: glass mode")
+            for layer in GLASS_LAYERS:
+                effects = (
+                    f'layer_effects "{SHELL_NAME}-{layer}" '
+                    "'blur enable; blur_ignore_transparent enable'"
+                )
+                lines.append(effects)
+                if os.environ.get("SWAYSOCK"):
+                    I3.send_command(effects)
+            # frosted rather than see-through. swayfx only takes these
+            # globally, so windows it blurs get them too; this file is
+            # included after conf-swayfx.d, so it wins over the user's values
+            for setting in GLASS_BLUR:
+                lines.append(setting)
+                if os.environ.get("SWAYSOCK"):
+                    I3.send_command(setting)
+        elif os.environ.get("SWAYSOCK") and is_swayfx():
+            # the rules above outlive a restart until sway reloads its config
+            for layer in GLASS_LAYERS:
+                I3.send_command(
+                    f"layer_effects \"{SHELL_NAME}-{layer}\" 'blur disable'"
+                )
 
     return "\n".join(lines)
 
@@ -338,12 +387,29 @@ def add_shell_startup_to_i3_config():
         logger.debug("{} config already contains {} startup", WM, SHELL_NAME)
 
 
+# layer namespaces (minus the "zenith-" prefix) swayfx blurs behind in glass mode
+GLASS_LAYERS = ("dock", "top-bar", "top-pill", "popup", "pill", "flying", "osd")
+SETTINGS_CORNER_RADIUS = 25  # px, #settings's border-radius in settings.css
+FILE_DIALOG_CORNER_RADIUS = 25  # px, .file-chooser-dialog in agenda.css
+GLASS_BLUR = (
+    "blur_passes 3",
+    "blur_radius 5",
+    "blur_noise 0.02",
+    "blur_saturation 1.15",
+)
+
+
+@functools.cache
+def glass_mode() -> bool:
+    return bool(config.get("theme.glass")) and IS_WAYLAND and is_swayfx()
+
+
 def is_swayfx() -> bool:
     from fabric.i3.service import I3MessageType
 
     try:
         reply = get_i3_connection().send_command("", I3MessageType.GET_VERSION)
-    except Exception as e:  # no WM to ask, e.g. configuring sway from another session
+    except Exception as e:  # no WM to ask
         logger.debug("Could not query the window manager: {}", e)
         return False
     if reply.is_ok and isinstance(reply.reply, dict):

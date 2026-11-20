@@ -2,6 +2,12 @@
   --foreground: #e6e2df;
   --background: #141312;
   --cursor: #e6e2df;
+  /* glass mode (styles/glass.css): the light on panes, edges and
+     highlights, the tint of the frames, and the well around a sidebar and
+     page (widgets/glass_well.py) */
+  --glass-shine: alpha(#e6e2df, 0.2);
+  --glass-tint: var(--surface);
+  --glass-well: alpha(var(--shadow), 0.3);
   --primary: #d6d0bd;
   --on-primary: #333123;
   --secondary: #cac6bd;

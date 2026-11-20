@@ -8,6 +8,7 @@ from fabric.widgets.centerbox import CenterBox
 import icons
 
 from config.config import config
+from config.i3.utils import glass_mode
 
 from modules.tile import TileSpecial
 from modules.network import Network
@@ -23,6 +24,7 @@ from modules.notifications.notification import NotificationTile
 from utils.helpers import open_settings
 from utils.cursor import add_hover_cursor
 
+from widgets.glass_well import cut_out_of_well
 from widgets.material_label import MaterialIconLabel
 from widgets.popup_window import PopSlot, FlyingOverlay
 
@@ -122,6 +124,29 @@ class Dashboard(Box):
             ],
         )
 
+        agenda = AgendaApp()
+        agenda_container = Box(
+            name="agenda-app-container",
+            orientation="v",
+            v_expand=True,
+            spacing=3,
+            children=[
+                Label(
+                    label="SOSS Agenda",
+                    style="color:var(--foreground); margin-bottom:3px; font-family: Roboto Flex",
+                ),
+                agenda,
+            ],
+        )
+        if glass_mode():
+            # the cards show the pill's glass, cut out of the box's pane
+            cut_out_of_well(
+                agenda_container,
+                agenda.cards,
+                color="glass-pane",
+                clip=agenda.scrolled_clipper,
+            )
+
         self.notification_container = Revealer(
             transition_duration=250,
             transition_type="slide-down",
@@ -131,19 +156,7 @@ class Dashboard(Box):
                 v_expand=True,
                 spacing=3,
                 children=[
-                    Box(
-                        name="agenda-app-container",
-                        orientation="v",
-                        v_expand=True,
-                        spacing=3,
-                        children=[
-                            Label(
-                                label="SOSS Agenda",
-                                style="color:var(--foreground); margin-bottom:3px; font-family: Roboto Flex",
-                            ),
-                            AgendaApp(),
-                        ],
-                    ),
+                    agenda_container,
                     Box(
                         orientation="v",
                         h_expand=True,

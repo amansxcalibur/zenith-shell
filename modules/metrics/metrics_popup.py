@@ -10,6 +10,7 @@ from fabric.widgets.stack import Stack
 from fabric.widgets.overlay import Overlay
 
 import icons
+from config.i3.utils import glass_mode
 
 from services.metrics import IoRates, MetricsProvider, ProcessGroup
 from services.power_profiles import power_profiles_service
@@ -38,7 +39,7 @@ HISTORY_MAX = AnimatedBarGraph.MAX_HISTORY
 HISTORY_DEF = 30
 RING_MARGIN_MAX = 22
 USAGE_ALERT = 90  # percent
-USAGE_ALERT_CLEAR = 80  # stays alerted until below this, so the shape doesn't flicker
+USAGE_ALERT_CLEAR = 80
 TEMP_WARM = 70  # celsius
 TEMP_ALERT = 90  # celsius
 
@@ -51,14 +52,14 @@ TILE_GAP = 8
 SECTION_GAP = 10
 COMPACT_GRAPH_HEIGHT = 110
 PAGE_TRANSITION_MS = 250
-GRAPH_HEADER_HEIGHT = 40  # px kept clear of bars, so they never run behind the header
+GRAPH_HEADER_HEIGHT = 40  # to keep the bar below the header
 
 BADGE_SIZE = 36
 BAR_SIZE = (20, 18)
 
 PROCESS_ROWS = 7
 PROCESS_REFRESH_SECONDS = 2
-CPU_BAR_FLOOR = 2  # percent; below this nothing is busy enough to fill a whole row
+CPU_BAR_FLOOR = 2  # percent
 
 
 def format_bytes(value: float) -> str:
@@ -237,7 +238,6 @@ class Metrics(Box):
         self.cpu_value_label = Label(style_classes="metrics-graph-value", label="--")
         self.mem_value_label = Label(style_classes="metrics-graph-value", label="--")
         self.cpu_split_label = Label(label="", style_classes="metrics-graph-detail")
-        # capped: the popup's width must not change with the numbers
         self.mem_ratio_label = Label(
             label="",
             style_classes="metrics-graph-detail",
@@ -416,7 +416,7 @@ class Metrics(Box):
         return Overlay(
             name="metric-graph-container",
             child=ClippingBox(
-                style="background-color: var(--shadow); border-radius: 20px",
+                name="metric-graph-card",
                 v_expand=True,
                 children=body,
             ),
@@ -436,7 +436,7 @@ class Metrics(Box):
         return ClippingBox(
             size=(COLUMN_LEFT, ROW_HEIGHT),
             v_align="center",
-            style="background-color: var(--shadow); border-radius: 999px",
+            name="metrics-cpu-dial",
             children=Overlay(
                 h_expand=True,
                 child=self.load_shape,
@@ -495,6 +495,7 @@ class Metrics(Box):
             children=self.ring_3,
         )
         self.ring_1 = Box(
+            name="metrics-disk-dial",
             size=(COLUMN_LEFT, ROW_HEIGHT),
             style_classes="metrics-storage-circle",
             style=self._ring_style(m),
@@ -991,11 +992,13 @@ class Metrics(Box):
 
         used, cache, free, total = self.service.get_mem_breakdown()
         self.mem_ratio_label.set_label(format_gb_ratio(used, total))
+        # glass mode: a frosted track, like the panes around it
+        free_color = ("on-surface", 0.12) if glass_mode() else ("surface-bright", 1.0)
         self.mem_bar.set_segments(
             [
                 (used / total, "primary", 1.0),
                 (cache / total, "primary", 0.45),
-                (free / total, "surface-bright", 1.0),
+                (free / total, *free_color),
             ]
         )
         self.mem_used_label.set_label(f"Used {format_bytes(used)}")

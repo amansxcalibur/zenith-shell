@@ -12,6 +12,7 @@ from fabric.widgets.x11 import X11WindowGeometry
 
 from config.config import config
 from config.info import IS_WAYLAND
+from config.i3.utils import glass_mode
 
 from utils.colors import bind_theme
 from utils.helpers import keep_window, toggle_class
@@ -67,6 +68,8 @@ class TopBar(Window):
             )
         self._pill_ref = pill
         pill.dock_bar = self  # lets the pill open/close us directly
+        if glass_mode():
+            self.add_style_class("glass")
 
         bind_theme(self)
 

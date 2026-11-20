@@ -77,6 +77,19 @@ class DockPlacement:
         side = "min-width" if self.vertical else "min-height"
         return f"{side}: {DOCK_THICKNESS}px;"
 
+    def edge_room_style(self, edge: int) -> str:
+        """Room for a border outside the dock: on the side facing the screen's
+        centre for its top edge, and on the screen's side for the line that
+        runs along a hole's floor, beneath what sits in the hole."""
+        inner, outer = {
+            DockEdge.BOTTOM: ("top", "bottom"),
+            DockEdge.LEFT: ("right", "left"),
+            DockEdge.RIGHT: ("left", "right"),
+        }[self.edge]
+        if not edge:
+            return ""
+        return f" padding-{inner}: {edge}px; padding-{outer}: {edge}px;"
+
     @property
     def module_padding_style(self) -> str | None:
         if DOCK_PADDING == COMPACT_PADDING:

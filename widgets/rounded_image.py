@@ -3,7 +3,7 @@ from typing import cast
 
 import cairo
 from fabric.widgets.image import Image
-from gi.repository import Gtk
+from gi.repository import Gtk  # type: ignore
 
 
 class RoundedImage(Image):

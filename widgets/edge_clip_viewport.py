@@ -7,16 +7,8 @@ from gi.repository import Gtk  # type: ignore
 
 
 class EdgeClipViewport(Gtk.Viewport):
-    """
-    Viewport that can be allocated smaller than its child along one axis.
-
-    The child always keeps at least its natural size on that axis and stays
-    pinned to `edge` ("start" = left/top, "end" = right/bottom); whatever
-    doesn't fit is clipped off the opposite side. Because the minimum size
-    reported is 0, a parent box never has to overflow to fit it: neighbours
-    that grow (e.g. the dock's pill hole) slide over the far end of the child
-    instead.
-    """
+    """Reports no minimum size along one axis, so a parent can shrink it below its
+    child: the child stays pinned to `edge` and the rest is clipped off."""
 
     def __init__(
         self,

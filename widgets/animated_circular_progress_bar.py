@@ -25,4 +25,3 @@ class AnimatedCircularProgressBar(CircularProgressBar):
         self.animator.min_value = self.value
         self.animator.max_value = value
         self.animator.play()
-        return

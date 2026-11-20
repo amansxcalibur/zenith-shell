@@ -36,7 +36,7 @@ DEFAULTS = {
         "BRIGHTNESS_DEV": "auto",
         "IGNORED_PLAYERS": ["playerctld", "kdeconnect", "plasma-browser-integration"],
     },
-    "theme": {"mode": "dark", "scheme": "fidelity"},
+    "theme": {"mode": "dark", "scheme": "fidelity", "glass": False},
     "paths": {"WALLPAPERS_DIR": "~/Pictures/Wallpapers/"},
     "screen_corners": {"enabled": False, "props": {"radius": 20}},
     "bar": {

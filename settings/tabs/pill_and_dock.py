@@ -318,6 +318,15 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
         border_switch.set_valign(Gtk.Align.CENTER)
         border_switch.connect("notify::active", self._on_border_toggled)
 
+        glass_switch = Gtk.Switch(
+            name="matugen-switcher", active=bool(state.get(["theme", "glass"]))
+        )
+        glass_switch.set_valign(Gtk.Align.CENTER)
+        glass_switch.connect(
+            "notify::active",
+            lambda switch, _: state.update(["theme", "glass"], switch.get_active()),
+        )
+
         section_box = Box(
             style_classes="settings-section-container", orientation="v", spacing=6
         )
@@ -330,7 +339,7 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
         )
         controls = Box(
             orientation="v",
-            spacing=16,
+            spacing=10,
             v_align="center",
             children=[
                 Box(
@@ -343,6 +352,20 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
                             h_align="start",
                         ),
                         border_switch,
+                    ],
+                ),
+                Box(
+                    spacing=10,
+                    tooltip_text="Translucent, blurred dock, pills and popups. "
+                    "Needs SwayFX.",
+                    children=[
+                        Label(
+                            label="Glass",
+                            width_request=80,
+                            h_expand=True,
+                            h_align="start",
+                        ),
+                        glass_switch,
                     ],
                 ),
                 LayoutBuilder.pixel_slider(

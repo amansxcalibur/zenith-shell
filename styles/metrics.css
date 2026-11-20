@@ -331,7 +331,7 @@
 } */
 #bat-tank {
   background-color: var(--surface-bright);
-  border-radius: 14px;
+  border-radius: 20px;
 }
 #bat-tank-space {
   min-width: 180px;
@@ -367,4 +367,14 @@
 }
 #bat-tank-corner.low .on-fill {
   color: var(--on-error);
+}
+
+#metric-graph-card {
+  background-color: var(--shadow);
+  border-radius: 20px;
+}
+
+#metrics-cpu-dial {
+  background-color: var(--shadow);
+  border-radius: 999px;
 }

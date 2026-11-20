@@ -6,6 +6,7 @@ from fabric.widgets.eventbox import EventBox
 from fabric.widgets.revealer import Revealer
 
 from config.info import SHELL_NAME, IS_WAYLAND
+from config.i3.utils import glass_mode
 from modules.core.bottom.dock.placement import DockEdge, current_placement
 
 from services.animator import Animator
@@ -70,6 +71,7 @@ class SharedPopupWindow(Window):
             }[self._placement.edge]
             super().__init__(
                 layer="top",
+                title=f"{SHELL_NAME}-popup",
                 keyboard_mode="on-demand",
                 anchor=anchor,
                 exclusivity="none",
@@ -87,6 +89,9 @@ class SharedPopupWindow(Window):
             )
         self._initialized = True
         self.set_role(f"{SHELL_NAME}-popup")
+
+        if glass_mode():
+            self.add_style_class("glass")
 
         bind_theme(self)
 
@@ -185,8 +190,8 @@ class SharedPopupWindow(Window):
 
         self.event_box = EventBox(child=self.revealer)
         self.children = Box(
+            name="popup-frame",
             children=ClippingBox(style="border-radius:15px", children=self.event_box),
-            style="background-color:rgba(0,0,0,0.1); padding:5px; border-radius:20px",
         )
 
     def _initialize_animators(self):

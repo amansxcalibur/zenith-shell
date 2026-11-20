@@ -24,13 +24,23 @@
 #pill-border-clipper {
   border-radius: 23px;
   border-color: var(--outline-variant);
+  transition: border-color 0.25s ease;
+}
+
+#pill-stack {
+  transition: background-color 0.25s ease;
+}
+
+/* in dot mode the pill is invisible */
+#pill-container.dot #pill-border-clipper {
+  border-color: transparent;
+}
+
+#pill-container.dot #pill-stack {
+  background-color: transparent;
 }
 
 #pill-container {
   all: unset;
   padding: 2px;
 }
-
-/* #inner-end{
-    background-color: beige;
-} */

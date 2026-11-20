@@ -12,6 +12,7 @@ import icons
 
 from config.info import ROOT_DIR
 from config.config import config
+from config.i3.utils import glass_mode
 
 from modules.wiggle_bar import WigglyScale
 from modules.audio_panel import DEVICE_ICONS
@@ -300,9 +301,22 @@ class PlayerSource(Button):
         self.audio_source.set_style(
             f"background-color: {chip_color}; color: {on_chip_color}"
         )
-        self.player_menu.set_style(
-            f"background-color: {surface_container_high_color}; color: {foreground_color}"
-        )
+        glass = glass_mode()
+        if glass:
+            menu_style = (
+                f"background-color: alpha({surface_color}, 0.55);"
+                f"box-shadow: inset 0 0 0 1px alpha({foreground_color}, 0.12),"
+                f" inset 0 1px 0 0 alpha({foreground_color}, 0.08);"
+            )
+            trough_color = f"alpha({foreground_color}, 0.12)"
+            slider_gap = hover_gap = highlight_gap = "none"
+        else:
+            menu_style = f"background-color: {surface_container_high_color};"
+            trough_color = surface_color
+            slider_gap = f"0 0 0 4px {surface_container_high_color}"
+            hover_gap = f"1px 0 0 4px {surface_container_high_color}"
+            highlight_gap = f"4px 0 0 4px {surface_container_high_color}"
+        self.player_menu.set_style(f"{menu_style} color: {foreground_color}")
         self.artist.set_style(f"color: {foreground_color}")
         self.song.set_style(f"color: {foreground_color}")
         self.menu_spacer.set_style(
@@ -312,19 +326,19 @@ class PlayerSource(Button):
         self.volume_scale.set_style(
             f"""
                 #control-slider-mui trough {{
-                    background-color: {surface_color};
+                    background-color: {trough_color};
                 }}
                 #control-slider-mui slider {{
                     background-color: {primary_color};
-                    box-shadow: 0 0 0 4px {surface_container_high_color};
+                    box-shadow: {slider_gap};
                 }}
                 #control-slider-mui:hover slider {{
-                    box-shadow: 1px 0 0 4px {surface_container_high_color};
+                    box-shadow: {hover_gap};
                 }}
                 #control-slider-mui highlight {{
                     border-radius: 8px 4px 4px 8px;
                     background-color: {primary_color};
-                    box-shadow: 4px 0 0 4px {surface_container_high_color};
+                    box-shadow: {highlight_gap};
                 }}
             """,
             compile=False,  # no macros/vars here, skip the regex passes

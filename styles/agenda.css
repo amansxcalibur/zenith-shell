@@ -315,7 +315,8 @@ filechooser paned > box > box > stack {
   border-radius: 20px;
 }
 
-filechooser treeview.view:hover {
+filechooser treeview.view:hover,
+filechooser treeview.view:selected {
   background-color: var(--primary);
   color: var(--shadow);
 }

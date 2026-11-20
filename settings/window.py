@@ -8,7 +8,7 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.utils.helpers import exec_shell_command_async
 
 from config.info import IS_WAYLAND, CONFIG_FILE, SHELL_NAME
-from config.i3.utils import generate_i3_keybinds_config, is_swayfx
+from config.i3.utils import generate_i3_keybinds_config, glass_mode, is_swayfx
 from config.bindings import (
     KeyBinding,
     KeybindingValidationError,
@@ -23,6 +23,7 @@ from utils.colors import bind_theme
 from utils.cursor import add_hover_cursor
 from utils.helpers import format_accel_to_keybind
 
+from widgets.glass_well import cut_page_out_of_well
 from widgets.material_label import MaterialIconLabel, MaterialFontLabel
 from widgets.shapes.expressive.morphing_shapes import AnimateShapeMorph
 
@@ -108,6 +109,8 @@ class SettingsWindow(Window):
                 all_visible=True,
             )
 
+        if glass_mode():
+            self.add_style_class("glass")
         bind_theme(self)
 
         self.buttons = {}
@@ -241,6 +244,8 @@ class SettingsWindow(Window):
             children=self.scrollable_window,
         )
         content_box.add(self.scrolled_window_container)
+        if glass_mode():
+            cut_page_out_of_well(content_box, self.scrolled_window_container)
 
         main_box.pack_start(content_box, True, True, 0)
 

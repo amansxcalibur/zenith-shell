@@ -77,3 +77,15 @@ textview text {
   border-radius: 999px;
   min-width: 25px;
 }
+
+/* SharedPopupWindow's frame around whichever popup is showing */
+#popup-frame {
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 5px;
+  border-radius: 25px;
+}
+
+/* room for BorderedClippingBox's ring, outside what it clips */
+.ring-bordered {
+  padding: 1px;
+}

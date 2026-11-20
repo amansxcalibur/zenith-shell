@@ -1,0 +1,768 @@
+:vars {
+  --glass: alpha(var(--glass-tint), 0.55);
+  /* window blur comes out lighter than layer blur; matched to the pill */
+  --glass-window: alpha(var(--glass-tint), 0.8);
+  /* the bottom layer blurs lighter; matched to the pill */
+  --glass-dock: alpha(var(--glass-tint), 0.7);
+  /* matched to the notification cards */
+  --glass-top-bar: alpha(var(--glass-tint), 0.8);
+  /* --glass-tint and --glass-shine are per mode (colors.*.css): in dark the
+     surface and the text colour at 0.2; in light a darker surface, so white
+     panes stand out, and white */
+  --glass-edge: alpha(var(--glass-shine), 0.6);
+  --glass-highlight: alpha(var(--glass-shine), 0.4);
+  --glass-pane: alpha(var(--glass-shine), 0.3);
+  --glass-pane-raised: alpha(var(--glass-shine), 0.6);
+  --glass-pane-hover: var(--glass-shine);
+  --glass-dock-module: alpha(var(--glass-shine), 0.8);
+}
+
+/*  frames  */
+#dock-surface.glass {
+  background-color: var(--glass-dock);
+  border-color: var(--glass-edge);
+}
+
+.glass #pill-border-clipper {
+  border-color: var(--glass-edge);
+}
+
+.glass #popup-frame {
+  box-shadow: inset 0 0 0 1px var(--glass-edge);
+}
+
+.glass #pill-stack {
+  background-color: var(--glass);
+}
+
+.glass #start-top,
+.glass #end-top {
+  background-color: var(--glass-top-bar);
+}
+
+/* the frame keeps its light tint, panels take --glass */
+.glass #calendar-popup,
+.glass #metrics-card,
+.glass #power-profiles-container,
+.glass #profile-label,
+.glass #control-slider-mui-container,
+.glass #action-btn,
+.glass #metrics-cpu-dial,
+.glass #metrics-disk-dial {
+  background-color: var(--glass);
+}
+
+.glass #left-edge,
+.glass #right-edge {
+  box-shadow: 0px -30px 0 0px var(--glass-top-bar);
+}
+
+/* GTK paints this spread shadow twice at the corners: 1 - sqrt(0.2) doubles to 0.8 */
+.glass #hori-top.pill {
+  box-shadow: 10px -28px 0 10px alpha(var(--glass-tint), 0.55);
+}
+
+/* panels */
+.glass #app-launcher,
+.glass #clipboard,
+.glass #dashboard,
+.glass #wallpaper-selector,
+.glass #power-menu,
+.glass #metrics-process-panel,
+.glass #control-small,
+.glass .action-icon,
+.glass .action-menu-label,
+.glass #active-window,
+.glass #user-label,
+.glass .metrics-storage-circle,
+.glass .metrics-desc-box,
+.glass #notification-box,
+.glass #notification-widget,
+.glass #notif-group-header {
+  background-color: transparent;
+}
+
+.glass #launcher-overlay,
+.glass #clipboard-overlay,
+.glass #wallpaper-overlay,
+.glass .tile.simple.off .tile-overlay,
+.glass .tile:not(.simple) .tile-overlay,
+.glass #slider-mui slider,
+.glass #slider-mui highlight,
+.glass #slider-mui.metrics-popup slider,
+.glass #slider-mui.metrics-popup:hover slider,
+.glass #slider-mui.metrics-popup highlight,
+.glass #control-slider-mui slider,
+.glass #control-slider-mui:hover slider,
+.glass #control-slider-mui highlight,
+.glass #control-slider-mui.vertical slider:active,
+.glass #control-slider-mui.vertical highlight,
+.glass #app-volume-slider slider,
+.glass #mic-in-use-dot {
+  box-shadow: none;
+}
+
+/*  panes  */
+.glass #app-slot-btn,
+.glass #search-container,
+.glass #close-button,
+.glass #close-button-small,
+.glass #clipboard-row,
+.glass #clipboard-detail-scroll,
+.glass #scrolled-window scrollbar,
+.glass .calendar-tile,
+.glass #metrics-page-tabs,
+.glass .metrics-tile,
+.glass #systray-spacer,
+.glass #notification-container,
+.glass #notification-reveal-btn,
+.glass .action-button,
+.glass #notif-expander-btn,
+.glass #notif-group-toggle-btn,
+.glass #notif-group-clear-btn,
+.glass #close-button.critical,
+.glass #img-expander > * > *,
+.glass .tile.off .tile-icon-btn,
+.glass #tile-menu-separator,
+.glass .tile-menu-placeholder,
+.glass #ap-button,
+.glass #bluetooth-scan-btn,
+.glass #bluetooth-device-btn,
+.glass #bt-connect-btn {
+  background-color: var(--glass-pane);
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+}
+
+.glass #metric-graph-card,
+.glass .tile.on .tile-clipper,
+.glass .tile.off .tile-clipper,
+.glass .tile.simple.off .tile-clipper,
+.glass .tile.small,
+.glass .tile-menu,
+.glass #dashabord-center-tile,
+.glass #weather-tile,
+.glass #bat-tank,
+.glass .metrics-dot.free,
+.glass #expand-img,
+.glass #img-expander,
+.glass #notification-box.critical,
+.glass #notification-widget.critical,
+.glass #device-card,
+.glass #user-row,
+.glass #app-card,
+.glass #slider-mui trough,
+.glass #slider-mui.vertical trough,
+.glass #control-slider-mui trough,
+.glass #control-slider-mui.vertical trough,
+.glass #button-volume trough,
+.glass #button-brightness trough,
+.glass #button-mic trough {
+  background-color: var(--glass-pane-raised);
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+}
+
+.glass #app-slot-btn.selected,
+.glass #app-slot-btn:hover,
+.glass #app-slot-btn:focus,
+.glass #close-button:hover,
+.glass #close-button:focus,
+.glass #close-button-small:hover,
+.glass #close-button-small:focus,
+.glass .launch-mode-btn:hover,
+.glass #search-container-item-seperator,
+.glass #clipboard-row.hover,
+.glass #clipboard-row.selected,
+.glass #clipboard-row.pressed,
+.glass #scheme-dropdown > * > *:hover,
+.glass #scheme-dropdown > * > *:focus,
+.glass #scheme-dropdown cellview:selected,
+.glass #calendar-month-btn:hover,
+.glass .calendar-nav-btn:hover,
+.glass .menu-item:hover,
+.glass .menu-item:focus,
+.glass #action-btn.active > * > *,
+.glass .top-bar-control-btn:hover,
+.glass .top-bar-control-btn:active,
+.glass .action-button:focus,
+.glass .action-button:hover,
+.glass #notif-expander-btn:hover,
+.glass #notif-group-toggle-btn:hover,
+.glass #notif-group-clear-btn:hover,
+.glass #ap-button.hover,
+.glass #ap-button.focus,
+.glass #bt-connect-btn:hover,
+.glass #app-icon-shape,
+.glass #device-card:not(.static) #card-header:hover,
+.glass #device-option:hover,
+.glass #page-back:hover {
+  background-color: var(--glass-pane-hover);
+}
+
+/*  light mode  */
+.light.glass #add-new-agenda-btn,
+.light .glass #add-new-agenda-btn,
+.light.glass .tile.simple.off .tile-overlay,
+.light .glass .tile.simple.off .tile-overlay,
+.light.glass .tile:not(.simple) .tile-overlay,
+.light .glass .tile:not(.simple) .tile-overlay,
+.light.glass #app-volume-slider slider,
+.light .glass #app-volume-slider slider {
+  box-shadow: none;
+}
+
+.light.glass #editor-btn,
+.light .glass #editor-btn,
+.light.glass #agenda-box,
+.light .glass #agenda-box,
+.light.glass #clipboard-row,
+.light .glass #clipboard-row,
+.light.glass #clipboard-detail-scroll,
+.light .glass #clipboard-detail-scroll,
+.light.glass #tile-menu-separator,
+.light .glass #tile-menu-separator,
+.light.glass #search-container,
+.light .glass #search-container,
+.light.glass #notif-group-clear-btn,
+.light .glass #notif-group-clear-btn,
+.light.glass #systray-spacer,
+.light .glass #systray-spacer,
+.light.glass #scrolled-window scrollbar,
+.light .glass #scrolled-window scrollbar {
+  background-color: var(--glass-pane);
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+}
+
+.light.glass #editor-btn:hover,
+.light .glass #editor-btn:hover,
+.light.glass #clipboard-row.hover,
+.light .glass #clipboard-row.hover,
+.light.glass #clipboard-row.selected,
+.light .glass #clipboard-row.selected,
+.light.glass #clipboard-row.pressed,
+.light .glass #clipboard-row.pressed,
+.light.glass #app-slot-btn.selected,
+.light .glass #app-slot-btn.selected,
+.light.glass #app-slot-btn:hover,
+.light .glass #app-slot-btn:hover,
+.light.glass #app-slot-btn:focus,
+.light .glass #app-slot-btn:focus,
+.light.glass .menu-item:hover,
+.light .glass .menu-item:hover,
+.light.glass .menu-item:focus,
+.light .glass .menu-item:focus,
+.light.glass .settings-option-btn:hover,
+.light .glass .settings-option-btn:hover,
+.light.glass #version-pill:hover,
+.light .glass #version-pill:hover,
+.light.glass #systray-notif-btn:hover,
+.light .glass #systray-notif-btn:hover,
+.light.glass #device-card:not(.static) #card-header:hover,
+.light .glass #device-card:not(.static) #card-header:hover,
+.light.glass #device-option:hover,
+.light .glass #device-option:hover,
+.light.glass #editor-box #editor-btn:not(:first-child):hover,
+.light .glass #editor-box #editor-btn:not(:first-child):hover {
+  background-color: var(--glass-pane-hover);
+}
+
+.light.glass #agenda-actions-pill,
+.light .glass #agenda-actions-pill {
+  background-color: var(--glass-tint);
+  background-image: linear-gradient(
+    var(--glass-pane-raised),
+    var(--glass-pane-raised)
+  );
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+}
+
+.light.glass #slider-mui trough,
+.light .glass #slider-mui trough,
+.light.glass #slider-mui.vertical trough,
+.light .glass #slider-mui.vertical trough,
+.light.glass .tile.on .tile-clipper,
+.light .glass .tile.on .tile-clipper,
+.light.glass .tile.off .tile-clipper,
+.light .glass .tile.off .tile-clipper,
+.light.glass .tile.simple.off .tile-clipper,
+.light .glass .tile.simple.off .tile-clipper,
+.light.glass .tile.small,
+.light .glass .tile.small,
+.light.glass .tile-menu,
+.light .glass .tile-menu,
+.light.glass #dashabord-center-tile,
+.light .glass #dashabord-center-tile,
+.light.glass #img-expander,
+.light .glass #img-expander,
+.light.glass #control-slider-mui.vertical trough,
+.light .glass #control-slider-mui.vertical trough,
+.light.glass #device-card,
+.light .glass #device-card,
+.light.glass #app-card,
+.light .glass #app-card,
+.light.glass #user-row,
+.light .glass #user-row,
+.light.glass #weather-tile,
+.light .glass #weather-tile,
+.light.glass #control-slider-mui.dashboard trough,
+.light .glass #control-slider-mui.dashboard trough {
+  background-color: var(--glass-pane-raised);
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+}
+
+.light.glass #search-entry,
+.light .glass #search-entry,
+.light.glass #search-entry-walls,
+.light .glass #search-entry-walls {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.light.glass #profile-label,
+.light .glass #profile-label {
+  background-color: var(--glass);
+}
+
+/* dock modules: white at the dark mode's 0.8 of the shine stood out more than
+   the panes elsewhere */
+.light.glass #power-profile-icon,
+.light .glass #power-profile-icon,
+.light.glass #systray,
+.light .glass #systray,
+.light.glass #weather-mini-container,
+.light .glass #weather-mini-container,
+.light.glass #workspaces-container,
+.light .glass #workspaces-container,
+.light.glass #orientation-btn,
+.light .glass #orientation-btn,
+.light.glass #date-time-container,
+.light .glass #date-time-container {
+  background-color: alpha(var(--glass-shine), 0.55);
+  box-shadow: inset 0 0 0 1px var(--glass-edge);
+  transition: background-color 0.1s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+.light.glass .settings-option-btn.checked,
+.light .glass .settings-option-btn.checked,
+.light.glass #version-pill.checked,
+.light .glass #version-pill.checked {
+  background-color: var(--glass-pane-raised);
+}
+
+.light.glass #zenith-logo,
+.light .glass #zenith-logo {
+  color: transparent;
+}
+
+.light.glass .menu-item:hover,
+.light .glass .menu-item:hover,
+.light.glass .menu-item:focus,
+.light .glass .menu-item:focus {
+  color: var(--foreground);
+}
+
+/* coloured states the pane rules above would beat by loading last */
+.glass #app-slot-btn:active,
+.glass #close-button:active,
+.glass #close-button-small:active,
+.glass .tile.small.on,
+.glass #notif-expander-btn.critical,
+.glass #notif-group-toggle-btn.critical,
+.glass #img-expander.critical {
+  background-color: var(--primary);
+}
+
+.glass #notif-group-header.critical {
+  background-color: alpha(var(--error), 0.15);
+}
+
+.light.glass .metrics-storage-circle.active,
+.light .glass .metrics-storage-circle.active {
+  background-color: var(--primary);
+}
+
+/* a full tile nests a second tile-clipper; two translucent panes would stack */
+.glass .tile .tile-clipper .tile-clipper,
+.light.glass .tile .tile-clipper .tile-clipper,
+.light .glass .tile .tile-clipper .tile-clipper {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.glass .tile.simple.on .tile-clipper {
+  background-color: var(--primary);
+}
+
+/*  agenda  */
+.glass #agenda-check check,
+.glass #text-view {
+  background-color: transparent;
+}
+
+.glass #agenda,
+.glass #agenda-box,
+.glass #agenda-app-container,
+.glass #agenda-btn-group,
+.glass #editor-btn,
+.glass #text-editor {
+  background-color: var(--glass-pane);
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+}
+
+.glass #agenda-check check:checked {
+  background-color: var(--glass-pane-raised);
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+}
+
+.glass #editor-btn:hover {
+  background-color: var(--glass-pane-hover);
+}
+
+.glass #add-new-agenda-btn,
+.glass #agenda-actions-pill {
+  box-shadow: none;
+}
+
+.glass #editor-btn.delete-btn {
+  background-color: var(--error-container);
+}
+
+.glass #editor-btn.delete-btn:hover {
+  background-color: shade(var(--error-container), 1.25);
+}
+
+.light.glass #agenda-btn-group {
+  background-color: var(--primary);
+}
+
+.light.glass #editor-btn.delete-btn {
+  background-color: var(--error);
+}
+
+.light.glass #editor-btn:first-child:not(.delete-btn),
+.light .glass #editor-btn:first-child:not(.delete-btn) {
+  background-color: var(--primary);
+}
+
+.light.glass #editor-btn:first-child:not(.delete-btn):hover,
+.light .glass #editor-btn:first-child:not(.delete-btn):hover {
+  background-color: var(--on-primary-fixed-variant);
+}
+
+.light.glass textview#text-editor,
+.light .glass textview#text-editor {
+  background-color: var(--glass-pane-raised);
+  box-shadow: inset 0 0 0 1px alpha(var(--primary), 0.35);
+}
+
+/*  the action button's popup  */
+.glass #action-btn {
+  border-color: var(--glass-edge);
+}
+
+/* the CPU shape & the disk rings' core match */
+.glass #metrics-load-shape {
+  color: var(--glass-pane);
+  border-color: var(--glass-edge);
+}
+
+.glass .metrics-storage-circle.active {
+  background-color: var(--glass-pane);
+}
+
+.light.glass #metrics-load-shape,
+.light .glass #metrics-load-shape {
+  color: var(--primary);
+}
+
+.glass #metrics-load-shape.alert {
+  color: var(--error-container);
+  border-color: var(--error-dim);
+}
+
+.glass .metrics-storage-circle {
+  border-color: var(--glass-edge);
+}
+
+/* dock modules when raised take the dock body's tint  */
+.glass #workspaces-container,
+.glass #orientation-btn,
+.glass #date-time-container,
+.glass #weather-mini-container,
+.glass #systray,
+.glass #power-profile-icon {
+  background-color: var(--glass-dock-module);
+  box-shadow: inset 0 0 0 1px var(--glass-edge);
+  transition: background-color 0.1s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+.glass #dock-module.raised #workspaces-container,
+.glass #dock-module.raised #orientation-btn,
+.glass #dock-module.raised #date-time-container,
+.glass #dock-module.raised #weather-mini-container,
+.glass #dock-module.raised #systray,
+.glass #dock-module.raised #power-profile-icon {
+  background-color: var(--glass-dock);
+}
+
+/* settings  */
+.glass #settings {
+  background-color: var(--glass-window);
+  border-color: var(--glass-edge);
+}
+
+.glass #settings-header,
+.glass #settings-tab,
+.glass #module-drop-box {
+  background-color: transparent;
+}
+
+.glass #dock-preview {
+  background-color: var(--glass);
+}
+
+.glass #module-drop-box,
+.glass #i3-settings-demo-window {
+  border-color: var(--glass-edge);
+}
+
+.glass #control-slider-mui.variation-scale highlight,
+.glass #control-slider-mui.variation-scale slider,
+.glass #control-slider-mui.variation-scale:hover slider {
+  box-shadow: none;
+}
+
+.glass #settings-stack-container,
+.glass .settings-btn,
+.glass .settings-item,
+.glass .module-pill,
+.glass #shapes-box,
+.glass #version-pill,
+.glass #about-version,
+.glass #about-link,
+.glass #config-path-box,
+.glass #i3-settings-demo-window.corner-demo,
+.glass #i3-settings-demo-window.active {
+  background-color: var(--glass-pane);
+}
+
+.glass .settings-btn.bright,
+.glass .settings-value,
+.glass .settings-height-strut,
+.glass .settings-option-btn.checked,
+.glass #version-pill.checked,
+.glass #config-path-copy {
+  background-color: var(--glass-pane-raised);
+}
+
+.glass #settings-button-group-btn {
+  background-color: var(--glass-pane-raised);
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+}
+
+.glass #settings-button-group-btn:hover {
+  background-color: var(--glass-pane-hover);
+}
+
+.glass #settings-button-group-btn.active {
+  background-color: var(--primary);
+}
+
+.glass .settings-option-btn:hover,
+.glass #shapes-box:hover,
+.glass #version-pill:hover,
+.glass #about-link:hover,
+.glass #config-path-copy:hover {
+  background-color: var(--glass-pane-hover);
+}
+
+.glass .settings-btn:hover,
+.glass .settings-btn:hover > *,
+.glass .settings-item.binding-recording,
+.light.glass .settings-btn.bright,
+.light.glass .settings-value {
+  background-color: var(--primary);
+}
+
+.glass #i3-settings-demo-window.active {
+  border-color: var(--primary);
+}
+
+/* the flying overlay. NO SCRIM BTW, or swayfx would blur the whole screen  */
+.glass #flying-tile.darken {
+  background-color: transparent;
+}
+
+.glass #flying-tile .tile-menu {
+  background-color: var(--glass);
+}
+
+/* the control, metrics and battery boxes: bare at rest */
+.glass #vol-brightness-container,
+.glass #metrics-small,
+.glass #bat-small {
+  background-color: transparent;
+  box-shadow: none;
+  transition: background-color 0.1s cubic-bezier(0.5, 0.25, 0, 1);
+}
+
+.glass #dock-module.raised #vol-brightness-container,
+.glass #dock-module.raised #metrics-small,
+.glass #dock-module.raised #bat-small {
+  background-color: var(--glass-dock);
+  box-shadow: inset 0 0 0 1px var(--glass-edge);
+}
+
+.glass #search-entry,
+.glass #search-entry-walls,
+.glass #config-path-label {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+/*  the system tray  */
+/* stacked on the tray's pane, 0.37 lands near the dock body */
+.glass #tray-button {
+  background-color: alpha(var(--glass-tint), 0.37);
+}
+
+.glass #systray-notif-btn:hover {
+  background-color: var(--glass-pane-hover);
+}
+
+.glass #agenda-actions-pill,
+.glass #editor-box {
+  background-color: var(--glass-tint);
+  background-image: linear-gradient(
+    var(--glass-pane-raised),
+    var(--glass-pane-raised)
+  );
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+}
+
+/* only rows with a picture keep the dimming overlay */
+.glass #display-box:not(.has-image) {
+  background-color: transparent;
+}
+
+/* the shape standing in for a missing image: light mode's tone vanishes on a
+   white pane */
+.light.glass #notif-expressive-shape-container,
+.light .glass #notif-expressive-shape-container {
+  color: var(--surface-bright);
+}
+
+/* notifications  */
+.glass #notification-window-container {
+  background-color: alpha(var(--glass-tint), 0.35);
+}
+
+.glass #notif-group-container,
+.glass #notif-carousal-box {
+  background-color: alpha(var(--glass-tint), 0.67);
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+}
+
+.glass #collapsed #notification-box,
+.glass #notification-popup #notification-box {
+  background-color: alpha(var(--glass-tint), 0.78);
+}
+
+.glass #control-slider trough {
+  background-color: alpha(var(--glass-tint), 0.78);
+  border-color: var(--glass-edge);
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+}
+
+.glass #settings-shapes-flowbox {
+  background-color: transparent;
+}
+
+.glass .shape-tile {
+  background-color: var(--glass-pane);
+}
+
+.glass #shapes-grid-frame {
+  border-color: var(--glass-edge);
+}
+
+menu.glass {
+  background-color: var(--glass-tint);
+  border-color: var(--glass-edge);
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+}
+
+.glass #scheme-dropdown {
+  background-color: var(--glass-pane);
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+}
+
+.glass #zenith-logo {
+  color: transparent;
+}
+
+/* file chooser dialogs */
+.file-chooser-dialog.glass {
+  background-color: var(--glass-window);
+  border-color: var(--glass-edge);
+}
+
+.glass filechooser paned > box,
+.glass #pathbarbox {
+  background-color: var(--glass-pane);
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+}
+
+.glass filechooser .sidebar,
+.glass filechooser .sidebar list,
+.glass filechooser scrolledwindow,
+.glass filechooser viewport,
+.glass filechooser treeview.view,
+.glass filechooser treeview.view header button {
+  background-color: transparent;
+}
+
+.glass #pathbarbox stack entry,
+.glass .path-bar > .toggle {
+  background-color: var(--glass-pane-raised);
+}
+
+.glass .path-bar > .toggle:hover {
+  background-color: var(--glass-pane-hover);
+}
+
+/* the rules above tie with these */
+.glass filechooser treeview.view:hover,
+.glass filechooser treeview.view:selected {
+  background-color: var(--primary);
+}
+
+/* the well cuts out the page background */
+.glass #settings-content,
+.glass #settings-stack-container,
+.glass filechooser > box,
+.glass filechooser paned > box {
+  background-color: transparent;
+}
+
+/* agenda items got its background cutout, so... */
+.glass #agenda-app-container,
+.light.glass #agenda-box,
+.light .glass #agenda-box,
+.glass #agenda-box {
+  background-color: transparent;
+}
+
+.glass #agenda-box:not(.has-image) {
+  box-shadow:
+    inset 0 1px 0 0 alpha(black, 0.18),
+    inset 0 -1px 0 0 var(--glass-highlight);
+}
+
+.glass #agenda-actions-pill,
+.light.glass #agenda-actions-pill,
+.light .glass #agenda-actions-pill {
+  background-image: linear-gradient(
+    var(--glass-pane-hover),
+    var(--glass-pane-hover)
+  );
+}

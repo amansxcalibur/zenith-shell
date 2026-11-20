@@ -1,22 +1,24 @@
+from typing import Any, ClassVar
+
 from fabric.widgets.label import Label
 
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("PangoCairo", "1.0")
-from gi.repository import Pango  # noqa: E402
+from gi.repository import Pango  # type: ignore
 
 
 class VariableFontMixin:
-    VARIATION_DEFAULTS = {}
+    VARIATION_DEFAULTS: ClassVar[dict[str, float]] = {}
 
-    def __init__(self, **variations):
+    def __init__(self, **variations: float) -> None:
         self.variations = {**self.VARIATION_DEFAULTS, **variations}
 
-    def _get_variation_string(self):
+    def _get_variation_string(self) -> str:
         return ",".join(f"{k}={v}" for k, v in self.variations.items())
 
-    def set_variations(self, **kwargs):
+    def set_variations(self, **kwargs: float | None) -> None:
         changed = False
         for k, v in kwargs.items():
             if v is not None and self.variations.get(k) != v:
@@ -32,13 +34,13 @@ class BaseMaterialLabel(Label, VariableFontMixin):
 
     def __init__(
         self,
-        text="",
-        font_size=None,  # Default to None to allow CSS styling
-        style_classes=None,
-        h_expand=False,
-        v_expand=False,
-        **kwargs,
-    ):
+        text: str = "",
+        font_size: float | None = None,  # Default to None to allow CSS styling
+        style_classes: str | list[str] | None = None,
+        h_expand: bool = False,
+        v_expand: bool = False,
+        **kwargs: Any,
+    ) -> None:
         variation_kwargs = {}
         label_kwargs = {}
 
@@ -64,12 +66,12 @@ class BaseMaterialLabel(Label, VariableFontMixin):
         self._font_size = font_size
         self._update_attributes()
 
-    def set_font_size(self, size):
+    def set_font_size(self, size: float | None) -> None:
         """Set the font size. Pass None to revert to CSS styling."""
         self._font_size = size
         self._update_attributes()
 
-    def _update_attributes(self):
+    def _update_attributes(self) -> None:
         font_desc_str = f"{self.FONT_FAMILY}"
 
         if self._font_size is not None:
@@ -98,15 +100,15 @@ class MaterialIconLabel(BaseMaterialLabel):
 
     FONT_FAMILY = "Material Symbols Rounded"
 
-    VARIATION_DEFAULTS = {
+    VARIATION_DEFAULTS: ClassVar[dict[str, float]] = {
         "FILL": 1,
         "wght": 600,
         "GRAD": 0,
         "opsz": 48,
     }
-    VARIATION_KEYS = set(VARIATION_DEFAULTS.keys())
+    VARIATION_KEYS: ClassVar[set[str]] = set(VARIATION_DEFAULTS.keys())
 
-    def __init__(self, icon_text, **kwargs):
+    def __init__(self, icon_text: str, **kwargs: Any) -> None:
         for k, v in self.VARIATION_DEFAULTS.items():
             kwargs.setdefault(k, v)
 
@@ -116,7 +118,7 @@ class MaterialIconLabel(BaseMaterialLabel):
             **kwargs,
         )
 
-    def set_icon(self, icon_text):
+    def set_icon(self, icon_text: str) -> None:
         self.set_text(icon_text)
 
 
@@ -125,7 +127,7 @@ class MaterialFontLabel(BaseMaterialLabel):
 
     FONT_FAMILY = "Roboto Flex"
 
-    VARIATION_DEFAULTS = {
+    VARIATION_DEFAULTS: ClassVar[dict[str, float]] = {
         "wght": 400,
         "GRAD": 0,
         "opsz": 48,
@@ -135,9 +137,11 @@ class MaterialFontLabel(BaseMaterialLabel):
         "XTRA": 468,
         "ROND": 100,
     }
-    VARIATION_KEYS = set(VARIATION_DEFAULTS.keys())
+    VARIATION_KEYS: ClassVar[set[str]] = set(VARIATION_DEFAULTS.keys())
 
-    def __init__(self, text, font_family="Roboto Flex", **kwargs):
+    def __init__(
+        self, text: str, font_family: str = "Roboto Flex", **kwargs: Any
+    ) -> None:
         self.FONT_FAMILY = font_family
         for k, v in self.VARIATION_DEFAULTS.items():
             kwargs.setdefault(k, v)

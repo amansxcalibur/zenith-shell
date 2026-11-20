@@ -26,6 +26,12 @@
   /* Variants & Outlines */
   --surface-variant: {{colors.surface_variant.light.hex}};
   --on-surface: {{colors.on_surface.light.hex}};
+  /* glass mode (styles/glass.css): the light on panes, edges and
+     highlights, the tint of the frames, and the well around a sidebar and
+     page (widgets/glass_well.py) */
+  --glass-shine: var(--true-surface-bright);
+  --glass-tint: var(--surface-dim);
+  --glass-well: alpha(var(--shadow), 0.45);
   --on-surface-variant: {{colors.on_surface_variant.light.hex}};
   --outline: {{colors.outline.light.hex}};
   --outline-variant: {{colors.outline_variant.light.hex}};

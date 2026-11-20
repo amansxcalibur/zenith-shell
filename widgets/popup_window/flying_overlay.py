@@ -4,10 +4,13 @@ from fabric.widgets.box import Box
 from fabric.widgets.stack import Stack
 from fabric.core.service import Signal, Service
 
+from config.i3.utils import glass_mode
+from config.info import IS_WAYLAND, SHELL_NAME
+
 from services.animator import Animator
+
 from utils.colors import bind_theme
 from utils.helpers import keep_window
-from config.info import IS_WAYLAND
 
 import gi
 
@@ -24,8 +27,8 @@ else:
     from widgets.overrides import PatchedX11Window as Window
 
 
-# Moving the widget between a PopSlot and a FlyingOverlay leaves a gap 
-# where neither has painted it yet, so a snapshot "ghost" stays on the 
+# Moving the widget between a PopSlot and a FlyingOverlay leaves a gap
+# where neither has painted it yet, so a snapshot "ghost" stays on the
 # *old* surface until the *new* one has painted.
 # Although I gotta say it's pretty cute when the slot used to "blink"
 HANDOFF_FRAMES = 2  # 1 paint + 1 frame of margin for the compositor
@@ -166,6 +169,7 @@ class FlyingOverlay(Window, Service):
         if IS_WAYLAND:
             super().__init__(
                 layer="overlay",
+                title=f"{SHELL_NAME}-flying",
                 keyboard_mode="on-demand",
                 anchor="top bottom left right",
                 visible=False,
@@ -181,7 +185,10 @@ class FlyingOverlay(Window, Service):
                 all_visible=False,
             )
 
+        if glass_mode():
+            self.add_style_class("glass")
         bind_theme(self)
+
         # don't close me :(
         self.connect("delete-event", lambda *_: keep_window(self))
 

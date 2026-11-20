@@ -8,6 +8,7 @@ from fabric.widgets.box import Box
 from services.animator import Animator
 
 from config.config import config
+from config.i3.utils import glass_mode
 
 from .placement import (
     DOCK_EDGE_BAND,
@@ -23,6 +24,16 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, Gtk  # type: ignore
 
 BORDER_WIDTH = 1  # px, colored by the stylesheet's border-color
+
+
+def borders_shown() -> bool:
+    """bar.BORDER, or glass mode, which always edges the dock and the pill."""
+    return bool(config.get("bar.BORDER")) or glass_mode()
+
+
+# the border sits outside the dock and the pill, taking extra room rather than
+# eating into them
+EDGE = BORDER_WIDTH if borders_shown() else 0
 HOLE_DURATION = 0.25  # seconds
 HOLE_CURVE = (0.5, 0.25, 0, 1)
 # concentric with the modules' corners across the padding around them, so the
@@ -173,10 +184,9 @@ class DockSurface(Box):
         super().__init__(
             name="dock-surface",
             orientation=placement.orientation,
-            style=placement.thickness_style,
+            style=placement.thickness_style + placement.edge_room_style(EDGE),
             **kwargs,
         )
-        self._show_border: bool = config.get("bar.BORDER")
         self.placement = placement
         self.add_style_class(placement.style_class)
         self._holes: list[AnimatedHole] = []
@@ -191,12 +201,40 @@ class DockSurface(Box):
         size = self.placement.thickness(
             self.get_allocated_width(), self.get_allocated_height()
         )
-        return size if size > 1 else DOCK_THICKNESS
+        return size if size > 1 else DOCK_THICKNESS + 2 * EDGE
 
     @property
     def hole_depth(self) -> int:
-        # short of the screen edge, so the border stays visible along the floor
-        return self.thickness - DOCK_EDGE_BAND
+        """From the body's edge (the border band sits outside it) down to the
+        bottom of the modules' slots, short of the room kept for the border."""
+        return self.thickness - 2 * EDGE - DOCK_EDGE_BAND
+
+    @staticmethod
+    def _outset(hole: Hole, body: float) -> Hole:
+        """Widen an open hole by the border, so the border lines it outside the
+        body and the gap to what's in it holds. Its corners stay concentric."""
+        if not EDGE or not hole.is_open:
+            return hole
+        return replace(
+            hole,
+            start=hole.start - EDGE,
+            size=hole.size + 2 * EDGE,
+            radius=hole.radius + EDGE,
+            flare=max(0, hole.flare - EDGE),
+            # the floor drops into the room kept below the modules, so the
+            # border runs beneath what's in the hole, as along its walls
+            depth=min(hole.depth + EDGE, body),
+        )
+
+    def _trace_body(self, cr: cairo.Context, width: int, height: int, holes) -> None:
+        """The silhouette, in device coordinates, set in from the border band."""
+        cr.save()
+        self.placement.transform(cr, width, height)
+        cr.translate(0, EDGE)
+        trace_silhouette(
+            cr, self.placement.length(width, height), self.thickness - EDGE, holes
+        )
+        cr.restore()  # the path keeps its device coordinates
 
     def rect_along(self, widget: Gtk.Widget) -> tuple[int, int] | None:
         """(start, size) of a descendant on the dock's main axis."""
@@ -213,29 +251,36 @@ class DockSurface(Box):
     def do_draw(self, cr: cairo.Context) -> bool:
         width, height = self.get_allocated_width(), self.get_allocated_height()
         length = self.placement.length(width, height)
-        holes = [hole.current for hole in self._holes]
+        body = self.thickness - EDGE
+        holes = [self._outset(hole.current, body) for hole in self._holes]
         context = self.get_style_context()
 
         cr.save()
-        cr.save()
-        self.placement.transform(cr, width, height)
-        trace_silhouette(cr, length, self.placement.thickness(width, height), holes)
-        cr.restore()  # the path keeps its device coordinates
+        self._trace_body(cr, width, height, holes)
         cr.clip()
         Gtk.render_background(context, cr, 0, 0, width, height)
+        cr.restore()
 
-        if self._show_border:
+        if EDGE:
+            # clip to everything but the body, so only the stroke's outer half,
+            # in the band around it, shows
+            cr.save()
+            cr.rectangle(0, 0, width, height)
+            self._trace_body(cr, width, height, holes)
+            cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+            cr.clip()
+
             cr.save()
             self.placement.transform(cr, width, height)
+            cr.translate(0, EDGE)
             trace_inner_edge(cr, length, holes)
             cr.restore()
-            # still clipped, so only the half inside the dock shows
-            cr.set_line_width(BORDER_WIDTH * 2)
+            cr.set_line_width(EDGE * 2)
             Gdk.cairo_set_source_rgba(
                 cr, context.get_property("border-top-color", context.get_state())
             )
             cr.stroke()
-        cr.restore()
+            cr.restore()
 
         # not Box.do_draw: that would paint the background over the whole box
         for child in self.get_children():

@@ -8,7 +8,8 @@ from fabric.widgets.revealer import Revealer
 import icons
 
 from config.config import config
-from config.info import IS_WAYLAND
+from config.info import IS_WAYLAND, SHELL_NAME
+from config.i3.utils import glass_mode
 
 from modules.controls import ControlsManager
 
@@ -109,6 +110,7 @@ class TransientWindow(Window):
         if IS_WAYLAND:
             super().__init__(
                 name="notification-popup",
+                title=f"{SHELL_NAME}-osd",  # the layer namespace swayfx blurs
                 layer="overlay",
                 keyboard_mode="on-demand",
                 anchor="top left",
@@ -133,6 +135,8 @@ class TransientWindow(Window):
                 self._size_allocate_hook = None
 
         bind_theme(self)
+        if glass_mode():
+            self.add_style_class("glass")
         # an unplugged monitor closes our layer surface (see keep_window)
         self.connect("delete-event", lambda *_: keep_window(self))
 

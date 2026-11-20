@@ -7,7 +7,7 @@ from loguru import logger
 import gi
 
 gi.require_version("GLib", "2.0")
-from gi.repository import GLib, Gdk
+from gi.repository import GLib, Gdk  # type: ignore
 
 
 class PopupWindow(Window):
@@ -78,7 +78,7 @@ class PopupWindow(Window):
         )
 
         # positioning events
-        self.pointing_widget.connect("size-allocate", lambda *_: (self.place_popup))
+        self.pointing_widget.connect("size-allocate", lambda *_: self.place_popup)
 
         self.connect("delete-event", self.on_delete_event)
 
@@ -132,7 +132,7 @@ class PopupWindow(Window):
             self.revealer.unreveal()
             self.hide_delay_ref = GLib.timeout_add(300, lambda: self.set_visible(False))
         return False
-    
+
     def on_delete_event(self, *_):
         # don't close me :(
         return True

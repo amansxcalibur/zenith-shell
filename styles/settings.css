@@ -458,6 +458,16 @@
   color: var(--primary);
 }
 
+#shapes-grid-frame {
+  border: solid 1px var(--surface-bright);
+  border-radius: 17px;
+}
+
+.shape-tile {
+  background-color: var(--surface-dull);
+  padding: 10px;
+}
+
 #settings-shapes-flowbox {
   background-color: var(--surface-bright);
 }

@@ -19,6 +19,8 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 
 import icons
 from config.info import DATA_DIR, CACHE_DIR, USER_CONFIG_DIR, IS_WAYLAND
+from config.i3.utils import glass_mode
+from widgets.glass_well import glass_file_chooser
 from services.animator import CubicBezierCurves
 
 from utils.colors import bind_theme
@@ -26,6 +28,7 @@ from utils.text_view import add_undo, keep_cursor_visible
 
 from widgets.material_label import MaterialIconLabel
 from widgets.clipping_box import ClippingBox, AnimatedClippingBox
+from widgets.graphs import rounded_rect
 
 import gi
 
@@ -356,7 +359,28 @@ class AgendaItem(Gtk.ListBoxRow):
         # the card as drag icon, held by its middle
         alloc = self.card.get_allocation()
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, alloc.width, alloc.height)
-        self.card.draw(cairo.Context(surface))
+        cr = cairo.Context(surface)
+        if glass_mode():
+            # the card is a translucent pane, and the drag icon is its own
+            # surface with no blur behind it: lay it on the glass tint, solid
+            context = self.card.get_style_context()
+            found, base = context.lookup_color("glass-tint")
+            if found:
+                state = self.card.get_state_flags()
+                radius = context.get_property("border-radius", state)
+                m = context.get_margin(state)  # inside the allocation in GTK3
+                rounded_rect(
+                    cr,
+                    m.left,
+                    m.top,
+                    alloc.width - m.left - m.right,
+                    alloc.height - m.top - m.bottom,
+                    radius,
+                )
+                cr.clip()
+                Gdk.cairo_set_source_rgba(cr, base)
+                cr.paint()
+        self.card.draw(cr)
         surface.set_device_offset(-alloc.width / 2, -alloc.height / 2)
         Gtk.drag_set_icon_surface(ctx, surface)
         # once the drag has its icon, close the space the row leaves
@@ -432,6 +456,11 @@ class AgendaItem(Gtk.ListBoxRow):
 
     def apply_background(self):
         has_image = bool(self.image_path and os.path.exists(self.image_path))
+        for widget in (self.display_box, self.card):
+            if has_image:
+                widget.add_style_class("has-image")
+            else:
+                widget.remove_style_class("has-image")
         if has_image:
             self.display_box.set_style(
                 f"background-image: url('file://{self.image_path}');"
@@ -468,6 +497,8 @@ class AgendaItem(Gtk.ListBoxRow):
         )
         bind_theme(dialog)
         dialog.get_style_context().add_class("file-chooser-dialog")
+        if glass_mode():
+            glass_file_chooser(dialog)
         if IS_WAYLAND:
             dialog.get_style_context().add_class("wayland")
         dialog.set_visual(dialog.get_screen().get_rgba_visual())
@@ -621,6 +652,9 @@ class AgendaApp(Box):
         else:
             self.edit_btn.remove_style_class("active")
         self._sync_overlays()
+
+    def cards(self) -> list[Box]:
+        return [row.card for row in self._rows()]
 
     def _rows(self) -> list[AgendaItem]:
         """Agenda items in list order, a lifted one included."""
@@ -809,15 +843,16 @@ class AgendaApp(Box):
             h_expand=True,
             child=self.listbox,
         )
+        self.scrolled_clipper = ClippingBox(
+            name="agenda-scrolled-clipper",
+            h_expand=True,
+            v_expand=True,
+            children=scrolled,
+        )
         self.children = Overlay(
             h_expand=True,
             v_expand=True,
-            child=ClippingBox(
-                name="agenda-scrolled-clipper",
-                h_expand=True,
-                v_expand=True,
-                children=scrolled,
-            ),
+            child=self.scrolled_clipper,
             overlays=[self.actions_stack, self.input_stack],
         )
         # Their box-shadows paint outside the overlay child's window, which is

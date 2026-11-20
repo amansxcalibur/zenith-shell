@@ -6,7 +6,8 @@ from fabric.widgets.stack import Stack
 from fabric.core.service import Service, Signal
 
 from config.config import config
-from config.info import USERNAME, HOSTNAME, IS_WAYLAND
+from config.info import USERNAME, HOSTNAME, IS_WAYLAND, SHELL_NAME
+from config.i3.utils import glass_mode
 
 from modules.dashboard import Dashboard
 from modules.power_menu import PowerMenu
@@ -16,6 +17,7 @@ from modules.clipboard import ClipboardHistory
 from modules.wallpaper import WallpaperSelector
 from modules.launcher import AppLauncher, AppCommands
 from modules.workspaces.workspaces import ActiveWindow
+from modules.core.bottom.dock.surface import EDGE, borders_shown
 from modules.core.bottom.dock.placement import (
     DOCK_EDGE_BAND,
     DOCK_THICKNESS,
@@ -55,7 +57,9 @@ if TYPE_CHECKING:
 
 class Pill(Window, Service):
     WIN_ROLE = "bottom-pill"
-    LIFTED_HEIGHT = DOCK_THICKNESS - 4  # the compact pill overlaps the dock by 4px
+    # the compact pill overlaps the dock by 4px; the dock is taller by the
+    # border room kept below it
+    LIFTED_HEIGHT = DOCK_THICKNESS + EDGE - 4
 
     @Signal
     def on_drag(self, drag_state: object, new_x: int, new_y: int): ...
@@ -69,6 +73,7 @@ class Pill(Window, Service):
             super().__init__(
                 # name="pill",
                 layer="top",
+                title=f"{SHELL_NAME}-pill",
                 keyboard_mode="none",
                 anchor=f"{pill_config.get('POSITION.y')} {pill_config.get('POSITION.x')}",
                 exclusivity="none",
@@ -89,13 +94,14 @@ class Pill(Window, Service):
             )
         if not IS_WAYLAND:
             self.set_role(self.WIN_ROLE)
+        if glass_mode():
+            self.add_style_class("glass")
 
         bind_theme(self)
 
         self._current_compact_mode = None
         self._dock_is_visible = True
-        # set by the dock window itself; called directly, not through
-        # `fabric-cli exec` (a subprocess + D-Bus round trip back into us)
+        # set by the dock window
         self.dock_bar: DockBar | None = None
         # for custom geometry handle in ShellWindowManager
         self._pos = pill_config.get("POSITION")  # changes the config
@@ -165,7 +171,7 @@ class Pill(Window, Service):
         )
         self.stack.get_inner_stack().set_homogeneous(False)
 
-        clipper = BorderedClippingBox if config.get("bar.BORDER") else ClippingBox
+        clipper = BorderedClippingBox if borders_shown() else ClippingBox
         self.pill_container = Box(
             name="pill-container",
             orientation="v",
@@ -205,6 +211,21 @@ class Pill(Window, Service):
             self.stack.get_inner_stack().connect(
                 "notify::transition-running", self._on_transition_done
             )
+
+        # the dot hides
+        for stack in (self.stack.get_inner_stack(), self.pill_compact):
+            stack.connect("notify::visible-child", self._sync_dot_class)
+        self._sync_dot_class()
+
+    def _sync_dot_class(self, *_):
+        is_dot = (
+            self.stack.get_visible_child() is self.pill_compact
+            and self.pill_compact.get_visible_child() is self.dot_placeholder
+        )
+        if is_dot:
+            self.pill_container.add_style_class("dot")
+        else:
+            self.pill_container.remove_style_class("dot")
 
     def _on_transition_done(self, stack: Stack, pspec):
         if stack.get_transition_running():
@@ -258,8 +279,11 @@ class Pill(Window, Service):
             self._set_lift(self.LIFTED_HEIGHT)
 
     def lower_pill(self):
-        # above the hole's floor by the same gap as its walls
-        self._set_lift(DOCK_EDGE_BAND + PILL_HOLE_EXTRA if self._is_over_dock() else 0)
+        # above the hole's floor, and the border along it, by the same gap as
+        # its walls
+        self._set_lift(
+            DOCK_EDGE_BAND + PILL_HOLE_EXTRA + EDGE if self._is_over_dock() else 0
+        )
 
     def open_dock(self):
         if self.dock_bar is not None:

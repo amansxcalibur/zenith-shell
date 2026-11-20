@@ -1,7 +1,7 @@
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk  # type: ignore
 
 
 class WrapBox(Gtk.Container):
@@ -78,7 +78,7 @@ class WrapBox(Gtk.Container):
         alloc = Gdk.Rectangle()
 
         for child in visible:
-            c_min, c_nat = child.get_preferred_width()
+            _c_min, c_nat = child.get_preferred_width()
             child_width = min(c_nat, avail_width)
             _, c_nat_h = child.get_preferred_height_for_width(child_width)
 

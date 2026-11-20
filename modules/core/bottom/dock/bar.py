@@ -9,6 +9,7 @@ from fabric.core.service import Signal
 
 from config.config import config
 from config.info import IS_WAYLAND
+from config.i3.utils import glass_mode
 
 from modules.special import DateTime
 from modules.systray import SystemTray
@@ -28,7 +29,7 @@ from widgets.edge_clip_viewport import EdgeClipViewport
 from widgets.popup_window.shared_popup_window import SharedPopupWindow
 
 from .hole_controller import HoleController
-from .surface import HOLE_FLARE, DockSurface
+from .surface import EDGE, HOLE_FLARE, DockSurface
 from .placement import (
     DOCK_PADDING,
     PILL_HOLE_EXTRA,
@@ -51,7 +52,8 @@ else:
 if TYPE_CHECKING:
     from ..pill import Pill
 
-PILL_HOLE_RADIUS = PILL_RADIUS + DOCK_PADDING  # px, concentric with the pill
+# px, concentric with the pill, and with its border ring when it has one
+PILL_HOLE_RADIUS = PILL_RADIUS + EDGE + DOCK_PADDING
 
 
 class DockBar(Window):
@@ -192,6 +194,9 @@ class DockBar(Window):
 
     def build_bar(self):
         self.surface = DockSurface(self.placement)
+        if glass_mode():
+            # glass mode: swayfx blurs behind the dock (layer_effects)
+            self.surface.add_style_class("glass")
 
         # holes are drawn in the order they're added, so this order matters
         self.holes_start = HoleController(

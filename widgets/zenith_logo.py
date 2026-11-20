@@ -11,6 +11,7 @@ from gi.repository import Gtk, Gdk, Rsvg  # type: ignore
 from config.info import ROOT_DIR
 
 LOGO_PATH = ROOT_DIR / "svg" / "zenith-logo.svg"
+TRANSPARENT = "rgba(0,0,0,0)"
 
 
 def _css_color(rgba: Gdk.RGBA) -> str:
@@ -39,10 +40,8 @@ class ZenithLogo(Gtk.DrawingArea):
     def do_draw(self, cr: cairo.Context):
         context = self.get_style_context()
         state = context.get_state()
-        handle = _themed_handle(
-            _css_color(context.get_property("background-color", state)),
-            _css_color(context.get_color(state)),
-        )
+        background = _css_color(context.get_property("background-color", state))
+        foreground = context.get_color(state)
 
         # the largest centred square
         width, height = self.get_allocated_width(), self.get_allocated_height()
@@ -50,5 +49,29 @@ class ZenithLogo(Gtk.DrawingArea):
         viewport = Rsvg.Rectangle()
         viewport.x, viewport.y = (width - side) / 2, (height - side) / 2
         viewport.width = viewport.height = side
-        handle.render_document(cr, viewport)
+
+        if foreground.alpha >= 1:
+            _themed_handle(background, _css_color(foreground)).render_document(
+                cr, viewport
+            )
+            return False
+
+        # translucent letters show what's behind the logo, not the badge: the
+        # badge is drawn alone, the letters are cut out of it, then drawn in
+        # their colour (fully transparent in glass mode, where they show the
+        # blurred window)
+        cr.push_group()
+        _themed_handle(background, TRANSPARENT).render_document(cr, viewport)
+        cr.push_group()
+        _themed_handle(TRANSPARENT, "rgb(0,0,0)").render_document(cr, viewport)
+        letters = cr.pop_group()
+        cr.set_operator(cairo.OPERATOR_DEST_OUT)
+        cr.set_source(letters)
+        cr.paint()
+        cr.set_operator(cairo.OPERATOR_OVER)
+        _themed_handle(TRANSPARENT, _css_color(foreground)).render_document(
+            cr, viewport
+        )
+        cr.pop_group_to_source()
+        cr.paint()
         return False

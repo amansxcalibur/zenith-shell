@@ -109,7 +109,7 @@ class ShapesTab(BaseWidget, SectionBuilderMixin):
                                 v_expand=True,
                                 style="border-radius: 17px;",
                             ),
-                            style="border: solid 1px var(--surface-bright); border-radius: 17px;",
+                            name="shapes-grid-frame",
                         ),
                     ],
                 ),
@@ -143,7 +143,7 @@ class ShapesTab(BaseWidget, SectionBuilderMixin):
 
             tile = Box(
                 orientation="v",
-                style="background-color:var(--surface-dull); padding: 10px",
+                style_classes="shape-tile",
                 children=[shape_widget, name_label],
             )
 

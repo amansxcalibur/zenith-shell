@@ -55,24 +55,37 @@ class ClippingBox(Box):
 
 
 class BorderedClippingBox(ClippingBox):
-    """A `ClippingBox` with a 1px line, in its CSS border-color, over its children."""
+    BORDER_WIDTH = 1  # ring sits outside the children btw, not over them
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.add_style_class("ring-bordered")  # the ring's room
 
     def do_draw(self, cr: cairo.Context):
-        ClippingBox.do_draw(self, cr)
-
+        width, height = self.get_allocated_width(), self.get_allocated_height()
         context = self.get_style_context()
         state = self.get_state_flags()
+        radius = cast(int, context.get_property("border-radius", state))
+        b = self.BORDER_WIDTH
+
+        def inner(cr: cairo.Context):
+            cr.save()
+            cr.translate(b, b)
+            ClippingBox.render_shape(cr, width - 2 * b, height - 2 * b, radius)
+            cr.restore()  # the path keeps its device coordinates
+
         cr.save()
-        cr.translate(0.5, 0.5)
-        ClippingBox.render_shape(
-            cr,
-            self.get_allocated_width() - 1,
-            self.get_allocated_height() - 1,
-            cast(int, context.get_property("border-radius", state)) - 0.5,
-        )
-        cr.set_line_width(1)
+        inner(cr)
+        cr.clip()
+        Box.do_draw(self, cr)
+        cr.restore()
+
+        cr.save()
+        ClippingBox.render_shape(cr, width, height, radius + b)
+        inner(cr)
+        cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
         Gdk.cairo_set_source_rgba(cr, context.get_property("border-top-color", state))
-        cr.stroke()
+        cr.fill()
         cr.restore()
         return True
 
