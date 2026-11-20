@@ -1,5 +1,3 @@
-from gi.repository import Gdk  # type: ignore
-
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.button import Button
@@ -25,6 +23,8 @@ if IS_WAYLAND:
     from fabric.widgets.wayland import WaylandWindow as Window
 else:
     from widgets.overrides import PatchedX11Window as Window
+
+from gi.repository import Gdk  # type: ignore
 
 
 class LowBatteryBanner(Revealer):
@@ -104,8 +104,10 @@ class LowBatteryBanner(Revealer):
 
 
 class TransientWindow(Window):
+    MARGIN = 14
+
     def __init__(self, shell_window=None, **kwargs):
-        # the OSD hangs off this window (the top pill):
+        # the OSD hangs off this window
         self._shell_window = shell_window
         if IS_WAYLAND:
             super().__init__(
@@ -137,7 +139,7 @@ class TransientWindow(Window):
         bind_theme(self)
         if glass_mode():
             self.add_style_class("glass")
-        # an unplugged monitor closes our layer surface (see keep_window)
+        
         self.connect("delete-event", lambda *_: keep_window(self))
 
         self.controls = ControlsManager()
@@ -197,19 +199,26 @@ class TransientWindow(Window):
         own_w, own_h = self.get_allocated_width(), self.get_allocated_height()
         at_bottom = config.get("top_pill.POSITION.y") == "bottom"
 
+        win = pill.get_window()
+        if win is None:
+            return
+        geo = Gdk.Display.get_default().get_monitor_at_window(win).get_geometry()
+
         if IS_WAYLAND:
             ok, pill_x, pill_y = get_absolute_wayland_widget_position(pill)
-            win = pill.get_window()
-            if not ok or win is None:
+            if not ok:
                 return
-            geo = Gdk.Display.get_default().get_monitor_at_window(win).get_geometry()
             pill_x, pill_y = pill_x - geo.x, pill_y - geo.y
+            min_x, min_y = 0, 0
         else:
             pill_x, pill_y = pill.get_position()
+            min_x, min_y = geo.x, geo.y
 
-        x = max(0, pill_x + (pill_alloc.width - own_w) // 2)
+        # keep it on screen when the pill hugs a side
+        x = pill_x + (pill_alloc.width - own_w) // 2
+        x = max(min_x + self.MARGIN, min(x, min_x + geo.width - own_w - self.MARGIN))
         y = pill_y - own_h if at_bottom else pill_y + pill_alloc.height
-        y = max(0, y)
+        y = max(min_y, y)
 
         if IS_WAYLAND:
             if GtkLayerShell.get_margin(self, GtkLayerShell.Edge.LEFT) != x:

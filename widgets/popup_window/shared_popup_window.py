@@ -33,16 +33,14 @@ class SharedPopupWindow(Window):
     _instance = None
     _initialized = False
 
-    # constants
     DEFAULT_TRANSITION_DURATION = 250
     DEFAULT_TRANSITION_TYPE = "crossfade"
     UNHOVER_DELAY_MS = 250
     HIDE_DELAY_MS = 300
-    POPUP_OFFSET = 3  # pixels between the dock and the popup
-    WINDOW_PADDING = 5  # the popup's own padding, around its child
+    POPUP_OFFSET = 3
+    WINDOW_PADDING = 5
     PAINT_TIMEOUT_MS = 200  # longest the contents stay hidden awaiting a paint
 
-    # animation constants
     ANIMATION_BEZIER = (0.15, 0.88, 0.68, 0.95)
     ANIMATION_DURATION = 0.3
 
@@ -62,8 +60,7 @@ class SharedPopupWindow(Window):
 
         self._placement = current_placement()
         if IS_WAYLAND:
-            # no exclusive zone: the compositor keeps the fixed-side margin
-            # clear of the dock, these only add the offset from it
+            # no exclusive zone
             anchor, margin = {
                 DockEdge.BOTTOM: ("bottom left", (0, 0, 3, 0)),
                 DockEdge.LEFT: ("top left", (0, 0, 0, 3)),
@@ -377,7 +374,6 @@ class SharedPopupWindow(Window):
             self.place_popup(along)
 
     def _calculate_popup_position(self) -> float | None:
-        """Where the popup should start along the dock, centred on the widget."""
         if not self.pointing_widget:
             return None
 
@@ -461,7 +457,9 @@ class SharedPopupWindow(Window):
         if screen is None:
             return x
         w = width if width is not None else self._current_size()[0]
-        return max(self.POPUP_OFFSET, min(x, screen.get_width() - w))
+        return max(
+            self.POPUP_OFFSET, min(x, screen.get_width() - w - self.POPUP_OFFSET)
+        )
 
     def _clamp_along(self, along: float, width: int, height: int) -> int:
         if self._placement.vertical:
@@ -489,7 +487,9 @@ class SharedPopupWindow(Window):
         if screen is None:
             return y
         h = height if height is not None else self._current_size()[1]
-        return max(0, min(y, screen.get_height() - h))
+        return max(
+            self.POPUP_OFFSET, min(y, screen.get_height() - h - self.POPUP_OFFSET)
+        )
 
     def _handle_window_visibility(self):
         is_hovered = self.is_hover_widget or self.is_hover_popup
