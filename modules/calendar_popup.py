@@ -9,14 +9,13 @@ from fabric.utils.helpers import invoke_repeater
 import icons
 from modules.wavy_clock import WavyClock
 from utils.cursor import add_hover_cursor
-from widgets.material_label import MaterialFontLabel, MaterialIconLabel
+from widgets.variable_font_label import Font, VariableFontLabel, VariableIconLabel
 
 import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, Gtk  # type: ignore
 
-FONT = "Google Sans Flex"
 ROWS = 6
 CLOCK_SIZE = 200
 TILE_GAP = 8
@@ -33,18 +32,18 @@ class CalendarPopup(Box):
         self._scroll_acc = 0.0
 
         # header: today
-        self.weekday_label = MaterialFontLabel(
+        self.weekday_label = VariableFontLabel(
             name="calendar-weekday",
             text="",
-            font_family=FONT,
+            font_family=Font.GOOGLE_SANS_FLEX,
             wght=500,
             h_align="start",
         )
-        self.date_label = MaterialFontLabel(
-            name="calendar-date", text="", font_family=FONT, wght=700, h_align="start"
+        self.date_label = VariableFontLabel(
+            name="calendar-date", text="", font_family=Font.GOOGLE_SANS_FLEX, wght=700, h_align="start"
         )
-        self.week_label = MaterialFontLabel(
-            name="calendar-week", text="", font_family=FONT, wght=600
+        self.week_label = VariableFontLabel(
+            name="calendar-week", text="", font_family=Font.GOOGLE_SANS_FLEX, wght=600
         )
         date_tile = Box(
             style_classes="calendar-tile",
@@ -60,8 +59,8 @@ class CalendarPopup(Box):
         )
 
         # month navigation
-        self.month_label = MaterialFontLabel(
-            name="calendar-month", text="", font_family=FONT, wght=650
+        self.month_label = VariableFontLabel(
+            name="calendar-month", text="", font_family=Font.GOOGLE_SANS_FLEX, wght=650
         )
         month_btn = add_hover_cursor(
             Button(
@@ -90,9 +89,9 @@ class CalendarPopup(Box):
         )
         for col, day in enumerate(self._calendar.iterweekdays()):
             self.grid.attach(
-                MaterialFontLabel(
+                VariableFontLabel(
                     text=calendar.day_abbr[day][:2],
-                    font_family=FONT,
+                    font_family=Font.GOOGLE_SANS_FLEX,
                     wght=600,
                     style_classes="calendar-weekday-name",
                 ),
@@ -101,10 +100,10 @@ class CalendarPopup(Box):
                 1,
                 1,
             )
-        self.day_labels: list[MaterialFontLabel] = []
+        self.day_labels: list[VariableFontLabel] = []
         for i in range(ROWS * 7):
-            label = MaterialFontLabel(
-                text="", font_family=FONT, wght=500, style_classes="calendar-day"
+            label = VariableFontLabel(
+                text="", font_family=Font.GOOGLE_SANS_FLEX, wght=500, style_classes="calendar-day"
             )
             self.day_labels.append(label)
             self.grid.attach(label, i % 7, 1 + i // 7, 1, 1)
@@ -146,7 +145,7 @@ class CalendarPopup(Box):
         return add_hover_cursor(
             Button(
                 style_classes="calendar-nav-btn",
-                child=MaterialIconLabel(icon_text=icon, FILL=0),
+                child=VariableIconLabel(icon_text=icon, FILL=0),
                 on_clicked=lambda *_: self.shift_month(step),
             )
         )

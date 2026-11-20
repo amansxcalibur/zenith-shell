@@ -16,7 +16,7 @@ from modules.tile import Tile
 from services.rfkill import RfkillService, TYPE_BLUETOOTH
 
 from widgets.clipping_box import ClippingBox
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from widgets.tile_menu import (
     MIN_BUSY_MS,
     ContentFader,
@@ -271,7 +271,7 @@ class BluetoothConnections(Box):
 
         self.client = BluetoothClient()
 
-        self.scan_icon = MaterialIconLabel(
+        self.scan_icon = VariableIconLabel(
             name="scan-icon", icon_text=icons.material.radar.symbol()
         )
         self.scan_label = Label(name="scan-label", label="")
@@ -298,7 +298,7 @@ class BluetoothConnections(Box):
             "leave-notify-event", lambda *_: self.scan_label_revealer.unreveal()
         )
 
-        self.refresh_icon = MaterialIconLabel(
+        self.refresh_icon = VariableIconLabel(
             name="scan-icon", icon_text=icons.material.refresh.symbol()
         )
         self.refresh_button = add_hover_cursor(

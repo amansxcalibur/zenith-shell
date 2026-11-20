@@ -7,7 +7,7 @@ from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 
 from widgets.overrides import Svg
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from widgets.animated_scale import AnimatedScale, AnimatedCircularScale
 from services.volume_service import MAX_VOLUME, MAX_VOLUME_REASON, VolumeService
 from config.config import config
@@ -295,7 +295,7 @@ class VolumeSmall(BaseAudioSmall):
 class MicSmall(BaseAudioSmall):
     def __init__(self, **kwargs):
         super().__init__(name="button-bar-mic", bar_name="button-mic", **kwargs)
-        self.vol_label = MaterialIconLabel(
+        self.vol_label = VariableIconLabel(
             name="mic-label", icon_text=icons.material.mic.symbol()
         )
         self._setup_event_box("mic-button")

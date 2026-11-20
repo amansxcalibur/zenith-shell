@@ -22,7 +22,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib  # type: ignore
 from widgets.clipping_box import ClippingBox
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from widgets.elastic.elastic_stack import ElasticStack
 
 if IS_WAYLAND:
@@ -139,7 +139,7 @@ class TopPill(Window, Service):
         self.children = self.pill_container
 
         self.pill_close_btn = Button(
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="close-control-label", icon_text=icons.material.close.symbol()
             ),
             tooltip_text="Close",

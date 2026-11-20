@@ -26,7 +26,7 @@ from services.animator import CubicBezierCurves
 from utils.colors import bind_theme
 from utils.text_view import add_undo, keep_cursor_visible
 
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from widgets.clipping_box import ClippingBox, AnimatedClippingBox
 from widgets.graphs import rounded_rect
 
@@ -78,7 +78,7 @@ def ensure_data_file():
 def _make_icon_button(icon, tooltip: str, callback: callable) -> Button:
     return Button(
         name="agenda-btn",
-        child=MaterialIconLabel(style_classes="agenda-icon", icon_text=icon.symbol()),
+        child=VariableIconLabel(style_classes="agenda-icon", icon_text=icon.symbol()),
         on_clicked=callback,
         tooltip_text=tooltip,
     )
@@ -308,7 +308,7 @@ class AgendaItem(Gtk.ListBoxRow):
             name="display-box",
             spacing=10,
             children=[
-                MaterialIconLabel(
+                VariableIconLabel(
                     style_classes="agenda-icon",
                     icon_text=icons.material.drag_indicator.symbol(),
                 ),
@@ -539,7 +539,7 @@ class AgendaApp(Box):
         self.trigger_box = Button(
             name="add-new-agenda-btn",
             h_align="end",
-            child=MaterialIconLabel(icon_text=icons.material.add_material.symbol()),
+            child=VariableIconLabel(icon_text=icons.material.add_material.symbol()),
             on_clicked=self._show_editor,
         )
 
@@ -584,10 +584,10 @@ class AgendaApp(Box):
         self.input_stack.set_visible_child_name("trigger")
 
     def _build_actions_pill(self):
-        self.copy_icon = MaterialIconLabel(
+        self.copy_icon = VariableIconLabel(
             icon_text=icons.material.content_copy.symbol()
         )
-        self.edit_icon = MaterialIconLabel(
+        self.edit_icon = VariableIconLabel(
             icon_text=icons.material.edit_material.symbol()
         )
         self.copy_btn = Button(

@@ -24,7 +24,7 @@ from utils.cursor import add_hover_cursor
 from utils.helpers import format_accel_to_keybind
 
 from widgets.glass_well import cut_page_out_of_well
-from widgets.material_label import MaterialIconLabel, MaterialFontLabel
+from widgets.variable_font_label import VariableIconLabel, VariableFontLabel
 from widgets.shapes.expressive.morphing_shapes import AnimateShapeMorph
 
 from .state import state
@@ -259,7 +259,7 @@ class SettingsWindow(Window):
 
         close_button = Button(
             name="menu-close-button",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="close-label",
                 style_classes="settings",
                 icon_text=icons.material.close.symbol(),
@@ -267,7 +267,7 @@ class SettingsWindow(Window):
             on_clicked=lambda b: self.on_close(None),
         )
 
-        settings_header = MaterialFontLabel(text="Settings", font_size=16)
+        settings_header = VariableFontLabel(text="Settings", font_size=16)
         header.pack_end(close_button, False, False, 0)
         header.pack_end(settings_header, True, False, 0)
 
@@ -303,7 +303,7 @@ class SettingsWindow(Window):
                 child=Box(
                     spacing=6,
                     children=[
-                        MaterialIconLabel(
+                        VariableIconLabel(
                             icon_text=icons.material.info.symbol(), font_size=16
                         ),
                         Label(label=zenith_version()),
@@ -366,7 +366,7 @@ class SettingsWindow(Window):
         box = Box(
             spacing=10,
             children=[
-                MaterialIconLabel(
+                VariableIconLabel(
                     icon_text=tab_config.icon, font_size=17, h_expand=False
                 ),
                 Label(
@@ -433,7 +433,7 @@ class SettingsWindow(Window):
         )
 
     def _create_copy_path_button(self) -> Button:
-        self._copy_path_icon = MaterialIconLabel(
+        self._copy_path_icon = VariableIconLabel(
             icon_text=icons.material.content_copy.symbol()
         )
         self._copy_path_reset_id = 0

@@ -58,7 +58,7 @@ from modules.tile import TileSimple
 from services.animator import Animator
 
 from widgets.rounded_image import RoundedImage
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from widgets.shapes.expressive.morphing_shapes import ExpressiveShape
 from widgets.clipping_box import ClippingBox, OddlySpecificClippingBox
 
@@ -200,7 +200,7 @@ class ActiveNotificationWidget(EventBox):
             self._add_image_fallback(content_box)
 
         # TODO: implement real Revealer with animations and Pango pixel length(?)
-        self.revealer_btn_label = MaterialIconLabel(
+        self.revealer_btn_label = VariableIconLabel(
             icon_text=icons.material.arrow_forward.symbol(),
             angle=-90,
         )
@@ -287,7 +287,7 @@ class ActiveNotificationWidget(EventBox):
                         children=[
                             Button(
                                 name="close-button-small",
-                                child=MaterialIconLabel(
+                                child=VariableIconLabel(
                                     name="close-label-small",
                                     icon_text=icons.material.close.symbol(),
                                 ),
@@ -764,7 +764,7 @@ class NotificationManager:
         # TODO
         self.silent_btn = Button(
             # name="notification-reveal-btn",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="notification-reveal-label",
                 icon_text=icons.material.notifications.symbol(),
             ),
@@ -773,7 +773,7 @@ class NotificationManager:
         )
         self.clear_btn = Button(
             # name="notification-reveal-btn",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="notification-clear-label",
                 icon_text=icons.material.trash_material.symbol(),
             ),

@@ -14,7 +14,7 @@ from config.config import config
 from config.info import SHELL_NAME
 from modules.core.bottom.dock.placement import DockEdge, current_placement
 from widgets.popup_window.shared_popup_window import SharedPopupWindow
-from widgets.material_label import MaterialFontLabel, MaterialIconLabel
+from widgets.variable_font_label import Font, VariableFontLabel, VariableIconLabel
 from services.animator import Animator
 from utils.helpers import restart_shell
 
@@ -78,8 +78,8 @@ class DateTime(Button):
         size: Iterable[int] | int | None = None,
         **kwargs,
     ):
-        self.label = MaterialFontLabel(
-            text="__", font_family="Google Sans Flex", wght=600, ROND=100
+        self.label = VariableFontLabel(
+            text="__", font_family=Font.GOOGLE_SANS_FLEX, wght=600, ROND=100
         )
         super().__init__(
             None,
@@ -159,7 +159,7 @@ class ActionButton(EventBox):
 
         self.restart_btn = Button(
             name="orientation-btn",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="orientation-label",
                 FILL=0,
                 icon_text=(icons.material.planet.symbol()),
@@ -168,7 +168,7 @@ class ActionButton(EventBox):
         )
         self.toggle_vrt_btn = Button(
             name="orientation-btn",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="orientation-label",
                 FILL=0,
                 icon_text=(icons.material.toggle_orientation.symbol()),
@@ -177,7 +177,7 @@ class ActionButton(EventBox):
         )
         self.start_launcher_btn = Button(
             name="orientation-btn",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="orientation-label",
                 FILL=0,
                 icon_text=(icons.material.rocket_launch.symbol()),
@@ -186,7 +186,7 @@ class ActionButton(EventBox):
         )
         self.start_power_btn = Button(
             name="orientation-btn",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="orientation-label",
                 FILL=0,
                 icon_text=(icons.material.shutdown.symbol()),
@@ -214,16 +214,16 @@ class ActionButton(EventBox):
                     child=Box(
                         spacing=2,
                         children=[
-                            MaterialIconLabel(
+                            VariableIconLabel(
                                 name="orientation-label",
                                 style_classes="action-icon",
                                 FILL=0,
                                 icon_text=btn.get_children()[0].get_text(),
                             ),
-                            MaterialFontLabel(
+                            VariableFontLabel(
                                 text=info["label"],
                                 style_classes="action-menu-label",
-                                font_family="Google Sans Flex",
+                                font_family=Font.GOOGLE_SANS_FLEX,
                                 font_size=15,
                             ),
                         ],
@@ -261,7 +261,7 @@ class ActionButton(EventBox):
                 self.remove(self.get_child())
             self.add(target_widget)
 
-        def ensure_animator(label: MaterialFontLabel):
+        def ensure_animator(label: VariableFontLabel):
             if hasattr(label, "_animator"):
                 return
 

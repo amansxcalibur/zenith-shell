@@ -18,7 +18,7 @@ from fabric.widgets.eventbox import EventBox
 from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.utils import DesktopApp, get_desktop_applications, idle_add, remove_handler
 
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 
 import icons
 from config.config import config
@@ -177,9 +177,9 @@ class AppLauncher(Box):
         self.search_entry.props.xalign = 0.5
 
         # TODO
-        # self.search_result_cnt = MaterialFontLabel(
+        # self.search_result_cnt = VariableFontLabel(
         #     text="Apps 37",
-        #     font_family="Google Sans Flex",
+        #     font_family=Font.GOOGLE_SANS_FLEX,
         # )
 
         self.scrolled_window = ScrolledWindow(
@@ -207,8 +207,8 @@ class AppLauncher(Box):
                 #         Box(
                 #             style="padding: 0 6px; background-color: var(--surface-semi-bright); border-radius: 20px; margin-bottom: 4px",
                 #             children=[
-                #                 MaterialIconLabel(icon_text=icons.material.north.symbol()),
-                #                 MaterialIconLabel(icon_text=icons.material.south.symbol()),
+                #                 VariableIconLabel(icon_text=icons.material.north.symbol()),
+                #                 VariableIconLabel(icon_text=icons.material.south.symbol()),
                 #                 Label(style="color: var(--outline);", label="nav"),
                 #             ],
                 #         ),
@@ -216,10 +216,10 @@ class AppLauncher(Box):
                 #             style="padding: 0 6px; background-color: var(--surface-semi-bright); border-radius: 20px; margin-bottom: 4px",
                 #             children=[
                 #                 Label(style="color: var(--outline); ", label="Shift+"),
-                #                 MaterialIconLabel(
+                #                 VariableIconLabel(
                 #                     icon_text=icons.material.arrow_backward.symbol()
                 #                 ),
-                #                 MaterialIconLabel(
+                #                 VariableIconLabel(
                 #                     icon_text=icons.material.arrow_forward.symbol()
                 #                 ),
                 #                 Label(style="color: var(--outline); ", label="modes"),
@@ -242,7 +242,7 @@ class AppLauncher(Box):
                         ),
                         Button(
                             name="close-button",
-                            child=MaterialIconLabel(
+                            child=VariableIconLabel(
                                 name="close-label",
                                 icon_text=icons.material.close.symbol(),
                             ),
@@ -596,7 +596,7 @@ class AppLauncher(Box):
                 orientation="h",
                 spacing=12,
                 children=[
-                    MaterialIconLabel(
+                    VariableIconLabel(
                         name="app-icon",
                         style_classes="command",
                         icon_text=icon.symbol() if hasattr(icon, "symbol") else icon,

@@ -10,7 +10,7 @@ from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 
 from config.config import config
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from widgets.animated_scale import AnimatedScale, AnimatedCircularScale
 from services.brightness_service import BrightnessService
 import icons
@@ -115,7 +115,7 @@ class BrightnessSmall(Box):
         self.exist = BACKLIGHT_SUPPORTED
         self.scroll_accumulator = 0.0
 
-        self.brightness_label = MaterialIconLabel(
+        self.brightness_label = VariableIconLabel(
             name="brightness-label",
             FILL=0,
             wght=600,

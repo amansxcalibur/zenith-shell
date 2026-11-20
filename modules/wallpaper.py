@@ -41,7 +41,7 @@ from utils.lock import (
 )
 
 from widgets.clipping_box import ClippingBox
-from widgets.material_label import MaterialFontLabel, MaterialIconLabel
+from widgets.variable_font_label import Font, VariableFontLabel, VariableIconLabel
 from widgets.shapes.expressive.morphing_shapes import InteractiveMorphShape
 
 import gi
@@ -380,7 +380,7 @@ class WallpaperSelector(Box):
         )
         open_btn = Button(
             style_classes="launch-mode-btn",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 icon_text=icons.material.folder_open.symbol(),
                 FILL=1,
                 style="font-size: 20px; color: var(--primary)",
@@ -400,7 +400,7 @@ class WallpaperSelector(Box):
 
         close_btn = Button(
             name="close-button",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="close-label", icon_text=icons.material.close.symbol()
             ),
             tooltip_text="Exit",
@@ -433,7 +433,7 @@ class WallpaperSelector(Box):
     def _build_dir_chooser(self):
         btn = Button(
             style="margin: 18px; padding: 52px;",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 icon_text=icons.material.add_material.symbol(),
                 FILL=0,
                 style="font-size: 120px; color: var(--on-primary)",
@@ -459,9 +459,9 @@ class WallpaperSelector(Box):
             orientation="v",
             children=[
                 shape,
-                MaterialFontLabel(
+                VariableFontLabel(
                     text="Choose Wallpaper Directory",
-                    font_family="Google Sans Flex",
+                    font_family=Font.GOOGLE_SANS_FLEX,
                     style="color: var(--foreground); font-size: 20px",
                 ),
             ],
@@ -492,9 +492,9 @@ class WallpaperSelector(Box):
             style="padding: 20px 30px; color: var(--foreground)",
             spacing=8,
             children=[
-                MaterialIconLabel(icon_text=icons.material.wallpaper.symbol()),
-                MaterialFontLabel(
-                    font_family="Google Sans Flex",
+                VariableIconLabel(icon_text=icons.material.wallpaper.symbol()),
+                VariableFontLabel(
+                    font_family=Font.GOOGLE_SANS_FLEX,
                     text="Choosing Wallpaper Folder...",
                 ),
             ],
@@ -782,10 +782,10 @@ class WallpaperSelector(Box):
             orientation="v",
             children=[
                 Box(name="badge-hole", h_expand=True, v_expand=True),
-                MaterialFontLabel(
+                VariableFontLabel(
                     name="badge-label",
                     h_expand=True,
-                    font_family="Google Sans Flex",
+                    font_family=Font.GOOGLE_SANS_FLEX,
                     wght=600,
                     text="CURRENT",
                 ),

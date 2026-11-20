@@ -7,7 +7,7 @@ from fabric.utils.helpers import exec_shell_command_async
 
 from modules.notifications.notification import NotificationNotifier
 from widgets.clipping_box import ClippingBox
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from utils.cursor import add_hover_cursor
 from utils.colors import bind_theme
 import icons
@@ -41,7 +41,7 @@ class NotificationIndicator(Box):
         )
 
         self.overlay = Overlay(
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="systray-notif-icon",
                 font_size=18,
                 icon_text=icons.material.notifications.symbol(),

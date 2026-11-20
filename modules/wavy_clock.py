@@ -6,6 +6,7 @@ from typing import ClassVar
 from config.info import ROOT_DIR
 from services.theme import ThemeService
 from utils.colors import get_css_variable, hex_to_rgb01
+from widgets.variable_font_label import Font
 
 import gi
 
@@ -30,7 +31,7 @@ class WavyClock(Gtk.DrawingArea):
     DOT_RADIUS_DIVISOR = 18  # dot_radius = width / this
 
     FONT_SIZE_RATIO = 0.18
-    FONT_NAME = "Google Sans Flex"
+    FONT_NAME = Font.GOOGLE_SANS_FLEX
     FONT_VARIATIONS: ClassVar = {"wght": 500, "ROND": 100, "wdth": 100}
 
     HOUR_HAND_ALPHA = 0.6

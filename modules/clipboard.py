@@ -10,7 +10,7 @@ from fabric.widgets.eventbox import EventBox
 from fabric.widgets.scrolledwindow import ScrolledWindow
 
 from widgets.clipping_box import ClippingBox
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from services.clipboard_service import ClipboardService, ClipEntry
 
 import icons
@@ -83,7 +83,7 @@ class ClipboardHistory(Box):
     def _icon_button(icon, tooltip, on_clicked, name="clipboard-icon-btn", **kw):
         btn = Button(
             name=name,
-            child=MaterialIconLabel(icon_text=icon.symbol()),
+            child=VariableIconLabel(icon_text=icon.symbol()),
             tooltip_text=tooltip,
             on_clicked=on_clicked,
             **kw,
@@ -105,7 +105,7 @@ class ClipboardHistory(Box):
             v_align="center",
             v_expand=True,
             children=[
-                MaterialIconLabel(
+                VariableIconLabel(
                     name="clipboard-empty-icon",
                     style="margin-top: 20px",  # cuz of the page spacing between the entry and list box
                     icon_text=icons.material.content_copy.symbol(),
@@ -196,7 +196,7 @@ class ClipboardHistory(Box):
         self.search_entry.props.xalign = 0.5
         self.search_entry.connect("notify::text", lambda *_: self._on_search())
 
-        mode_icon = MaterialIconLabel(
+        mode_icon = VariableIconLabel(
             name="clipboard-mode-icon", icon_text=icons.material.content_copy.symbol()
         )
         mode_icon.set_tooltip_text("Clipboard history")
@@ -210,7 +210,7 @@ class ClipboardHistory(Box):
             name="clipboard-clear-btn",
             child=Box(
                 children=[
-                    MaterialIconLabel(
+                    VariableIconLabel(
                         name="clipboard-clear-icon",
                         icon_text=icons.material.delete_sweep.symbol(),
                     ),
@@ -228,7 +228,7 @@ class ClipboardHistory(Box):
         )
         close_btn = Button(
             name="close-button",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="close-label", icon_text=icons.material.close.symbol()
             ),
             tooltip_text="Close",
@@ -443,7 +443,7 @@ class ClipboardHistory(Box):
             title_row = Box(
                 spacing=6,
                 children=[
-                    MaterialIconLabel(
+                    VariableIconLabel(
                         name="clipboard-file-icon", icon_text=icon.symbol()
                     ),
                     names,

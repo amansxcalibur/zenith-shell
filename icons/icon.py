@@ -5,7 +5,7 @@ class Icon:
         self._symbol = symbol
 
     def symbol(self) -> str:
-        """For MaterialIconLabel / Pango layout"""
+        """For VariableIconLabel / Pango layout"""
         return self._symbol
 
     def markup(self) -> str:

@@ -4,7 +4,7 @@ from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
 
 from widgets.wrap_box import WrapBox
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 
 import icons
 from config.info import IS_WAYLAND
@@ -346,7 +346,7 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
                 spacing=10,
                 h_align="start",
                 children=[
-                    MaterialIconLabel(icon_text=position["icon"], font_size=17),
+                    VariableIconLabel(icon_text=position["icon"], font_size=17),
                     Label(label=position["text"]),
                 ],
             ),

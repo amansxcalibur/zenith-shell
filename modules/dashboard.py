@@ -25,7 +25,7 @@ from utils.helpers import open_settings
 from utils.cursor import add_hover_cursor
 
 from widgets.glass_well import cut_out_of_well
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from widgets.popup_window import PopSlot, FlyingOverlay
 
 
@@ -166,13 +166,13 @@ class Dashboard(Box):
                                 h_align="end",
                                 spacing=2,
                                 children=[
-                                    MaterialIconLabel(
+                                    VariableIconLabel(
                                         icon_text=icons.material.edit_material.symbol(),
                                         style="font-size:28px; color:var(--foreground)",
                                     ),
                                     add_hover_cursor(
                                         Button(
-                                            child=MaterialIconLabel(
+                                            child=VariableIconLabel(
                                                 icon_text=icons.material.settings.symbol(),
                                                 style="font-size:28px; color:var(--foreground);",
                                             ),
@@ -205,7 +205,7 @@ class Dashboard(Box):
                 children=[
                     CenterBox(
                         style_classes="scale-icon-container",
-                        center_children=MaterialIconLabel(
+                        center_children=VariableIconLabel(
                             style_classes="scale-icon",
                             FILL=0,
                             icon_text=icons.material.brightness.symbol(),

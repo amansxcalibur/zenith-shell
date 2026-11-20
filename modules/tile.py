@@ -15,7 +15,7 @@ from utils.colors import bind_theme
 from utils.cursor import add_hover_cursor
 
 from widgets.tile_menu import TileMenuLoader
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from widgets.clipping_box import ClippingBox, TrueClippingBox
 
 import gi
@@ -48,7 +48,7 @@ class TileSimple(ClippingBox):
             transition_duration=250, transition_type="slide-down", child=self.props
         )
 
-        self.icon = MaterialIconLabel(
+        self.icon = VariableIconLabel(
             style_classes="tile-icon",
             icon_text=markup,
             style=markup_styles,
@@ -155,7 +155,7 @@ class TileSmall(Button):
     `handle_state_toggle` and call `set_state` with the real state."""
 
     def __init__(self, markup: str, label: str, **kwargs):
-        self.icon = MaterialIconLabel(style_classes="tile-icon", icon_text=markup)
+        self.icon = VariableIconLabel(style_classes="tile-icon", icon_text=markup)
         super().__init__(
             style_classes=["tile", "small", "off"],
             h_expand=True,
@@ -214,7 +214,7 @@ class TileSimpleWithMenu(ClippingBox):
         )
         self.toggle = False
 
-        self.icon = MaterialIconLabel(
+        self.icon = VariableIconLabel(
             style_classes="tile-icon",
             icon_text=markup,
             style=markup_styles,
@@ -277,7 +277,7 @@ class TileSimpleWithMenu(ClippingBox):
 
         self.menu_close_btn = Button(
             name="menu-close-button",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="close-label",
                 style_classes="settings",
                 icon_text=icons.material.close.symbol(),
@@ -430,7 +430,7 @@ class Tile(ClippingBox):
             transition_duration=250, transition_type="slide-up", child=self.props
         )
 
-        self.icon = MaterialIconLabel(
+        self.icon = VariableIconLabel(
             style_classes="tile-icon", icon_text=markup, style=markup_styles
         )
         self.icon_wrapper = Button(
@@ -487,7 +487,7 @@ class Tile(ClippingBox):
 
         self.menu_close_btn = Button(
             name="menu-close-button",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="close-label",
                 style_classes="settings",
                 icon_text=icons.material.close.symbol(),

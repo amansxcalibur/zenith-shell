@@ -30,7 +30,7 @@ from utils.helpers import toggle_class
 from utils.icon_resolver import IconResolver
 
 from widgets.rounded_image import RoundedImage
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from widgets.clipping_box import AnimatedClippingBox
 from widgets.shapes.expressive.morphing_shapes import ExpressiveShape
 
@@ -130,7 +130,7 @@ def _resolve_app_icon(notification: Notification, size: int = 28) -> Gtk.Widget:
             logger.error("Failed to resolve pixbuf app icon")
 
     # fallback
-    fallback = MaterialIconLabel(
+    fallback = VariableIconLabel(
         name="notification-icon",
         icon_text=icons.material.blur.symbol(),
         style=f"margin: 0px; font-size: {int(size * 0.8)}px",
@@ -308,7 +308,7 @@ class NotificationWidget(CollapsingBox):
         max_c = NotificationConfig.MAX_CHARS_PER_LINE
 
         # expander button
-        self.revealer_btn_label = MaterialIconLabel(
+        self.revealer_btn_label = VariableIconLabel(
             icon_text=icons.material.arrow_forward.symbol(), angle=-90
         )
         self.revealer_btn = Button(
@@ -385,7 +385,7 @@ class NotificationWidget(CollapsingBox):
         close_btn = Button(
             name="close-button-small",
             v_align="start",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="close-label-small",
                 icon_text=icons.material.close.symbol(),
             ),
@@ -579,7 +579,7 @@ class NotificationGroup(AnimatedClippingBox):
         )
         self._count_label.set_no_show_all(True)
 
-        self._toggle_icon = MaterialIconLabel(
+        self._toggle_icon = VariableIconLabel(
             style_classes="notif-toggle-arrow",
             icon_text=icons.material.arrow_forward.symbol(),
             angle=-90,  # pointing down = collapsed
@@ -596,7 +596,7 @@ class NotificationGroup(AnimatedClippingBox):
                 spacing=4,
                 children=[
                     Label(label="Clear", style="color: var(--foreground)"),
-                    MaterialIconLabel(
+                    VariableIconLabel(
                         icon_text=icons.material.mop.symbol(),
                         style="color: var(--foreground)",
                     ),

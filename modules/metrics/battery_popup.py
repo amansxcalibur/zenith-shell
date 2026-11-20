@@ -10,11 +10,9 @@ from services.animator import Animator, CubicBezierCurves
 from services.power_profiles import power_profiles_service
 
 from widgets.clipping_box import ClippingBox
-from widgets.material_label import MaterialFontLabel, MaterialIconLabel
+from widgets.variable_font_label import Font, VariableFontLabel, VariableIconLabel
 
 from gi.repository import GLib  # type: ignore
-
-FONT = "Google Sans Flex"
 
 
 def _read(path: str) -> str | None:
@@ -99,17 +97,17 @@ class BatteryPopup(Box):
         self._fill = Box(name="bat-tank-fill", v_align="end", h_expand=True)
         self._fill.set_size_request(-1, 0)
 
-        self._status = MaterialFontLabel(
-            text="", font_family=FONT, name="bat-tank-status", h_align="end"
+        self._status = VariableFontLabel(
+            text="", font_family=Font.GOOGLE_SANS_FLEX, name="bat-tank-status", h_align="end"
         )
-        self._bolt = MaterialIconLabel(
+        self._bolt = VariableIconLabel(
             name="bat-tank-bolt",
             icon_text=icons.material.bolt.symbol(),
             v_align="center",
         )
         self._bolt.set_no_show_all(True)
-        self._percent_label = MaterialFontLabel(
-            text="0%", font_family=FONT, name="bat-tank-percent"
+        self._percent_label = VariableFontLabel(
+            text="0%", font_family=Font.GOOGLE_SANS_FLEX, name="bat-tank-percent"
         )
         self._corner = Box(
             name="bat-tank-corner",

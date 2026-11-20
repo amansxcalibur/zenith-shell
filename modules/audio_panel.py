@@ -7,7 +7,7 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 
 import icons
 from services.volume_service import AppStream, SoundDevice, VolumeService
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 
 import gi
 
@@ -61,7 +61,7 @@ def _heading(icon, title: str) -> Box:
         name="panel-heading",
         spacing=8,
         children=[
-            MaterialIconLabel(name="heading-icon", icon_text=icon.symbol()),
+            VariableIconLabel(name="heading-icon", icon_text=icon.symbol()),
             Label(name="heading-title", label=title),
         ],
     )
@@ -75,7 +75,7 @@ def _app_icon(stream: AppStream) -> Gtk.Widget:
             image.set_pixel_size(APP_ICON_SIZE)
             image.set_hexpand(True)  # centred in its tile
             return image
-    return MaterialIconLabel(
+    return VariableIconLabel(
         name="app-icon-fallback",
         icon_text=icons.material.music_note.symbol(),
         h_align="center",
@@ -89,7 +89,7 @@ class DeviceCard(Box):
         self.on_pick = on_pick
         self.choices = False
 
-        self.icon = MaterialIconLabel(
+        self.icon = VariableIconLabel(
             name="card-icon",
             icon_text=icons.material.speaker.symbol(),
             h_align="center",
@@ -97,7 +97,7 @@ class DeviceCard(Box):
         )
         self.device = _name_label("card-device")
         self.level = _name_label("card-level")
-        self.arrow = MaterialIconLabel(
+        self.arrow = VariableIconLabel(
             name="card-arrow", icon_text=icons.material.expand_more.symbol()
         )
         self.header = Button(
@@ -163,7 +163,7 @@ class DeviceCard(Box):
             self.on_pick(device.name)
             self.set_open(False)
 
-        check = MaterialIconLabel(
+        check = VariableIconLabel(
             name="option-check", icon_text=icons.material.check_material.symbol()
         )
         button = Button(
@@ -172,7 +172,7 @@ class DeviceCard(Box):
             child=Box(
                 spacing=10,
                 children=[
-                    MaterialIconLabel(
+                    VariableIconLabel(
                         name="option-icon",
                         icon_text=DEVICE_ICONS[device.icon].symbol(),
                     ),
@@ -191,7 +191,7 @@ class DeviceCard(Box):
 class StatusRow(Box):
     def __init__(self, on_more=None, more_tooltip: str | None = None):
         super().__init__(name="status-row", spacing=12)
-        self.icon = MaterialIconLabel(
+        self.icon = VariableIconLabel(
             name="status-icon", icon_text=icons.material.mic.symbol()
         )
         self.title = _name_label("status-title")
@@ -204,7 +204,7 @@ class StatusRow(Box):
                 name="status-more",
                 v_align="center",
                 tooltip_text=more_tooltip,
-                child=MaterialIconLabel(
+                child=VariableIconLabel(
                     name="status-more-icon",
                     icon_text=icons.material.chevron_right.symbol(),
                 ),
@@ -385,7 +385,7 @@ class AudioPanel(Box):
                         Button(
                             name="page-back",
                             tooltip_text="Back",
-                            child=MaterialIconLabel(
+                            child=VariableIconLabel(
                                 name="page-back-icon",
                                 icon_text=icons.material.arrow_back.symbol(),
                             ),

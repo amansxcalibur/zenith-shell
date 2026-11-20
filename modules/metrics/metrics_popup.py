@@ -27,7 +27,7 @@ from widgets.graphs import (
     SegmentedBar,
 )
 from widgets.shapes.expressive.morphing_shapes import InteractiveMorphShape
-from widgets.material_label import MaterialIconLabel, MaterialFontLabel
+from widgets.variable_font_label import Font, VariableIconLabel, VariableFontLabel
 
 from gi.repository import GLib  # type: ignore
 
@@ -193,16 +193,16 @@ class Metrics(Box):
         self.cpu_circular_graph = CircularGraph(bar_count=threads)
         self.load_shape = LoadShape(cookie_12, very_sunny)
 
-        self.cpu_label = MaterialFontLabel(
+        self.cpu_label = VariableFontLabel(
             text="--",
             v_align="center",
             style_classes="metrics-main-label",
-            font_family="Google Sans Flex",
+            font_family=Font.GOOGLE_SANS_FLEX,
         )
-        self.disk_label = MaterialFontLabel(
+        self.disk_label = VariableFontLabel(
             text="--",
             style_classes="metrics-main-label",
-            font_family="Google Sans Flex",
+            font_family=Font.GOOGLE_SANS_FLEX,
         )
         self.disk_ratio_label = Label(label="-- / --", style_classes="metrics-sub-text")
         self.cores = Label(
@@ -244,10 +244,10 @@ class Metrics(Box):
             ellipsization="end",
             max_chars_width=13,
         )
-        self.cpu_panel_icon = MaterialIconLabel(
+        self.cpu_panel_icon = VariableIconLabel(
             icon_text=icons.material.cpu.symbol(), font_size=14
         )
-        self.mem_panel_icon = MaterialIconLabel(
+        self.mem_panel_icon = VariableIconLabel(
             icon_text=icons.material.memory.symbol(), font_size=14
         )
 
@@ -316,7 +316,7 @@ class Metrics(Box):
             size=(BADGE_SIZE, BADGE_SIZE),
             v_align="center",
             child=shape,
-            overlays=[MaterialIconLabel(icon_text=icon, font_size=15)],
+            overlays=[VariableIconLabel(icon_text=icon, font_size=15)],
         )
         return badge, shape
 
@@ -356,7 +356,7 @@ class Metrics(Box):
             size=(width, -1),
             spacing=8,
             children=[
-                MaterialIconLabel(
+                VariableIconLabel(
                     icon_text=icons.material.history.symbol(), font_size=14
                 ),
                 slider,
@@ -381,7 +381,7 @@ class Metrics(Box):
     def _stat(icon, label: Label, **kwargs) -> Box:
         return Box(
             spacing=3,
-            children=[MaterialIconLabel(icon_text=icon, font_size=13), label],
+            children=[VariableIconLabel(icon_text=icon, font_size=13), label],
             **kwargs,
         )
 
@@ -429,7 +429,7 @@ class Metrics(Box):
             h_align="center",
             spacing=4,
             children=[
-                MaterialIconLabel(icon_text=icons.material.cpu.symbol()),
+                VariableIconLabel(icon_text=icons.material.cpu.symbol()),
                 Label(label="CPU"),
             ],
         )
@@ -472,7 +472,7 @@ class Metrics(Box):
                         h_align="center",
                         spacing=4,
                         children=[
-                            MaterialIconLabel(icon_text=icons.material.disk.symbol()),
+                            VariableIconLabel(icon_text=icons.material.disk.symbol()),
                             Label(label="Disk"),
                         ],
                     ),
@@ -515,7 +515,7 @@ class Metrics(Box):
                     spacing=4,
                     style="margin-bottom: 4px;",
                     children=[
-                        MaterialIconLabel(
+                        VariableIconLabel(
                             icon_text=icons.material.leaderboard.symbol(), font_size=14
                         ),
                         Label(label="Top", h_align="start", h_expand=True),
@@ -560,7 +560,7 @@ class Metrics(Box):
     def _build_network_panel(self) -> Overlay:
         panel = self._graph_panel(
             self.net_graph,
-            MaterialIconLabel(icon_text=icons.material.lan.symbol(), font_size=14),
+            VariableIconLabel(icon_text=icons.material.lan.symbol(), font_size=14),
             "Network",
             detail=self.net_peak_label,
         )
@@ -592,14 +592,14 @@ class Metrics(Box):
                 ("memory", self.mem_panel_icon, "Memory"),
                 (
                     "network",
-                    MaterialIconLabel(
+                    VariableIconLabel(
                         icon_text=icons.material.lan.symbol(), font_size=14
                     ),
                     "Network",
                 ),
                 (
                     "details",
-                    MaterialIconLabel(
+                    VariableIconLabel(
                         icon_text=icons.material.monitoring.symbol(), font_size=14
                     ),
                     "Details",
@@ -810,7 +810,7 @@ class Metrics(Box):
                     detail=self.cpu_split_label,
                 ),
                 self._strip(
-                    MaterialIconLabel(
+                    VariableIconLabel(
                         icon_text=icons.material.speed.symbol(), font_size=14
                     ),
                     self.freq_bar,
@@ -854,7 +854,7 @@ class Metrics(Box):
                     footer=self._build_memory_footer(),
                 ),
                 self._strip(
-                    MaterialIconLabel(
+                    VariableIconLabel(
                         icon_text=icons.material.swap_vert.symbol(), font_size=14
                     ),
                     Label(label="Swap", style_classes="roboto"),
@@ -1018,7 +1018,7 @@ class Metrics(Box):
                 ring.set_style(style)
 
     @staticmethod
-    def _set_panel_alert(icon: MaterialIconLabel, normal_symbol: str, alert: bool):
+    def _set_panel_alert(icon: VariableIconLabel, normal_symbol: str, alert: bool):
         """Alerts are never color alone: the panel's icon becomes a warning sign."""
         icon.set_icon(icons.material.warning.symbol() if alert else normal_symbol)
         _set_class(icon, "metrics-alert-icon", alert)

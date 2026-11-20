@@ -26,7 +26,7 @@ from utils.cursor import add_hover_cursor
 from utils.helpers import format_accel_to_keybind
 
 from widgets.clipping_box import ClippingBox
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from widgets.tile_menu import (
     MIN_BUSY_MS,
     ContentFader,
@@ -296,8 +296,8 @@ class PropertiesDialogWifi(BasePropertiesDialog):
 
 def _row_action_button(
     icon: str, tooltip: str, on_clicked: Callable[..., None]
-) -> tuple[Button, MaterialIconLabel]:
-    icon_label = MaterialIconLabel(icon_text=icon, style_classes=["ap-action-icon"])
+) -> tuple[Button, VariableIconLabel]:
+    icon_label = VariableIconLabel(icon_text=icon, style_classes=["ap-action-icon"])
     button = add_hover_cursor(
         Button(
             style_classes=["ap-action-btn"],
@@ -373,14 +373,14 @@ class WifiButton(EventBox):
             ],
         )
 
-        self.wifi_icon = MaterialIconLabel(
+        self.wifi_icon = VariableIconLabel(
             name="ap-icon", icon_text=self._get_wifi_icon(), h_expand=False
         )
         children = [self.wifi_icon, self.label_box]
 
         if self.secured:
             children.append(
-                MaterialIconLabel(
+                VariableIconLabel(
                     icon_text=icons.material.lock.symbol(),
                     style_classes=["ap-secure-icon"],
                     tooltip_text="Secured network",
@@ -654,7 +654,7 @@ class EthernetButton(EventBox):
         )
 
         children = [
-            MaterialIconLabel(
+            VariableIconLabel(
                 name="ap-icon", icon_text=self._get_ethernet_icon(), h_expand=False
             ),
             self.label_box,
@@ -989,7 +989,7 @@ class Network(TileSimpleWithMenu):
                 h_align="end",
                 style_classes=["menu-icon-btn"],
                 on_clicked=lambda *_: on_clicked(),
-                child=MaterialIconLabel(
+                child=VariableIconLabel(
                     style_classes=["menu-icon"],
                     icon_text=icons.material.refresh.symbol(),
                 ),

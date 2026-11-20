@@ -4,7 +4,7 @@ from fabric.widgets.box import Box
 from fabric.widgets.button import Button
 from fabric.utils.helpers import exec_shell_command_async
 
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from utils.lock import lock_screen
 
 import icons
@@ -19,27 +19,27 @@ class PowerMenu(Box):
         self.btn_lock = Button(
             style_classes="menu-item",
             on_clicked=self.lock,
-            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.material.lock.symbol()),
+            child=VariableIconLabel(style_classes="menu-label", wght=600, icon_text=icons.material.lock.symbol()),
         )
         self.btn_suspend = Button(
             style_classes="menu-item",
             on_clicked=self.suspend,
-            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.material.suspend.symbol()),
+            child=VariableIconLabel(style_classes="menu-label", wght=600, icon_text=icons.material.suspend.symbol()),
         )
         self.btn_logout = Button(
             style_classes="menu-item",
             on_clicked=self.logout,
-            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.material.logout.symbol()),
+            child=VariableIconLabel(style_classes="menu-label", wght=600, icon_text=icons.material.logout.symbol()),
         )
         self.btn_reboot = Button(
             style_classes="menu-item",
             on_clicked=self.reboot,
-            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.material.reboot.symbol()),
+            child=VariableIconLabel(style_classes="menu-label", wght=600, icon_text=icons.material.reboot.symbol()),
         )
         self.btn_shutdown = Button(
             style_classes="menu-item",
             on_clicked=self.shutdown,
-            child=MaterialIconLabel(style_classes="menu-label", wght=600, icon_text=icons.material.shutdown.symbol()),
+            child=VariableIconLabel(style_classes="menu-label", wght=600, icon_text=icons.material.shutdown.symbol()),
         )
 
         self.children = [

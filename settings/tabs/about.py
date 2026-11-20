@@ -15,7 +15,7 @@ from config.i3.utils import is_swayfx
 
 from utils.cursor import add_hover_cursor
 
-from widgets.material_label import MaterialFontLabel, MaterialIconLabel
+from widgets.variable_font_label import VariableFontLabel, VariableIconLabel
 from widgets.zenith_logo import ZenithLogo
 
 from ..state import state
@@ -115,7 +115,7 @@ class AboutTab(BaseWidget):
             v_align="center",
             h_expand=True,
             children=[
-                MaterialFontLabel(
+                VariableFontLabel(
                     text="Zenith Shell", font_size=28, wght=600, h_align="start"
                 ),
                 Label(
@@ -181,7 +181,7 @@ class AboutTab(BaseWidget):
             style_classes=["settings-item", "settings-item-wide"],
             spacing=14,
             children=[
-                MaterialIconLabel(
+                VariableIconLabel(
                     icon_text=icons.material.update.symbol(),
                     font_size=17,
                     h_expand=False,
@@ -241,7 +241,7 @@ class AboutTab(BaseWidget):
                         child=Box(
                             spacing=8,
                             children=[
-                                MaterialIconLabel(
+                                VariableIconLabel(
                                     icon_text=icons.material.code.symbol(), font_size=17
                                 ),
                                 Label(label="Source code"),

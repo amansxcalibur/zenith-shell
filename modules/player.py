@@ -27,7 +27,7 @@ from utils.helpers import format_accel_to_keybind
 
 from widgets.overrides import Svg
 from widgets.animated_scale import AnimatedScale
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from widgets.popup_window import PopSlot, FlyingOverlay
 
 import gi
@@ -125,7 +125,7 @@ class PlayerSource(Button):
             style_classes="player-icon",
             svg_string=getattr(svg, self._player.props.player_name, svg.disc),
         )
-        self.audio_device_icon = MaterialIconLabel(
+        self.audio_device_icon = VariableIconLabel(
             icon_text=icons.material.headphones.symbol(),
             wght=600,
         )
@@ -426,7 +426,7 @@ class Player(Box):
         # controls
         self.play_pause_button = Button(
             name="pause-button",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="pause-label", icon_text=icons.material.play_material.symbol()
             ),
             style_classes="pause-track",
@@ -459,7 +459,7 @@ class Player(Box):
 
         self.prev_button = Button(
             name="prev-button",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="play-previous",
                 style_classes=["material-icon"],
                 icon_text=icons.material.skip_prev.symbol(),
@@ -468,7 +468,7 @@ class Player(Box):
         )
         self.next_button = Button(
             name="next-button",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="play-next",
                 style_classes=["material-icon"],
                 icon_text=icons.material.skip_next.symbol(),
@@ -993,7 +993,7 @@ class Placeholder(Box):
             Label(label="Nothing Playing", h_expand=True),
             Box(
                 v_align="end",
-                children=MaterialIconLabel(
+                children=VariableIconLabel(
                     name="placeholder-icon",
                     icon_text=icons.material.disc.symbol(),
                     h_align="end",

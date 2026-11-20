@@ -1,3 +1,4 @@
+from enum import StrEnum
 from typing import Any, ClassVar
 
 from fabric.widgets.label import Label
@@ -7,6 +8,12 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("PangoCairo", "1.0")
 from gi.repository import Pango  # type: ignore
+
+
+class Font(StrEnum):
+    ROBOTO_FLEX = "Roboto Flex"
+    GOOGLE_SANS_FLEX = "Google Sans Flex"
+    MATERIAL_SYMBOLS = "Material Symbols Rounded"
 
 
 class VariableFontMixin:
@@ -29,8 +36,8 @@ class VariableFontMixin:
             self._update_attributes()
 
 
-class BaseMaterialLabel(Label, VariableFontMixin):
-    FONT_FAMILY = "sans-serif"
+class BaseVariableFontLabel(Label, VariableFontMixin):
+    FONT_FAMILY: str = "sans-serif"
 
     def __init__(
         self,
@@ -95,10 +102,8 @@ class BaseMaterialLabel(Label, VariableFontMixin):
         self.set_attributes(attr_list)
 
 
-class MaterialIconLabel(BaseMaterialLabel):
-    """Label for Material Symbols."""
-
-    FONT_FAMILY = "Material Symbols Rounded"
+class VariableIconLabel(BaseVariableFontLabel):
+    FONT_FAMILY = Font.MATERIAL_SYMBOLS
 
     VARIATION_DEFAULTS: ClassVar[dict[str, float]] = {
         "FILL": 1,
@@ -108,7 +113,10 @@ class MaterialIconLabel(BaseMaterialLabel):
     }
     VARIATION_KEYS: ClassVar[set[str]] = set(VARIATION_DEFAULTS.keys())
 
-    def __init__(self, icon_text: str, **kwargs: Any) -> None:
+    def __init__(
+        self, icon_text: str, font_family: Font = Font.MATERIAL_SYMBOLS, **kwargs: Any
+    ) -> None:
+        self.FONT_FAMILY = font_family
         for k, v in self.VARIATION_DEFAULTS.items():
             kwargs.setdefault(k, v)
 
@@ -122,10 +130,8 @@ class MaterialIconLabel(BaseMaterialLabel):
         self.set_text(icon_text)
 
 
-class MaterialFontLabel(BaseMaterialLabel):
-    """Label for Variable Font."""
-
-    FONT_FAMILY = "Roboto Flex"
+class VariableFontLabel(BaseVariableFontLabel):
+    FONT_FAMILY = Font.ROBOTO_FLEX
 
     VARIATION_DEFAULTS: ClassVar[dict[str, float]] = {
         "wght": 400,
@@ -140,7 +146,7 @@ class MaterialFontLabel(BaseMaterialLabel):
     VARIATION_KEYS: ClassVar[set[str]] = set(VARIATION_DEFAULTS.keys())
 
     def __init__(
-        self, text: str, font_family: str = "Roboto Flex", **kwargs: Any
+        self, text: str, font_family: Font = Font.ROBOTO_FLEX, **kwargs: Any
     ) -> None:
         self.FONT_FAMILY = font_family
         for k, v in self.VARIATION_DEFAULTS.items():

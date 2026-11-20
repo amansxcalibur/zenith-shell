@@ -9,7 +9,7 @@ from fabric.widgets.revealer import Revealer
 
 from widgets.clipping_box import ClippingBox
 from widgets.wrap_box import WrapBox
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 
 import icons
 from utils.cursor import add_hover_cursor
@@ -432,7 +432,7 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
                 spacing=10,
                 h_align="start",
                 children=[
-                    MaterialIconLabel(icon_text=position["icon"], font_size=17),
+                    VariableIconLabel(icon_text=position["icon"], font_size=17),
                     Label(label=position["text"]),
                 ],
             ),
@@ -484,7 +484,7 @@ class ModulePill(EventBox):
         placed = rank is not None
         self.rank_label = Label(style_classes="module-rank", label=str(rank))
         children = [
-            MaterialIconLabel(
+            VariableIconLabel(
                 style_classes="module-drag-icon",
                 icon_text=icons.material.drag_indicator.symbol(),
                 font_size=18,
@@ -501,7 +501,7 @@ class ModulePill(EventBox):
                     Button(
                         name="module-pill-close-button",
                         tooltip_text=f"Remove {self.name}",
-                        child=MaterialIconLabel(
+                        child=VariableIconLabel(
                             name="close-label",
                             style_classes="settings",
                             icon_text=icons.material.close.symbol(),

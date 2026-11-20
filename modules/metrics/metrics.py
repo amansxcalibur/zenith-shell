@@ -7,7 +7,7 @@ from fabric.widgets.revealer import Revealer
 import icons
 from services.metrics import MetricsProvider
 from widgets.popup_window import SharedPopupWindow
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from widgets.gapped_circular_progress_bar import GappedCircularProgressBar
 
 from .metrics_popup import Metrics
@@ -24,7 +24,7 @@ class MetricItem(Box):
             name=f"metric-{style_class}-item", orientation="v" if vertical else "h"
         )
 
-        self.icon = MaterialIconLabel(
+        self.icon = VariableIconLabel(
             name=f"{style_class}-icon", FILL=0, wght=600, icon_text=icon_symbol
         )
         self.circle = GappedCircularProgressBar(
@@ -100,7 +100,7 @@ class Battery(Button):
         if vertical:
             self.add_style_class("vertical")
 
-        self.bat_icon = MaterialIconLabel(
+        self.bat_icon = VariableIconLabel(
             angle=90,
             name="bat-icon",
             style_classes="metrics-icon",

@@ -16,7 +16,7 @@ from fabric.core.service import Service, Signal, Property
 from widgets.overrides import Svg
 from widgets.popup_window import SharedPopupWindow
 from widgets.loader import MaterialExpressiveLoader
-from widgets.material_label import MaterialIconLabel, MaterialFontLabel
+from widgets.variable_font_label import Font, VariableIconLabel, VariableFontLabel
 from services.theme import ThemeMode, ThemeService
 
 import icons
@@ -211,10 +211,10 @@ class WeatherMini(EventBox):
 
         self.current_data: WeatherData = self.service.current_data
 
-        self.temperature = MaterialFontLabel(
+        self.temperature = VariableFontLabel(
             name="weather-temp",
             text=self.current_data.temp,
-            font_family="Google Sans Flex",
+            font_family=Font.GOOGLE_SANS_FLEX,
             wght=500,
         )
 
@@ -226,7 +226,7 @@ class WeatherMini(EventBox):
 
         self.refresh_btn = Button(
             name="weather-mini",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="weather-refresh-label", icon_text=icons.material.refresh.symbol()
             ),
             on_clicked=self.service._fetch_weather,
@@ -303,12 +303,12 @@ class WeatherCard(Box):
         )
 
         # temperature
-        self.temperature_label = MaterialFontLabel(
+        self.temperature_label = VariableFontLabel(
             name="weather-temp",
             style_classes=["card"],
             v_align="end",
             text=self.current_data.temp,
-            font_family="Google Sans Flex",
+            font_family=Font.GOOGLE_SANS_FLEX,
             wght=500,
         )
 
@@ -448,7 +448,7 @@ class WeatherCard(Box):
             spacing=5,
             children=[
                 label,
-                MaterialIconLabel(
+                VariableIconLabel(
                     style_classes=["weather-icons"], icon_text=icon_symbol
                 ),
             ],

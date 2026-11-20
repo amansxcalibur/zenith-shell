@@ -4,7 +4,7 @@ from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.scale import Scale
 from fabric.widgets.button import Button
-from widgets.material_label import MaterialIconLabel, MaterialFontLabel
+from widgets.variable_font_label import VariableIconLabel, VariableFontLabel
 
 import icons
 from ..base import BaseWidget, SliderConfig, SliderControlMixin, LayoutBuilder
@@ -57,7 +57,7 @@ class IconVariationsTab(BaseWidget, SliderControlMixin):
             orientation="v",
             spacing=5,
             children=[
-                MaterialIconLabel(
+                VariableIconLabel(
                     icon_text=icons.material.home.symbol(),
                     font_size=48,
                     FILL=fill,
@@ -69,7 +69,7 @@ class IconVariationsTab(BaseWidget, SliderControlMixin):
         )
 
     def _add_interactive_demo(self):
-        self.icon_widget = MaterialIconLabel(
+        self.icon_widget = VariableIconLabel(
             icon_text=icons.material.home.symbol(), font_size=64, fill=1, wght=400
         )
         icon_box = Box(
@@ -108,7 +108,7 @@ class IconVariationsTab(BaseWidget, SliderControlMixin):
 
         for icon_char in self.DEMO_ICONS:
             btn = Button(
-                child=MaterialIconLabel(icon_text=icon_char, font_size=24),
+                child=VariableIconLabel(icon_text=icon_char, font_size=24),
                 on_clicked=lambda w, ic=icon_char: self.icon_widget.set_icon(ic),
             )
             icon_box.add(btn)
@@ -148,7 +148,7 @@ class FontVariationsTab(BaseWidget, SliderControlMixin):
     def _build_ui(self):
         box = Box(name="resolver-container", orientation="v", spacing=10)
 
-        self.font_label = MaterialFontLabel("WOW", font_size=64, fill=1, wght=400)
+        self.font_label = VariableFontLabel("WOW", font_size=64, fill=1, wght=400)
         box.pack_start(self.font_label, False, False, 10)
 
         lock_switch = Gtk.Switch(name="matugen-switcher", active=False)

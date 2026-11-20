@@ -23,7 +23,7 @@ from modules.wallpaper import WallpaperService
 from services.player_service import PlayerManager, PlayerService, get_track_labels
 
 from widgets.overrides import Svg
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 
 
 from loguru import logger
@@ -88,7 +88,7 @@ class PlayerMini(Box):
 
         self.play_pause_button = Button(
             name="play-pause-button",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="play-pause-label",
                 style_classes="mini",
                 icon_text=icons.material.play_material.symbol(),
@@ -100,7 +100,7 @@ class PlayerMini(Box):
 
         self.prev_button = Button(
             name="prev-button",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="play-previous",
                 style_classes="mini",
                 icon_text=icons.material.skip_prev.symbol(),
@@ -110,7 +110,7 @@ class PlayerMini(Box):
 
         self.next_button = Button(
             name="next-button",
-            child=MaterialIconLabel(
+            child=VariableIconLabel(
                 name="play-next",
                 style_classes="mini",
                 icon_text=icons.material.skip_next.symbol(),

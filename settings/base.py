@@ -10,7 +10,7 @@ from fabric.widgets.eventbox import EventBox
 
 from widgets.animated_scale import AnimatedScale
 from widgets.clipping_box import ClippingBox
-from widgets.material_label import MaterialFontLabel
+from widgets.variable_font_label import VariableFontLabel
 
 import gi
 
@@ -41,7 +41,7 @@ class LayoutBuilder:
     ) -> EventBox:
         box = Box(orientation=orientation, spacing=5)
 
-        heading_label = MaterialFontLabel(
+        heading_label = VariableFontLabel(
             text=heading,
             style_classes="section-heading",
             h_align="start",

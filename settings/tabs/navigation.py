@@ -9,7 +9,7 @@ from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
 from fabric.core.service import Service, Signal
 
-from widgets.material_label import MaterialIconLabel
+from widgets.variable_font_label import VariableIconLabel
 from utils.helpers import format_accel_to_keybind
 
 import icons
@@ -160,7 +160,7 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
             style_classes="settings-item",
             spacing=10,
             children=[
-                MaterialIconLabel(
+                VariableIconLabel(
                     icon_text=binding.icon or "\ue11f", font_size=17, h_expand=False
                 ),
                 Box(
@@ -325,7 +325,7 @@ class LauncherTab(BaseWidget, SectionBuilderMixin):
             style_classes="settings-item",
             spacing=10,
             children=[
-                MaterialIconLabel(
+                VariableIconLabel(
                     icon_text=binding["icon"] or "\ue11f", font_size=17, h_expand=False
                 ),
                 Label(label=binding["module"], h_expand=True, h_align="start"),

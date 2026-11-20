@@ -6,7 +6,7 @@ from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 
 from widgets.popup_window.shared_popup_window import SharedPopupWindow
-from widgets.material_label import MaterialIconLabel, MaterialFontLabel
+from widgets.variable_font_label import VariableIconLabel, VariableFontLabel
 from services.power_profiles import power_profiles_service
 
 import icons
@@ -38,7 +38,7 @@ class PowerProfilesSelector(EventBox):
             btn = Button(
                 name=f"battery-{profile}",
                 style_classes="power-profile-btn",
-                child=MaterialIconLabel(
+                child=VariableIconLabel(
                     icon_text=icon.symbol(),
                 ),
                 tooltip_text=f"{profile.replace('-', ' ').title()} mode",
@@ -49,7 +49,7 @@ class PowerProfilesSelector(EventBox):
         self._slider_pill = Box(name="power-profile-slider")
         self._right_spacer = Box(name="power-profile-spacer-right")
 
-        self.profile_label = MaterialFontLabel(
+        self.profile_label = VariableFontLabel(
             name="profile-label",
             h_align="center",
             text=self.service.active_profile,
@@ -77,7 +77,7 @@ class PowerProfilesSelector(EventBox):
         self.size_group.add_widget(button_layer)
         self.size_group.add_widget(slider_layer)
 
-        self.profile_icon = MaterialIconLabel(
+        self.profile_icon = VariableIconLabel(
             name="power-profile-icon",
             icon_text=self.ICON_MAP.get(
                 self.service.active_profile, icons.material.balance
