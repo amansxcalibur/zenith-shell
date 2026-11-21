@@ -9,16 +9,15 @@ import tempfile
 import unittest
 from pathlib import Path
 
-INSTALLER = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(INSTALLER))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-import common as c
-import main as m
 from config.wm_conflicts import find_wm_conflicts, parse_i3_output, parse_sway_output
+from installer.cli import build_parser, normalize_argv
+from installer.commands.steps import LAUNCHER
+from installer.paths import COMPLETIONS, SHELL_PROCESS
+from installer.wm import resolve_wms
 
-COMPLETION_FILES = [
-    INSTALLER / "completions" / source for source, _ in m.COMPLETIONS.values()
-]
+COMPLETION_FILES = [source for source, _ in COMPLETIONS.values()]
 LAUNCHER_COMMANDS = [
     "start",
     "stop",
@@ -45,7 +44,7 @@ class CompletionTests(unittest.TestCase):
             text = path.read_text()
             for word in LAUNCHER_COMMANDS:
                 self.assertIn(word, text, path.name)
-            for name, sub in subparsers(m.build_parser()).items():
+            for name, sub in subparsers(build_parser()).items():
                 self.assertIn(name, text, path.name)
                 for action in sub._actions:
                     if (
@@ -58,7 +57,7 @@ class CompletionTests(unittest.TestCase):
 
     def complete(self, *words: str) -> list[str]:
         script = (
-            f'source "{INSTALLER / "completions" / "zenith-shell.bash"}"\n'
+            f'source "{COMPLETIONS["bash"][0]}"\n'
             'COMP_WORDS=(zenith-shell "$@"); COMP_CWORD=$(( $# ))\n'
             'COMPREPLY=(); _zenith_shell; printf "%s\\n" "${COMPREPLY[@]}"\n'
         )
@@ -81,8 +80,8 @@ class CompletionTests(unittest.TestCase):
 
 class ArgumentTests(unittest.TestCase):
     def parse(self, *argv: str) -> argparse.Namespace:
-        parser = m.build_parser()
-        return parser.parse_args(m.normalize_argv(list(argv), parser))
+        parser = build_parser()
+        return parser.parse_args(normalize_argv(list(argv), parser))
 
     def test_command_can_come_after_options(self):
         args = self.parse("--wm", "i3", "sync")
@@ -95,7 +94,7 @@ class ArgumentTests(unittest.TestCase):
         self.assertTrue(args.after_pull and args.yes)
 
     def test_wm_all_means_every_wm(self):
-        self.assertEqual(c.resolve_wms("all"), ["i3", "sway"])
+        self.assertEqual(resolve_wms("all"), ["i3", "sway"])
 
     def test_purge_only_applies_to_uninstall(self):
         with self.assertRaises(SystemExit):
@@ -122,9 +121,9 @@ class LauncherTests(unittest.TestCase):
         )
         self.launcher = self.root / "zenith-shell"
         self.launcher.write_text(
-            m.LAUNCHER.replace("@INSTALL_DIR@", str(self.root))
+            LAUNCHER.replace("@INSTALL_DIR@", str(self.root))
             .replace("@VENV@", str(self.root / "venv"))
-            .replace("@PROCESS@", c.SHELL_PROCESS)
+            .replace("@PROCESS@", SHELL_PROCESS)
         )
 
     @staticmethod

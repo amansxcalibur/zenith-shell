@@ -6,18 +6,9 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from common import (
-    Backend,
-    InstallError,
-    Plan,
-    Problem,
-    Tool,
-    capture,
-    have,
-    info,
-    run,
-    warn,
-)
+from installer.backends.base import Backend, Plan, Problem, Tool
+from installer.system import InstallError, capture, have, run
+from installer.ui import info, warn
 
 Classified = tuple[list[str], list[str], list[str], bool]
 
@@ -32,8 +23,7 @@ class ArchBackend(Backend):
     REMOVE_CMD = "sudo pacman -Rns"
     VENV_SYSTEM_SITE = True  # python-gobject comes from pacman
 
-    # One flat list: each name is resolved to "official repo" or "AUR" automatically,
-    # so you never maintain two lists (and a package moving repos can't break the installer).
+    # one flat list, each name gets resolved to official repo or AUR
     PACKAGES = {  # noqa: RUF012
         "core": [
             "base-devel",
@@ -87,7 +77,6 @@ class ArchBackend(Backend):
     def __init__(self) -> None:
         self._classified: dict[tuple[str, ...], Classified] = {}
 
-    # ---- queries -------------------------------------------------------------
     def _satisfied(self, pkg: str) -> bool:
         return capture(["pacman", "-T", pkg])[0] == 0
 
@@ -122,14 +111,13 @@ class ArchBackend(Backend):
         if rest:
             try:
                 found = self._aur_lookup(rest)
-            except Exception:  #  (offline: the network check reports it)
+            except Exception:  # offline, the network check reports it
                 found, worked = set(rest), False
             aur = [p for p in rest if p in found]
             unknown = [p for p in rest if p not in found]
         self._classified[key] = (repo, aur, unknown, worked)
         return self._classified[key]
 
-    # ---- pre-flight ----------------------------------------------------------
     def prepare(self) -> None:
         # No `-Sy` here: refreshing the db without upgrading is an unsupported partial
         # upgrade on Arch. A stale db is only a problem for classification and for
@@ -188,7 +176,6 @@ class ArchBackend(Backend):
             "             built from community PKGBUILDs, installed without review (--noconfirm)",
         ]
 
-    # ---- install -------------------------------------------------------------
     def _ensure_helper(self) -> str:
         for helper in ("paru", "yay"):
             if have(helper):
@@ -250,7 +237,6 @@ class ArchBackend(Backend):
                 label=f"Installing {len(aur)} AUR packages ({helper})",
             )
 
-    # ---- tools built from source ---------------------------------------------
     def build_gray(self) -> None:
         self.build_meson("gray", GRAY_URL)
 

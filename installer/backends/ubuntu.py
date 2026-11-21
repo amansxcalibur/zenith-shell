@@ -1,19 +1,11 @@
 import re
 
-from common import (
-    BIN_DIR,
-    CARGO_BIN,
-    Backend,
-    Plan,
-    Problem,
-    Tool,
-    capture,
-    have,
-    run,
-)
+from installer.backends.base import Backend, Plan, Problem, Tool
+from installer.paths import BIN_DIR, CARGO_BIN
+from installer.system import capture, have, run
 
-# Let apt/dpkg deal with other package managers (unattended-upgrades, update-notifier...):
-# if the dpkg lock is held, wait up to 5 minutes instead of failing.
+# another package manager holding the dpkg lock (unattended-upgrades...) gets
+# up to 5 minutes before we fail
 APT = [
     "env",
     "DEBIAN_FRONTEND=noninteractive",
@@ -80,31 +72,27 @@ class UbuntuBackend(Backend):
         ],
     }
 
-    # Built from source. `requires` is verified in PRE-FLIGHT, and only if the tool is actually missing.
     TOOLS = [  # noqa: RUF012
         Tool(
             "matugen",
-            "matugen",
-            "core",
-            ("cargo",),
-            "build_matugen",
-            ("https://index.crates.io/config.json",),
+            cmd="matugen",
+            requires=("cargo",),
+            build="build_matugen",
+            hosts=("https://index.crates.io/config.json",),
         ),
-        Tool("fabric-cli", "fabric-cli", "core", ("go",), "build_fabric_cli"),
-        # gray is only a library, so there is no command to look for
-        Tool("gray", "", "core", (), "build_gray", (), typelib_globs("Gray")),
+        Tool(
+            "fabric-cli", cmd="fabric-cli", requires=("go",), build="build_fabric_cli"
+        ),
+        Tool("gray", cmd="", build="build_gray", files=typelib_globs("Gray")),
         Tool(
             "gtk-session-lock",
-            "",
-            "wayland",
-            (),
-            "build_gtk_session_lock",
-            (),
-            typelib_globs("GtkSessionLock"),
+            cmd="",
+            feature="wayland",
+            build="build_gtk_session_lock",
+            files=typelib_globs("GtkSessionLock"),
         ),
     ]
 
-    # ---- queries -------------------------------------------------------------
     def missing_pkgs(self, pkgs: list[str]) -> list[str]:
         _, out = capture(
             ["dpkg-query", "-W", "-f=${Package} ${db:Status-Abbrev}\\n", *pkgs]
@@ -116,7 +104,6 @@ class UbuntuBackend(Backend):
                 installed.add(parts[0])
         return [p for p in pkgs if p not in installed]
 
-    # ---- pre-flight ----------------------------------------------------------
     def prepare(self) -> None:
         run([*APT, "update"], sudo=True, label="Refreshing apt package index")
 
@@ -163,7 +150,6 @@ class UbuntuBackend(Backend):
             label="Installing Go (golang-go)",
         )
 
-    # ---- install -------------------------------------------------------------
     def install_packages(self, plan: Plan) -> None:
         run(
             [*APT, "install", "-y", *plan.missing_pkgs],
@@ -200,7 +186,6 @@ class UbuntuBackend(Backend):
     def _ldconfig(check: bool = True) -> None:
         run(["ldconfig"], sudo=True, check=check, label="Refreshing linker cache")
 
-    # ---- uninstall -----------------------------------------------------------
     def uninstall_tools(self, names: list[str]) -> None:
         for name in names:
             if name == "matugen":

@@ -49,7 +49,7 @@ for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then usage; exit 0; fi
 done
 
-# -------- Minimal sanity (everything else is checked in python) --------
+# minimal sanity (everything else is checked in python)
 [[ "$(uname -s)" == "Linux" ]] || die "Linux only."
 [[ $EUID -ne 0 ]] || die "Do not run as root. sudo is requested automatically when needed."
 
@@ -82,7 +82,7 @@ for arg in "$@"; do
     esac
 done
 
-# -------- commands that work on an existing install: no bootstrap, no git pull here --------
+# commands that work on an existing install: no bootstrap, no git pull here
 # (`update` does its own fetch/pull so it can re-launch the *new* installer afterwards)
 if [[ -n "$COMMAND" && "$COMMAND" != install ]]; then
     check_python
@@ -93,7 +93,7 @@ fi
 
 [[ -n "$COMMAND" ]] || set -- install "$@"
 
-# -------- Bootstrap tools: git, curl, python3 (>=3.10) --------
+# bootstrap tools: git, curl, python3 (>=3.10)
 need=()
 command -v git  >/dev/null 2>&1 || need+=(git)
 command -v curl >/dev/null 2>&1 || need+=(curl)
@@ -105,7 +105,7 @@ if [[ "$DISTRO" == "ubuntu" ]] && command -v python3 >/dev/null 2>&1 \
     need+=(python3-venv python3-pip)
 fi
 
-# -------- Dry run: leave the system and the install directory alone --------
+# dry run: leave the system and the install directory alone
 if $DRY_RUN; then
     if [[ ${#need[@]} -gt 0 ]]; then
         info "Dry run: would install bootstrap packages first: ${need[*]}"
@@ -138,7 +138,7 @@ fi
 
 check_python
 
-# -------- Repository --------
+# repository
 if [[ -d "$INSTALL_DIR/.git" ]]; then
     info "Updating Zenith Shell..."
     git -C "$INSTALL_DIR" pull --ff-only --quiet \
