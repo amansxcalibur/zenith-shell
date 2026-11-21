@@ -23,7 +23,7 @@ from utils.colors import bind_theme
 from utils.cursor import add_hover_cursor
 from utils.helpers import format_accel_to_keybind
 
-from widgets.glass_well import cut_page_out_of_well
+from widgets.glass_well import cut_page_out_of_well, fit_wm_corners
 from widgets.variable_font_label import VariableIconLabel, VariableFontLabel
 from widgets.shapes.expressive.morphing_shapes import AnimateShapeMorph
 
@@ -111,6 +111,7 @@ class SettingsWindow(Window):
 
         if glass_mode():
             self.add_style_class("glass")
+            fit_wm_corners()
         bind_theme(self)
 
         self.buttons = {}

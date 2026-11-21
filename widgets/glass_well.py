@@ -1,3 +1,4 @@
+import functools
 from collections.abc import Callable, Iterable
 
 import cairo
@@ -24,7 +25,26 @@ def cut_out_of_well(
     well.connect("draw", _draw_well, holes, color, clip, css_holes)
 
 
+@functools.cache
+def fit_wm_corners() -> None:
+    from config.i3.utils import wm_corner_radius
+
+    if (r := wm_corner_radius()) is None:
+        return
+    provider = Gtk.CssProvider()
+    provider.load_from_data(
+        (
+            f"#settings, .file-chooser-dialog {{ border-radius: {r}px; }}"
+            f"#settings-header {{ border-radius: {r}px {r}px 0 0; }}"
+        ).encode()
+    )
+    Gtk.StyleContext.add_provider_for_screen(
+        Gdk.Screen.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_USER + 1
+    )
+
+
 def glass_file_chooser(dialog: Gtk.FileChooserDialog) -> None:
+    fit_wm_corners()
     dialog.get_style_context().add_class("glass")
     chooser = dialog.get_content_area().get_children()[0]
     well = chooser.get_children()[0]
@@ -60,7 +80,6 @@ def _css_hole(cr, hole: Gtk.Widget, box) -> None:
 def _draw_well(well, cr, holes, color_name, clip, css_holes) -> bool:
     context = well.get_style_context()
     if color_name is None:
-        # no name, the well's own outline-color is the fill
         color = context.get_property("outline-color", well.get_state_flags())
     else:
         found, color = context.lookup_color(color_name)

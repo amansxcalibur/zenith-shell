@@ -276,13 +276,13 @@ def generate_i3_gaps_and_borders_config():
             "    border none",
         ]
         if glass_mode():
-            # the window's corners follow #settings, so the blur fits it
+            # no corner_radius here: swayfx only has the global one, and setting
+            # it in for_window leaks to every window opened after
             config_block.extend(
                 [
                     "    # swayfx only: glass mode",
                     "    shadows disable",
                     "    blur enable",
-                    f"    corner_radius {SETTINGS_CORNER_RADIUS}",
                 ]
             )
         elif is_swayfx():
@@ -298,12 +298,11 @@ def generate_i3_gaps_and_borders_config():
 
         if glass_mode():
             # the shell's file choosers (agenda image, wallpaper folder): blurred
-            # like the settings window, rounded to .file-chooser-dialog
+            # like the settings window
             lines.append(
                 f'for_window [app_id="{SHELL_NAME}-core" title="^Select "] {{\n'
                 "    shadows disable\n"
                 "    blur enable\n"
-                f"    corner_radius {FILE_DIALOG_CORNER_RADIUS}\n"
                 "}"
             )
 
@@ -389,14 +388,20 @@ def add_shell_startup_to_i3_config():
 
 # layer namespaces (minus the "zenith-" prefix) swayfx blurs behind in glass mode
 GLASS_LAYERS = ("dock", "top-bar", "top-pill", "popup", "pill", "flying", "osd")
-SETTINGS_CORNER_RADIUS = 25  # px, #settings's border-radius in settings.css
-FILE_DIALOG_CORNER_RADIUS = 25  # px, .file-chooser-dialog in agenda.css
 GLASS_BLUR = (
     "blur_passes 3",
     "blur_radius 5",
     "blur_noise 0.02",
     "blur_saturation 1.15",
 )
+
+
+def wm_corner_radius() -> int | None:
+    # what swayfx rounds every window to, None when we don't set it
+    borders = config.get_node("i3.borders")
+    if not is_swayfx() or not borders.get("enabled"):
+        return None
+    return borders.get("props.corner_radius")
 
 
 @functools.cache
