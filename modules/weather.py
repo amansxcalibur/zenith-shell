@@ -117,7 +117,6 @@ class WeatherData:
 
     @classmethod
     def error_state(cls) -> "WeatherData":
-        """Return weather data in error state"""
         return cls(temp="??", emoji_name=question_mark)
 
 

@@ -572,7 +572,6 @@ class Player(Box):
             ),
         ]
 
-        # connect to service signals
         for service, signal, callback in (
             (self._player_service, "pause", self.on_pause),
             (self._player_service, "play", self.on_play),
@@ -745,7 +744,6 @@ class Player(Box):
             self._clear_artwork()
             return
 
-        # remove wallpaper connection
         if self._wallpaper_signal_id:
             self._wallpaper_service.disconnect(self._wallpaper_signal_id)
             self._wallpaper_signal_id = None
@@ -1051,7 +1049,6 @@ class PlayerContainer(Box):
     def on_new_player(self, manager, player_name: str, player_service: PlayerService):
         logger.debug(f"Creating widget for player: {player_name}")
 
-        # avoid duplicate widget creation
         if player_name in self.player_widgets:
             logger.warning(f"Widget for {player_name} already exists, skipping")
             return
@@ -1060,7 +1057,6 @@ class PlayerContainer(Box):
         player_widget.wiggly_bar.queue_draw()
         player_widget.set_name(player_name)
 
-        # store reference
         self.player_widgets[player_name] = player_widget
 
         self.stack.add_named(player_widget, player_name)
@@ -1070,7 +1066,6 @@ class PlayerContainer(Box):
             self.stack.remove(self.placeholder_player)
             self.stack.set_visible_child_name(player_name)
 
-        # add switch button
         self.player_switch_container.add_center(
             Button(
                 name=player_name,
@@ -1099,12 +1094,10 @@ class PlayerContainer(Box):
             logger.warning(f"No UI found for {player_name}")
             return
 
-        # get the widget
         player_widget = self.player_widgets[player_name]
 
         self.stack.remove(player_widget)
 
-        # remove switch button
         for btn in self.player_switch_container.center_children:
             if btn.get_name() == player_name:
                 self.player_switch_container.remove_center(btn)
@@ -1113,7 +1106,6 @@ class PlayerContainer(Box):
 
         player_widget.destroy()
 
-        # remove from tracking dict
         del self.player_widgets[player_name]
 
         # show placeholder or first available player
@@ -1213,7 +1205,6 @@ class PlayerContainer(Box):
         next_index = (current_index + (1 if forward else -1)) % len(player_names)
         next_name = player_names[next_index]
 
-        # find and click the corresponding button
         for btn in self.player_switch_container.center_children:
             if btn.get_name() == next_name:
                 self.switch_player(next_name, btn)
@@ -1222,13 +1213,11 @@ class PlayerContainer(Box):
     def cleanup(self):
         logger.debug("Cleaning up PlayerContainer")
 
-        # unregister keybindings
         try:
             self.unregister_keybindings()
         except Exception as e:
             logger.warning(f"Error unregistering keybindings: {e}")
 
-        # cleanup all widgets
         for player_name, widget in list(self.player_widgets.items()):
             try:
                 widget.destroy()
@@ -1237,7 +1226,6 @@ class PlayerContainer(Box):
 
         self.player_widgets.clear()
 
-        # cleanup the manager
         try:
             self.manager.cleanup_all()
         except Exception as e:

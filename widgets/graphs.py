@@ -70,10 +70,9 @@ class AnimatedBarGraph(TickingArea):
     def __init__(
         self,
         history_seconds: int = DEFAULT_HISTORY,
-        top_inset: int = 0,
+        top_inset: int = 0,  # px of headroom full bars stop short of
         size: tuple[int, int] = (350, 250),
     ):
-        """`top_inset` is headroom (px) that full-height bars stop short of."""
         super().__init__()
         self.set_size_request(*size)
         self.get_style_context().add_class("metrics-graph")
@@ -88,8 +87,8 @@ class AnimatedBarGraph(TickingArea):
 
     def add_value(self, *values: float) -> None:
         self.data.append((time.monotonic(), *values))
-        # always keep the full range so widening the window reveals past data
-        cutoff = time.monotonic() - self.MAX_HISTORY - 1  # keep one extra
+        # keep the max range (+1s), so widening the history has data to show
+        cutoff = time.monotonic() - self.MAX_HISTORY - 1
         while self.data and self.data[0][0] < cutoff:
             self.data.popleft()
         self.queue_draw()
@@ -124,7 +123,7 @@ class AnimatedBarGraph(TickingArea):
 
         Gdk.cairo_set_source_rgba(cr, theme_color(self, "primary"))
         for index, (item, x, growth) in enumerate(self._visible_bars(width)):
-            if index == 1:  # only the newest bar is highlighted
+            if index == 1:  # past the newest, back to the plain color
                 Gdk.cairo_set_source_rgba(
                     cr, self.get_style_context().get_color(self.get_state_flags())
                 )
@@ -162,12 +161,8 @@ class AnimatedBarGraph(TickingArea):
 
 
 class MirroredBarGraph(AnimatedBarGraph):
-    """Two series on one scale: `--primary` above a baseline, `--outline` below it.
-
-    The baseline moves with the balance between the series, so a lopsided load (say,
-    downloads with little upload) still fills the graph. Both sides always share
-    the same pixels-per-unit, so their bars stay directly comparable.
-    """
+    """`--primary` above the baseline, `--outline` below, on one shared scale.
+    The baseline shifts toward the quieter side so lopsided traffic still fills it."""
 
     MIN_PEAK = 64 * 1024  # keeps idle noise from filling the graph
     SMOOTHING = 0.08
@@ -260,8 +255,7 @@ class CircularGraph(Gtk.DrawingArea):
     def _update_targets(self, targets: list) -> bool:
         self.target_usage = targets
 
-        # rather skip quick updates than get stuck in
-        # the middle due to fast updates
+        # one timer at a time, new targets just steer it
         if not self.is_animating:
             self.is_animating = True
             GLib.timeout_add(33, self._animate)

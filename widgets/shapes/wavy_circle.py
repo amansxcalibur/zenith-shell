@@ -1,5 +1,4 @@
 import math
-from loguru import logger
 
 from widgets.shapes.base import Shape
 

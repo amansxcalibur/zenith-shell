@@ -340,7 +340,6 @@ class TopBar(Window):
         old_left = self.left_child
         old_right = self.right_child
 
-        # unparent controls from old containers
         self._safe_unparent_controls(old_left, old_right)
 
         next_left, next_right = self._create_control_containers(child_controls)
@@ -348,10 +347,8 @@ class TopBar(Window):
         self.left.add(next_left)
         self.right.add(next_right)
 
-        # queue old containers for cleanup
         self._queue_cleanup([old_left, old_right])
 
-        # update references
         self.left_child = next_left
         self.right_child = next_right
         self.right_edge.show_all()
@@ -408,7 +405,6 @@ class TopBar(Window):
             if box not in self._protected_boxes:
                 self._boxes_to_clean.append(box)
 
-        # schedule cleanup if not already scheduled
         if self._cleanup_timeout_id is None:
             self._cleanup_timeout_id = GLib.timeout_add(
                 CLEANUP_DELAY, self._cleanup_scheduled_boxes
@@ -419,7 +415,6 @@ class TopBar(Window):
 
         for box in self._boxes_to_clean:
             try:
-                # remove from parent stack
                 if box.get_parent() == self.left:
                     self.left.remove(box)
                 elif box.get_parent() == self.right:
@@ -486,7 +481,6 @@ class TopBar(Window):
             toggle_detach_controls_class()
 
     def _on_destroy(self, *args):
-        # cancel all pending timeouts
         if self._cleanup_timeout_id is not None:
             GLib.source_remove(self._cleanup_timeout_id)
             self._cleanup_timeout_id = None
@@ -507,7 +501,6 @@ class TopBar(Window):
             GLib.source_remove(self._detach_edge_timeout_id)
             self._detach_edge_timeout_id = None
 
-        # clear all pending boxes
         self._boxes_to_clean.clear()
 
     def on_delete_event(self, *_):

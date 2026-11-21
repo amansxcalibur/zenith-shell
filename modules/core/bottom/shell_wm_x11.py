@@ -51,7 +51,6 @@ class ShellWindowManager:
         self.pill_size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
         self._setup_size_groups()
 
-        # Connect signals
         self.pill.connect("on-drag", self._set_dock_state)
         self.pill.connect("on-drag-end", lambda w, state: self._snap_pill())
         self.pill.pill_container.connect("size-allocate", self._on_pill_resized)
@@ -192,7 +191,6 @@ class ShellWindowManager:
         self.pill_target_x = target_x
         self.pill_target_y = target_y
 
-        # set up animator
         self.animator.pause()
         self.animator.value = 0
         self.animator.min_value = 0
@@ -225,7 +223,6 @@ class ShellWindowManager:
                         widget.handler_disconnect(getattr(widget, attr))
                         setattr(widget, attr, None)
                     else:
-                        # Override with no-op lambda
                         setattr(widget, attr, lambda: None)
                 except Exception as e:
                     logger.debug(f"Could not disconnect {attr}: {e}")

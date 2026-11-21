@@ -59,7 +59,7 @@ def _lock_with_external_locker() -> None:
     if not shutil.which(lock_app):
         logger.error(f"'{lock_app}' binary not found.")
         exec_shell_command_async(
-            f"notify-send -a 'Zenith Utils' 'Zenith Error' '\"{lock_app}\" not found. Failed to lock screen.'"
+            f"notify-send -a 'Zenith Lock' 'Failed to lock screen' '\"{lock_app}\" not found.'"
         )
         return
 

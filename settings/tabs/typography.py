@@ -77,7 +77,6 @@ class IconVariationsTab(BaseWidget, SliderControlMixin):
             orientation="v", style="min-width: 140px", children=self.icon_widget
         )
 
-        # Create sliders using mixin
         slider_configs = [
             SliderConfig("FILL", 0, 1, 0.1, 1),
             SliderConfig("wght", 100, 700, 50, 400),

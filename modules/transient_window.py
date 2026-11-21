@@ -12,6 +12,7 @@ from config.i3.utils import glass_mode
 from modules.controls import ControlsManager
 
 from services.metrics import MetricsProvider
+from services.update_check import UpdateChecker
 
 from utils.colors import bind_theme
 from utils.helpers import keep_window, get_absolute_wayland_widget_position
@@ -24,13 +25,11 @@ if IS_WAYLAND:
 else:
     from widgets.overrides import PatchedX11Window as Window
 
-from gi.repository import Gdk  # type: ignore
+from gi.repository import Gdk, GLib  # type: ignore
 
 
-class LowBatteryBanner(Revealer):
-    LOW_BATTERY_THRESHOLD = 15
-
-    def __init__(self, **kwargs):
+class Banner(Revealer):
+    def __init__(self, source: str, icon, actions=(), **kwargs):
         super().__init__(
             name="notification-revealer",
             style="padding-top:6px",
@@ -40,67 +39,122 @@ class LowBatteryBanner(Revealer):
             style_classes="vertical" if config.VERTICAL else "horizontal",
             **kwargs,
         )
+        self.message = Label(name="notif-banner-msg")
 
-        self.provider = MetricsProvider()
-        self.provider.connect("battery-changed", self.check_low_bat)
-
-        self.dismissed = False
-        self.low_bat_msg = Label(name="notif-low-bat-msg", label="Low Battery (<15%)")
-
-        self.content_box = Box(
-            orientation="v",
-            children=[
-                Label(name="notification-source", label="ZENITH", h_align=True),
-                self.low_bat_msg,
-            ],
-        )
-
-        close_btn = Button(
-            name="close-button-small",
-            child=VariableIconLabel(
-                name="close-label-small", icon_text=icons.material.close.symbol()
-            ),
-            tooltip_text="Exit",
-            on_clicked=lambda *_: self.close_notification(),
-        )
-
-        self.notification_box = Box(
-            name="notification-box",
-            style_classes="vertical" if config.VERTICAL else "horizontal",
+        row = Box(
+            spacing=8,
             children=[
                 VariableIconLabel(
                     name="notification-icon",
-                    h_align=True,
-                    icon_text=icons.material.blur.symbol(),
+                    h_align="start",
+                    v_align="start",
+                    icon_text=icon.symbol(),
                 ),
-                Box(h_expand=True, children=self.content_box),
-                Box(children=close_btn),
+                Box(
+                    h_expand=True,
+                    children=Box(
+                        orientation="v",
+                        children=[
+                            Label(
+                                name="notification-source",
+                                label=source,
+                                h_align="start",
+                            ),
+                            self.message,
+                        ],
+                    ),
+                ),
+                Box(
+                    children=Button(
+                        name="close-button-small",
+                        v_align="start",
+                        child=VariableIconLabel(
+                            name="close-label-small",
+                            icon_text=icons.material.close.symbol(),
+                        ),
+                        tooltip_text="Close",
+                        on_clicked=lambda *_: self.close(),
+                    )
+                ),
             ],
         )
 
-        self.children = self.notification_box
+        content = Box(orientation="v", h_expand=True, children=row)
+        if actions:
+            content.add(
+                Box(
+                    spacing=4,
+                    style="margin-top: 10px;",
+                    children=[
+                        Button(
+                            style_classes="action-button",
+                            h_expand=True,
+                            label=label,
+                            on_clicked=lambda *_, callback=callback: callback(),
+                        )
+                        for label, callback in actions
+                    ],
+                )
+            )
 
-        if config.VERTICAL:
-            self.notification_box.remove_style_class("horizontal")
+        self.children = Box(
+            name="notification-box",
+            style_classes="vertical" if config.VERTICAL else "horizontal",
+            children=content,
+        )
+
+    def announce(self, markup: str) -> None:
+        self.message.set_markup(markup)
+        self.set_reveal_child(True)
+
+    def close(self) -> None:
+        self.set_reveal_child(False)
+
+
+class LowBatteryBanner(Banner):
+    LOW_BATTERY_THRESHOLD = 15
+
+    def __init__(self):
+        super().__init__("Zenith Battery", icons.material.blur)
+        self.dismissed = False
+        MetricsProvider().connect("battery-changed", self.check_low_bat)
 
     def check_low_bat(self, _source, battery_percent: float, is_charging: bool):
-        if not is_charging and battery_percent < self.LOW_BATTERY_THRESHOLD + 1:
-            self.low_bat_msg.set_label(f"Low Battery fam (<{int(battery_percent)}%)")
-            self.reveal_notification()
+        percent = round(battery_percent)
+        if not is_charging and percent <= self.LOW_BATTERY_THRESHOLD:
+            if not self.dismissed:
+                self.announce(f"Low Battery fam ({percent}%)")
         else:
-            self.hide_notification()
+            self.dismissed = False
+            super().close()
 
-    def close_notification(self):
-        self.hide_notification()
+    def close(self) -> None:
+        super().close()
         self.dismissed = True
 
-    def reveal_notification(self):
-        if not self.dismissed:
-            self.set_reveal_child(True)
 
-    def hide_notification(self):
-        self.dismissed = False
-        self.set_reveal_child(False)
+class UpdateBanner(Banner):
+    def __init__(self):
+        super().__init__(
+            "Zenith Updates",
+            icons.material.update,
+            actions=(
+                ("Dismiss", lambda: self.dismiss()),
+                ("Remind me later", lambda: self.close()),
+            ),
+        )
+        self.checker = UpdateChecker()
+        self.checker.connect(
+            "update-available",
+            lambda _, title: self.announce(
+                f"{GLib.markup_escape_text(title)}\n"
+                "Run <b>zenith-shell setup update</b> to get it"
+            ),
+        )
+
+    def dismiss(self) -> None:
+        self.checker.dismiss()
+        self.close()
 
 
 class TransientWindow(Window):
@@ -139,13 +193,14 @@ class TransientWindow(Window):
         bind_theme(self)
         if glass_mode():
             self.add_style_class("glass")
-        
+
         self.connect("delete-event", lambda *_: keep_window(self))
 
         self.controls = ControlsManager()
 
         self.revealers = [
             LowBatteryBanner(),
+            UpdateBanner(),
             self.controls.get_volume_revealer(),
             self.controls.get_volume_overflow_revealer(),
             self.controls.get_brightness_revealer(),

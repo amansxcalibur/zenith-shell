@@ -149,13 +149,9 @@ class ScaleBox(RotateBox):
 
         self._child.size_allocate(child_alloc)
 
-    # offscreen surface management
-    # Resizing a GdkOffscreenWindow destroys and recreates its backing surface
-    # and invalidates all of it. With a size-interpolating child (e.g. a Gtk.Stack
-    # with interpolate_size=True) the natural size changes on every frame, so an
-    # exact-fit surface would be reallocated + fully repainted every frame.
-    # Instead the surface grows geometrically and only shrinks back to an exact
-    # fit once the child's size has been stable for a moment.
+    # resizing the offscreen surface reallocates and repaints all of it, which
+    # a size-interpolating child would do every frame. So it grows
+    # geometrically and only shrinks to fit once the size settles
 
     _GROWTH_FACTOR = 1.5
     _SHRINK_DELAY_MS = 500
@@ -276,7 +272,6 @@ class AnimatedScaleBox(ScaleBox):
 
         self._animator.pause()
 
-        # disconnect previous one-shot finished handler
         if self._done_handler_id is not None:
             try:
                 self._animator.disconnect(self._done_handler_id)

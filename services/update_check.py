@@ -3,7 +3,7 @@ import json
 import requests
 from loguru import logger
 
-from fabric.utils.helpers import exec_shell_command_async
+from fabric.core.service import Service, Signal
 
 from config.config import config
 from config.info import CACHE_DIR, ROOT_DIR
@@ -44,11 +44,36 @@ def _read_json(path) -> dict:
         return {}
     return data if isinstance(data, dict) else {}
 
-# major/minor bumps count (0.1 -> 0.2) notifies, patch bumps (0.2.0 -> 0.2.1) stay silent.
-# checks every 6h, notifies once per bump.
-class UpdateChecker:
+# major/minor bumps count (0.1 -> 0.2), patch bumps (0.2.0 -> 0.2.1) stay silent.
+# checks every 6h and keeps announcing a bump until it's dismissed.
+class UpdateChecker(Service):
+    _instance = None
+
+    @Signal
+    def update_available(self, title: str) -> None: ...
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
+        if getattr(self, "_initialized", False):
+            return
+        super().__init__()
+        self._initialized = True
+        self._available: str | None = None
         GLib.timeout_add_seconds(FIRST_CHECK_DELAY_SECONDS, self._first_check)
+
+    def dismiss(self) -> None:
+        if self._available is None:
+            return
+        try:
+            os.makedirs(CACHE_DIR, exist_ok=True)
+            with open(STATE_FILE, "w") as f:
+                json.dump({"dismissed": self._available}, f)
+        except OSError as e:
+            logger.warning(f"[UpdateCheck] Couldn't save state: {e}")
 
     def _first_check(self) -> bool:
         self._check()
@@ -79,27 +104,16 @@ class UpdateChecker:
         if latest is None or current is None or latest[:2] <= current[:2]:
             return False
 
-        notified = parse_version(_read_json(STATE_FILE).get("notified"))
-        if notified is not None and notified[:2] >= latest[:2]:
-            return False  # already told them about this release (or a later one)
+        state = _read_json(STATE_FILE)
+        # "notified" is what older versions saved once the popup went out
+        dismissed = parse_version(state.get("dismissed", state.get("notified")))
+        if dismissed is not None and dismissed[:2] >= latest[:2]:
+            return False
 
+        self._available = remote_version
         name = remote.get("name")
-        title = f"Zenith {remote_version}" + (f" ({name})" if name else "") + " is out"
-        exec_shell_command_async(
-            [
-                "notify-send",
-                "-a",
-                "Zenith",
-                title,
-                "Run `zenith-shell update` to get it.",
-            ]
+        self.update_available(
+            f"Zenith {remote_version}" + (f" ({name})" if name else "") + " is out!"
         )
         logger.info(f"[UpdateCheck] {remote_version} is available")
-
-        try:
-            os.makedirs(CACHE_DIR, exist_ok=True)
-            with open(STATE_FILE, "w") as f:
-                json.dump({"notified": remote_version}, f)
-        except OSError as e:
-            logger.warning(f"[UpdateCheck] Couldn't save state: {e}")
         return False

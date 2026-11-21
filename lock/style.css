@@ -2,4 +2,9 @@
   all: unset;
 }
 
+/* or every window falls back to the user's GTK font size */
+window {
+  font-size: 15px;
+}
+
 @import url("../styles/colors.css");

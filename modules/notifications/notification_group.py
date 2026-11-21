@@ -840,9 +840,7 @@ class NotificationGroup(AnimatedClippingBox):
         self._after_style_flush(lambda: self._start_toggle_animation(generation))
 
     def _after_style_flush(self, callback) -> None:
-        # CSS class changes are applied in the frame's layout phase, so measuring
-        # right away still sees the old styles. Run on the 2nd frame tick, which
-        # comes after one full layout pass.
+        # class changes apply in the layout phase, so wait for the 2nd tick
         ticks = [0]
 
         def _tick(*_):

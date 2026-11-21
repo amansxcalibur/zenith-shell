@@ -276,7 +276,6 @@ class BezierShapeMorph(Gtk.DrawingArea):
 
 
 class AnimateShapeMorph(Gtk.Bin, Container):
-    # Changed parameters to rely on time (seconds) instead of arbitrary speed/frames
     def __init__(
         self,
         name: str | None = None,
@@ -596,7 +595,6 @@ class InteractiveMorphShape(Gtk.Bin, Container):
         self._target_progress = 1.0 if value else 0.0
         self._last_time = 0.0
         
-        # Start animation loop if it's not already running
         if self._tick_id is None:
             self._tick_id = self.add_tick_callback(self._on_tick)
 

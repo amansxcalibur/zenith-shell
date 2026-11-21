@@ -13,7 +13,7 @@ from config.i3.utils import glass_mode
 
 from modules.notifications.notification import NotificationManager
 
-from services.i3 import I3
+from utils.pill_focus import take_focus, release_focus
 from utils.colors import bind_theme
 from utils.helpers import keep_window, get_absolute_wayland_widget_position
 
@@ -156,16 +156,10 @@ class TopPill(Window, Service):
         self.connect("delete-event", self.on_delete_event)
 
     def focus_pill(self):
-        if IS_WAYLAND:
-            GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.EXCLUSIVE)
-            return
-        I3.send_command(f'[window_role="^{self.WIN_ROLE}$"] focus')
+        take_focus(self)
 
     def unfocus_pill(self):
-        if IS_WAYLAND:
-            GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.NONE)
-            return
-        I3.send_command("focus mode_toggle")
+        release_focus(self)
 
     def lift_pill(self):
         if not self.is_lift_enable:

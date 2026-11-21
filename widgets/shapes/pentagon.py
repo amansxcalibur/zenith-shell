@@ -1,5 +1,4 @@
 import math
-from loguru import logger
 
 from widgets.shapes.base import Shape
 
@@ -13,9 +12,7 @@ class Pentagon(Shape):
         self.edge_radius = 0.3
 
     def path(self, ctx, x, y, radius=1):
-        # Draw a pentagon inscribed in a smaller circle where r_outer-r_inner = distance from the inner circle's center
-        # to the intersection point of its tangents (ie the sides of the larger pentagon inscribed inside the outer circle).
-        # This way we can get the rounded corners without going through the hassle of drawing arcs.
+        # a shrunk pentagon stroked with round joins: rounded corners without arcs
 
         # regular pentagon points (unit size, centered at 0,0)
         pts = [

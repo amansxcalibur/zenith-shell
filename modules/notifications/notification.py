@@ -335,7 +335,6 @@ class ActiveNotificationWidget(EventBox):
             "closed", self._on_notification_closed
         )
 
-        # GLib.timeout_add() wrapper
         self._timeout_repeater_id = (
             invoke_repeater(
                 NotificationConfig.TIMEOUT,
@@ -374,7 +373,6 @@ class ActiveNotificationWidget(EventBox):
             else NotificationConfig.LINE_LIMIT
         )
 
-        # cancel timeout repeater
         if self._timeout_repeater_id is not None:
             GLib.source_remove(self._timeout_repeater_id)
             self._timeout_repeater_id = None
@@ -423,12 +421,10 @@ class ActiveNotificationWidget(EventBox):
             self.cleanup()
 
     def cleanup(self):
-        # cancel timeout repeater
         if self._timeout_repeater_id is not None:
             GLib.source_remove(self._timeout_repeater_id)
             self._timeout_repeater_id = None
 
-        # disconnect signals
         if self._on_press_connection:
             self.disconnect(self._on_press_connection)
             self._on_press_connection = None
@@ -437,7 +433,6 @@ class ActiveNotificationWidget(EventBox):
             self._notification.disconnect(self._closed_connection)
             self._closed_connection = None
 
-        # clear pixbuf reference
         self._scaled_pixbuf = None
 
         logger.debug("NotificationWidget cleaned up")

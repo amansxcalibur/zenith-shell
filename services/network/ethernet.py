@@ -1,5 +1,5 @@
 from loguru import logger
-from typing import Optional, Any
+from typing import Any
 
 from .common import DeviceStatus, ConnectionType, NetworkDevice
 
@@ -30,7 +30,6 @@ class EthernetDevice(NetworkDevice):
             "state-changed", self._on_device_state_change
         )
 
-        # init
         self._update_connection_state(device.get_state())
 
     def connect_to_network(self) -> bool:
@@ -45,7 +44,6 @@ class EthernetDevice(NetworkDevice):
         iface = self.device.get_iface()
 
         try:
-            # find existing profile for the device
             existing = self._find_connection_profile()
 
             if existing:
@@ -75,7 +73,7 @@ class EthernetDevice(NetworkDevice):
             logger.error(f"Failed to connect {iface}: {e}")
             return False
 
-    def _find_connection_profile(self) -> Optional[NM.Connection]:
+    def _find_connection_profile(self) -> NM.Connection | None:
         if not self.client or not self.device:
             return None
 
@@ -171,7 +169,7 @@ class EthernetDevice(NetworkDevice):
         )
         self._update_connection_state(new_state)
 
-    def _update_connection_state(self, new_state: Optional[int] = None) -> None:
+    def _update_connection_state(self, new_state: int | None = None) -> None:
         dev = self.device
         if not dev:
             self._emit_state(DeviceStatus.NO_DEVICE, "Unknown")
@@ -200,16 +198,16 @@ class EthernetDevice(NetworkDevice):
         self.state_changed(name, status)
 
     # helper pass-throughs
-    def get_path(self) -> Optional[str]:
+    def get_path(self) -> str | None:
         return self.device.get_path() if self.device else None
 
-    def get_iface(self) -> Optional[str]:
+    def get_iface(self) -> str | None:
         return self.device.get_iface() if self.device else None
 
     def get_state(self) -> int:
         return self.device.get_state() if self.device else NM.DeviceState.UNKNOWN
 
-    def get_product(self) -> Optional[str]:
+    def get_product(self) -> str | None:
         return self.device.get_product() if self.device else None
 
     def get_active_connection(self):

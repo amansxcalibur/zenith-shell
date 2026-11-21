@@ -144,7 +144,6 @@ class _Volume(pulsectl.PulseVolumeInfo):
     value to 152.5% (PA_VOLUME_UI_MAX) before sending it, with no error. Our
     limit lives in _limit instead."""
 
-    # override
     def to_struct(self):
         return pulsectl._pulsectl.PA_CVOLUME(
             len(self.values),

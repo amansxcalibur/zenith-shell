@@ -91,7 +91,6 @@ class BaseVariableFontLabel(Label, VariableFontMixin):
         if vars_str:
             font_desc.set_variations(vars_str)
 
-        # create Attribute List
         attr_list = Pango.AttrList()
         attr = Pango.AttrFontDesc.new(font_desc)
 

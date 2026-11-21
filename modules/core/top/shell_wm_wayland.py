@@ -19,7 +19,6 @@ from gi.repository import Gtk, Gdk, GtkLayerShell  # type: ignore
 class ShellTopWindowManager:
     DOCK_HEIGHT = 43
 
-    # -- Properties --
     @property
     def pill_widget(self):
         return self.pill
@@ -56,7 +55,6 @@ class ShellTopWindowManager:
         self.pill_size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
         self._setup_size_groups()
 
-        # Connect signals
         self.pill.connect("on-drag", self._set_dock_state)
         self.pill.connect("on-drag-end", lambda w, state: self._snap_pill())
         self.main_dock.connect("insets-changed", self._on_dock_insets_changed)
@@ -202,7 +200,6 @@ class ShellTopWindowManager:
         self.pill_target_x = target_x
         self.pill_target_y = target_y
 
-        # set up animator
         self.animator.pause()
         self.animator.value = 0
         self.animator.min_value = 0
@@ -242,7 +239,6 @@ class ShellTopWindowManager:
                         widget.handler_disconnect(getattr(widget, attr))
                         setattr(widget, attr, None)
                     else:
-                        # Override with no-op lambda
                         setattr(widget, attr, lambda: None)
                 except Exception as e:
                     logger.debug(f"Could not disconnect {attr}: {e}")

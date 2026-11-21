@@ -938,7 +938,15 @@ class AgendaApp(Box):
             "it's fixed and the shell is restarted."
         )
         exec_shell_command_async(
-            ["notify-send", "-u", "critical", "Agenda not loaded", body]
+            [
+                "notify-send",
+                "-u",
+                "critical",
+                "-a",
+                "Zenith Agenda",
+                "Agenda not loaded",
+                body,
+            ]
         )
 
     def save_to_disk(self):

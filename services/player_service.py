@@ -23,9 +23,8 @@ from gi.repository import Playerctl, GLib, Gio  # type: ignore
 PROPERTY_QUERY_TIMEOUT_MS = 1000
 POSITION_POLL_INTERVAL_MS = 1000
 SEEK_SETTLE_MS = 2000  # how long a player gets to apply a seek before polling resumes
-# Firefox (and possibly others untested) sends a new track's title first and its art
-# ~200-300 ms later in a second update; wait this long before falling back to the wallpaper
-# so the card doesn't flash it on every track change (Spotify and VLC send both at once)
+# firefox sends the art ~200-300ms after the title, so wait before falling back
+# to the wallpaper or the card flashes it on every track change
 ARTWORK_CLEAR_DELAY_MS = 600
 
 
@@ -53,12 +52,8 @@ def get_player_property(bus_name, prop, on_result, *, unpack=True):
             value = None
         on_result(value)
 
-    # setup D-Bus proxy
     connection = Gio.bus_get_sync(Gio.BusType.SESSION, None)
 
-    # call 'Get' on the standard Properties interface
-    # Param 1: interface name ('org.mpris.MediaPlayer2.Player')
-    # Param 2: property name
     params = GLib.Variant("(ss)", ("org.mpris.MediaPlayer2.Player", prop))
 
     connection.call(
@@ -164,7 +159,6 @@ class PlayerService(Service):
         # player has already gone. Keep our own copy instead.
         self._metadata: GLib.Variant | None = None
 
-        # store signal IDs for proper disconnection
         self._signal_ids.append(
             self._player.connect("playback-status::playing", self.on_play)
         )
@@ -431,7 +425,6 @@ class PlayerService(Service):
                 if img.mode in ("RGBA", "LA"):
                     img = img.convert("RGB")
 
-                # blur effect
                 processed_img = img.filter(ImageFilter.GaussianBlur(radius=radius))
 
                 # fit, crop from center, scale to 240x60
@@ -580,7 +573,6 @@ class PlayerService(Service):
             logger.error(f"Failed to download/process artwork: {e}")
 
     def cleanup(self):
-        """Stop all background tasks and disconnect signals"""
         if self._is_cleaning_up:
             logger.warning(
                 f"Cleanup already in progress for {self._player.props.player_name}"
@@ -593,7 +585,6 @@ class PlayerService(Service):
         self._stop_polling()
         self._cancel_artwork_clear()
 
-        # disconnect signals using stored IDs
         if self._signal_ids:
             logger.debug(f"Disconnecting {len(self._signal_ids)} signals")
             for signal_id in self._signal_ids:
@@ -603,7 +594,6 @@ class PlayerService(Service):
                     logger.warning(f"Error disconnecting signal {signal_id}: {e}")
             self._signal_ids.clear()
 
-        # clear caches
         self._theme_cache.clear()
         self._current_artwork_path = ""
         self._current_theme = None
@@ -676,7 +666,6 @@ class PlayerManager(Service):
     def _create_and_register_player(self, name_obj):
         instance = name_obj.instance
 
-        # avoid duplicate registration
         if instance in self._services:
             logger.warning(f"Player {instance} already registered, skipping")
             return
@@ -685,10 +674,8 @@ class PlayerManager(Service):
             player = Playerctl.Player.new_from_name(name_obj)
             self._manager.manage_player(player)
 
-            # create service instance
             player_service = PlayerService(player)
 
-            # store references
             self._services[instance] = player_service
             self._player_objects[instance] = player
 

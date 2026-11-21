@@ -47,8 +47,6 @@ from gi.repository import Gtk  # type: ignore
 
 
 class ShapesTab(BaseWidget, SectionBuilderMixin):
-    """Display launcher integrated modules"""
-
     COLUMNS: int = 4
     SHAPE_SIZE: int = 120
 

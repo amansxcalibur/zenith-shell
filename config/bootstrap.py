@@ -8,13 +8,6 @@ from config.i3.utils import (
 )
 
 def bootstrap(runtime: bool = False):
-    """
-    Safe setup:
-    - creates zenith directories
-    - writes config.json if missing
-    - generates i3 configs
-    """
-
     # zenith owned paths (ConfigManager does it auto during init)
     config._ensure_directories()
 

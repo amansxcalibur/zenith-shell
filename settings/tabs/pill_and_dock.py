@@ -446,7 +446,6 @@ class PillDockTab(BaseWidget, SectionBuilderMixin):
         return add_hover_cursor(btn)
 
     def _on_position_clicked(self, group_id: str, button: Button):
-        """Handle single-select within group"""
         parent = button.get_parent()
         clicked_box = button
 

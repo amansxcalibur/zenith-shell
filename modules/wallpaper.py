@@ -82,7 +82,6 @@ def generate_wallpaper_preview(image_path: str | Path) -> Path | None:
             # atomic save
             img.save(WP_PREVIEW_TEMP, "PNG")
 
-        # replace temp
         WP_PREVIEW_TEMP.replace(WP_PREVIEW_FILE)
         return WP_PREVIEW_FILE
     except Exception as e:
@@ -160,7 +159,7 @@ class WallpaperService(Service):
             if not swaybg_bin:
                 logger.error("'swaybg' binary not found.")
                 exec_shell_command_async(
-                    "notify-send -a 'Zenith Wallpaper' 'Zenith Error' '\"swaybg\" not found. Wallpaper not applied.'"
+                    "notify-send -a 'Zenith Wallpaper' 'Wallpaper not applied' '\"swaybg\" not found.'"
                 )
                 return
 
@@ -182,7 +181,7 @@ class WallpaperService(Service):
             if not feh_bin:
                 logger.error("'feh' binary not found.")
                 exec_shell_command_async(
-                    "notify-send -a 'Zenith Wallpaper' 'Zenith Error' '\"feh\" not found. Wallpaper not applied.'"
+                    "notify-send -a 'Zenith Wallpaper' 'Wallpaper not applied' '\"feh\" not found.'"
                 )
                 return
 
@@ -527,11 +526,8 @@ class WallpaperSelector(Box):
             key("activate"): self._activate_selected,
         }
 
-    # Policy: the search entry is the only focusable widget in this view.
-    # Everything else is can_focus=False / focus_on_click=False, so focus
-    # never leaves and no focus-out handler is needed. The two things that
-    # can still steal focus (the scheme popup, the dir dialog) hand it back
-    # explicitly through focus_search().
+    # the search entry is the only focusable widget here. The scheme popup and
+    # dir dialog can still steal focus, so they hand it back via focus_search()
 
     @staticmethod
     def _no_focus(widget):

@@ -2,8 +2,11 @@
   all: unset;
 }
 
-/* text cursor in every entry/textview; --cursor is swapped per theme
-   (dark: light caret, light: dark caret) via colors.{dark,light}.css */
+/* or every window falls back to the user's GTK font size */
+window {
+  font-size: 15px;
+}
+
 entry,
 textview,
 textview text {

@@ -268,7 +268,6 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
     def _on_binding_blur(self, binding, widget):
         text = widget.get_text().strip()
         if not text:
-            # reset binding
             widget.set_text(binding.key)
             self._update_entry_width(widget)
             self._clear_binding_override(binding)
@@ -291,8 +290,6 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
 
 
 class LauncherTab(BaseWidget, SectionBuilderMixin):
-    """Display launcher integrated modules"""
-
     def _build_ui(self):
         self.container = Box(orientation="v", spacing=25)
 

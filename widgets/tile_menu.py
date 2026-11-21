@@ -7,9 +7,7 @@ from services.animator import Animator
 
 from gi.repository import GLib, Gtk  # type: ignore
 
-# Rescans and refreshes can finish within a frame or two, keep the feedback on
-# screen long enough for the user to register that something actually happened.
-MIN_BUSY_MS = 900
+MIN_BUSY_MS = 0
 
 _FADE_CURVE = (0.4, 0.0, 0.2, 1.0)
 

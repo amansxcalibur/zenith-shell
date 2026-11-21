@@ -15,6 +15,7 @@ from .ui import LockContent, background_style
 from .xkb import KeyTranslator, enable_xkb
 from .supervisor import (
     APP_NAME,
+    EXIT_CRASHED,
     EXIT_UNLOCKED,
     EXIT_LOCK_FAILED,
     EXIT_ALREADY_RUNNING,
@@ -114,8 +115,6 @@ class X11Guard:
         pixmap.free()
         return cursor
 
-    # grabs
-
     def steal_focus(self):
         # may close context menus that hold grabs
         self.win.set_input_focus(X.RevertToParent, X.CurrentTime)
@@ -155,8 +154,6 @@ class X11Guard:
             logger.warning(f"Failed to release grabs cleanly: {e}")
         self.keyboard_grabbed = self.pointer_grabbed = False
 
-    # stacking
-
     def raise_window(self):
         self.win.configure(stack_mode=X.Above)
         self.display.flush()
@@ -188,8 +185,6 @@ class X11Guard:
         elif etype == X.VisibilityNotify and event.state != X.VisibilityUnobscured:
             self.raise_window()
 
-    # keys
-
     def _on_keypress(self, event):
         keysym = self.translator.keysym(event.detail, event.state)
         self.on_key(
@@ -203,7 +198,8 @@ class LockScreen(Gtk.Window):
         self.set_decorated(False)
         self.set_resizable(False)
 
-        self.exit_code = EXIT_UNLOCKED
+        # any X client can destroy our window, which only counts as a crash
+        self.exit_code = EXIT_CRASHED
         self.guard: X11Guard | None = None
         self.authenticator = Authenticator(pwd.getpwuid(os.getuid()).pw_name)
 
@@ -222,8 +218,6 @@ class LockScreen(Gtk.Window):
         self.realize()
         self._set_bypass_compositor()
         self.show_all()
-
-    # ui
 
     def _build_ui(self):
         self.center_box = LockContent()
@@ -253,8 +247,6 @@ class LockScreen(Gtk.Window):
             display.flush()
         finally:
             display.close()
-
-    # geometry
 
     def _get_monitor_geometries(self, root_width: int, root_height: int):
         """(primary, others) as (x, y, w, h); the root if there are no monitors."""
@@ -303,15 +295,13 @@ class LockScreen(Gtk.Window):
         if self.guard:
             self.guard.raise_window()
 
-    # lifecycle
-
     def _on_mapped(self, *_):
         if self.guard is not None:
             return
         self.guard = X11Guard(
             self.get_window().get_xid(),
             on_key=self.entry.handle_key,
-            on_lost=lambda: self._finish(1),
+            on_lost=lambda: self._finish(EXIT_CRASHED),
             on_root_resize=self._update_monitor_geometry,
         )
         self.guard.steal_focus()

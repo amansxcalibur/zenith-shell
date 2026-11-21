@@ -43,7 +43,7 @@ class WavyClock(Gtk.DrawingArea):
         self.dark = dark
         self.set_size_request(size[0], size[1])
 
-        self.now = datetime.datetime.now()  # noqa: DTZ005
+        self.now = datetime.datetime.now()
 
         # letter_spacing_factor: 1.0 = normal tracking, <1 = tighter, >1 = looser
         self.letter_spacing_factor = 1.0
@@ -95,7 +95,7 @@ class WavyClock(Gtk.DrawingArea):
             self._font_desc = font_desc
 
     def on_tick(self):
-        self.now = datetime.datetime.now()  # noqa: DTZ005
+        self.now = datetime.datetime.now()
         self.queue_draw()
         return True
 
@@ -174,7 +174,7 @@ class WavyClock(Gtk.DrawingArea):
         ctx.fill()
 
     def _draw_curved_date(self, ctx, cx, cy, second_angle, second_orbit, dot_radius):
-        text_str = datetime.datetime.now().strftime("%a %d")  # noqa: DTZ005
+        text_str = datetime.datetime.now().strftime("%a %d")
         base_text_angle = second_angle + math.pi
 
         layout = PangoCairo.create_layout(ctx)

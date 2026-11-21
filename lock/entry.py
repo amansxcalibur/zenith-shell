@@ -54,8 +54,6 @@ class PasswordBuffer:
 
 
 class PasswordEntry:
-    """Key handling and feedback for one lock surface."""
-
     def __init__(self, content: LockContent, authenticator, on_success):
         self.content = content
         self.indicator = content.indicator

@@ -1,6 +1,7 @@
 import math
 import cairo
 from cffi import FFI
+from loguru import logger
 from typing import Any, Self, Literal, cast
 from collections.abc import Callable, Iterable
 
@@ -376,13 +377,8 @@ class RotateBox(Container):
             and self._child
             and self._child.get_visible()
         ):
-            # The offscreen window has its own frame clock (it isn't a child of
-            # the toplevel), so it normally repaints *after* this draw and the
-            # surface still holds the previous frame's layout. While the child
-            # resizes every frame (stack interpolate_size, scale animation) that
-            # composites stale content against the current clip/allocation,
-            # and how stale depends on how the two clocks line up: jitter.
-            # Paint pending offscreen damage now so content matches this frame.
+            # the offscreen window has its own frame clock and repaints after
+            # us, so a child resizing every frame jitters. Paint it now
             self._offscreen_window.process_updates(False)
             surface = Gdk.offscreen_window_get_surface(self._offscreen_window)
             # clip to the child's area, not the surface: subclasses (ScaleBox) may
@@ -426,7 +422,7 @@ class RotateBox(Container):
         return False
 
     def do_add(self, widget: Gtk.Widget):
-        print(f"ScaleBox.do_add called with {widget}, current child: {self._child}")
+        logger.debug(f"ScaleBox.do_add called with {widget}, current child: {self._child}")
         if self._child:
             raise ValueError
 

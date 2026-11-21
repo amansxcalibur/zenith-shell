@@ -1,5 +1,7 @@
 
 
+from loguru import logger
+
 from fabric.widgets.box import Box
 from fabric.widgets.button import Button
 from fabric.utils.helpers import exec_shell_command_async
@@ -51,27 +53,27 @@ class PowerMenu(Box):
         ]
 
     def lock(self, *_):
-        print("Locking...")
+        logger.info("Locking...")
         self.close_power_menu()
         lock_screen()
 
     def suspend(self, *_):
-        print("Suspending...")
+        logger.info("Suspending...")
         self.close_power_menu()
         exec_shell_command_async("systemctl suspend")
 
     def logout(self, *_):
-        print("Logging out...")
+        logger.info("Logging out...")
         self.close_power_menu()
         I3.send_command("exit")
 
     def reboot(self, *_):
-        print("Rebooting...")
+        logger.info("Rebooting...")
         self.close_power_menu()
         exec_shell_command_async("shutdown -r now")
 
     def shutdown(self, *_):
-        print("Shutting down...")
+        logger.info("Shutting down...")
         self.close_power_menu()
         exec_shell_command_async("shutdown now")
 

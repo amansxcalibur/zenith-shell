@@ -26,10 +26,9 @@ class BaseWidget(ABC):
 
     @abstractmethod
     def _build_ui(self):
-        """Build the widget UI - must be implemented by subclasses"""
+        ...
 
     def get_widget(self):
-        """Get the root container widget"""
         return self.container
 
 
@@ -244,7 +243,6 @@ class TabConfig:
 
     @property
     def widget(self):
-        """Lazy-load the widget on first access"""
         if self._widget is None:
             self._widget = self.widget_factory()
         return self._widget

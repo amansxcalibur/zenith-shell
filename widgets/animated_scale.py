@@ -119,12 +119,8 @@ class CircularScale(CircularProgressBar):
         parent_ctx = self.get_style_context()
         new_path = parent_ctx.get_path().copy()
 
-        # GTK's WidgetPath only includes style classes if CSS rules target them.
-        # If there are selectors targeting child nodes with parent classes
-        # (e.g., "circle-widget.dark slider {...}") but no rules directly targeting
-        # the parent with that class (e.g., "circle-widget.dark {...}"), the parent's
-        # path won't include the class. This solution manually adds these classes to
-        # the parent's path so the selectors can match correctly.
+        # GTK leaves a class out of the path unless a rule targets it directly,
+        # so "circle-widget.dark slider" wouldn't match without this
         for cls in parent_ctx.list_classes():
             if not new_path.iter_has_class(-1, cls):
                 new_path.iter_add_class(-1, cls)
@@ -390,7 +386,6 @@ class CircularScale(CircularProgressBar):
         trough_color = self._trough_ctx.get_background_color(state)  # type: ignore
         trough_thickness = self.do_get_border_width(self._trough_ctx, state)
 
-        # calculate radius
         radius = self.do_calculate_radius()
         safe_radius = self.do_calculate_safe_radius(
             radius, slider_height, progress_thickness, trough_thickness

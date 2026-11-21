@@ -1,11 +1,9 @@
 import math
 import cairo
-from loguru import logger
 
 from widgets.shapes.base import Shape
 
 class Pill(Shape):
-
     def _draw_circle(self, ctx: cairo.Context, cx: float, cy: float, radius: float):
         ctx.arc(cx, cy, radius, 0, 2 * math.pi)
         ctx.close_path()

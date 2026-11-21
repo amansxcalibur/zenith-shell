@@ -32,7 +32,6 @@ class _XkbUseExtension(rq.ReplyRequest):
 
 
 def enable_xkb(display) -> bool:
-    """Make a python-xlib connection XKB-aware. Returns True on success."""
     ext = display.query_extension("XKEYBOARD")
     if not ext.present:
         logger.warning("XKEYBOARD extension not present on this X server")
@@ -57,8 +56,6 @@ def _xkb_group(state: int) -> int:
 # layout (XKB group), NumLock on the keypad and non-Latin-1 text, which core
 # keycode_to_keysym() can't.
 class KeyTranslator:
-    """Translate (keycode, XKB event state) -> keysym and text via GDK."""
-
     def __init__(self):
         self._keymap = Gdk.Keymap.get_for_display(Gdk.Display.get_default())
 

@@ -346,7 +346,7 @@ class ConfigManager(Service):
                     "-u",
                     "critical",
                     "-a",
-                    "Zenith",
+                    "Zenith Config",
                     summary,
                     # notification bodies are markup
                     GLib.markup_escape_text(body),

@@ -1,15 +1,15 @@
 import gi
 from enum import Enum
-import OpenGL.GL as GL
+from OpenGL import GL
 from collections.abc import Iterable
 from typing import cast, overload, Literal
 from OpenGL.GL.shaders import compileShader, compileProgram
 
-from fabric import Application, Signal, Property
+from fabric import Signal, Property
 from fabric.widgets.widget import Widget
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk, GdkPixbuf, GLib
+from gi.repository import Gtk, Gdk, GdkPixbuf, GLib  # type: ignore
 
 
 class ShadertoyUniformType(Enum):
@@ -152,7 +152,6 @@ class Shadertoy(Gtk.GLArea, Widget):
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 
-
     def do_bake_program(self):
         try:
             vertex_shader = compileShader(
@@ -222,7 +221,6 @@ class Shadertoy(Gtk.GLArea, Widget):
 
         self._ready = True
         self.ready()
-        return
 
     def do_get_timing(self) -> tuple[float, float, float]:
         current_time = GLib.get_monotonic_time() / 1e6
@@ -232,7 +230,6 @@ class Shadertoy(Gtk.GLArea, Widget):
     def do_post_render(self, time: float):
         self._frame_time = time
         self._frame_count += 1
-        return
 
     def do_render(self, ctx: Gdk.GLContext):
         if not self._program:
@@ -277,7 +274,6 @@ class Shadertoy(Gtk.GLArea, Widget):
     def do_resize(self, width: int, height: int):
         Gtk.GLArea.do_resize(self, width, height)
         GL.glViewport(0, 0, width, height)
-        return
 
     @overload
     def set_uniform(
@@ -309,7 +305,7 @@ class Shadertoy(Gtk.GLArea, Widget):
         self,
         name: str,
         type: ShadertoyUniformType,
-        value: bool | float | int | tuple[float, ...] | GdkPixbuf.Pixbuf,
+        value: bool | float | tuple[float, ...] | GdkPixbuf.Pixbuf,
     ):
         if not self._program:
             raise RuntimeError("the shader program is not initialized")

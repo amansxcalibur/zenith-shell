@@ -59,7 +59,6 @@ class NetworkInfoFactory:
     def from_access_point(
         ap: NM.AccessPoint, active_ssid: str | None = None
     ) -> NetworkInfo | None:
-        """Create NetworkInfo from NM.AccessPoint"""
         try:
             if not ap or not ap.get_ssid():
                 return None
@@ -136,13 +135,11 @@ class AccessPointManager:
                 logger.debug(f"Error processing AP: {e}")
                 continue
 
-        # convert to NetworkInfo objects
         networks = []
         for ap in ap_dict.values():
             if network := NetworkInfoFactory.from_access_point(ap, active_ssid):
                 networks.append(network)
 
-        # sort by signal strength
         networks.sort(key=lambda x: x.strength, reverse=True)
 
         return networks
@@ -289,21 +286,18 @@ class ConnectionProfileManager:
         if wpa_eap_profiles:
             return wpa_eap_profiles[0]
 
-        # Return first match
         return matches[0]
 
     def create(self, ssid: str, password: str | None) -> NM.SimpleConnection | None:
         try:
             connection = NM.SimpleConnection.new()
 
-            # Connection settings
             s_con = NM.SettingConnection.new()
             s_con.set_property(NM.SETTING_CONNECTION_ID, ssid)
             s_con.set_property(NM.SETTING_CONNECTION_UUID, NM.utils_uuid_generate())
             s_con.set_property(NM.SETTING_CONNECTION_TYPE, "802-11-wireless")
             connection.add_setting(s_con)
 
-            # Wireless settings
             s_wifi = NM.SettingWireless.new()
             ssid_bytes = GLib.Bytes.new(ssid.encode("utf-8"))
             s_wifi.set_property(NM.SETTING_WIRELESS_SSID, ssid_bytes)
@@ -633,7 +627,6 @@ class WifiDevice(NetworkDevice):
             return ConnectionResult.NETWORK_NOT_FOUND
 
         try:
-            # get profile
             connection = None if force_new else self.profile_manager.find_by_ssid(ssid)
 
             if connection:
@@ -703,7 +696,6 @@ class WifiDevice(NetworkDevice):
             logger.error(f"Failed to activate connection: {e}")
             return ConnectionResult.CONNECTION_FAILED
 
-    # callback for activating existing connection
     def _on_activate_connection_complete(
         self, client: NM.Client, result: Any, ssid: str
     ) -> None:
@@ -746,7 +738,6 @@ class WifiDevice(NetworkDevice):
             logger.error(f"Failed to add and activate connection: {e}")
             return ConnectionResult.CONNECTION_FAILED
 
-    # callback for adding and activating new connection
     def _on_add_and_activate_connection_complete(
         self, client: NM.Client, result: Any, user_data: dict
     ) -> None:
@@ -764,7 +755,6 @@ class WifiDevice(NetworkDevice):
                 )
                 return
 
-            # track connection
             self.connection_state.track_connection(ssid, active_conn, is_new)
             logger.debug(f"Connection initiated for {ssid}, waiting for activation...")
 
@@ -772,7 +762,6 @@ class WifiDevice(NetworkDevice):
             error_message = str(e)
             logger.error(f"Connection error for {ssid}: {error_message}")
             result_code = self._parse_connection_error(error_message)
-            # cleanup failed profile
             if is_new:
                 self.connection_state._schedule_cleanup(ssid)
             self.connection_result(ssid, result_code, error_message)

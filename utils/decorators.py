@@ -2,7 +2,6 @@ import functools
 import time
 
 def timing_decorator(func):
-    """Decorator to log execution time of functions"""
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         start_time = time.perf_counter()

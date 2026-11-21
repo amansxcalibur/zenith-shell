@@ -528,6 +528,8 @@ class SettingsWindow(Window):
                         "notify-send",
                         "-u",
                         "critical",
+                        "-a",
+                        "Zenith Settings",
                         "Keybinding conflict",
                         (
                             "Settings were saved, but a key is also used by your window "
@@ -537,7 +539,7 @@ class SettingsWindow(Window):
                 )
                 return
             exec_shell_command_async(
-                "notify-send 'Zenith Settings' 'Restart zenith-shell to apply changes.'"
+                "notify-send -a 'Zenith Settings' 'Settings saved' 'Restart zenith-shell to apply changes.'"
             )
             self.on_close(None)
 
@@ -547,11 +549,25 @@ class SettingsWindow(Window):
             # Passed as argv, and escaped because notification bodies are markup.
             body = GLib.markup_escape_text(f"{e}\nSettings were not saved.")
             exec_shell_command_async(
-                ["notify-send", "-u", "critical", "Duplicate keybindings", body]
+                [
+                    "notify-send",
+                    "-u",
+                    "critical",
+                    "-a",
+                    "Zenith Settings",
+                    "Duplicate keybindings",
+                    body,
+                ]
             )
 
         except Exception as e:
             logger.error(f"Failed to save: {e}")
             exec_shell_command_async(
-                ["notify-send", "Zenith Settings", GLib.markup_escape_text(str(e))]
+                [
+                    "notify-send",
+                    "-a",
+                    "Zenith Settings",
+                    "Settings not saved",
+                    GLib.markup_escape_text(str(e)),
+                ]
             )

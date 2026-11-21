@@ -25,10 +25,10 @@ from modules.core.bottom.dock.placement import (
     current_placement,
 )
 
-from services.i3 import I3
 from services.power_profiles import power_profiles_service
 
 from utils.colors import bind_theme
+from utils.pill_focus import take_focus, release_focus
 from utils.helpers import (
     keep_window,
     open_settings,
@@ -251,16 +251,10 @@ class Pill(Window, Service):
             self.stack.set_bounce(self._animations_enabled)
 
     def focus_pill(self):
-        if IS_WAYLAND:
-            GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.EXCLUSIVE)
-            return
-        I3.send_command(f'[window_role="^{self.WIN_ROLE}$"] focus')
+        take_focus(self)
 
     def unfocus_pill(self):
-        if IS_WAYLAND:
-            GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.NONE)
-            return
-        I3.send_command("focus mode_toggle")
+        release_focus(self)
 
     def _is_over_dock(self) -> bool:
         return (

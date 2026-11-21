@@ -98,10 +98,15 @@ class BaseDialog(Gtk.Dialog):
     def show_notification(title: str, message: str = "") -> None:
         # argv, not a command line: SSIDs contain quotes and spaces. Escaped
         # because notification bodies are markup.
-        summary, body = (title, message) if message else ("NM-Service", title)
         try:
             exec_shell_command_async(
-                ["notify-send", summary, GLib.markup_escape_text(body)]
+                [
+                    "notify-send",
+                    "-a",
+                    "Zenith Network",
+                    title,
+                    GLib.markup_escape_text(message),
+                ]
             )
         except GLib.Error as e:
             logger.warning(f"Could not send notification: {e}")
@@ -1496,7 +1501,6 @@ class Network(TileSimpleWithMenu):
     def _show_password_dialog(
         self, ssid: str, error_message: str | None = None
     ) -> None:
-        # clean up existing dialog
         if self.password_dialog:
             self.password_dialog.destroy()
             self.password_dialog = None

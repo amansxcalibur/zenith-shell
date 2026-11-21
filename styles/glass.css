@@ -688,8 +688,13 @@
 }
 
 .glass #collapsed #notification-box,
-.glass #notification-popup #notification-box {
+#notification-popup.glass #notification-box {
   background-color: alpha(var(--glass-tint), 0.78);
+}
+
+/* the low battery banner, matched to the OSD next to it */
+#notification-popup.glass #notification-box {
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
 }
 
 .glass #control-slider trough {

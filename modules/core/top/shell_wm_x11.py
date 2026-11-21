@@ -47,7 +47,6 @@ class ShellTopWindowManager:
         self.pill_size_group = Gtk.SizeGroup.new(Gtk.SizeGroupMode.HORIZONTAL)
         self._setup_size_groups()
 
-        # Connect signals
         self.pill.connect("on-drag", self._set_dock_state)
         self.pill.connect("on-drag-end", lambda w, state: self._snap_pill())
         self.pill.connect("size-allocate", self._on_pill_resized)
@@ -63,7 +62,6 @@ class ShellTopWindowManager:
     def _remove_size_groups(self):
         self.pill_size_group.remove_widget(self.pill.pill_container)
 
-    # -- Properties --
     @property
     def pill_widget(self):
         return self.pill
@@ -169,7 +167,6 @@ class ShellTopWindowManager:
         beside_dock = getattr(insets, target_x_name, 0) > 0
         self.top_bar.set_dock_neighbour(target_x_name if beside_dock else None)
 
-        # update geometry if changed
         if geometry_map.get(new_geometry) != self.top_bar.get_geometry():
             self.top_bar.set_geometry(new_geometry)
 
@@ -190,7 +187,6 @@ class ShellTopWindowManager:
         self.pill_target_x = target_x
         self.pill_target_y = target_y
 
-        # set up animator
         self.animator.pause()
         self.animator.value = 0
         self.animator.min_value = 0
@@ -223,7 +219,6 @@ class ShellTopWindowManager:
                         widget.handler_disconnect(getattr(widget, attr))
                         setattr(widget, attr, None)
                     else:
-                        # Override with no-op lambda
                         setattr(widget, attr, lambda: None)
                 except Exception as e:
                     logger.debug(f"Could not disconnect {attr}: {e}")

@@ -356,8 +356,9 @@
 /* #notif-carousal-scroller {
   background-color: green;
 } */
-
-
-.light #notif-low-bat-msg{
+#notification-popup #notification-box {
+  font-size: 15px;
+}
+.light #notif-banner-msg{
   color: var(--foreground);
 }

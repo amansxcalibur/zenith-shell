@@ -513,7 +513,6 @@ class AppLauncher(Box):
         v_adjust = self.scrolled_window.get_vadjustment()
 
         def on_adjust_changed(adj):
-            # upper (total height) - page_size (visible height) = bottom position
             bottom_value = adj.get_upper() - adj.get_page_size()
             adj.set_value(bottom_value)
 

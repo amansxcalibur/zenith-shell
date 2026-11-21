@@ -98,7 +98,7 @@ class ThemeService(Service):
         if not matugen_bin:
             logger.error("'matugen' not found.")
             exec_shell_command_async(
-                "notify-send 'Zenith Shell' '\"matugen\" not found. Theme not updated.'"
+                "notify-send -a 'Zenith Theme' 'Theme not updated' '\"matugen\" not found.'"
             )
             return
 

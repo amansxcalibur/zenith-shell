@@ -1,24 +1,27 @@
 import math
+import cairo
 from collections.abc import Callable, Iterable
 
-import cairo
+from fabric.widgets.scale import Scale
+
+from icons.icon import Icon
+
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gdk, Gtk, Pango, PangoCairo  # type: ignore
 
-from fabric.widgets.scale import Scale
-
-from icons.icon import Icon
-
 ICON_FAMILY = "Material Symbols Rounded"
-ICON_SIZE = 26  # px
-ICON_PADDING = 8  # px between the icon and the track's top, or the handle
-VALUE_SIZE = 12  # px
-STOP_SIZE = 4  # px
-BUBBLE_HEIGHT = 22  # px
-BUBBLE_GAP = 12  # px between the bubble and the handle, so its gap shows
+
+# all px
+ICON_SIZE = 26
+ICON_PADDING = 8  # from the track's top, or the handle
+VALUE_SIZE = 12
+STOP_SIZE = 4
+BUBBLE_HEIGHT = 22
+BUBBLE_PADDING = 6
+BUBBLE_GAP = 12  # to the handle, so its gap shows
 
 
 def _font(family: str | None, px: int, bold: bool = False, filled: bool = False):
@@ -105,7 +108,6 @@ class TrackDecor:
         return self._color("on-fill") if self._covered(y) else self._color()
 
     def _value_font(self):
-        # the theme's family, at the value's own size
         context = self.scale.get_style_context()
         family = context.get_property("font", context.get_state()).get_family()
         return _font(family, VALUE_SIZE, bold=True)
@@ -137,7 +139,7 @@ class TrackDecor:
                 cr.arc(centre, y, STOP_SIZE / 2, 0, 2 * math.pi)
                 cr.fill()
 
-        # the icon tops the track; with the handle up there, it sits just past it
+        # icon sits at the top, or just under the handle when it's up there
         layout, ink = self._layout(
             cr,
             self.icon().symbol(),
@@ -147,8 +149,7 @@ class TrackDecor:
         top = track.y + ICON_PADDING
         below = handle_end  # where the space past the handle starts
         if not clear_of_handle(top, top + ink.height):
-            # from where the fill starts: the handle's range runs past what's
-            # drawn of it, into its bottom margin
+            # mid-handle, the slider range includes its bottom margin
             top = (handle_start + handle_end) / 2 + ICON_PADDING
             below = top + ink.height
         Gdk.cairo_set_source_rgba(cr, self._ink(top + ink.height / 2))
@@ -161,7 +162,7 @@ class TrackDecor:
 
     def _draw_bubble(self, cr, track, centre, handle_start, below):
         layout, ink = self._layout(cr, self.value_text(), self._value_font())
-        width = max(ink.width + 12, BUBBLE_HEIGHT)
+        width = max(ink.width + 2 * BUBBLE_PADDING, BUBBLE_HEIGHT)
         # above the handle, or below it when there's no room
         top = handle_start - BUBBLE_GAP - BUBBLE_HEIGHT
         if top < track.y:

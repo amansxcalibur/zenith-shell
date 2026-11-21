@@ -1,6 +1,5 @@
 import math
 import cairo
-from loguru import logger
 
 from widgets.shapes.base import Shape
 

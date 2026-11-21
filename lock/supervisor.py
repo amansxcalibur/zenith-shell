@@ -1,15 +1,8 @@
-# No session-lock protocol for my dear X11 :(
-# If the locker process dies, the desktop is exposed. On Wayland the
-# compositor keeps the session locked instead, but nothing can unlock it until
-# a new locker connects. This small process (no GTK, nothing heavy imported)
-# runs the real locker as a child and:
-# - refuses to start a second lock (flock in $XDG_RUNTIME_DIR)
-# - respawns the locker if it crashes, and falls back to i3lock/swaylock if it
-#   keeps crashing
-# - forwards xss-lock's XSS_SLEEP_LOCK_FD to the first child only, so suspend
-#   waits until the screen is actually locked
-# - with -f, returns as soon as the screen is locked and keeps supervising in
-#   the background (like swaylock -f), for `swayidle -w before-sleep`
+# No session-lock protocol for my dear X11 :( so a dead locker exposes the
+# desktop (on Wayland the session just stays stuck locked). This tiny process
+# runs the real locker as a child and respawns it, falling back to
+# i3lock/swaylock if it keeps crashing. Also: one lock at a time, suspend waits
+# for xss-lock's fd, and -f returns once locked, like swaylock -f
 
 import os
 import sys
@@ -26,6 +19,7 @@ from loguru import logger
 APP_NAME = "zenith-lockscreen"
 
 EXIT_UNLOCKED = 0
+EXIT_CRASHED = 1  # or anything else unknown, the locker gets respawned
 EXIT_LOCK_FAILED = 3  # X11: input grab failed, Wayland: compositor refused
 EXIT_ALREADY_RUNNING = 4
 
@@ -74,7 +68,7 @@ def _take_sleep_lock_fd() -> int | None:
 def _notify(summary: str, body: str):
     if shutil.which("notify-send"):
         subprocess.Popen(
-            ["notify-send", "-u", "critical", "-a", "Zenith", summary, body],
+            ["notify-send", "-u", "critical", "-a", "Zenith Lock", summary, body],
             start_new_session=True,
         )
 

@@ -53,8 +53,7 @@ class WrapBox(Gtk.Container):
         return (min_w, nat_w)
 
     def do_get_preferred_height_for_width(self, width):
-        # We must simulate the layout here to tell the parent window how tall we need to be.
-        # This prevents the scrollbar from jumping or cutting off content.
+        # dry-run the layout, or the scrollbar jumps / cuts content off
         height = self._layout_children(width, apply_allocation=False)
         return (height, height)
 

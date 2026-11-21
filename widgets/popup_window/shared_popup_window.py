@@ -98,9 +98,7 @@ class SharedPopupWindow(Window):
         # position along the dock: x for a bottom dock, y for a side dock
         self.target_along = 0
 
-        # last (width, height) sent to the X server. On X11, get_allocation()
-        # lags behind a resize until the WM's ConfigureNotify arrives, so any
-        # move computed from it in between puts the bottom below the baseline.
+        # last size sent to X; get_allocation() lags until ConfigureNotify
         self._committed_size = None
         # size sent via move_resize whose allocation hasn't arrived yet
         self._pending_size = None
@@ -600,10 +598,8 @@ class SharedPopupWindow(Window):
         if not hasattr(self, "pointing_widget"):
             return
 
-        # GTK may allocate from an older ConfigureNotify after we already sent a
-        # newer move_resize. Positioning from that stale height would push the
-        # bottom off the baseline, so keep using the pending size until the
-        # allocation catches up.
+        # GTK may allocate from a stale ConfigureNotify, so trust the pending
+        # size until the allocation catches up
         alloc_size = (alloc.width, alloc.height)
         if self._pending_size == alloc_size or not self.get_mapped():
             self._pending_size = None

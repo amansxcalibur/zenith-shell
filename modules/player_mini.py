@@ -193,7 +193,6 @@ class PlayerMini(Box):
         # self._player_service.connect("track-position", self.on_update_track_position)
         self._player_service.connect("artwork-change", self._apply_artwork)
 
-        # connect cleanup
         self.connect("destroy", self.on_destroy)
 
         # init metadata; if it hasn't arrived yet, meta-change delivers it
@@ -255,7 +254,6 @@ class PlayerMini(Box):
             self._follow_wallpaper()  # track without art
             return
 
-        # remove wallpaper connection
         if self._wallpaper_signal_id:
             self._wallpaper_service.disconnect(self._wallpaper_signal_id)
             self._wallpaper_signal_id = None
@@ -575,11 +573,9 @@ class PlayerContainerMini(Box):
             logger.warning(f"No mini UI found for {player_name}")
             return
 
-        # get the widget
         player_widget = self.player_widgets[player_name]
         self.stack.remove(player_widget)
 
-        # remove switch button
         for btn in self.player_switch_container.center_children:
             if btn.get_name() == player_name:
                 self.player_switch_container.remove_center(btn)
@@ -588,7 +584,6 @@ class PlayerContainerMini(Box):
 
         player_widget.destroy()
 
-        # remove from tracking dict
         del self.player_widgets[player_name]
 
         # show placeholder or first available player
@@ -663,7 +658,6 @@ class PlayerContainerMini(Box):
         next_index = (current_index + (1 if forward else -1)) % len(player_names)
         next_name = player_names[next_index]
 
-        # find and click the corresponding button
         for btn in self.player_switch_container.center_children:
             if btn.get_name() == next_name:
                 self.switch_player(next_name, btn)
@@ -690,7 +684,6 @@ class PlayerContainerMini(Box):
     def cleanup(self):
         logger.debug("Cleaning up PlayerContainerMini")
 
-        # cleanup all widgets
         for player_name, widget in list(self.player_widgets.items()):
             try:
                 widget.destroy()
@@ -699,7 +692,6 @@ class PlayerContainerMini(Box):
 
         self.player_widgets.clear()
 
-        # cleanup the manager
         try:
             self.manager.cleanup_all()
         except Exception as e:

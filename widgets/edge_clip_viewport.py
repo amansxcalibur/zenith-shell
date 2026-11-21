@@ -30,7 +30,7 @@ class EdgeClipViewport(Gtk.Viewport):
         self._edge = edge
 
         # the viewport reconfigures its adjustment (upper/page size) on every
-        # allocation; re-pin the scroll offset to the chosen edge each time
+        # alloc. We gotta re-pin the scroll offset to the chosen edge each time
         adjustment = (
             self.get_vadjustment() if self._vertical else self.get_hadjustment()
         )

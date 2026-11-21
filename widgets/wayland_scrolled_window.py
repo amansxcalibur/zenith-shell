@@ -7,10 +7,7 @@ from gi.repository import Gtk  # type: ignore
 
 
 class AutoSizingScrolledWindow(ScrolledWindow):
-    """A ScrolledWindow that dynamically adjusts its min_content_size based on its child's natural size.
-
-    This is to patch the weird behaviour of GtkScrolledWindow with min_content_size (-1, -1) on wlroots
-    """
+    """min_content_size follows the child, since (-1, -1) acts weird on wlroots"""
 
     def _clamped_child_size(self):
         child = self.get_child()

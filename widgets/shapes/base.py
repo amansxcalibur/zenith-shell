@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from config.info import ROOT_DIR
 from utils.colors import get_css_variable, hex_to_rgb01
 
@@ -9,18 +7,15 @@ from gi.repository import Gtk
 
 
 class Shape(Gtk.DrawingArea):
-    """Base class for all shape widgets (provides color and sizing utilities)."""
-
-    def __init__(self, size: Tuple[int, int] = (140, 140), dark: bool = False, override_color: Tuple[float, float, float] | None = None):
+    def __init__(self, size: tuple[int, int] = (140, 140), dark: bool = False, override_color: tuple[float, float, float] | None = None):
         super().__init__()
         self.set_size_request(*size)
         self.dark = dark
-        self._override_color: Tuple[float, float, float] | None = override_color
+        self._override_color: tuple[float, float, float] | None = override_color
         self.connect("draw", self.on_draw)
         self.show()
 
-    def _get_color(self) -> Tuple[float, float, float]:
-        """Return the current RGB color (override or from CSS variable)."""
+    def _get_color(self) -> tuple[float, float, float]:
         if self._override_color is not None:
             return self._override_color
 
@@ -30,8 +25,7 @@ class Shape(Gtk.DrawingArea):
         )
         return hex_to_rgb01(hex_color)
 
-    def set_color(self, rgb: Tuple[float, float, float] | None, redraw: bool = True):
-        """Override the shape color and optionally trigger a redraw."""
+    def set_color(self, rgb: tuple[float, float, float] | None, redraw: bool = True):
         self._override_color = rgb
         if redraw:
             self.queue_draw()

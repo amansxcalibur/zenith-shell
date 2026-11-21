@@ -213,10 +213,8 @@ class AnimatedClippingBox(TrueClippingBox):
         self._revealed = self._max_height == -1
         self._contracting_bezier_curve = contracting_bezier_curve
         self._expanding_bezier_curve = expanding_bezier_curve
-        # fixed_height_animation: while animating, the box takes exactly the animated
-        # height (instead of only being capped by it). Content that is shorter than
-        # the animated height can't cut the motion short, so the curve (including
-        # overshoot) plays out in full. Off by default to keep the old behaviour.
+        # fixed_height_animation: the box takes exactly the animated height, not
+        # just a cap, so shorter content can't cut the curve (and overshoot) short
         self._fixed_height_animation = fixed_height_animation
         self._forced_height: int | None = None
         self._finish_handler: int | None = None
@@ -283,11 +281,8 @@ class AnimatedClippingBox(TrueClippingBox):
             self.set_max_height(max(0, int(animator.value)))
             return
 
-        # the animator runs in pixels between the start height and the target's
-        # initial value (so overshoot damping keeps its pixel meaning); turn that
-        # into eased progress and apply it to the *live* target. Content that is
-        # still settling (e.g. CSS size transitions) then can't leave a jump at
-        # the end: at progress 1 the height is exactly the real target.
+        # the animator runs in pixels; turn that into progress against the *live*
+        # target, so content still settling can't leave a jump at the end
         span = self._anim_estimate - self._anim_from
         progress = 1.0 if span == 0 else (animator.value - self._anim_from) / span
         target = self._resolve(self._anim_target)
