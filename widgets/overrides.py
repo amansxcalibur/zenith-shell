@@ -8,7 +8,8 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Rsvg", "2.0")
-from gi.repository import GObject, Rsvg, Gtk  # type: ignore
+gi.require_version("Gdk", "3.0")
+from gi.repository import GObject, Rsvg, Gtk, Gdk  # type: ignore
 
 
 def enable_tooltip_transparency():
@@ -42,6 +43,14 @@ class PatchedX11Window(X11Window):
         Gtk.Window.do_map_event(self, alloc)  # type: ignore
 
         return self.set_pass_through(self._pass_through)
+
+    # nothing styles :backdrop, yet GTK restyles the whole window when focus
+    # flips it: ~110ms on power-saver. Maybe I'll consider this later if the
+    # Pill has styles targetting focus/unfocus
+    def do_window_state_event(self, event):
+        if event.changed_mask == Gdk.WindowState.FOCUSED:
+            return False
+        return Gtk.Window.do_window_state_event(self, event)  # type: ignore
 
 
 class Svg(FabricSvg):

@@ -1,13 +1,9 @@
 import cairo
 
 from fabric.widgets.box import Box
-from fabric.widgets.stack import Stack
-from fabric.core.service import Signal, Service
 
 from config.i3.utils import glass_mode
 from config.info import IS_WAYLAND, SHELL_NAME
-
-from services.animator import Animator
 
 from utils.colors import bind_theme
 from utils.helpers import keep_window
@@ -17,7 +13,6 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 gi.require_version("GLib", "2.0")
-gi.require_version("GObject", "2.0")
 from gi.repository import Gtk, Gdk, GLib  # type: ignore
 
 if IS_WAYLAND:
@@ -34,9 +29,13 @@ else:
 HANDOFF_FRAMES = 2  # 1 paint + 1 frame of margin for the compositor
 HANDOFF_TIMEOUT_MS = 150  # fallback if the receiving window never paints
 
+FLIGHT_US = 300_000
+# a slow frame moves the flight on by at most this much, so a hiccup slows it
+# down instead of making it jump
+MAX_STEP_US = 33_000
+
 
 def snapshot_widget(widget: Gtk.Widget) -> Gtk.Image | None:
-    """Render `widget` as it looks now into a same-sized Gtk.Image."""
     if not widget.get_mapped():
         return None
     alloc = widget.get_allocation()
@@ -55,7 +54,6 @@ def snapshot_widget(widget: Gtk.Widget) -> Gtk.Image | None:
 
 
 def after_frames(widget: Gtk.Widget, callback, frames: int = HANDOFF_FRAMES):
-    """Call `callback` once `widget`'s window has painted `frames` times."""
     clock = widget.get_frame_clock()
     if clock is None:  # not realized: nothing will paint, don't wait
         callback()
@@ -79,55 +77,43 @@ def after_frames(widget: Gtk.Widget, callback, frames: int = HANDOFF_FRAMES):
 
     paint_id = clock.connect("after-paint", on_after_paint)
     GLib.timeout_add(HANDOFF_TIMEOUT_MS, lambda: finish() and False)
-    widget.queue_draw()  # make sure a paint actually happens
+    widget.queue_draw()
 
 
 class PopSlot(Box):
     def __init__(self, children, overlay=None, target_size=(320, 200), **kwargs):
         super().__init__(**kwargs)
         self.overlay = overlay or FlyingOverlay.get_shared()
-
-        self.add(children)
-        self.target_size = (
-            children.get_expanded_size()
-            if hasattr(children, "get_expanded_size")
-            else target_size
-        )
-
+        self.target_size = target_size
         self.child = children
         self.child.quick_settings_slot = self
+        self.add(children)
 
     # called by the child
     def pop_out(self):
-        expanded_factory = getattr(self.child, "build_expanded_content", None)
-        # not using size groups, cuz I'm not dealing with dynamic ones yet
-        self.target_size = (
-            self.child.get_expanded_size()
-            if hasattr(self.child, "get_expanded_size")
-            else self.target_size
-        )
-        self.overlay.pop_out(
-            self, target_size=self.target_size, expanded_factory=expanded_factory
-        )
+        get_size = getattr(self.child, "get_expanded_size", None)
+        self.overlay.pop_out(self, get_size() if get_size else self.target_size)
 
-    # called by FlyingOverlay, not by tile authors
+    def dismiss(self):
+        if self.overlay.source_slot is self:
+            self.overlay.dismiss()
+
+    # the rest is called by FlyingOverlay
     def release(self):
         alloc = self.get_allocation()
         self.set_size_request(alloc.width, alloc.height)
         self.remove(self.child)
         return self.child
 
-    def show_ghost(self, ghost_widget):
-        self._ghost = ghost_widget
-        self.pack_start(ghost_widget, True, True, 0)
-        ghost_widget.show()
+    def show_ghost(self, ghost):
+        self._ghost = ghost
+        self.pack_start(ghost, True, True, 0)
 
-    def clear_ghost(self, ghost_widget=None):
-        """Remove the ghost (only if it's still `ghost_widget`, when given)."""
-        ghost = getattr(self, "_ghost", None)
-        if ghost is None or (ghost_widget is not None and ghost is not ghost_widget):
+    def clear_ghost(self, ghost=None):
+        current = getattr(self, "_ghost", None)
+        if current is None or (ghost is not None and current is not ghost):
             return
-        self.remove(ghost)
+        self.remove(current)
         self._ghost = None
 
     def restore(self, widget):
@@ -136,27 +122,16 @@ class PopSlot(Box):
         widget.show()
         self.set_size_request(-1, -1)
 
-    # called by FlyingOverlay, right after release(): the child is out of the
-    # slot, so it can now switch to its expanded look without resizing the host
-    def on_flight_begin(self):
+    def on_popped(self):
         if hasattr(self.child, "on_popped"):
             self.child.on_popped()
 
-    # called by FlyingOverlay
-    def on_flight_landed(self): ...
-
-    def on_flight_begin_restored(self):
+    def on_restored(self):
         if hasattr(self.child, "on_restored"):
             self.child.on_restored()
 
-    def dismiss(self):
-        self.overlay.request_dismiss(self)
 
-
-class FlyingOverlay(Window, Service):
-    @Signal
-    def flight_restored(self, slot: PopSlot): ...
-
+class FlyingOverlay(Window):
     _shared = None
 
     @classmethod
@@ -184,6 +159,8 @@ class FlyingOverlay(Window, Service):
                 visible=False,
                 all_visible=False,
             )
+            geometry = Gdk.Display.get_default().get_primary_monitor().get_geometry()
+            self.set_default_size(geometry.width, geometry.height)
 
         if glass_mode():
             self.add_style_class("glass")
@@ -192,360 +169,205 @@ class FlyingOverlay(Window, Service):
         # don't close me :(
         self.connect("delete-event", lambda *_: keep_window(self))
 
-        # recomputed every pop
-        display = Gdk.Display.get_default()
-        monitor = display.get_primary_monitor()
-        if not IS_WAYLAND:
-            geometry = monitor.get_geometry()
-            self.screen_width = geometry.width
-            self.screen_height = geometry.height
-            self.set_default_size(self.screen_width, self.screen_height)
-
         self.content_frame = Box()
-        self.content_stack = Stack(transition_duration=180, transition_type="crossfade")
-        self.content_frame.pack_start(self.content_stack, True, True, 0)
-
         self.fixed_canvas = Gtk.Fixed()
         self.fixed_canvas.put(self.content_frame, 0, 0)
-
         self.flying_container = Box(name="flying-tile", children=self.fixed_canvas)
         self.add(self.flying_container)
 
-        self.connect("button-press-event", self._on_background_click)
-
-        self._animator = Animator(
-            bezier_curve=(0.33, 1.0, 0.68, 1.0),  # ease-out-cubic-ish
-            duration=0.3,
-            min_value=0.0,
-            max_value=1.0,
-            tick_widget=self,
-        )
-        self._animator.connect("notify::value", self._on_animator_value_changed)
-        self._animator.connect("finished", self._on_animation_finished)
-
-        self.curr_x = self.curr_y = 0.0
-        self.curr_w = self.curr_h = 0.0
-        self._anim_start = (0.0, 0.0, 0.0, 0.0)
-        self._anim_target = (0.0, 0.0, 0.0, 0.0)
-        self._anim_on_complete = None
-
+        self.screen_width = self.screen_height = 0
+        self.curr_x = self.curr_y = self.curr_w = self.curr_h = 0.0
         self.source_slot = None
         self.source_widget = None
-        self.expanded_factory = None
-        self.expanded_widget = None
-        self._size_watch_handle = None
-        self._pending_resize = None
-        self._handing_off = False  # pop-in ghost is up, waiting for the slot to paint
+        self._closing = False
+        self._size_watch = None
+
+        self._tick_id = None
+        self._from = self._to = (0.0, 0.0, 0.0, 0.0)
+        self._progress = 0.0
+        self._last_frame = None
+        self._on_complete = None
+
+        self.connect("button-press-event", self._on_background_click)
         self.add_keybinding("Escape", lambda *_: self.dismiss())
         self.connect("focus-out-event", lambda *_: self.dismiss())
 
     def _on_background_click(self, _widget, event):
         if self.source_slot is None:
             return False
-        if self._point_in_content(event.x, event.y):
+        if (
+            self.curr_x <= event.x <= self.curr_x + self.curr_w
+            and self.curr_y <= event.y <= self.curr_y + self.curr_h
+        ):
             return False  # click landed on the popped widget itself
         self.dismiss()
         return True
 
-    def _point_in_content(self, x, y):
-        return (
-            self.curr_x <= x <= self.curr_x + self.curr_w
-            and self.curr_y <= y <= self.curr_y + self.curr_h
-        )
+    def _centered(self, w, h):
+        return ((self.screen_width - w) // 2, (self.screen_height - h) // 2, w, h)
 
-    def _monitor_geometry_for(self, x, y):
-        display = Gdk.Display.get_default()
-        monitor = display.get_monitor_at_point(int(x), int(y))
-        if monitor is None:
-            monitor = display.get_primary_monitor()
-        return monitor.get_geometry()
-
-    def pop_out(self, slot: PopSlot, target_size=(320, 200), expanded_factory=None):
+    def pop_out(self, slot: PopSlot, target_size=(320, 200)):
         if self.source_slot is not None:
             return
 
-        gdk_window = slot.get_window()
-        success, origin_x, origin_y = gdk_window.get_origin()
+        success, x, y = slot.get_window().get_origin()
         if IS_WAYLAND:
-            success, x, y = self._get_absolute_position(slot)
-            origin_x, origin_y = origin_x + x, origin_y + y
-
+            success, win_x, win_y = self._get_absolute_position(slot)
+            x, y = x + win_x, y + win_y
         if not success:
             return
 
         alloc = slot.get_allocation()
-        start_x, start_y = origin_x + alloc.x, origin_y + alloc.y
-        start_w, start_h = alloc.width, alloc.height
+        start = (x + alloc.x, y + alloc.y, alloc.width, alloc.height)
 
-        geometry = self._monitor_geometry_for(start_x, start_y)
-        self.screen_width = geometry.width
-        self.screen_height = geometry.height
+        display = Gdk.Display.get_default()
+        monitor = display.get_monitor_at_point(int(start[0]), int(start[1]))
+        geometry = (monitor or display.get_primary_monitor()).get_geometry()
+        self.screen_width, self.screen_height = geometry.width, geometry.height
 
         self.source_slot = slot
-        self.expanded_factory = expanded_factory
-        self.orig_x, self.orig_y = start_x, start_y
-        self.orig_w, self.orig_h = start_w, start_h
-
-        GLib.idle_add(
-            self._begin_flight, start_x, start_y, start_w, start_h, target_size
-        )
+        self.orig = start
+        GLib.idle_add(self._begin_flight, start, target_size)
 
     def _get_absolute_position(self, widget):
-        """Compute widget's current absolute (x, y) screen position."""
         toplevel = widget.get_toplevel()
-        win = toplevel.get_window()
         display = Gdk.Display.get_default()
-        monitor = display.get_monitor_at_window(win) or display.get_monitor(0)
+        monitor = display.get_monitor_at_window(
+            toplevel.get_window()
+        ) or display.get_monitor(0)
         geo = monitor.get_geometry()
-
-        # window (toplevel) position via anchors/margins, as before
         win_alloc = toplevel.get_allocation()
-        win_w, win_h = win_alloc.width, win_alloc.height
+        Edge = GtkLayerShell.Edge
 
-        anchored_top = GtkLayerShell.get_anchor(toplevel, GtkLayerShell.Edge.TOP)
-        anchored_bottom = GtkLayerShell.get_anchor(toplevel, GtkLayerShell.Edge.BOTTOM)
-        anchored_left = GtkLayerShell.get_anchor(toplevel, GtkLayerShell.Edge.LEFT)
-        anchored_right = GtkLayerShell.get_anchor(toplevel, GtkLayerShell.Edge.RIGHT)
+        def axis(lo, hi, size, start, length):
+            at_lo = GtkLayerShell.get_anchor(toplevel, lo)
+            at_hi = GtkLayerShell.get_anchor(toplevel, hi)
+            if at_lo:
+                return start + GtkLayerShell.get_margin(toplevel, lo)
+            if at_hi:
+                return start + length - GtkLayerShell.get_margin(toplevel, hi) - size
+            return start + (length - size) // 2
 
-        margin_top = GtkLayerShell.get_margin(toplevel, GtkLayerShell.Edge.TOP)
-        margin_bottom = GtkLayerShell.get_margin(toplevel, GtkLayerShell.Edge.BOTTOM)
-        margin_left = GtkLayerShell.get_margin(toplevel, GtkLayerShell.Edge.LEFT)
-        margin_right = GtkLayerShell.get_margin(toplevel, GtkLayerShell.Edge.RIGHT)
-
-        if anchored_left and not anchored_right:
-            win_x = geo.x + margin_left
-        elif anchored_right and not anchored_left:
-            win_x = geo.x + geo.width - margin_right - win_w
-        elif anchored_left and anchored_right:
-            win_x = geo.x + margin_left
-        else:
-            win_x = geo.x + (geo.width - win_w) // 2
-
-        if anchored_top and not anchored_bottom:
-            win_y = geo.y + margin_top
-        elif anchored_bottom and not anchored_top:
-            win_y = geo.y + geo.height - margin_bottom - win_h
-        elif anchored_top and anchored_bottom:
-            win_y = geo.y + margin_top
-        else:
-            win_y = geo.y + (geo.height - win_h) // 2
-
+        win_x = axis(Edge.LEFT, Edge.RIGHT, win_alloc.width, geo.x, geo.width)
+        win_y = axis(Edge.TOP, Edge.BOTTOM, win_alloc.height, geo.y, geo.height)
         return True, win_x, win_y
 
-    def _begin_flight(self, start_x, start_y, start_w, start_h, target_size) -> bool:
+    def _begin_flight(self, start, target_size):
         slot = self.source_slot
         # keep the slot looking unchanged until the overlay has painted the tile
         ghost = snapshot_widget(slot.child)
         self.source_widget = slot.release()
         if ghost is not None:
             slot.show_ghost(ghost)
-        self.content_stack.add_named(self.source_widget, "collapsed")
-        self.content_stack.set_visible_child_name("collapsed")
+        self.content_frame.pack_start(self.source_widget, True, True, 0)
         self.set_pass_through(False)
         self.flying_container.add_style_class("darken")
 
-        target_w, target_h = target_size
-        target_x = (self.screen_width - target_w) // 2
-        target_y = (self.screen_height - target_h) // 2
-
-        # position content BEFORE mapping the window
-        self.content_frame.set_size_request(int(start_w), int(start_h))
-        self.fixed_canvas.move(self.content_frame, int(start_x), int(start_y))
-
-        if not self.get_visible():
-            self.set_visible(True)
+        self._place(*start)  # before mapping, so the first frame is at the slot
         self.show_all()
-
         if IS_WAYLAND:
             GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.EXCLUSIVE)
 
-        # Let the child grow (e.g. Tile -> menu) only now:
-        # - not before release(): the host (dashboard) would re-lay out with the
-        #   big child and release() would pin the slot at that inflated size
-        #   (under load, e.g. power-saver, this idle callback runs late enough)
-        # - not before show_all(): an unmapped GtkStack skips its transition and
-        #   jumps to full size, which also defeats the grow animation below
-        if hasattr(self.source_slot, "on_flight_begin"):
-            self.source_slot.on_flight_begin()
+        # let the child grow (e.g. Tile -> menu) only now:
+        # - not before release(): the dashboard would re-lay out with the big
+        #   child and release() would pin the slot at that inflated size
+        # - not before show_all(): an unmapped GtkStack skips its transition
+        slot.on_popped()
 
-        self._animate_to(
-            start=(start_x, start_y, start_w, start_h),
-            target=(target_x, target_y, target_w, target_h),
-            on_complete=self._land,
-        )
+        self._animate_to(self._centered(*target_size), self._land)
         if ghost is not None:
-            # the overlay has now shown the tile; the slot can become a hole
             after_frames(self, lambda: slot.clear_ghost(ghost))
         return False
 
     def _land(self):
-        if self.expanded_factory is not None:
-            self.expanded_widget = self.expanded_factory()
-            self.content_stack.add_named(self.expanded_widget, "expanded")
-            self.content_stack.set_visible_child_name("expanded")
-        self._watch_content_size(self.content_stack.get_visible_child())
-
-        if hasattr(self.source_slot, "on_flight_landed"):
-            self.source_slot.on_flight_landed()
-
-    def _watch_content_size(self, widget):
-        self._unwatch_content_size()
-        handle = widget.connect("size-allocate", self._on_content_resized)
-        self._size_watch_handle = (widget, handle)
+        widget = self.source_widget
+        self._size_watch = (
+            widget,
+            widget.connect("size-allocate", self._on_content_resized),
+        )
 
     def _unwatch_content_size(self):
-        if self._size_watch_handle is not None:
-            widget_prev, handle = self._size_watch_handle
-            widget_prev.disconnect(handle)
-            self._size_watch_handle = None
+        if self._size_watch is not None:
+            widget, handle = self._size_watch
+            widget.disconnect(handle)
+            self._size_watch = None
 
-    def _on_content_resized(self, widget, alloc):
-        new_w = widget.get_preferred_width()[1]
-        new_h = widget.get_preferred_height_for_width(new_w)[1]
-        if (new_w, new_h) == (self.curr_w, self.curr_h):
-            return
-
-        if self._animator.playing:
-            # Mid-flight (pop-in/pop-out): don't fight the current
-            # animation, just remember the latest size and re-target
-            # once it settles.
-            self._pending_resize = (new_w, new_h)
-            return
-
-        self._retarget_to_size(new_w, new_h)
-
-    def _retarget_to_size(self, new_w, new_h):
-        target_x = (self.screen_width - new_w) // 2
-        target_y = (self.screen_height - new_h) // 2
-        self._animate_to(
-            start=(self.curr_x, self.curr_y, self.curr_w, self.curr_h),
-            target=(target_x, target_y, new_w, new_h),
-        )
+    def _on_content_resized(self, widget, _alloc):
+        w = widget.get_preferred_width()[1]
+        h = widget.get_preferred_height_for_width(w)[1]
+        if (w, h) != self._to[2:]:
+            self._animate_to(self._centered(w, h))
 
     def dismiss(self):
         if IS_WAYLAND:
             GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.NONE)
 
-        if self.source_slot is None or self._handing_off:
-            return  # nothing popped, or already landing back in the slot
+        if self.source_slot is None or self._closing:
+            return
+        self._closing = True
+        self._unwatch_content_size()
+        self.source_slot.on_restored()
+        self.set_pass_through(True)
+        self.flying_container.remove_style_class("darken")
 
-        def start_shrink():
-            if hasattr(self.source_slot, "on_flight_begin_restored"):
-                self.source_slot.on_flight_begin_restored()
-
-            self.set_pass_through(True)
-            self.flying_container.remove_style_class("darken")
-
-            should_seek = (
-                not self.source_slot.get_mapped()
-            )  # fails when slot is in mid-transition
-
-            if should_seek:
-                self.add_style_class("fade-out")
-                self._animate_to(
-                    start=(self.curr_x, self.curr_y, self.curr_w, self.curr_h),
-                    target=(self.curr_x, self.curr_y, 0, 0),
-                    on_complete=self._finish_dismiss,
-                )
-            else:
-                self._animate_to(
-                    start=(self.curr_x, self.curr_y, self.curr_w, self.curr_h),
-                    target=(self.orig_x, self.orig_y, self.orig_w, self.orig_h),
-                    on_complete=self._finish_dismiss,
-                )
-
-        if self.content_stack.get_visible_child_name() == "expanded":
-            self.content_stack.set_visible_child_name("collapsed")
-            GLib.timeout_add(
-                self.content_stack.get_transition_duration(),
-                lambda: (start_shrink(), False)[1],
+        if self.source_slot.get_mapped():
+            self._animate_to(self.orig, self._finish_dismiss)
+        else:  # slot is off screen (e.g. mid-transition): just shrink away
+            self.add_style_class("fade-out")
+            self._animate_to(
+                (self.curr_x, self.curr_y, 0, 0), self._finish_dismiss
             )
-        else:
-            start_shrink()
 
     def _finish_dismiss(self):
-        slot = self.source_slot
-        self._unwatch_content_size()
-        # must be cleared synchronously: _on_animation_finished checks it right
-        # after this callback and would start a retarget animation on a window
-        # that's about to hide
-        self._pending_resize = None
-
-        # Pop-in handoff: the overlay keeps showing a ghost of the tile at the
-        # slot's position until the slot has painted the real one. Skipped when
-        # the slot isn't on screen (seek/fade-out case): nothing to hand off to.
-        ghost = snapshot_widget(self.source_widget) if slot.get_mapped() else None
+        slot, widget = self.source_slot, self.source_widget
+        # keep showing the tile here until the slot has painted the real one
+        ghost = snapshot_widget(widget) if slot.get_mapped() else None
+        self.content_frame.remove(widget)
         if ghost is not None:
-            self._handing_off = True
-            self.content_stack.add_named(ghost, "ghost")
-            self.content_stack.set_visible_child_full(
-                "ghost", Gtk.StackTransitionType.NONE
-            )
-        else:
-            self.remove_style_class("fade-out")
-
-        if self.expanded_widget is not None:
-            self.content_stack.remove(self.expanded_widget)
-            self.expanded_widget = None
-        self.content_stack.remove(self.source_widget)
-        slot.restore(self.source_widget)
+            self.content_frame.pack_start(ghost, True, True, 0)
+        slot.restore(widget)
 
         def complete():
             self.hide()
             if ghost is not None:
-                self.content_stack.remove(ghost)
+                self.content_frame.remove(ghost)
             self.remove_style_class("fade-out")
-            self.source_slot = None
-            self.source_widget = None
-            self.expanded_factory = None
-            self._pending_resize = None
-            self._handing_off = False
-            self.flight_restored(slot)
+            self.source_slot = self.source_widget = None
+            self._closing = False
 
         if ghost is not None:
             after_frames(slot, complete)
         else:
             complete()
 
-    def _animate_to(self, start, target, on_complete=None):
-        self._anim_start = start
-        self._anim_target = target
-        self._anim_on_complete = on_complete
-        self.curr_x, self.curr_y, self.curr_w, self.curr_h = start
-        self._animator.stop()
-        self._animator.play()
+    def _place(self, x, y, w, h):
+        self.curr_x, self.curr_y, self.curr_w, self.curr_h = x, y, w, h
+        self.content_frame.set_size_request(int(w), int(h))
+        self.fixed_canvas.move(self.content_frame, int(x), int(y))
 
-    def _on_animator_value_changed(self, _animator, _pspec):
-        t = self._animator.value  # already eased into [0, 1]
-        sx, sy, sw, sh = self._anim_start
-        tx, ty, tw, th = self._anim_target
+    def _animate_to(self, target, on_complete=None):
+        self._from = (self.curr_x, self.curr_y, self.curr_w, self.curr_h)
+        self._to = target
+        self._progress = 0.0
+        self._last_frame = None
+        self._on_complete = on_complete
+        if self._tick_id is None:
+            self._tick_id = self.add_tick_callback(self._on_tick)
 
-        self.curr_x = sx + (tx - sx) * t
-        self.curr_y = sy + (ty - sy) * t
-        self.curr_w = sw + (tw - sw) * t
-        self.curr_h = sh + (th - sh) * t
+    def _on_tick(self, _widget, clock):
+        now = clock.get_frame_time()
+        if self._last_frame is not None:
+            step = min(now - self._last_frame, MAX_STEP_US) / FLIGHT_US
+            self._progress = min(self._progress + step, 1.0)
+        self._last_frame = now
 
-        self.content_frame.set_size_request(int(self.curr_w), int(self.curr_h))
-        self.fixed_canvas.move(self.content_frame, int(self.curr_x), int(self.curr_y))
+        eased = 1 - (1 - self._progress) ** 3  # ease-out cubic
+        self._place(*(a + (b - a) * eased for a, b in zip(self._from, self._to)))
+        if self._progress < 1.0:
+            return True
 
-    def _on_animation_finished(self, _animator):
-        cb, self._anim_on_complete = self._anim_on_complete, None
-        if cb:
-            cb()
-        # `finished` fires while we're still inside Animator.do_update_value,
-        # which calls pause() right after - restarting the animator here
-        # synchronously would have that pending pause() rip out the fresh
-        # tick handler we just installed. Defer to the next mainloop turn.
-        if self._pending_resize is not None:
-            GLib.idle_add(self._apply_pending_resize)
-
-    def _apply_pending_resize(self):
-        if self._pending_resize is not None:
-            new_w, new_h = self._pending_resize
-            self._pending_resize = None
-            self._retarget_to_size(new_w, new_h)
+        self._tick_id = None
+        callback, self._on_complete = self._on_complete, None
+        if callback:
+            callback()
         return False
-
-    def request_dismiss(self, slot):
-        if self.source_slot is slot:
-            self.dismiss()

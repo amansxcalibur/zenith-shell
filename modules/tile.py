@@ -150,10 +150,6 @@ class TileSimple(ClippingBox):
 
 
 class TileSmall(Button):
-    """An icon-only toggle tile, for quick switches that don't need a label.
-    The name and state go in the tooltip; subclasses override
-    `handle_state_toggle` and call `set_state` with the real state."""
-
     def __init__(self, markup: str, label: str, **kwargs):
         self.icon = VariableIconLabel(style_classes="tile-icon", icon_text=markup)
         super().__init__(
@@ -341,7 +337,7 @@ class TileSimpleWithMenu(ClippingBox):
             self.menu.add_style_class("contract")
             self.menu.remove_style_class("expand")
             self.stack.set_visible_child(self.overlay)
-            self.get_parent().get_parent().get_parent().get_parent().get_parent().dismiss()
+            self.quick_settings_slot.dismiss()
             return
         # don't switch to the menu here: the tile is still in the dashboard and
         # would resize it. PopSlot calls on_popped() once the tile has left.
@@ -552,7 +548,7 @@ class Tile(ClippingBox):
             self.menu_box.add_style_class("contract")
             self.menu_box.remove_style_class("expand")
             self.stack.set_visible_child(self.overlay)
-            self.get_parent().get_parent().get_parent().get_parent().get_parent().dismiss()
+            self.quick_settings_slot.dismiss()
         else:
             # don't switch to the menu here: the tile is still in the dashboard
             # and would resize it. PopSlot calls on_popped() once it has left.
