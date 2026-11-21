@@ -1,5 +1,6 @@
 import os
 import shutil
+from pathlib import Path
 import setproctitle
 
 from utils.log import setup_logging
@@ -28,6 +29,8 @@ from config.info import SHELL_NAME, HOME_DIR, ROOT_DIR, IS_WAYLAND
 from config.i3.utils import (
     WM,
     is_swayfx,
+    glass_mode,
+    liquid_glass,
     generate_i3_general_config,
     generate_i3_keybinds_config,
     generate_i3_border_theme_config,
@@ -155,8 +158,13 @@ if __name__ == "__main__":
         if event_type != Gio.FileMonitorEvent.CHANGES_DONE_HINT:
             return
 
-        app.set_stylesheet_from_file(
-            get_relative_path("./main.css"),
+        css = Path(get_relative_path("./main.css")).read_text()
+        if glass_mode() and liquid_glass():
+            # picom does the frosting, so the panes thin out to let the bend show
+            css += '\n@import url("styles/liquid.css");\n'
+        app.set_stylesheet_from_string(
+            css,
+            base_path=get_relative_path("."),
             # feast on juggad
             exposed_functions={
                 "mute_slider_img": lambda: (

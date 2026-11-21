@@ -1,0 +1,9 @@
+/* liquid glass on i3, only loaded when picom is our liquid-glass fork.
+   picom bends, frosts and lights the backdrop, so these stay thin */
+:vars {
+  --glass: alpha(var(--glass-tint), 0.22);
+  --glass-window: alpha(var(--glass-tint), 0.35);
+  --glass-dock: alpha(var(--glass-tint), 0.2);
+  --glass-top-bar: alpha(var(--glass-tint), 0.25);
+  --glass-edge: alpha(var(--glass-shine), 0.25);
+}

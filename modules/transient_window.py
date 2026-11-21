@@ -131,6 +131,7 @@ class TransientWindow(Window):
                 visible=False,
                 **kwargs,
             )
+            self.set_role(f"{SHELL_NAME}-osd")  # for picom's liquid glass rule
             # disconnect the X11Window geometry enforcement hook
             if self._size_allocate_hook:
                 self.handler_disconnect(self._size_allocate_hook)

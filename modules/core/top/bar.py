@@ -11,7 +11,7 @@ from fabric.widgets.eventbox import EventBox
 from fabric.widgets.x11 import X11WindowGeometry
 
 from config.config import config
-from config.info import IS_WAYLAND
+from config.info import IS_WAYLAND, SHELL_NAME
 from config.i3.utils import glass_mode
 
 from utils.colors import bind_theme
@@ -66,6 +66,8 @@ class TopBar(Window):
                 all_visible=True,
                 **kwargs,
             )
+            # picom's liquid glass rule finds it by this
+            self.set_role(f"{SHELL_NAME}-top-bar")
         self._pill_ref = pill
         pill.dock_bar = self  # lets the pill open/close us directly
         if glass_mode():

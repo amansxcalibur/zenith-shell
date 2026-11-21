@@ -2,6 +2,7 @@ import os
 import re
 import colorsys
 import functools
+import shutil
 from pathlib import Path
 from loguru import logger
 
@@ -406,7 +407,36 @@ def wm_corner_radius() -> int | None:
 
 @functools.cache
 def glass_mode() -> bool:
-    return bool(config.get("theme.glass")) and IS_WAYLAND and is_swayfx()
+    if not config.get("theme.glass"):
+        return False
+    return is_swayfx() if IS_WAYLAND else liquid_glass()
+
+
+@functools.cache
+def liquid_glass() -> bool:
+    # our picom fork (liquid-glass branch) bends whatever is behind the shell
+    if IS_WAYLAND:
+        return False
+    return any(_has_liquid_glass(exe) for exe in _picom_binaries())
+
+
+def _picom_binaries():
+    # the running one first, the shell can beat picom to the session though
+    for pid in filter(str.isdigit, os.listdir("/proc")):
+        try:
+            if Path(f"/proc/{pid}/comm").read_text().strip() == "picom":
+                yield f"/proc/{pid}/exe"
+        except OSError:
+            continue
+    if path := shutil.which("picom"):
+        yield path
+
+
+def _has_liquid_glass(exe: str) -> bool:
+    try:
+        return b"liquid-glass" in Path(exe).read_bytes()
+    except OSError:
+        return False
 
 
 def is_swayfx() -> bool:

@@ -161,6 +161,7 @@ class FlyingOverlay(Window):
             )
             geometry = Gdk.Display.get_default().get_primary_monitor().get_geometry()
             self.set_default_size(geometry.width, geometry.height)
+            self.set_role(f"{SHELL_NAME}-flying")  # for picom's liquid glass rule
 
         if glass_mode():
             self.add_style_class("glass")
