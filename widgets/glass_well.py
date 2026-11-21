@@ -17,10 +17,11 @@ def cut_page_out_of_well(well: Gtk.Widget, page: Gtk.Widget) -> None:
 def cut_out_of_well(
     well: Gtk.Widget,
     holes: Callable[[], Iterable[Gtk.Widget]],
-    color: str = "glass-well",
+    color: str | None = "glass-well",
     clip: Gtk.Widget | None = None,
+    css_holes: bool = False,
 ) -> None:
-    well.connect("draw", _draw_well, holes, color, clip)
+    well.connect("draw", _draw_well, holes, color, clip, css_holes)
 
 
 def glass_file_chooser(dialog: Gtk.FileChooserDialog) -> None:
@@ -47,10 +48,24 @@ def _box(widget: Gtk.Widget, well: Gtk.Widget):
     )
 
 
-def _draw_well(well, cr, holes, color_name, clip) -> bool:
-    found, color = well.get_style_context().lookup_color(color_name)
-    if not found:
-        return False
+def _css_hole(cr, hole: Gtk.Widget, box) -> None:
+    # the hole's own css shape, so per-corner radii (:last-child etc) carry over
+    context = hole.get_style_context()
+    context.save()
+    context.add_class("well-hole")
+    Gtk.render_background(context, cr, *box[:4])
+    context.restore()
+
+
+def _draw_well(well, cr, holes, color_name, clip, css_holes) -> bool:
+    context = well.get_style_context()
+    if color_name is None:
+        # no name, the well's own outline-color is the fill
+        color = context.get_property("outline-color", well.get_state_flags())
+    else:
+        found, color = context.lookup_color(color_name)
+        if not found:
+            return False
     cr.push_group()
     rounded_rect(cr, *_box(well, well))
     Gdk.cairo_set_source_rgba(cr, color)
@@ -62,7 +77,10 @@ def _draw_well(well, cr, holes, color_name, clip) -> bool:
         cr.clip()
     for hole in holes():
         if hole.get_mapped() and (box := _box(hole, well)):
-            rounded_rect(cr, *box)
+            if css_holes:
+                _css_hole(cr, hole, box)
+            else:
+                rounded_rect(cr, *box)
     cr.fill()
     cr.pop_group_to_source()
     cr.paint()

@@ -326,8 +326,6 @@
    the panes elsewhere */
 .light.glass #power-profile-icon,
 .light .glass #power-profile-icon,
-.light.glass #systray,
-.light .glass #systray,
 .light.glass #weather-mini-container,
 .light .glass #weather-mini-container,
 .light.glass #workspaces-container,
@@ -488,7 +486,6 @@
 .glass #orientation-btn,
 .glass #date-time-container,
 .glass #weather-mini-container,
-.glass #systray,
 .glass #power-profile-icon {
   background-color: var(--glass-dock-module);
   box-shadow: inset 0 0 0 1px var(--glass-edge);
@@ -499,7 +496,6 @@
 .glass #dock-module.raised #orientation-btn,
 .glass #dock-module.raised #date-time-container,
 .glass #dock-module.raised #weather-mini-container,
-.glass #dock-module.raised #systray,
 .glass #dock-module.raised #power-profile-icon {
   background-color: var(--glass-dock);
 }
@@ -620,9 +616,40 @@
 }
 
 /*  the system tray  */
-/* stacked on the tray's pane, 0.37 lands near the dock body */
+.glass #systray {
+  background-color: transparent;
+  outline-color: var(--glass-dock-module);
+  box-shadow: inset 0 0 0 1px var(--glass-edge);
+}
+
+.glass #dock-module.raised #systray {
+  outline-color: var(--glass-dock);
+}
+
+.light.glass #systray,
+.light .glass #systray {
+  outline-color: alpha(var(--glass-shine), 0.55);
+}
+
 .glass #tray-button {
-  background-color: alpha(var(--glass-tint), 0.37);
+  background-color: transparent;
+}
+
+.glass #tray-button.well-hole {
+  background-color: black;
+}
+
+.glass #dock-module.raised #tray-button.well-hole {
+  background-color: transparent;
+}
+
+.glass #tray-button.last {
+  border-radius: 8px 18px 18px 8px;
+}
+
+.glass .dock-left #tray-button.last,
+.glass .dock-right #tray-button.last {
+  border-radius: 8px 8px 18px 18px;
 }
 
 .glass #systray-notif-btn:hover {
@@ -644,8 +671,6 @@
   background-color: transparent;
 }
 
-/* the shape standing in for a missing image: light mode's tone vanishes on a
-   white pane */
 .light.glass #notif-expressive-shape-container,
 .light .glass #notif-expressive-shape-container {
   color: var(--surface-bright);

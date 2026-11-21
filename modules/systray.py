@@ -2,11 +2,14 @@ from loguru import logger
 
 from fabric.widgets.box import Box
 from fabric.widgets.button import Button
+from fabric.widgets.image import Image
 from fabric.widgets.overlay import Overlay
 from fabric.utils.helpers import exec_shell_command_async
 
 from modules.notifications.notification import NotificationNotifier
+from config.i3.utils import glass_mode
 from widgets.clipping_box import ClippingBox
+from widgets.glass_well import cut_out_of_well
 from widgets.variable_font_label import VariableIconLabel
 from utils.cursor import add_hover_cursor
 from utils.colors import bind_theme
@@ -96,6 +99,19 @@ class SystemTray(Box):
 
         self.add(self.clipper)
 
+        if glass_mode():
+            cut_out_of_well(self, self._tray_buttons, color=None, css_holes=True)
+
+    def _tray_buttons(self):
+        return [c for c in self.clipper.get_children() if c.get_name() == "tray-button"]
+
+    def _mark_last(self):
+        buttons = self._tray_buttons()
+        for button in buttons:
+            button.remove_style_class("last")
+        if buttons:
+            buttons[-1].add_style_class("last")
+
     def on_item_added(self, _, identifier: str):
         item = self.watcher.get_item_for_identifier(identifier)
         if menu := item.get_menu():
@@ -107,10 +123,12 @@ class SystemTray(Box):
         item.connect("removed", lambda *args: self.on_item_removed(item_button))
         self.clipper.add(item_button)
         item_button.show_all()
+        self._mark_last()
         # self.spacer.set_visible(True)
 
     def on_item_removed(self, item_button):
         item_button.destroy()
+        self._mark_last()
         # if len(self.clipper.get_children()) <= 2:
         #     self.spacer.set_visible(False)
 
@@ -152,16 +170,15 @@ class SystemTray(Box):
             self._path_themes[path] = theme
         return self._path_themes[path]
 
-    def do_bake_item_button(self, item: Gray.Item) -> Gtk.Button:
-        button = Gtk.Button()
-
+    def do_bake_item_button(self, item: Gray.Item) -> Button:
+        button = Button(
+            name="tray-button",
+            child=Image(pixbuf=self._item_pixbuf(item)),
+        )
         button.connect(
             "button-press-event",
             lambda button, event: self.on_button_click(button, item, event),
         )
-
-        button.set_image(Gtk.Image.new_from_pixbuf(self._item_pixbuf(item)))
-        button.set_name("tray-button")
         return button
 
     def on_button_click(self, button, item: Gray.Item, event):
