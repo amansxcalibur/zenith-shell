@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "name": "endorsi",
-  "notes": "Battery popup, animated notifications, release update alerts, live corner radius previews (applied on SwayFX), plus fixes."
+  "notes": "Frosted glassmorphism."
 }
