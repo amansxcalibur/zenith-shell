@@ -27,6 +27,7 @@ from utils.helpers import format_accel_to_keybind
 
 from widgets.overrides import Svg
 from widgets.animated_scale import AnimatedScale
+from widgets.slider_gap import cut_slider_gap
 from widgets.variable_font_label import VariableIconLabel
 from widgets.popup_window import PopSlot, FlyingOverlay
 
@@ -74,6 +75,7 @@ class PlayerAudioScaleMaterial3(AnimatedScale):
             value=service_instance._player.props.volume,
             **kwargs,
         )
+        cut_slider_gap(self)
         self.service_instance = service_instance
         self.current = self.service_instance._player.props.volume
         self.max = 1.0

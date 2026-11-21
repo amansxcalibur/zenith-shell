@@ -31,6 +31,8 @@ class BrightnessService(Service):
         self.brightness = -1
         self.max_brightness = -1
         self.brightness_monitor = None
+        self._target: int | None = None
+        self._writing = False
         dev_name = config.BRIGHTNESS_DEV
 
         if dev_name == "auto":
@@ -95,9 +97,35 @@ class BrightnessService(Service):
     def get_max_brightness(self) -> int:
         return self.max_brightness
 
-    def set_brightness(self, percent: int):
-        percent = max(0, min(100, int(percent)))
-        exec_shell_command_async(f"brightnessctl set {percent}%")
+    @property
+    def busy(self) -> bool:
+        return self._writing or self._target is not None
+
+    def set_fraction(self, fraction: float):
+        # one write at a time, latest value wins, else they land out of order
+        if self.max_brightness <= 0:
+            return
+        self._target = round(max(0.0, min(1.0, fraction)) * self.max_brightness)
+        if not self._writing:
+            self._write()
+
+    def _write(self):
+        raw, self._target = self._target, None
+        self._writing = True
+        process = Gio.Subprocess.new(
+            ["brightnessctl", "-q", "set", str(raw)],
+            Gio.SubprocessFlags.STDOUT_SILENCE | Gio.SubprocessFlags.STDERR_SILENCE,
+        )
+        process.wait_async(None, self._written)
+
+    def _written(self, process: Gio.Subprocess, result):
+        process.wait_finish(result)
+        self._writing = False
+        if self._target is not None:
+            self._write()
+        else:
+            self.brightness = self._read_brightness()
+            self.value_changed(self.brightness, self.max_brightness)
 
     def increment_brightness(self):
         exec_shell_command_async("brightnessctl set +5%")

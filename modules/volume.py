@@ -9,6 +9,7 @@ from fabric.widgets.eventbox import EventBox
 from widgets.overrides import Svg
 from widgets.variable_font_label import VariableIconLabel
 from widgets.animated_scale import AnimatedScale, AnimatedCircularScale
+from widgets.slider_gap import cut_slider_gap
 from services.volume_service import MAX_VOLUME, MAX_VOLUME_REASON, VolumeService
 from config.config import config
 import svg
@@ -90,10 +91,11 @@ class BaseMaterial3Slider(AnimatedScale):
             has_origin=True,
             inverted=orientation != "h",
             style_classes="" if orientation == "h" else "vertical",
-            increments=(0.01, 0.1),
+            increments=(0.01, 0.05),
             **kwargs,
         )
         self.add_style_class("vol")  # Shared style class
+        cut_slider_gap(self)
         self.is_muted = False
         self.ui_updating = False
         self.is_dragging = False

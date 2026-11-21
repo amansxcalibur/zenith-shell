@@ -5,6 +5,7 @@ from fabric.widgets.label import Label
 from fabric.widgets.scale import Scale
 from fabric.widgets.button import Button
 from widgets.variable_font_label import VariableIconLabel, VariableFontLabel
+from widgets.slider_gap import cut_slider_gap
 
 import icons
 from ..base import BaseWidget, SliderConfig, SliderControlMixin, LayoutBuilder
@@ -165,6 +166,7 @@ class FontVariationsTab(BaseWidget, SliderControlMixin):
             h_expand=True,
         )
         self.master_scale.set_value(0)
+        cut_slider_gap(self.master_scale)
 
         if self._update_font:
             self.master_scale.connect("value-changed", self._update_font)

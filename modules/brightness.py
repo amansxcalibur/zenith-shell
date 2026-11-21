@@ -12,6 +12,7 @@ from fabric.widgets.eventbox import EventBox
 from config.config import config
 from widgets.variable_font_label import VariableIconLabel
 from widgets.animated_scale import AnimatedScale, AnimatedCircularScale
+from widgets.slider_gap import cut_slider_gap
 from services.brightness_service import BrightnessService
 import icons
 
@@ -38,13 +39,18 @@ class BaseBrightnessSlider(AnimatedScale):
         self.exist = BACKLIGHT_SUPPORTED
         self.add_style_class("brightness")
 
-        self.update_from_user = False
-        self.ui_updating = False
+        self.dragging = False
 
         self.service_instance.connect("value-changed", self.update_brightness_slider)
         self.connect("change-value", self.set_brightness)
+        self.connect("button-press-event", self._on_press, True)
+        self.connect("button-release-event", self._on_press, False)
 
         self.init_brightness()
+
+    def _on_press(self, _widget, _event, pressed: bool) -> bool:
+        self.dragging = pressed
+        return False
 
     def init_brightness(self):
         if self.exist:
@@ -53,23 +59,16 @@ class BaseBrightnessSlider(AnimatedScale):
             self.update_brightness_slider(None, current, max_val)
 
     def update_brightness_slider(self, source, new_value, max_value):
-        if max_value <= 0 or self.ui_updating:
+        # mid-write values are stale, the slider knows better
+        if max_value <= 0 or self.dragging or self.service_instance.busy:
             return
-
-        self.ui_updating = True
         brightness = new_value / max_value
-        if self.update_from_user:
-            self.set_value(brightness)
-        else:
+        if abs(brightness - self.get_value()) * max_value >= 1:
             self.animate_value(brightness)
 
-        self.update_from_user = False
-        self.ui_updating = False
-
     def set_brightness(self, source, scroll_type, value):
-        self.update_from_user = True
-        new_value = int(value * 100)
-        self.service_instance.set_brightness(new_value)
+        self.animator.pause()
+        self.service_instance.set_fraction(value)
 
 
 class BrightnessSlider(BaseBrightnessSlider):
@@ -105,6 +104,8 @@ class BrightnessMaterial3(BaseBrightnessSlider):
             inverted=orientation != "h",
             **kwargs,
         )
+        self.set_increments(0.01, 0.05)  # same scroll step as volume
+        cut_slider_gap(self)
 
 
 class BrightnessSmall(Box):

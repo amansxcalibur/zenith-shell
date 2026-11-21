@@ -9,6 +9,7 @@ from fabric.widgets.scale import Scale
 from fabric.widgets.eventbox import EventBox
 
 from widgets.animated_scale import AnimatedScale
+from widgets.slider_gap import cut_slider_gap
 from widgets.clipping_box import ClippingBox
 from widgets.variable_font_label import VariableFontLabel
 
@@ -149,6 +150,7 @@ class LayoutBuilder:
             h_expand=True,
         )
         scale.set_value(value)
+        cut_slider_gap(scale)
 
         if callback:
 
@@ -186,6 +188,7 @@ class LayoutBuilder:
             value=initial_val,
         )
         scale.set_round_digits(0)  # whole pixels while dragging
+        cut_slider_gap(scale, radius=5)
 
         def on_value_changed(s):
             val = int(s.get_value())

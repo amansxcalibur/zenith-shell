@@ -8,6 +8,7 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 import icons
 from services.volume_service import AppStream, SoundDevice, VolumeService
 from widgets.variable_font_label import VariableIconLabel
+from widgets.slider_gap import cut_slider_gap
 
 import gi
 
@@ -269,6 +270,7 @@ class AppCard(Box):
             digits=2,  # fabric's default of 1 would round drags to 10% steps
             h_expand=True,
         )
+        cut_slider_gap(self.slider, radius=2, gap=3)
         self.slider.connect("change-value", self._on_change, service)
         for signal, pressed in (
             ("button-press-event", True),

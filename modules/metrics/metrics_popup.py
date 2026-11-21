@@ -17,6 +17,7 @@ from services.power_profiles import power_profiles_service
 
 from widgets.clipping_box import ClippingBox
 from widgets.page_tabs import PageTabs
+from widgets.slider_gap import cut_slider_gap
 from widgets.graphs import (
     AnimatedBarGraph,
     CircularGraph,
@@ -341,6 +342,7 @@ class Metrics(Box):
             value=HISTORY_DEF,
             tooltip_text="Seconds of history shown in the CPU, memory and network graphs",
         )
+        cut_slider_gap(slider, radius=5)
         value_label = Label(
             label=f"{HISTORY_DEF}s", style_classes="metrics-graph-value"
         )
