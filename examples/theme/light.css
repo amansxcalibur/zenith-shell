@@ -1,0 +1,94 @@
+:vars {
+  --background: #fef8f4;
+  --on-background: #1d1b19;
+  --foreground: #1d1b19;
+  --cursor: #1d1b19;
+
+  /* M3 Surface Tones */
+  --surface-dim: #ded9d5;
+  --surface-dull: #f8f3ee;
+  --surface: #fef8f4;
+  --surface-bright: #a9a39b;
+  --true-surface-bright: #ffffff;
+  --surface-semi-bright: #cdc6b4;
+
+  /* M3 Surface Containers */
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f8f3ee;
+  --surface-container: #f2ede8;
+  --surface-container-high: #ece7e3;
+  --surface-container-highest: #e6e2dd;
+
+  /* Variants & Outlines */
+  --surface-variant: #e6e2dd;
+  --on-surface: #1d1b19;
+  /* glass mode */
+  --glass-shine: var(--true-surface-bright);
+  --glass-tint: var(--surface-dim);
+  --glass-well: alpha(var(--shadow), 0.45);
+  --on-surface-variant: #484643;
+  --outline: #797773;
+  --outline-variant: #cac6c1;
+
+  /* Primary */
+  --primary: #6e5e25;
+  --on-primary: #ffffff;
+  --primary-container: #ebe2c6;
+  --on-primary-container: #1f1c0a;
+  --primary-fixed: #ebe2c6;
+  --primary-fixed-dim: #cfc6ab;
+  --on-primary-fixed: #1f1c0a;
+  --on-primary-fixed-variant: #4c4732;
+
+  /* Secondary */
+  --secondary: #635e50;
+  --on-secondary: #ffffff;
+  --secondary-container: #e9e2d0;
+  --on-secondary-container: #1e1c10;
+  --secondary-fixed: #e9e2d0;
+  --secondary-fixed-dim: #cdc6b4;
+  --on-secondary-fixed: #1e1c10;
+  --on-secondary-fixed-variant: #4b4739;
+
+  /* Tertiary */
+  --tertiary: #665e40;
+  --on-tertiary: #ffffff;
+  --tertiary-container: #ede2bc;
+  --on-tertiary-container: #201b04;
+  --tertiary-fixed: #ede2bc;
+  --tertiary-fixed-dim: #d1c6a2;
+  --on-tertiary-fixed: #201b04;
+  --on-tertiary-fixed-variant: #4d472b;
+
+  /* Error */
+  --error: #ba1a1a;
+  --error-dim: #8d1414;
+  --on-error: #ffffff;
+  --error-container: #ffdad6;
+  --on-error-container: #410002;
+
+  /* Inverse */
+  --inverse-surface: #32302d;
+  --inverse-on-surface: #f5f0eb;
+  --inverse-primary: #cfc6ab;
+
+  /* Effects */
+  --shadow: #e9e2d0;
+  --scrim: #000000;
+
+  --red: #71594f;
+  --red-dim: #53413a;
+  --green: #5b614e;
+  --green-dim: #404537;
+  --yellow: #625f49;
+  --yellow-dim: #454333;
+  --blue: #5d5d6c;
+  --blue-dim: #454551;
+  --magenta: #70585c;
+  --magenta-dim: #534245;
+  --cyan: #51625d;
+  --cyan-dim: #3a4643;
+  --white: #516164;
+  --pink: #715951;
+  --light-pink: #715953;
+}

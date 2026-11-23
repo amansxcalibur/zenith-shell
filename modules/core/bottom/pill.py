@@ -198,7 +198,7 @@ class Pill(Window, Service):
                 "map-event", lambda *_: self.canvas.reapply_input_shape()
             )
 
-        self.add_keybinding("Escape", lambda *_: self.close())
+        self.add_keybinding("Escape", self._on_escape)
 
         # drag events
         self.connect("button-press-event", self.on_button_press)
@@ -303,6 +303,10 @@ class Pill(Window, Service):
                 self.launcher.search_entry.grab_focus(),
             ),
         )
+
+    def _on_escape(self, *_):
+        if not self.wallpaper.close_switcher():
+            self.close()
 
     def close(self, *_):
         self._close_view()

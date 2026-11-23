@@ -21,6 +21,7 @@ class ThemeSwitchTile(TileSimple):
             **kwargs,
         )
         self.service = ThemeService()
+        self.service.connect("theme-changed", lambda *_: self.update_visual())
         self.update_visual()
 
     def update_visual(self):

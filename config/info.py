@@ -26,4 +26,5 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 CONFIG_DIR = os.path.expanduser(f"{ROOT_DIR}/config/")
 USER_CONFIG_DIR = os.path.join(GLib.get_user_config_dir(), f"{SHELL_NAME}-shell")
 CONFIG_FILE = os.path.join(USER_CONFIG_DIR, "config.json")
+THEMES_DIR = os.path.join(USER_CONFIG_DIR, "themes")
 DATA_DIR = os.path.expanduser(f"{ROOT_DIR}/data/")

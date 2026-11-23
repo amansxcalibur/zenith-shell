@@ -1,0 +1,93 @@
+:vars {
+  --background: ${base};
+  --on-background: ${text};
+  --foreground: ${text};
+  --cursor: ${rosewater};
+
+  /* M3 Surface Tones */
+  --surface-dim: ${base};
+  --surface-dull: ${mantle};
+  --surface: ${base};
+  --surface-bright: ${surface0};
+  --surface-semi-bright: mix(${base}, ${surface0}, 0.5);
+
+  /* M3 Surface Containers */
+  --surface-container-lowest: ${mantle};
+  --surface-container-low: ${base};
+  --surface-container: mix(${base}, ${surface0}, 0.5);
+  --surface-container-high: ${surface0};
+  --surface-container-highest: ${surface1};
+
+  /* Variants & Outlines */
+  --surface-variant: ${surface1};
+  --on-surface: ${text};
+  /* glass mode */
+  --glass-shine: alpha(var(--on-surface), 0.2);
+  --glass-tint: var(--surface);
+  --glass-well: alpha(var(--shadow), 0.3);
+  --on-surface-variant: ${subtext1};
+  --outline: ${overlay1};
+  --outline-variant: ${surface1};
+
+  /* Primary */
+  --primary: ${accent};
+  --on-primary: ${base};
+  --primary-container: mix(${accent}, ${base}, 0.75);
+  --on-primary-container: ${text};
+  --primary-fixed: ${accent};
+  --primary-fixed-dim: shade(${accent}, 0.85);
+  --on-primary-fixed: ${base};
+  --on-primary-fixed-variant: mix(${accent}, ${crust}, 0.6);
+
+  /* Secondary */
+  --secondary: ${lavender};
+  --on-secondary: ${base};
+  --secondary-container: mix(${lavender}, ${base}, 0.75);
+  --on-secondary-container: ${text};
+  --secondary-fixed: ${lavender};
+  --secondary-fixed-dim: shade(${lavender}, 0.85);
+  --on-secondary-fixed: ${base};
+  --on-secondary-fixed-variant: mix(${lavender}, ${crust}, 0.6);
+
+  /* Tertiary */
+  --tertiary: ${teal};
+  --on-tertiary: ${base};
+  --tertiary-container: mix(${teal}, ${base}, 0.75);
+  --on-tertiary-container: ${text};
+  --tertiary-fixed: ${teal};
+  --tertiary-fixed-dim: shade(${teal}, 0.85);
+  --on-tertiary-fixed: ${base};
+  --on-tertiary-fixed-variant: mix(${teal}, ${crust}, 0.6);
+
+  /* Error */
+  --error: ${red};
+  --error-dim: shade(${red}, 0.9);
+  --on-error: ${base};
+  --error-container: mix(${red}, ${base}, 0.8);
+  --on-error-container: ${text};
+
+  /* Inverse */
+  --inverse-surface: ${text};
+  --inverse-on-surface: ${base};
+  --inverse-primary: shade(${accent}, 0.6);
+
+  /* Effects */
+  --shadow: ${crust};
+  --scrim: #000000;
+
+  --red: ${red};
+  --red-dim: shade(${red}, 0.9);
+  --green: ${green};
+  --green-dim: shade(${green}, 0.9);
+  --yellow: ${yellow};
+  --yellow-dim: shade(${yellow}, 0.9);
+  --blue: ${blue};
+  --blue-dim: shade(${blue}, 0.9);
+  --magenta: ${pink};
+  --magenta-dim: shade(${pink}, 0.9);
+  --cyan: ${teal};
+  --cyan-dim: shade(${teal}, 0.9);
+  --white: ${subtext0};
+  --pink: ${flamingo};
+  --light-pink: ${rosewater};
+}

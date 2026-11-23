@@ -152,6 +152,8 @@ brightness_low: MaterialIcon = _M("\uf7e8")
 brightness_medium: MaterialIcon = _M("\ue3ab")
 brightness_high: MaterialIcon = _M("\ue1ac")
 contrast: MaterialIcon = _M("\ueb37")
+light_mode: MaterialIcon = _M("\ue518")
+dark_mode: MaterialIcon = _M("\ue51c")
 blur: MaterialIcon = _M("\ue3a5")
 night_off: MaterialIcon = _M("\uf162")
 

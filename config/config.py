@@ -14,7 +14,7 @@ from .bindings import (
     hydrate_binding_config,
     build_resolved_binding_instances,
 )
-from .info import TEMP_DIR, CACHE_DIR, USER_CONFIG_DIR, CONFIG_FILE
+from .info import TEMP_DIR, CACHE_DIR, THEMES_DIR, USER_CONFIG_DIR, CONFIG_FILE
 
 from gi.repository import GLib  # type: ignore
 
@@ -36,7 +36,15 @@ DEFAULTS = {
         "BRIGHTNESS_DEV": "auto",
         "IGNORED_PLAYERS": ["playerctld", "kdeconnect", "plasma-browser-integration"],
     },
-    "theme": {"mode": "dark", "scheme": "fidelity", "glass": False},
+    "theme": {
+        "mode": "dark",
+        "scheme": "fidelity",
+        "glass": False,
+        "source": "matugen",
+        "flavor": "mocha",
+        "accent": "mauve",
+        "custom_theme": "",
+    },
     "paths": {"WALLPAPERS_DIR": "~/Pictures/Wallpapers/"},
     "screen_corners": {"enabled": False, "props": {"radius": 20}},
     "bar": {
@@ -387,6 +395,11 @@ class ConfigManager(Service):
             if not path.exists():
                 path.mkdir(parents=True, exist_ok=True)
                 logger.info(f"Created system directory: {path}")
+
+        try:
+            os.makedirs(THEMES_DIR, exist_ok=True)
+        except OSError as e:
+            logger.warning(f"Couldn't create {THEMES_DIR}: {e}")
 
         user_paths = self._data.get("paths", {})
         for key, folder_path in user_paths.items():

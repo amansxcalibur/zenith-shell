@@ -173,9 +173,6 @@
 .glass #clipboard-row.hover,
 .glass #clipboard-row.selected,
 .glass #clipboard-row.pressed,
-.glass #scheme-dropdown > * > *:hover,
-.glass #scheme-dropdown > * > *:focus,
-.glass #scheme-dropdown cellview:selected,
 .glass #calendar-month-btn:hover,
 .glass .calendar-nav-btn:hover,
 .glass .menu-item:hover,
@@ -721,9 +718,28 @@ menu.glass {
   box-shadow: inset 0 1px 0 0 var(--glass-highlight);
 }
 
-.glass #scheme-dropdown {
+.glass #theme-switcher {
   background-color: var(--glass-pane);
   box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+}
+
+.glass #theme-options,
+.glass #mode-button {
+  background-color: var(--glass-well);
+}
+
+.glass #mode-button:hover {
+  background-color: var(--glass-pane-hover);
+}
+
+.glass #variant-panel.expanded {
+  background-color: mix(var(--glass-tint), var(--shadow), 0.3);
+}
+
+/* open panels sit over the wallpapers */
+.glass #source-panel.expanded,
+.glass #accent-panel.expanded {
+  background-color: var(--glass-tint);
 }
 
 .glass #zenith-logo {

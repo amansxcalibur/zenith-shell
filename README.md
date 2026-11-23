@@ -124,6 +124,19 @@ Run `zenith-shell setup` for a menu. On zsh, add `fpath=(~/.local/share/zsh/site
 
 Use `zenith-shell settings`, or edit `~/.config/zenith-shell/config.json` and restart the shell.
 
+### Custom themes
+
+Create a folder in `~/.config/zenith-shell/themes/` and add your colors as `light.css` and `dark.css`:
+
+```
+~/.config/zenith-shell/themes/
+└── my-theme/
+    ├── light.css
+    └── dark.css
+```
+
+Start from the [example theme](examples/theme). Once it's done, restart the shell and it'll be in the wallpaper selector under `custom`.
+
 ### Updating
 
 ```bash

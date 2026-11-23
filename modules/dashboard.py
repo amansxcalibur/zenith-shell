@@ -15,7 +15,7 @@ from modules.agenda import AgendaApp
 from modules.weather import WeatherPill
 from modules.bluetooth import Bluetooth
 from modules.wavy_clock import WavyClock
-from modules.theme import ThemeSwitchTile
+from modules.theme.tile import ThemeSwitchTile
 from modules.quick_toggles import CaffeineTile, AirplaneModeTile
 from modules.player_mini import PlayerContainerMini
 from modules.notifications.notification import NotificationTile

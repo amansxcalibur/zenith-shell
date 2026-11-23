@@ -29,6 +29,8 @@ from config.config import config
 from widgets.glass_well import glass_file_chooser
 from config.info import CACHE_DIR, IS_WAYLAND
 
+from modules.theme.switcher import ThemeSwitcher, ThemeSwitcherSlot
+
 from services.theme import ThemeService
 
 from utils.colors import bind_theme
@@ -246,17 +248,6 @@ class WallpaperService(Service):
 class WallpaperSelector(Box):
     COLUMNS: int = 7
     IMG_THUMB_SIZE: int = 96
-    DEFAULT_SCHEME = "scheme-fidelity"
-    SCHEMES = {  # noqa: RUF012
-        "scheme-tonal-spot": "Tonal Spot",
-        "scheme-content": "Content",
-        "scheme-expressive": "Expressive",
-        "scheme-fidelity": "Fidelity",
-        "scheme-fruit-salad": "Fruit Salad",
-        "scheme-monochrome": "Monochrome",
-        "scheme-neutral": "Neutral",
-        "scheme-rainbow": "Rainbow",
-    }
     # ignores CapsLock, NumLock, etc.
     _CORE_MODS = (
         Gdk.ModifierType.SHIFT_MASK
@@ -336,25 +327,10 @@ class WallpaperSelector(Box):
         self.search_entry.props.xalign = 0.5
         self.search_entry.connect("notify::text", self._on_search_changed)
 
-        self.scheme_dropdown = Gtk.ComboBoxText()
-        self.scheme_dropdown.set_name("scheme-dropdown")
-        self.scheme_dropdown.set_tooltip_text("Select color scheme")
-        # the combo's focusable part is its internal toggle button (nested in an
-        # internal box), which set_can_focus on the combo itself doesn't reach
-        self._no_focus_recursive(self.scheme_dropdown)
-        for key, display_name in self.SCHEMES.items():
-            self.scheme_dropdown.append(key, display_name)
-
-        saved = str(self.theme_service.theme_config.get("scheme") or "")
-        if saved and not saved.startswith("scheme-"):
-            saved = f"scheme-{saved}"
-        self.scheme_dropdown.set_active_id(
-            saved if saved in self.SCHEMES else self.DEFAULT_SCHEME
-        )
-        self.scheme_dropdown.connect("notify::popup-shown", self._on_popup_shown)
-        menu = self.scheme_dropdown.get_popup_accessible()
-        if glass_mode() and menu is not None:
-            menu.get_widget().get_style_context().add_class("glass")
+        self.theme_switcher = ThemeSwitcher()
+        self.theme_switcher.connect("scheme-picked", self._on_scheme_picked)
+        self.theme_switcher.connect("open-changed", self._on_switcher_open_changed)
+        self.theme_switcher_slot = ThemeSwitcherSlot(self.theme_switcher)
 
         self.wall_dir_path_label = Label(
             style="color: var(--foreground); font-size: 14px",
@@ -425,7 +401,7 @@ class WallpaperSelector(Box):
                         self.search_entry,
                     ],
                 ),
-                self.scheme_dropdown,
+                self.theme_switcher_slot,
                 close_btn,
             ],
         )
@@ -476,6 +452,13 @@ class WallpaperSelector(Box):
         self.stack.set_homogeneous(False)
 
         shadow = Box(name="wallpaper-overlay")
+        # a press anywhere else closes the open panel
+        self.switcher_scrim = EventBox(events="button-press")
+        self.switcher_scrim.set_no_show_all(True)
+        self.switcher_scrim.hide()
+        self.switcher_scrim.connect(
+            "button-press-event", lambda *_: self.close_switcher()
+        )
         self.overlay = Overlay(
             v_expand=True,
             child=Box(
@@ -484,7 +467,7 @@ class WallpaperSelector(Box):
                 orientation="v",
                 children=[self.stack, self.header_box],
             ),
-            overlays=shadow,
+            overlays=[shadow, self.switcher_scrim, self.theme_switcher],
         )
         self.overlay.set_overlay_pass_through(shadow, True)
 
@@ -515,33 +498,25 @@ class WallpaperSelector(Box):
             keyval, mods = Gtk.accelerator_parse(binds[f"wallpaper.{name}"])
             return keyval, int(mods)
 
-        C = self.COLUMNS
         self._keymap = {
-            key("scheme_prev"): lambda: self._cycle_scheme(-1),
-            key("scheme_next"): lambda: self._cycle_scheme(1),
-            key("scheme_open"): lambda: self.scheme_dropdown.popup(),
-            key("move_up"): lambda: self._move_selection(-C),
-            key("move_down"): lambda: self._move_selection(C),
-            key("move_left"): lambda: self._move_selection(-1),
-            key("move_right"): lambda: self._move_selection(1),
+            key("scheme_prev"): lambda: self.theme_switcher.cycle_variant(-1),
+            key("scheme_next"): lambda: self.theme_switcher.cycle_variant(1),
+            key("scheme_open"): self.theme_switcher.toggle_variants,
+            key("move_up"): lambda: self._navigate(0, -1),
+            key("move_down"): lambda: self._navigate(0, 1),
+            key("move_left"): lambda: self._navigate(-1, 0),
+            key("move_right"): lambda: self._navigate(1, 0),
             key("activate"): self._activate_selected,
         }
 
-    # the search entry is the only focusable widget here. The scheme popup and
-    # dir dialog can still steal focus, so they hand it back via focus_search()
+    # the search entry is the only focusable widget here. The dir dialog
+    # can still steal focus, so it hands it back via focus_search()
 
     @staticmethod
     def _no_focus(widget):
         widget.set_can_focus(False)
         if hasattr(widget, "set_focus_on_click"):
             widget.set_focus_on_click(False)
-
-    @classmethod
-    def _no_focus_recursive(cls, widget):
-        cls._no_focus(widget)
-        if isinstance(widget, Gtk.Container):
-            # forall (unlike get_children) includes internal children
-            widget.forall(cls._no_focus_recursive)
 
     def focus_search(self):
         entry = self.search_entry
@@ -554,9 +529,20 @@ class WallpaperSelector(Box):
         self.search_entry.set_text("")
         self.focus_search()
 
-    def _on_popup_shown(self, combo, _pspec):
-        if not combo.get_property("popup-shown"):
+    def _on_scheme_picked(self, _switcher, scheme: str):
+        current = self._current_path or self.wallpaper_service.get_wallpaper_path()
+        if current:
+            self.theme_service.generate_theme(current, scheme)
+        else:
+            self.theme_service.theme_config.set("scheme", scheme)
+
+    def _on_switcher_open_changed(self, _switcher, is_open: bool):
+        self.switcher_scrim.set_visible(is_open)
+        if not is_open:
             self.focus_search()
+
+    def close_switcher(self) -> bool:
+        return self.theme_switcher.close()
 
     def _on_hover_enter(self, widget, event):
         if event.detail != Gdk.NotifyType.INFERIOR:
@@ -570,7 +556,7 @@ class WallpaperSelector(Box):
 
     def set_header_controls_state(self, active: bool):
         opacity = 1.0 if active else 0.5
-        for w in (self.search_entry, self.scheme_dropdown):
+        for w in (self.search_entry, self.theme_switcher):
             w.set_sensitive(active)
             w.set_opacity(opacity)
 
@@ -821,6 +807,7 @@ class WallpaperSelector(Box):
         return [c for c in self.viewport.get_children() if q in c.file_name.lower()]
 
     def _on_search_changed(self, entry, *_):
+        self.close_switcher()
         self.arrange_viewport()
 
     def arrange_viewport(self, *_):
@@ -856,6 +843,12 @@ class WallpaperSelector(Box):
             y - TOP_MARGIN, y + child.get_allocated_height()
         )
 
+    def _navigate(self, dx: int, dy: int):
+        if panel := self.theme_switcher.open_panel:
+            panel.move_cursor(dx, dy)
+        else:
+            self._move_selection(dx + dy * self.COLUMNS)
+
     def _move_selection(self, delta: int):
         visible = self._visible_children()
         if not visible:
@@ -868,6 +861,9 @@ class WallpaperSelector(Box):
         self._select(visible[max(0, min(idx, len(visible) - 1))])
 
     def _activate_selected(self):
+        if panel := self.theme_switcher.open_panel:
+            panel.activate_cursor()
+            return
         selected = self.viewport.get_selected_children()
         if selected:
             self.on_wallpaper_selected(self.viewport, selected[0])
@@ -883,7 +879,7 @@ class WallpaperSelector(Box):
 
     def on_wallpaper_selected(self, flowbox, child):
         full_path = self._full_path(child.file_name)
-        scheme = self.scheme_dropdown.get_active_id()
+        scheme = self.theme_switcher.scheme
 
         self.wallpaper_service.apply_wallpaper(full_path)
         # preview before the lockscreen: it's what the user sees (player bg)
@@ -910,12 +906,6 @@ class WallpaperSelector(Box):
             return False
 
         GLib.idle_add(_sync)
-
-    def _cycle_scheme(self, delta: int):
-        ids = list(self.SCHEMES)
-        current = self.scheme_dropdown.get_active_id()
-        idx = ids.index(current) if current in ids else 0
-        self.scheme_dropdown.set_active((idx + delta) % len(ids))
 
     def on_search_entry_key_press(self, widget, event):
         mods = int(event.state & self._CORE_MODS)

@@ -6,10 +6,6 @@
 
   /* M3 Surface Tones */
   --surface-dim: {{colors.surface_dim.light.hex}};
-  /* Same role names as dark, tuned for a light ladder (lightest to darkest):
-     true-surface-bright, surface, surface-dull, shadow (the shell's base),
-     surface-semi-bright, surface-bright. These start from M3 tones because
-     HSL-darkening a near-white surface keeps its saturation and turns it peach. */
   --surface-dull: {{colors.surface_container_low.light.hex}};
   --surface: {{colors.surface.light.hex}};
   --surface-bright: {{colors.outline_variant.light.hex | lighten: -14.0}};
@@ -26,9 +22,7 @@
   /* Variants & Outlines */
   --surface-variant: {{colors.surface_variant.light.hex}};
   --on-surface: {{colors.on_surface.light.hex}};
-  /* glass mode (styles/glass.css): the light on panes, edges and
-     highlights, the tint of the frames, and the well around a sidebar and
-     page (widgets/glass_well.py) */
+  /* glass mode */
   --glass-shine: var(--true-surface-bright);
   --glass-tint: var(--surface-dim);
   --glass-well: alpha(var(--shadow), 0.45);
