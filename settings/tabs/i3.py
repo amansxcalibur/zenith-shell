@@ -7,20 +7,20 @@ from widgets.wrap_box import WrapBox
 from widgets.variable_font_label import VariableIconLabel
 
 import icons
-from config.info import IS_WAYLAND
-from config.i3.utils import is_swayfx
 from utils.cursor import add_hover_cursor
 from utils.helpers import bind_group_toggle
 from utils.lock import get_available_external_locker
 from ..state import state
 from ..base import BaseWidget, SectionBuilderMixin, LayoutBuilder
 
+from wm import get_wm
+
 import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # type: ignore
 
-WM = ("SwayFX" if is_swayfx() else "Sway") if IS_WAYLAND else "I3"
+WM = get_wm().label
 
 
 class I3Tab(BaseWidget, SectionBuilderMixin):
@@ -193,7 +193,7 @@ class I3Tab(BaseWidget, SectionBuilderMixin):
                 self._on_border_radius_changed,
                 state.get(["i3", "borders", "props", "corner_radius"]),
             )
-            if is_swayfx()
+            if get_wm().can_round_corners
             else None
         )
 

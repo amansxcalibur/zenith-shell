@@ -11,6 +11,7 @@ from installer.commands.uninstall import cmd_uninstall
 from installer.commands.update import cmd_update
 from installer.system import InstallError, detect_distro
 from installer.ui import NC, OPTS, RED, YELLOW, choose, panel
+from installer.wm import WM_FEATURE
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -26,7 +27,7 @@ def build_parser() -> argparse.ArgumentParser:
     wm.add_argument(
         "--wm",
         default="auto",
-        choices=["auto", "i3", "sway", "all"],
+        choices=["auto", *WM_FEATURE, "all"],
         help="window manager(s) to set up (default: auto, detected)",
     )
     changes = argparse.ArgumentParser(add_help=False)

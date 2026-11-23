@@ -11,12 +11,13 @@ from fabric.widgets.button import Button
 import icons
 
 from config.info import IS_WAYLAND, ROOT_DIR
-from config.i3.utils import is_swayfx
 
 from utils.cursor import add_hover_cursor
 
 from widgets.variable_font_label import VariableFontLabel, VariableIconLabel
 from widgets.zenith_logo import ZenithLogo
+
+from wm import get_wm
 
 from ..state import state
 from ..base import BaseWidget, LayoutBuilder
@@ -104,10 +105,7 @@ class AboutTab(BaseWidget):
     def _build_ui(self):
         self.container = Box(orientation="v", spacing=25)
 
-        if IS_WAYLAND:
-            session = f"Wayland · {'SwayFX' if is_swayfx() else 'Sway'}"
-        else:
-            session = "X11 · i3"
+        session = f"{'Wayland' if IS_WAYLAND else 'X11'} · {get_wm().label}"
 
         summary = Box(
             orientation="v",

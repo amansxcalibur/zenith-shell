@@ -5,9 +5,9 @@ from fabric.widgets.revealer import Revealer
 
 import icons
 
+from config import namespaces
 from config.config import config
-from config.info import IS_WAYLAND, SHELL_NAME
-from config.i3.utils import glass_mode
+from config.info import IS_WAYLAND
 
 from modules.controls import ControlsManager
 
@@ -18,6 +18,8 @@ from utils.colors import bind_theme
 from utils.helpers import keep_window, get_absolute_wayland_widget_position
 
 from widgets.variable_font_label import VariableIconLabel
+
+from wm import glass_mode
 
 if IS_WAYLAND:
     from gi.repository import GtkLayerShell  # type: ignore
@@ -166,7 +168,7 @@ class TransientWindow(Window):
         if IS_WAYLAND:
             super().__init__(
                 name="notification-popup",
-                title=f"{SHELL_NAME}-osd",  # the layer namespace swayfx blurs
+                title=namespaces.OSD,
                 layer="overlay",
                 keyboard_mode="on-demand",
                 anchor="top left",

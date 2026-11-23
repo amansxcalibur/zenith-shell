@@ -8,7 +8,6 @@ from fabric.widgets.centerbox import CenterBox
 import icons
 
 from config.config import config
-from config.i3.utils import glass_mode
 
 from modules.tile import TileSpecial
 from modules.network import Network
@@ -27,6 +26,8 @@ from utils.cursor import add_hover_cursor
 from widgets.glass_well import cut_out_of_well
 from widgets.variable_font_label import VariableIconLabel
 from widgets.popup_window import PopSlot, FlyingOverlay
+
+from wm import glass_mode
 
 
 class Dashboard(Box):

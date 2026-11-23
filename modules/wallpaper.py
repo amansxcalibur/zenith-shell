@@ -26,7 +26,6 @@ from fabric.utils.helpers import exec_shell_command_async
 import icons
 
 from config.config import config
-from config.i3.utils import glass_mode
 from widgets.glass_well import glass_file_chooser
 from config.info import CACHE_DIR, IS_WAYLAND
 
@@ -43,6 +42,8 @@ from utils.lock import (
 from widgets.clipping_box import ClippingBox
 from widgets.variable_font_label import Font, VariableFontLabel, VariableIconLabel
 from widgets.shapes.expressive.morphing_shapes import InteractiveMorphShape
+
+from wm import glass_mode
 
 import gi
 

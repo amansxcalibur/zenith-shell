@@ -6,32 +6,28 @@ from utils.log import setup_logging
 
 setup_logging()
 
-from gi.repository import Gio, GLib  # type: ignore
 from loguru import logger
 
 from fabric import Application
 from fabric.utils import get_relative_path, monitor_file
 
+from config.config import config
+from config.info import SHELL_NAME, HOME_DIR, ROOT_DIR, IS_WAYLAND
+
 from modules.corners import Corners
 from modules.core.top.bar import TopBar
 from modules.core.top.pill import TopPill
-from services.theme import ThemeMode, ThemeService
-from services.update_check import UpdateChecker
-from utils.helpers import sync_settings_theme
 from modules.core.bottom.pill import Pill
 from modules.wallpaper import WallpaperService
 from modules.core.bottom.dock.bar import DockBar
 from modules.transient_window import TransientWindow
 
-from config.config import config
-from config.info import SHELL_NAME, HOME_DIR, ROOT_DIR, IS_WAYLAND
-from config.i3.utils import (
-    WM,
-    is_swayfx,
-    generate_i3_general_config,
-    generate_i3_keybinds_config,
-    generate_i3_border_theme_config,
-)
+from services.update_check import UpdateChecker
+from services.theme import ThemeMode, ThemeService
+
+from utils.helpers import sync_settings_theme
+
+from wm import get_wm
 
 if IS_WAYLAND:
     from modules.core.bottom.shell_wm_wayland import ShellWindowManager
@@ -47,11 +43,13 @@ else:
 
     enable_tooltip_transparency()
 
+from gi.repository import Gio, GLib  # type: ignore
+
 
 def log_startup():
     from gi.repository import Gdk  # type: ignore  # after fabric picks Gdk 3.0
 
-    wm = "swayfx" if IS_WAYLAND and is_swayfx() else WM
+    wm = get_wm().label.lower()
     display = Gdk.Display.get_default()
     monitors = [
         display.get_monitor(i).get_geometry() for i in range(display.get_n_monitors())
@@ -118,9 +116,9 @@ if __name__ == "__main__":
     # set wallpaper and init service
     WallpaperService().initialize()
 
-    # set i3 keybinds. Don't reload yet
-    generate_i3_keybinds_config()
-    generate_i3_general_config()
+    # write the WM config, don't reload yet
+    get_wm().write_keybinds()
+    get_wm().write_general()
 
     pill = Pill()
     dockBar = DockBar(pill=pill)
@@ -191,8 +189,7 @@ if __name__ == "__main__":
                 ),
             },
         )
-        # reloads i3wm
-        generate_i3_border_theme_config(reload=True)
+        get_wm().write_theme(reload=True)
 
     ThemeService().connect(
         "theme-changed",

@@ -1,5 +1,6 @@
 from config.info import IS_WAYLAND
-from services.i3 import I3
+
+from wm import get_wm
 
 import gi
 
@@ -32,13 +33,13 @@ def release_focus(pill) -> None:
     if _open:
         _apply()
     elif not IS_WAYLAND:
-        I3.send_command("focus mode_toggle")
+        get_wm().unfocus_shell_window()
 
 
 def _apply() -> None:
     latest = _open[-1]
     if not IS_WAYLAND:
-        I3.send_command(f'[window_role="^{latest.WIN_ROLE}$"] focus')
+        get_wm().focus_shell_window(latest.WIN_ROLE)
         return
     for pill in _open[:-1]:
         GtkLayerShell.set_keyboard_mode(pill, GtkLayerShell.KeyboardMode.ON_DEMAND)

@@ -12,7 +12,6 @@ import icons
 
 from config.info import ROOT_DIR
 from config.config import config
-from config.i3.utils import glass_mode
 
 from modules.wiggle_bar import WigglyScale
 from modules.audio_panel import DEVICE_ICONS
@@ -30,6 +29,8 @@ from widgets.animated_scale import AnimatedScale
 from widgets.slider_gap import cut_slider_gap
 from widgets.variable_font_label import VariableIconLabel
 from widgets.popup_window import PopSlot, FlyingOverlay
+
+from wm import glass_mode
 
 import gi
 

@@ -7,10 +7,10 @@ from PIL import Image, ImageFilter
 
 from fabric.utils.helpers import exec_shell_command_async
 
-from .helpers import get_screen_resolution_i3
-
 from config.config import config
 from config.info import ROOT_DIR, CACHE_DIR as cache_dir_str, IS_WAYLAND
+
+from wm import get_wm
 
 CACHE_DIR = Path(cache_dir_str)
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -89,7 +89,7 @@ def generate_lockscreen_image(image_path: str | Path) -> Path | None:
     try:
         LOCKSCREEN_RESOURCE_DIR.mkdir(parents=True, exist_ok=True)
 
-        width, height = get_screen_resolution_i3()
+        width, height = get_wm().get_screen_size()
 
         with Image.open(image_path) as img:
             img = img.convert("RGB")

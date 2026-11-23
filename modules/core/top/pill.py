@@ -7,9 +7,9 @@ from fabric.core.service import Service, Signal
 
 import icons
 
+from config import namespaces
 from config.config import config
-from config.info import SHELL_NAME, IS_WAYLAND
-from config.i3.utils import glass_mode
+from config.info import IS_WAYLAND
 
 from modules.notifications.notification import NotificationManager
 
@@ -25,6 +25,8 @@ from widgets.clipping_box import ClippingBox
 from widgets.variable_font_label import VariableIconLabel
 from widgets.elastic.elastic_stack import ElasticStack
 
+from wm import glass_mode
+
 if IS_WAYLAND:
     from gi.repository import GtkLayerShell  # type: ignore
     from fabric.widgets.wayland import WaylandWindow as Window
@@ -36,7 +38,7 @@ if TYPE_CHECKING:
 
 
 class TopPill(Window, Service):
-    WIN_ROLE = f"{SHELL_NAME}-top-pill"
+    WIN_ROLE = namespaces.TOP_PILL
 
     @Signal
     def on_drag(self, drag_state: object, new_x: int, new_y: int): ...

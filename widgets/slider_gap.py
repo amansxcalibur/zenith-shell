@@ -1,7 +1,8 @@
 import cairo
 
-from config.i3.utils import glass_mode
 from widgets.graphs import rounded_rect
+
+from wm import glass_mode
 
 import gi
 

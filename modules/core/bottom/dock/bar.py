@@ -7,9 +7,9 @@ from fabric.widgets.box import Box
 from fabric.widgets.stack import Stack
 from fabric.core.service import Signal
 
+from config import namespaces
 from config.config import config
 from config.info import IS_WAYLAND
-from config.i3.utils import glass_mode
 
 from modules.special import DateTime
 from modules.systray import SystemTray
@@ -17,7 +17,6 @@ from modules.weather import WeatherMini
 from modules.special import ActionButton
 from modules.controls import ControlsManager
 from modules.calendar_popup import CalendarPopup
-from modules.workspaces.workspaces import Workspaces
 from modules.power_profiles import PowerProfilesSelector
 from modules.metrics.metrics import MetricsSmall, Battery
 
@@ -27,6 +26,8 @@ from utils.cursor import add_hover_cursor
 
 from widgets.edge_clip_viewport import EdgeClipViewport
 from widgets.popup_window.shared_popup_window import SharedPopupWindow
+
+from wm import get_wm, glass_mode
 
 from .hole_controller import HoleController
 from .surface import EDGE, HOLE_FLARE, DockSurface
@@ -57,7 +58,7 @@ PILL_HOLE_RADIUS = PILL_RADIUS + EDGE + DOCK_PADDING
 
 
 class DockBar(Window):
-    WIN_ROLE = "zenith-dock"
+    WIN_ROLE = namespaces.DOCK
 
     @Signal
     def insets_changed(self): ...
@@ -119,7 +120,7 @@ class DockBar(Window):
         vertical = self.placement.vertical
 
         self.module_map = {
-            "workspaces": lambda: Workspaces(vertical=vertical),
+            "workspaces": lambda: get_wm().build_workspaces(vertical=vertical),
             "systray": lambda: SystemTray(vertical=vertical),
             "metrics": lambda: MetricsSmall(vertical=vertical),
             "battery": lambda: Battery(vertical=vertical),

@@ -1,4 +1,3 @@
-import os
 import re
 
 from config.wm_conflicts import find_wm_conflicts
@@ -6,19 +5,15 @@ from installer.paths import HOME, SHELL_NAME
 from installer.state import load_state
 from installer.system import have
 from installer.ui import RED, choose, info, panel
+from wm.detect import BACKENDS, detect_session
 
 
 # window manager -> feature set of dependencies it needs
-WM_FEATURE = {"i3": "x11", "sway": "wayland"}
+WM_FEATURE = {wm: display for wm, (display, _) in BACKENDS.items()}
 
 
 def current_wm() -> str | None:
-    desktop = f"{os.environ.get('XDG_CURRENT_DESKTOP', '')} {os.environ.get('DESKTOP_SESSION', '')}".lower()
-    if os.environ.get("SWAYSOCK") or "sway" in desktop:
-        return "sway"
-    if os.environ.get("I3SOCK") or re.search(r"\bi3\b", desktop):
-        return "i3"
-    return None
+    return detect_session()
 
 
 def resolve_wms(choice: str) -> list[str]:
@@ -35,7 +30,7 @@ def resolve_wms(choice: str) -> list[str]:
         wms = [wm for wm in WM_FEATURE if have(wm)]
     if not wms:
         picked = choose(
-            "Which window manager should Zenith be set up for?", ["i3", "sway", "all"]
+            "Which window manager should Zenith be set up for?", [*WM_FEATURE, "all"]
         )
         if picked:
             wms = list(WM_FEATURE) if picked == "all" else [picked]

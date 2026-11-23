@@ -1,7 +1,6 @@
+import cairo
 import functools
 from collections.abc import Callable, Iterable
-
-import cairo
 
 from widgets.graphs import rounded_rect
 
@@ -27,7 +26,7 @@ def cut_out_of_well(
 
 @functools.cache
 def fit_wm_corners() -> None:
-    from config.i3.utils import wm_corner_radius
+    from wm import wm_corner_radius
 
     if (r := wm_corner_radius()) is None:
         return

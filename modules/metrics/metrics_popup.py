@@ -10,7 +10,6 @@ from fabric.widgets.stack import Stack
 from fabric.widgets.overlay import Overlay
 
 import icons
-from config.i3.utils import glass_mode
 
 from services.metrics import IoRates, MetricsProvider, ProcessGroup
 from services.power_profiles import power_profiles_service
@@ -29,6 +28,8 @@ from widgets.graphs import (
 )
 from widgets.shapes.expressive.morphing_shapes import InteractiveMorphShape
 from widgets.variable_font_label import Font, VariableIconLabel, VariableFontLabel
+
+from wm import glass_mode
 
 from gi.repository import GLib  # type: ignore
 

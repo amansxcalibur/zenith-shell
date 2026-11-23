@@ -8,7 +8,8 @@ from fabric.widgets.box import Box
 from services.animator import Animator
 
 from config.config import config
-from config.i3.utils import glass_mode
+
+from wm import glass_mode
 
 from .placement import (
     DOCK_EDGE_BAND,

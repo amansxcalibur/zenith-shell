@@ -20,8 +20,8 @@ from config.bindings import (
     find_keybinding_conflicts,
 )
 from config.config import config
-from config.info import IS_WAYLAND
-from config.wm_conflicts import find_wm_conflicts
+
+from wm import get_wm
 
 import gi
 
@@ -38,7 +38,7 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
         self.entries = {}
         self._rows = {}
         self._overrides = state.get(["bindings", "custom"]) or {}
-        WM, wm = ("Sway", "sway") if IS_WAYLAND else ("i3", "i3")
+        WM, wm = get_wm().label, get_wm().name
 
         self.container.add(
             Label(
@@ -187,8 +187,8 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
 
     def check_wm_conflicts(self):
         """Ask the WM about the saved config, then highlight the rows it names."""
-        wm = "sway" if IS_WAYLAND else "i3"
-        found = find_wm_conflicts(wm)
+        wm = get_wm().name
+        found = get_wm().find_conflicts()
         self._wm_conflicts = {}
         for binding in build_resolved_binding_instances(
             state.get(["bindings"]) or {}

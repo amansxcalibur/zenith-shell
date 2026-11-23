@@ -19,7 +19,6 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 
 import icons
 from config.info import DATA_DIR, CACHE_DIR, USER_CONFIG_DIR, IS_WAYLAND
-from config.i3.utils import glass_mode
 from widgets.glass_well import glass_file_chooser
 from services.animator import CubicBezierCurves
 
@@ -29,6 +28,8 @@ from utils.text_view import add_undo, keep_cursor_visible
 from widgets.variable_font_label import VariableIconLabel
 from widgets.clipping_box import ClippingBox, AnimatedClippingBox
 from widgets.graphs import rounded_rect
+
+from wm import glass_mode
 
 import gi
 

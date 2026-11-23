@@ -5,8 +5,8 @@ from fabric.widgets.stack import Stack
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.revealer import Revealer
 
-from config.info import SHELL_NAME, IS_WAYLAND
-from config.i3.utils import glass_mode
+from config import namespaces
+from config.info import IS_WAYLAND
 from modules.core.bottom.dock.placement import DockEdge, current_placement
 
 from services.animator import Animator
@@ -14,7 +14,10 @@ from services.power_profiles import power_profiles_service
 
 from utils.colors import bind_theme
 from utils.helpers import keep_window, get_absolute_wayland_widget_position
+
 from widgets.clipping_box import ClippingBox
+
+from wm import glass_mode
 
 import gi
 
@@ -68,7 +71,7 @@ class SharedPopupWindow(Window):
             }[self._placement.edge]
             super().__init__(
                 layer="top",
-                title=f"{SHELL_NAME}-popup",
+                title=namespaces.POPUP,
                 keyboard_mode="on-demand",
                 anchor=anchor,
                 exclusivity="none",
@@ -85,7 +88,7 @@ class SharedPopupWindow(Window):
                 **kwargs,
             )
         self._initialized = True
-        self.set_role(f"{SHELL_NAME}-popup")
+        self.set_role(namespaces.POPUP)
 
         if glass_mode():
             self.add_style_class("glass")

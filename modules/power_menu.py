@@ -11,7 +11,8 @@ from utils.lock import lock_screen
 
 import icons
 from config.info import SHELL_NAME
-from services.i3 import I3
+
+from wm import get_wm
 
 
 class PowerMenu(Box):
@@ -65,7 +66,7 @@ class PowerMenu(Box):
     def logout(self, *_):
         logger.info("Logging out...")
         self.close_power_menu()
-        I3.send_command("exit")
+        get_wm().exit_session()
 
     def reboot(self, *_):
         logger.info("Rebooting...")

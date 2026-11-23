@@ -10,15 +10,17 @@ from fabric.widgets.overlay import Overlay
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.x11 import X11WindowGeometry
 
+from config import namespaces
 from config.config import config
 from config.info import IS_WAYLAND
-from config.i3.utils import glass_mode
 
 from utils.colors import bind_theme
 from utils.helpers import keep_window, toggle_class
 from utils.cursor import add_hover_cursor
 
 from widgets.clipping_box import ClippingBox
+
+from wm import glass_mode
 
 import gi
 
@@ -47,7 +49,7 @@ class TopBar(Window):
         if IS_WAYLAND:
             super().__init__(
                 layer="top",
-                title="zenith-top-bar",
+                title=namespaces.TOP_BAR,
                 anchor=f"{pill_config_node.get('POSITION.y')} {pill_config_node.get('POSITION.x')}",
                 exclusivity="none",
                 pass_through=False,

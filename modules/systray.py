@@ -7,13 +7,14 @@ from fabric.widgets.overlay import Overlay
 from fabric.utils.helpers import exec_shell_command_async
 
 from modules.notifications.notification import NotificationNotifier
-from config.i3.utils import glass_mode
 from widgets.clipping_box import ClippingBox
 from widgets.glass_well import cut_out_of_well
 from widgets.variable_font_label import VariableIconLabel
 from utils.cursor import add_hover_cursor
 from utils.colors import bind_theme
 import icons
+
+from wm import glass_mode
 
 import gi
 

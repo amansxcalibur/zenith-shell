@@ -5,9 +5,9 @@ from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.core.service import Service, Signal
 
+from config import namespaces
 from config.config import config
-from config.info import USERNAME, HOSTNAME, IS_WAYLAND, SHELL_NAME
-from config.i3.utils import glass_mode
+from config.info import USERNAME, HOSTNAME, IS_WAYLAND
 
 from modules.dashboard import Dashboard
 from modules.power_menu import PowerMenu
@@ -16,7 +16,6 @@ from modules.controls import ControlsManager
 from modules.clipboard import ClipboardHistory
 from modules.wallpaper import WallpaperSelector
 from modules.launcher import AppLauncher, AppCommands
-from modules.workspaces.workspaces import ActiveWindow
 from modules.core.bottom.dock.surface import EDGE, borders_shown
 from modules.core.bottom.dock.placement import (
     DOCK_EDGE_BAND,
@@ -37,6 +36,8 @@ from utils.helpers import (
 
 from widgets.clipping_box import BorderedClippingBox, ClippingBox
 from widgets.elastic.elastic_stack import ElasticStack
+
+from wm import get_wm, glass_mode
 
 
 import gi
@@ -73,7 +74,7 @@ class Pill(Window, Service):
             super().__init__(
                 # name="pill",
                 layer="top",
-                title=f"{SHELL_NAME}-pill",
+                title=namespaces.PILL,
                 keyboard_mode="none",
                 anchor=f"{pill_config.get('POSITION.y')} {pill_config.get('POSITION.x')}",
                 exclusivity="none",
@@ -120,7 +121,7 @@ class Pill(Window, Service):
         )
 
         # pill-compact
-        self.active_window = ActiveWindow()
+        self.active_window = get_wm().build_active_window()
         self.user = Label(name="user-label", label=f"{USERNAME}@{HOSTNAME}")
         self.dot_placeholder = Box(style="min-width:1px; min-height:1px;")
         self.pill_compact = Stack(

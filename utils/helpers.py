@@ -160,28 +160,6 @@ def get_screen_resolution_gdk() -> tuple[int, int]:
     return geometry.width, geometry.height
 
 
-def get_screen_resolution_i3() -> tuple[int, int]:
-    from fabric.i3.service import I3MessageType
-    from services.i3 import get_i3_connection
-
-    i3_conn = get_i3_connection()
-    i3_response = i3_conn.send_command("", I3MessageType.GET_OUTPUTS)
-
-    active = [
-        o
-        for o in i3_response.reply
-        if o.get("active") and not o["name"].startswith("xroot")
-    ]
-
-    if not active:
-        raise RuntimeError("No active i3 outputs")
-
-    max_x = max(o["rect"]["x"] + o["rect"]["width"] for o in active)
-    max_y = max(o["rect"]["y"] + o["rect"]["height"] for o in active)
-
-    return max_x, max_y
-
-
 def format_accel_to_keybind(accel_name: str) -> str:
     return bulk_replace(
         accel_name,

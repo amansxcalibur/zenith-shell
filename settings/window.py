@@ -8,7 +8,6 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.utils.helpers import exec_shell_command_async
 
 from config.info import IS_WAYLAND, CONFIG_FILE, SHELL_NAME
-from config.i3.utils import generate_i3_keybinds_config, glass_mode, is_swayfx
 from config.bindings import (
     KeyBinding,
     KeybindingValidationError,
@@ -26,6 +25,8 @@ from utils.helpers import format_accel_to_keybind
 from widgets.glass_well import cut_page_out_of_well, fit_wm_corners
 from widgets.variable_font_label import VariableIconLabel, VariableFontLabel
 from widgets.shapes.expressive.morphing_shapes import AnimateShapeMorph
+
+from wm import get_wm, glass_mode
 
 from .state import state
 from .base import TabConfig
@@ -142,7 +143,7 @@ class SettingsWindow(Window):
                 ),
                 TabConfig(
                     "i3wm",
-                    ("SwayFX" if is_swayfx() else "Sway") if IS_WAYLAND else "I3",
+                    get_wm().label,
                     icons.material.bento.symbol(),
                     lambda: I3Tab().get_widget(),
                     "Appearance",
@@ -500,7 +501,7 @@ class SettingsWindow(Window):
     def _describe_conflict(self, group: list[KeyBinding]) -> str:
         scope = group[0].scope
         if scope == "i3":
-            scope_label = "Sway" if IS_WAYLAND else "i3"
+            scope_label = get_wm().label
         else:
             scope_label = scope.capitalize()
         key = format_accel_to_keybind(group[0].key).strip()
@@ -520,7 +521,7 @@ class SettingsWindow(Window):
             state.print_all()
             state.save_to_disk()
             state.reset()
-            generate_i3_keybinds_config()
+            get_wm().write_keybinds()
             if self.key_bindings_tab.check_wm_conflicts():
                 self._show_first_conflict()
                 exec_shell_command_async(

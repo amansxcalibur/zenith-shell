@@ -2,11 +2,13 @@ import cairo
 
 from fabric.widgets.box import Box
 
-from config.i3.utils import glass_mode
-from config.info import IS_WAYLAND, SHELL_NAME
+from config import namespaces
+from config.info import IS_WAYLAND
 
 from utils.colors import bind_theme
 from utils.helpers import keep_window
+
+from wm import glass_mode
 
 import gi
 
@@ -144,7 +146,7 @@ class FlyingOverlay(Window):
         if IS_WAYLAND:
             super().__init__(
                 layer="overlay",
-                title=f"{SHELL_NAME}-flying",
+                title=namespaces.FLYING,
                 keyboard_mode="on-demand",
                 anchor="top bottom left right",
                 visible=False,
@@ -314,9 +316,7 @@ class FlyingOverlay(Window):
             self._animate_to(self.orig, self._finish_dismiss)
         else:  # slot is off screen (e.g. mid-transition): just shrink away
             self.add_style_class("fade-out")
-            self._animate_to(
-                (self.curr_x, self.curr_y, 0, 0), self._finish_dismiss
-            )
+            self._animate_to((self.curr_x, self.curr_y, 0, 0), self._finish_dismiss)
 
     def _finish_dismiss(self):
         slot, widget = self.source_slot, self.source_widget
