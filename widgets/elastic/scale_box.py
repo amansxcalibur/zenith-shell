@@ -102,20 +102,17 @@ class ScaleBox(RotateBox):
     def do_get_preferred_width(self) -> tuple[int, int]:
         if not self._child:
             return 0, 0
-        min_w, nat_w = self._child.get_preferred_width()
-        return (
-            max(1, int(min_w * self._scale_x)),
-            max(1, int(nat_w * self._scale_x)),
-        )
+        # wayland sizes the window to our minimum and would cut the child off
+        _, nat = self._child.get_preferred_size()
+        width = max(1, int(nat.width * self._scale_x))
+        return width, width
 
     def do_get_preferred_height(self) -> tuple[int, int]:
         if not self._child:
             return 0, 0
-        min_h, nat_h = self._child.get_preferred_height()
-        return (
-            max(1, int(min_h * self._scale_y)),
-            max(1, int(nat_h * self._scale_y)),
-        )
+        _, nat = self._child.get_preferred_size()
+        height = max(1, int(nat.height * self._scale_y))
+        return height, height
 
     def do_size_allocate(self, allocation: cairo.RectangleInt):
         # main window -> scaled
