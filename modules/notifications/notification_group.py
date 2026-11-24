@@ -18,16 +18,17 @@ from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
 from fabric.widgets.revealer import Revealer
-from fabric.notifications.service import Notification
 
 import icons
 
 from config.info import TEMP_DIR
 
 from services.animator import CubicBezierCurves
+from services.notification_service import Notification
 
 from utils.helpers import toggle_class
 from utils.icon_resolver import IconResolver
+from utils.notification_text import get_body_text
 
 from widgets.rounded_image import RoundedImage
 from widgets.variable_font_label import VariableIconLabel
@@ -80,6 +81,30 @@ def _resolve_icon_asset(app_name: str, app_icon: str, has_pixbuf: bool, size: in
         return ("pixbuf", None)
 
     return ("fallback", None)
+
+
+def resolve_sender_icon(notification: Notification, size: int) -> Gtk.Widget | None:
+    icon = notification.app_icon
+    if not icon:
+        return None
+    if icon.startswith("file://"):
+        try:
+            icon = GLib.filename_from_uri(icon)[0]
+        except GLib.Error:
+            return None
+    if os.path.isabs(icon):
+        try:
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(icon, size, size, True)
+        except GLib.Error:
+            return None
+        return RoundedImage(pixbuf=pixbuf, style="border-radius:16px;", v_align="start")
+    if not Gtk.IconTheme.get_default().has_icon(icon):
+        return None
+    img = Gtk.Image.new_from_icon_name(icon, Gtk.IconSize.INVALID)
+    img.set_pixel_size(size)
+    img.set_valign(Gtk.Align.START)
+    img.show()
+    return img
 
 
 def _resolve_app_icon(notification: Notification, size: int = 28) -> Gtk.Widget:
@@ -146,11 +171,9 @@ class NotificationWidget(CollapsingBox):
 
     @property
     def collapsed_height(self) -> int:
-        return (
-            34
-            if self.collapsed_page.get_orientation() == Gtk.Orientation.HORIZONTAL
-            else 54
-        )
+        image_height, padding = 24, 10
+        _, text_height = self.collapsed_page.get_preferred_height()
+        return max(image_height, text_height) + padding
 
     def __init__(self, notification: Notification, **kwargs):
         super().__init__(name="notification-widget", **kwargs)
@@ -290,7 +313,7 @@ class NotificationWidget(CollapsingBox):
             line_wrap="word-char",
             max_chars_width=max_c if long_summary else (max_c - len(summary)),
             style_classes=["notif-body"],
-            label=body,
+            label=get_body_text(body, single_line=True),
         )
 
         return Box(
@@ -346,7 +369,7 @@ class NotificationWidget(CollapsingBox):
             max_chars_width=max_c,
             line_wrap="word-char",
             style_classes=["notif-body"],
-            label=body,
+            label=get_body_text(body),
         )
         expanded_body_short.set_lines(NotificationConfig.LINE_LIMIT)
 
@@ -362,7 +385,7 @@ class NotificationWidget(CollapsingBox):
             max_chars_width=max_c,
             line_wrap="word-char",
             style_classes=["notif-body"],
-            label=body,
+            label=get_body_text(body),
         )
 
         self._expanded_short = Box(
@@ -480,6 +503,9 @@ class NotificationWidget(CollapsingBox):
             self.animate_exit(self._close_notification)
 
     def _on_notification_closed(self, *_):
+        self.discard()
+
+    def discard(self) -> None:
         try:
             self.destroy()
         except Exception as e:
@@ -556,7 +582,6 @@ class NotificationGroup(AnimatedClippingBox):
         self.app_name = app_name
         self._on_empty = on_empty
         self._widgets: list[NotificationWidget] = []
-        self._notif_ids: set[int] = set()
         self._max_urgency = 0
         self._latest_timestamp = 0.0
         self._expanded = False  # start collapsed
@@ -677,7 +702,10 @@ class NotificationGroup(AnimatedClippingBox):
         self, widget: ActiveNotificationWidget, animate: bool = False
     ) -> None:
         notif = widget._notification
-        if notif.id in self._notif_ids:
+        replaced = next(
+            (w for w in self._widgets if w._notification.id == notif.id), None
+        )
+        if replaced is not None and replaced._notification is notif:
             return
 
         new_widget = NotificationWidget(notification=notif)
@@ -693,12 +721,11 @@ class NotificationGroup(AnimatedClippingBox):
 
         insert_key = self._sort_key(new_widget)
         keys = [self._sort_key(w) for w in self._widgets]
-        idx = bisect.bisect_right(keys, insert_key)
+        idx = bisect.bisect_left(keys, insert_key)
 
         timestamp_changed = new_widget.timestamp > self._latest_timestamp
         self._latest_timestamp = max(self._latest_timestamp, new_widget.timestamp)
         self._max_urgency = max(self._max_urgency, new_widget.urgency)
-        self._notif_ids.add(notif.id)
 
         self._widgets.insert(idx, new_widget)
         self._children_box.pack_end(new_widget, True, None, 0)
@@ -710,16 +737,25 @@ class NotificationGroup(AnimatedClippingBox):
             # the row grows in; the group's height follows it
             new_widget.animate_enter()
 
+        if replaced is not None:
+            # after the insert, or a group of one empties and goes away
+            replaced.discard()
+            self._current_icon_source = None
+
         self._sync_header()
         self._refresh_height()
 
         if timestamp_changed:
             self.emit("timestamp-change", new_widget.timestamp)
 
+    def discard(self, notification: Notification) -> None:
+        for widget in self._widgets[:]:
+            if widget._notification is notification:
+                widget.discard()
+
     def remove_widget(self, widget: NotificationWidget) -> None:
         if widget in self._widgets:
             self._widgets.remove(widget)
-            self._notif_ids.discard(widget._notification.id)
 
         if widget.get_parent() is self._children_box:
             self._children_box.remove(widget)
@@ -797,7 +833,7 @@ class NotificationGroup(AnimatedClippingBox):
 
     def _compute_collapsed_height(self) -> int:
         _, h = self._header.get_preferred_height()
-        for widget in self._widgets[-1:-3:-1]:
+        for widget in self._widgets[:2]:
             h += widget.collapsed_height
         return h
 

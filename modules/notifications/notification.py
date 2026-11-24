@@ -45,7 +45,6 @@ from fabric.widgets.stack import Stack
 from fabric.widgets.button import Button
 from fabric.widgets.eventbox import EventBox
 from fabric.widgets.scrolledwindow import ScrolledWindow
-from fabric.notifications import Notifications, Notification
 from fabric.utils import invoke_repeater
 
 import icons
@@ -56,6 +55,7 @@ from config.info import IS_WAYLAND
 from modules.tile import TileSimple
 
 from services.animator import Animator
+from services.notification_service import Notification, Notifications
 
 from widgets.rounded_image import RoundedImage
 from widgets.variable_font_label import VariableIconLabel
@@ -63,8 +63,9 @@ from widgets.shapes.expressive.morphing_shapes import ExpressiveShape
 from widgets.clipping_box import ClippingBox, OddlySpecificClippingBox
 
 from utils.helpers import format_accel_to_keybind
+from utils.notification_text import get_body_text
 
-from .notification_group import NotificationGroup
+from .notification_group import NotificationGroup, resolve_sender_icon
 from .common import (
     CollapsingBox,
     NotificationConfig,
@@ -161,7 +162,7 @@ class ActiveNotificationWidget(EventBox):
         super().__init__(**kwargs)
 
         self._notification = notification
-        self._notification.shape = None
+        self._notification.shape = getattr(notification, "shape", None)
         self._timeout_callback = timeout_callback
         self._on_close_callback = on_close_callback
         self._on_press_connection = None
@@ -221,7 +222,7 @@ class ActiveNotificationWidget(EventBox):
                 logger.warning(f"Unknown notification urgency level {self.urgency}")
 
         self.notif_body_label = Label(
-            label=self._notification.body,
+            label=get_body_text(self._notification.body),
             line_wrap="word-char",
             ellipsization="end",
             style_classes="body",
@@ -335,18 +336,35 @@ class ActiveNotificationWidget(EventBox):
             "closed", self._on_notification_closed
         )
 
+        timeout = self._get_timeout()
         self._timeout_repeater_id = (
             invoke_repeater(
-                NotificationConfig.TIMEOUT,
+                timeout,
                 lambda: timeout_callback(self),
                 initial_call=False,
             )
-            if self.urgency in [0, 1]
+            if timeout is not None
             else None
         )
 
+    def _get_timeout(self) -> int | None:
+        requested = self._notification.timeout
+        is_sticky = self.urgency == 2 or requested == 0
+        if is_sticky:
+            return None
+        if requested < 0:
+            return NotificationConfig.TIMEOUT
+        return max(requested, NotificationConfig.MIN_TIMEOUT)
+
     def _add_image_fallback(self, content_box):
-        self._notification.shape = random.choice(self._SHAPES)
+        self._notification.shape = self._notification.shape or random.choice(
+            self._SHAPES
+        )
+        if icon := resolve_sender_icon(
+            self._notification, NotificationConfig.IMAGE_SIZE
+        ):
+            content_box.add(icon)
+            return
         content_box.add(
             Box(
                 name="img-expander",
@@ -368,7 +386,7 @@ class ActiveNotificationWidget(EventBox):
             else -90
         )
         self.notif_body_label.set_lines(
-            100
+            NotificationConfig.EXPANDED_LINE_LIMIT
             if self.notif_body_label.get_lines() == NotificationConfig.LINE_LIMIT
             else NotificationConfig.LINE_LIMIT
         )
@@ -409,6 +427,11 @@ class ActiveNotificationWidget(EventBox):
             self._timeout_repeater_id = None
         # closed by the app (or from history): leave with the same collapse
         self._body.animate_exit(self._teardown)
+
+    def discard(self) -> None:
+        self._closing = True
+        self._body._stop()
+        self._teardown()
 
     def _teardown(self) -> None:
         try:
@@ -695,6 +718,9 @@ class NotificationManager:
             self._notification_service.connect(
                 "notification_added", self._handle_notification_added
             )
+            self._notification_service.connect(
+                "notification_replaced", self._handle_notification_replaced
+            )
         except Exception as e:
             logger.error(f"Failed to setup notification service: {e}")
 
@@ -905,6 +931,52 @@ class NotificationManager:
 
         except Exception as e:
             logger.error(f"Failed to handle notification: {e}")
+
+    def _handle_notification_replaced(
+        self, source, notification_id: int, old: Notification
+    ):
+        try:
+            notification = source.get_notification_from_id(notification_id)
+            notification.shape = getattr(old, "shape", None)
+            popup = next(
+                (
+                    child
+                    for child in self.active_notifications_box.get_children()
+                    if child._notification is old
+                ),
+                None,
+            )
+
+            if popup in self._active_notifications and not config.SILENT:
+                new = ActiveNotificationWidget(
+                    notification=notification,
+                    timeout_callback=self._retire_popup,
+                    on_close_callback=self.close_active_notification,
+                )
+                box = self.active_notifications_box
+                position = box.child_get_property(popup, "position")
+                self._active_notifications[self._active_notifications.index(popup)] = (
+                    new
+                )
+                popup.discard()
+                box.pack_end(new, True, None, 0)
+                box.reorder_child(new, position)
+                new.show_all()
+                self._update_ui_state()
+                return
+
+            if popup is not None:
+                popup.discard()
+
+            is_for_history = config.SILENT or self._is_open
+            for group in list(self._groups.values()):
+                # add_widget swaps the row in this one
+                if not (is_for_history and group.app_name == notification.app_name):
+                    group.discard(old)
+
+            self._handle_notification_added(source, notification_id)
+        except Exception:
+            logger.exception("Failed to replace notification")
 
     def close_active_notification(self, notification_widget: ActiveNotificationWidget):
         # the widget removes itself from the box once its exit animation is done
@@ -1177,6 +1249,9 @@ class NotificationManager:
             try:
                 self._notification_service.disconnect_by_func(
                     self._handle_notification_added
+                )
+                self._notification_service.disconnect_by_func(
+                    self._handle_notification_replaced
                 )
             except Exception:
                 logger.error("Failed to disconnect notification added handler")

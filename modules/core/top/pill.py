@@ -104,7 +104,6 @@ class TopPill(Window, Service):
         )
 
         # pill-compact
-        self.dot_placeholder = Box(style="min-width:1px; min-height:1px;")
         self.pill_compact = Stack(
             name="collapsed",
             transition_type="crossfade",
@@ -116,8 +115,7 @@ class TopPill(Window, Service):
                 ]
             ),
         )
-        self.pill_compact.set_visible_child(self.dot_placeholder)
-        self._current_compact_mode = self.dot_placeholder
+        self._current_compact_mode = self.active_notifications
         self.pill_compact.set_interpolate_size(True)
         self.pill_compact.set_homogeneous(False)
 
@@ -200,9 +198,7 @@ class TopPill(Window, Service):
                 focus_callback=self.notification_manager.open_notification_stack,
             )
         else:
-            self._close_view(
-                unfocus_callback=self.notification_manager.close_notification_stack
-            )
+            self.close()
 
     def open(self):
         # opens notifications
@@ -212,7 +208,9 @@ class TopPill(Window, Service):
         )
 
     def close(self, *_):
-        self._close_view()
+        self._close_view(
+            unfocus_callback=self.notification_manager.close_notification_stack
+        )
 
     def _open_view(self, view, focus_callback=None):
         # unregister current view's keybindings
@@ -250,7 +248,7 @@ class TopPill(Window, Service):
         if unfocus_callback:
             unfocus_callback()
 
-        if self._current_compact_mode == self.dot_placeholder:
+        if self._current_compact_mode == self.active_notifications:
             self.close_dock()
             self.lift_pill()
 
@@ -269,7 +267,7 @@ class TopPill(Window, Service):
 
         next_index = (_current_index + (1 if forward else -1)) % len(_modes)
         _next_mode = _modes[next_index]
-        if _next_mode == self.dot_placeholder:
+        if _next_mode == self.active_notifications:
             self.lift_pill()
             self.close_dock()
         else:
