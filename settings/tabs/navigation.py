@@ -38,12 +38,12 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
         self.entries = {}
         self._rows = {}
         self._overrides = state.get(["bindings", "custom"]) or {}
-        WM, wm = get_wm().label, get_wm().name
+        wm = get_wm()
 
         self.container.add(
             Label(
                 markup="<span weight='bold' foreground='#3584e4'>Note:</span> "
-                f"<span alpha='70%'>{WM} Bindings are not validated. Enter them using valid {wm}wm config syntax :)</span>",
+                f"<span alpha='70%'>{wm.label} Bindings are not validated. {wm.keybind_hint}</span>",
                 line_wrap="word",
                 h_align="start",
             )
@@ -51,7 +51,7 @@ class KeyBindingsTab(BaseWidget, SectionBuilderMixin):
 
         self.container.add(
             LayoutBuilder.section(
-                f"{WM} Bindings",
+                f"{wm.label} Bindings",
                 self.build_section(
                     None,
                     config.get_all_scoped_bindings("i3"),

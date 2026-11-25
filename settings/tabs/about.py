@@ -28,7 +28,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # type: ignore
 
 REPOSITORY_URL = "https://github.com/amansxcalibur/zenith-shell"
-TAGLINE = "A SOSS shell for i3wm and sway, crafted using fabric."
+TAGLINE = "A SOSS shell for i3wm, sway and Hyprland, crafted using fabric."
 UNRELEASED_VERSION = "v0.0.0"
 
 

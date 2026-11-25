@@ -18,7 +18,7 @@ _zenith_shell() {
     esac
 
     if [[ $prev == --wm ]]; then
-        COMPREPLY=($(compgen -W "auto i3 sway all" -- "$cur"))
+        COMPREPLY=($(compgen -W "auto i3 sway hyprland all" -- "$cur"))
         return
     fi
 

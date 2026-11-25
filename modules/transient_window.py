@@ -170,7 +170,7 @@ class TransientWindow(Window):
                 name="notification-popup",
                 title=namespaces.OSD,
                 layer="overlay",
-                keyboard_mode="on-demand",
+                keyboard_mode="none",
                 anchor="top left",
                 exclusivity="none",
                 margin=(0, 0, 0, 0),

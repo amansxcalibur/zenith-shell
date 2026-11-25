@@ -13,7 +13,9 @@ from fabric.widgets.scrolledwindow import ScrolledWindow
 from fabric.utils.helpers import exec_shell_command_async
 
 import icons
+from config import namespaces
 from config.config import config
+from config.info import IS_WAYLAND
 from modules.tile import TileSimpleWithMenu
 
 from services.network.wifi import WifiDevice
@@ -38,6 +40,9 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib  # type: ignore
+
+if IS_WAYLAND:
+    from gi.repository import GtkLayerShell  # type: ignore
 
 
 class UIConstants:
@@ -66,7 +71,20 @@ class BaseDialog(Gtk.Dialog):
         self.set_position(Gtk.WindowPosition.CENTER)
         self.get_content_area().set_spacing(10)
         self.get_content_area().set_name("password-dialog-box")
-        self.set_default_response(Gtk.ResponseType.OK)
+        if IS_WAYLAND:
+            self._raise_above_shell(parent_widget.get_toplevel())
+
+    def _raise_above_shell(self, parent: Gtk.Window) -> None:
+        # a normal window ends up under the flying overlay
+        self.set_name("layer-dialog")
+        GtkLayerShell.init_for_window(self)
+        GtkLayerShell.set_namespace(self, namespaces.DIALOG)
+        GtkLayerShell.set_layer(self, GtkLayerShell.Layer.OVERLAY)
+        GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.EXCLUSIVE)
+        display = Gdk.Display.get_default()
+        GtkLayerShell.set_monitor(
+            self, display.get_monitor_at_window(parent.get_window())
+        )
 
     def add_dialog_buttons(self, *labels: str) -> list[Gtk.Button]:
         buttons = []
@@ -79,20 +97,9 @@ class BaseDialog(Gtk.Dialog):
             if response == Gtk.ResponseType.OK:
                 btn.get_style_context().add_class("suggested-action")
             buttons.append(btn)
+        # only reaches buttons that already exist
+        self.set_default_response(Gtk.ResponseType.OK)
         return buttons
-
-    def show_error_message(self, text: str, secondary_text: str = "") -> None:
-        error_dialog = Gtk.MessageDialog(
-            transient_for=self,
-            modal=True,
-            message_type=Gtk.MessageType.ERROR,
-            buttons=Gtk.ButtonsType.OK,
-            text=text,
-        )
-        if secondary_text:
-            error_dialog.format_secondary_text(secondary_text)
-        error_dialog.run()
-        error_dialog.destroy()
 
     @staticmethod
     def show_notification(title: str, message: str = "") -> None:
@@ -154,10 +161,11 @@ class PasswordDialog(BaseDialog):
 
         self.password_entry = Entry(
             name="password-dialog-entry",
-            placeholder_text="New Password" if self.update_mode else "Password",
-            activates_default=True,
+            placeholder="New Password" if self.update_mode else "Password",
             password=True,
         )
+        # fabric's Entry drops this as a kwarg
+        self.password_entry.set_activates_default(True)
         content_box.add(self.password_entry)
 
         show_password = CheckButton(name="show-password-check", label="Show password")
@@ -176,18 +184,17 @@ class PasswordDialog(BaseDialog):
             )
 
         self.add_dialog_buttons("Cancel", "Save" if self.update_mode else "Connect")
+        self.password_entry.connect("changed", self._sync_submit_button)
+        self._sync_submit_button()
+
+    def _sync_submit_button(self, *_) -> None:
+        self.set_response_sensitive(
+            Gtk.ResponseType.OK, bool(self.password_entry.get_text())
+        )
 
     def _on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
         if response_id == Gtk.ResponseType.OK:
-            password = self.password_entry.get_text()
-
-            if not password:
-                self.show_error_message(
-                    "Password cannot be empty", "Please enter a password or cancel."
-                )
-                return  # don't close dialog
-
-            self.on_submit(password)
+            self.on_submit(self.password_entry.get_text())
 
         self.destroy()
 

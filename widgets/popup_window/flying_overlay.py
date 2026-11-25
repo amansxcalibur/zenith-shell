@@ -192,7 +192,17 @@ class FlyingOverlay(Window):
 
         self.connect("button-press-event", self._on_background_click)
         self.add_keybinding("Escape", lambda *_: self.dismiss())
-        self.connect("focus-out-event", lambda *_: self.dismiss())
+        self.connect("focus-out-event", self._on_focus_out)
+
+    def _on_focus_out(self, *_):
+        if not self._has_open_dialog():
+            self.dismiss()
+
+    def _has_open_dialog(self) -> bool:
+        return IS_WAYLAND and any(
+            window.get_visible() and window.get_transient_for() is self
+            for window in Gtk.Window.list_toplevels()
+        )
 
     def _on_background_click(self, _widget, event):
         if self.source_slot is None:

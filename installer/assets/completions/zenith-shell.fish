@@ -23,7 +23,7 @@ complete -c zenith-shell -n $in_setup -a doctor -d 'Check dependencies and setup
 complete -c zenith-shell -n $in_setup -a uninstall -d 'Remove Zenith Shell'
 complete -c zenith-shell -n $in_setup -a logs -d 'Show the end of the installer log'
 
-complete -c zenith-shell -n '__fish_seen_subcommand_from install sync update doctor' -l wm -x -a 'auto i3 sway all' -d 'Window manager to set up'
+complete -c zenith-shell -n '__fish_seen_subcommand_from install sync update doctor' -l wm -x -a 'auto i3 sway hyprland all' -d 'Window manager to set up'
 complete -c zenith-shell -n '__fish_seen_subcommand_from install sync update uninstall' -l dry-run -d 'Show the plan without changing anything'
 complete -c zenith-shell -n '__fish_seen_subcommand_from install sync update uninstall' -s y -l yes -d 'Never ask for confirmation'
 complete -c zenith-shell -n '__fish_seen_subcommand_from install sync update uninstall' -s v -l verbose -d 'Show command output as it runs'

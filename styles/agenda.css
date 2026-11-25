@@ -210,8 +210,10 @@ filechooser {
   color: var(--foreground);
 }
 
-dialog.wayland {
-  background-color: var(--surface);
+/* an opaque background-color gives black corners on sway */
+dialog.wayland:not(.glass) {
+  background-color: transparent;
+  background-image: linear-gradient(var(--surface), var(--surface));
 }
 
 filechooser > box {

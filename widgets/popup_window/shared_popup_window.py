@@ -72,7 +72,7 @@ class SharedPopupWindow(Window):
             super().__init__(
                 layer="top",
                 title=namespaces.POPUP,
-                keyboard_mode="on-demand",
+                keyboard_mode="none",
                 anchor=anchor,
                 exclusivity="none",
                 margin=margin,

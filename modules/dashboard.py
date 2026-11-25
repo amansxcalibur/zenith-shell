@@ -8,6 +8,7 @@ from fabric.widgets.centerbox import CenterBox
 import icons
 
 from config.config import config
+from config.info import IS_WAYLAND
 
 from modules.tile import TileSpecial
 from modules.network import Network
@@ -24,8 +25,8 @@ from utils.helpers import open_settings
 from utils.cursor import add_hover_cursor
 
 from widgets.glass_well import cut_out_of_well
-from widgets.variable_font_label import VariableIconLabel
 from widgets.popup_window import PopSlot, FlyingOverlay
+from widgets.variable_font_label import Font, VariableFontLabel, VariableIconLabel
 
 from wm import glass_mode
 
@@ -35,8 +36,6 @@ class Dashboard(Box):
         super().__init__(
             name="dashboard",
             visible=True,
-            orientation="v",
-            spacing=8,
             all_visible=True,
             **kwargs,
         )
@@ -125,7 +124,7 @@ class Dashboard(Box):
             ],
         )
 
-        agenda = AgendaApp()
+        agenda = AgendaApp(on_choosing_image=self.set_choosing_image)
         agenda_container = Box(
             name="agenda-app-container",
             orientation="v",
@@ -200,30 +199,59 @@ class Dashboard(Box):
             ),
             child_revealed=True,
         )
-        self.children = [
-            Box(
-                orientation="h",
-                children=[
-                    CenterBox(
-                        style_classes="scale-icon-container",
-                        center_children=VariableIconLabel(
-                            style_classes="scale-icon",
-                            FILL=0,
-                            icon_text=icons.material.brightness.symbol(),
+        self.main_view = Box(
+            orientation="v",
+            spacing=8,
+            children=[
+                Box(
+                    orientation="h",
+                    children=[
+                        CenterBox(
+                            style_classes="scale-icon-container",
+                            center_children=VariableIconLabel(
+                                style_classes="scale-icon",
+                                FILL=0,
+                                icon_text=icons.material.brightness.symbol(),
+                            ),
                         ),
-                    ),
-                    self.brightness_revealer_mui,
-                ],
-            ),
-            Box(children=self.tiles),
-            Box(
-                children=[
-                    self.notification_container,
-                ]
-            ),
-        ]
+                        self.brightness_revealer_mui,
+                    ],
+                ),
+                Box(children=self.tiles),
+                Box(
+                    children=[
+                        self.notification_container,
+                    ]
+                ),
+            ],
+        )
+        self.image_picker_indicator = Box(
+            style="padding: 7px 17px; color: var(--foreground)",
+            spacing=8,
+            children=[
+                VariableIconLabel(icon_text=icons.material.wallpaper.symbol()),
+                VariableFontLabel(
+                    font_family=Font.GOOGLE_SANS_FLEX,
+                    text="Choosing Agenda Image...",
+                ),
+            ],
+        )
+        self.view_stack = Stack(
+            transition_type="crossfade",
+            transition_duration=150,
+            children=[self.main_view, self.image_picker_indicator],
+            interpolate_size=True,
+        )
+        self.view_stack.set_homogeneous(False)
+        self.children = self.view_stack
 
         self.connect("unmap", lambda *_: self.close_all())
+
+    def set_choosing_image(self, is_choosing: bool):
+        if IS_WAYLAND:
+            self.view_stack.set_visible_child(
+                self.image_picker_indicator if is_choosing else self.main_view
+            )
 
     def close_all(self):
         self.notification_container.set_reveal_child(True)

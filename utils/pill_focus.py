@@ -5,7 +5,7 @@ from wm import get_wm
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # type: ignore
+from gi.repository import Gtk, GLib  # type: ignore
 
 if IS_WAYLAND:
     from gi.repository import GtkLayerShell  # type: ignore
@@ -14,6 +14,8 @@ if IS_WAYLAND:
 # the higher layer, so only the latest pill may ask for it
 _open = []
 _clicks = {}
+
+REGRAB_DELAY_MS = 50
 
 
 def take_focus(pill) -> None:
@@ -43,7 +45,25 @@ def _apply() -> None:
         return
     for pill in _open[:-1]:
         GtkLayerShell.set_keyboard_mode(pill, GtkLayerShell.KeyboardMode.ON_DEMAND)
+    if _has_lost_keyboard(latest):
+        # hyprland only reacts to a change, and needs to see both
+        GtkLayerShell.set_keyboard_mode(latest, GtkLayerShell.KeyboardMode.NONE)
+        GLib.timeout_add(REGRAB_DELAY_MS, _regrab, latest)
+        return
     GtkLayerShell.set_keyboard_mode(latest, GtkLayerShell.KeyboardMode.EXCLUSIVE)
+
+
+def _has_lost_keyboard(pill) -> bool:
+    mode = GtkLayerShell.get_keyboard_mode(pill)
+    return (
+        mode == GtkLayerShell.KeyboardMode.EXCLUSIVE and not pill.has_toplevel_focus()
+    )
+
+
+def _regrab(pill) -> bool:
+    if _open and _open[-1] is pill:
+        GtkLayerShell.set_keyboard_mode(pill, GtkLayerShell.KeyboardMode.EXCLUSIVE)
+    return False
 
 
 def _watch_clicks(pill) -> None:

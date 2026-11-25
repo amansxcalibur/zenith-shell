@@ -35,6 +35,7 @@ from services.theme import ThemeService
 
 from utils.colors import bind_theme
 from utils.helpers import hash_file
+from utils.file_chooser import fit_to_monitor
 from utils.lock import (
     generate_lockscreen_image,
     LOCKSCREEN_IMG_FILE,
@@ -616,6 +617,7 @@ class WallpaperSelector(Box):
             glass_file_chooser(dialog)
         if IS_WAYLAND:
             dialog.get_style_context().add_class("wayland")
+            fit_to_monitor(dialog, parent)
         dialog.set_visual(dialog.get_screen().get_rgba_visual())  # rounded corners
         for stock, response, extra in (
             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, None),

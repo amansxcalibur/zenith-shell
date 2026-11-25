@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import shutil
 import subprocess
 import tempfile
@@ -19,6 +20,12 @@ X11_MODIFIERS = {
     0x20: "Mod3",
     0x40: "Mod4",
     0x80: "Mod5",
+}
+HYPRLAND_MODIFIERS = {
+    0x1: "SHIFT",
+    0x4: "CTRL",
+    0x8: "ALT",
+    0x40: "SUPER",
 }
 
 
@@ -48,6 +55,30 @@ def parse_sway_output(output: str) -> list[KeybindingConflict]:
     return list(conflicts.values())
 
 
+def parse_hyprland_binds(output: str) -> list[KeybindingConflict]:
+    try:
+        binds = json.loads(output)
+    except ValueError:
+        return []
+
+    by_key = {}
+    for bind in binds:
+        key = (bind["modmask"], bind["key"].lower(), bind["submap"], bind["release"])
+        command = bind["description"] or bind["dispatcher"]
+        by_key.setdefault(key, []).append(command)
+
+    conflicts = []
+    for (mask, key, *_), commands in by_key.items():
+        # sharing a key is fine in hyprland, unless one of them is ours
+        if len(commands) < 2 or not any("zenith" in c for c in commands):
+            continue
+        modifiers = [name for bit, name in HYPRLAND_MODIFIERS.items() if mask & bit]
+        conflicts.append(
+            KeybindingConflict("+".join([*modifiers, key]), tuple(commands))
+        )
+    return conflicts
+
+
 def _check(command: list[str], env: dict[str, str]) -> str:
     try:
         result = subprocess.run(
@@ -73,6 +104,11 @@ def find_wm_conflicts(
 
     path_args = ["-c", str(config_path)] if config_path else []
     env = os.environ.copy()
+    if wm == "hyprland":
+        # a lua config can't be checked without running it
+        if config_path or not env.get("HYPRLAND_INSTANCE_SIGNATURE"):
+            return []
+        return parse_hyprland_binds(_check(["hyprctl", "-j", "binds"], env))
     if wm == "i3":
         return parse_i3_output(_check(["i3", "-C", *path_args], env))
 

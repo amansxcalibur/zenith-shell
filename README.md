@@ -3,7 +3,7 @@
 </h3>
 
 <div align="center">
-  <p>A SOSS shell for <b>i3wm</b> and <b>sway</b> (including <b>swayFX</b>), crafted using <a href="https://github.com/Fabric-Development/fabric">fabric</a>.</p>
+  <p>A SOSS shell for <b>i3wm</b>, <b>sway</b> (including <b>swayFX</b>) and <b>Hyprland</b>, crafted using <a href="https://github.com/Fabric-Development/fabric">fabric</a>.</p>
 </div>
 <div align="center">
      <a href="https://ko-fi.com/amansxcalibur">
@@ -43,10 +43,13 @@ I've had a **LOT** of fun working with fabric and building this. I hope you do t
 
 ### Requirements
 
-Zenith supports **Arch-based** and **Ubuntu/Debian-based** distributions with **i3wm**, **sway**, or both. **Python 3.10+** is required.
+Zenith supports **Arch-based** and **Ubuntu/Debian-based** distributions with **i3wm**, **sway** or **Hyprland**. **Python 3.10+** is required.
 
 > [!IMPORTANT]
 > **i3 users:** Rounded corners, true transparency, and other compositor effects require **picom v12 or newer**. **Do NOT enable screen corners** without a compatible picom compositor; the screen may appear black. See [Troubleshooting](#troubleshooting).
+
+> [!NOTE]
+> **Hyprland users:** Version 0.55 or newer with a `hyprland.lua` config is required. Zenith won't touch a `hyprland.conf`.
 
 ### Install Zenith
 
@@ -80,7 +83,7 @@ git clone https://github.com/amansxcalibur/zenith-shell ~/.local/share/zenith-sh
 
 | Option | Meaning |
 | --- | --- |
-| `--wm i3\|sway\|all` | Set up a specific window manager. By default, the installer detects it. |
+| `--wm i3\|sway\|hyprland\|all` | Set up a specific window manager. By default, the installer detects it. |
 | `--dry-run` | Run the checks and show the plan without making changes. |
 | `-y`, `--yes` | Skip prompts and accept installing missing prerequisites, such as Rust or Go. |
 | `-v`, `--verbose` | Show command output as it runs. |
@@ -91,7 +94,7 @@ git clone https://github.com/amansxcalibur/zenith-shell ~/.local/share/zenith-sh
 zenith-shell
 ```
 
-Or just restart your i3/sway session. If `zenith-shell` isn't found, add `~/.local/bin` to your `PATH` (`~/.zshrc` on zsh):
+Or just restart your session. If `zenith-shell` isn't found, add `~/.local/bin` to your `PATH` (`~/.zshrc` on zsh):
 
 ```bash
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
@@ -145,10 +148,10 @@ zenith-shell setup update
 
 If you've edited a file the update touches, it stops and tells you which.
 
-### Switching between i3 and sway
+### Switching between window managers
 
 ```bash
-zenith-shell setup sync --wm sway   # or i3, all; detected if omitted
+zenith-shell setup sync --wm sway   # or i3, hyprland, all; detected if omitted
 ```
 
 Installs what that window manager is missing and adds Zenith's keybindings and autostart to its config.
@@ -160,7 +163,7 @@ zenith-shell setup uninstall           # keep tools built from source
 zenith-shell setup uninstall --purge   # also remove fabric-cli, gray, gtk-session-lock, matugen
 ```
 
-Built tools are kept by default since other Fabric shells may use them. Decide on `--purge` up front, it can't be done later. You're asked whether to keep your config. System packages and your i3/sway config are never touched; what's left is printed for you to remove.
+Built tools are kept by default since other Fabric shells may use them. Decide on `--purge` up front, it can't be done later. You're asked whether to keep your config. System packages and your window manager config are never touched; what's left is printed for you to remove.
 
 ## Troubleshooting
 
@@ -190,7 +193,7 @@ The installer handles all of this. It's listed here if you'd rather set things u
 - `feh` - wallpaper setter
 - `picom` - compositor (v12+)
 
-### sway / Wayland
+### sway, Hyprland / Wayland
 
 - `swaybg` - wallpaper setter
 - `wl-clipboard` - clipboard access
@@ -212,10 +215,10 @@ See `requirements.txt`.
 
 - **Arch Linux:** `base-devel`, `git`, `curl`, `python`, `python-gobject`, `python-cairo`, `gtk3`, `libdbusmenu-gtk3`, `gobject-introspection`, `gnome-bluetooth-3.0`, `brightnessctl`, `playerctl`, `libnotify`, `libnm`, `librsvg`, `libpulse`, `bash-completion`, `meson`, `ninja`, `vala`
   - i3: `feh`, `picom`
-  - sway: `swaybg`, `wl-clipboard`, `gtk-layer-shell`, `gtk-session-lock`
+  - sway, Hyprland: `swaybg`, `wl-clipboard`, `gtk-layer-shell`, `gtk-session-lock`
 - **Ubuntu / Debian:** `build-essential`, `pkg-config`, `git`, `curl`, `meson`, `ninja-build`, `valac`, `python3-dev`, `python3-venv`, `python3-pip`, `libcairo2-dev`, `libgirepository1.0-dev`, `libgtk-3-dev`, `libdbusmenu-gtk3-dev`, `gir1.2-playerctl-2.0`, `gir1.2-gnomebluetooth-3.0`, `gir1.2-nm-1.0`, `gir1.2-rsvg-2.0`, `pulseaudio-utils`, `bash-completion`, `brightnessctl`, `libnotify-bin`
   - i3: `feh`, `picom`
-  - sway: `swaybg`, `wl-clipboard`, `gir1.2-gtklayershell-0.1`, `libgtk-layer-shell0`, plus `libwayland-dev`, `gobject-introspection` and `gtk-doc-tools` to build `gtk-session-lock`
+  - sway, Hyprland: `swaybg`, `wl-clipboard`, `gir1.2-gtklayershell-0.1`, `libgtk-layer-shell0`, plus `libwayland-dev`, `gobject-introspection` and `gtk-doc-tools` to build `gtk-session-lock`
 
 How the remaining tools are obtained depends on the distribution:
 
@@ -224,7 +227,7 @@ How the remaining tools are obtained depends on the distribution:
   - `matugen` with `cargo` (requires Rust)
   - `fabric-cli` with `meson` (requires Go)
   - `gray` with `meson`
-  - `gtk-session-lock` with `meson` (sway only)
+  - `gtk-session-lock` with `meson` (sway and Hyprland only)
 
 ---
 

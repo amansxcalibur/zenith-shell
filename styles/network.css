@@ -114,6 +114,12 @@
   margin-top: 15px;
 }
 
+#layer-dialog,
+#layer-dialog decoration {
+  background: none;
+  box-shadow: none;
+}
+
 #password-dialog-box {
   background-color: var(--surface);
   border-radius: 20px;
@@ -127,6 +133,10 @@
   background-color: var(--surface-bright);
   border-radius: 10px;
   padding: 10px;
+}
+
+#dialog-btn:disabled {
+  opacity: 0.5;
 }
 
 #password-dialog-entry {

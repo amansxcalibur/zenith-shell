@@ -45,7 +45,7 @@ from fabric.widgets.box import Box
 
 # from fabric.widgets.overlay import Overlay
 from fabric.utils.helpers import FormattedString
-from fabric.i3.widgets import WorkspaceButton as FabricWorkspaceButton
+from fabric.core.widgets import WorkspaceButton as FabricWorkspaceButton
 
 import gi
 

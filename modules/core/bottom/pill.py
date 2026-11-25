@@ -404,16 +404,18 @@ class Pill(Window, Service):
         if IS_WAYLAND:
             self.enable_absolute_positioning(x, y)
 
-        self._drag_state["offset_x"] = event.x_root - x
-        self._drag_state["offset_y"] = event.y_root - y
+        pointer_x, pointer_y = get_wm().get_pointer_position(event)
+        self._drag_state["offset_x"] = pointer_x - x
+        self._drag_state["offset_y"] = pointer_y - y
         self._drag_state["start_pos"] = (x, y)
 
     def on_motion(self, widget, event):
         if not self._drag_state["dragging"]:
             return
 
-        new_x = int(event.x_root - self._drag_state["offset_x"])
-        new_y = int(event.y_root - self._drag_state["offset_y"])
+        pointer_x, pointer_y = get_wm().get_pointer_position(event)
+        new_x = int(pointer_x - self._drag_state["offset_x"])
+        new_y = int(pointer_y - self._drag_state["offset_y"])
 
         # self._drag_state["last_x"] = event.x_root
         # self._drag_state["last_y"] = event.y_root

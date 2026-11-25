@@ -8,3 +8,15 @@ TOP_PILL = f"{SHELL_NAME}-top-pill"
 POPUP = f"{SHELL_NAME}-popup"
 FLYING = f"{SHELL_NAME}-flying"
 OSD = f"{SHELL_NAME}-osd"
+DIALOG = f"{SHELL_NAME}-dialog"
+
+# blurred in glass mode
+GLASS_LAYERS = (
+    DOCK,
+    TOP_BAR,
+    TOP_PILL,
+    POPUP,
+    PILL,
+    FLYING,
+    OSD,
+)

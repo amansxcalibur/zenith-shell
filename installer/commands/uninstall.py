@@ -30,7 +30,7 @@ from installer.ui import (
     set_total,
     step,
 )
-from installer.wm import WM_FEATURE
+from wm.detect import CONFIG_FILES
 
 
 def scan_wm_configs() -> list[Path]:
@@ -38,8 +38,9 @@ def scan_wm_configs() -> list[Path]:
     These belong to the user: we list them for manual cleanup and never delete them."""
     found: list[Path] = []
     install = Path(os.path.realpath(INSTALL_DIR))
-    for wm in WM_FEATURE:
-        for dirpath, dirnames, filenames in os.walk(HOME / ".config" / wm):
+    for config_file in CONFIG_FILES.values():
+        config_dir = (HOME / ".config" / config_file).parent
+        for dirpath, dirnames, filenames in os.walk(config_dir):
             for name in [*dirnames, *filenames]:
                 path = Path(dirpath) / name
                 if path.is_symlink():

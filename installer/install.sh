@@ -27,14 +27,15 @@ Usage: install.sh [command] [options]
 Commands:
   install    Full install (default)
   sync       Install what is missing and configure the chosen WM(s)
-             (use this after switching between i3 and sway)
+             (use this after switching window managers)
   update     Pull the latest version, then sync dependencies and re-apply setup
   doctor     Check dependencies and setup
   uninstall  Remove Zenith Shell (asks whether to keep your config.json)
   logs       Show the end of the installer log
 
 Options:
-  --wm {auto,i3,sway,all}    Window manager(s) to set up (default: auto)
+  --wm {auto,i3,sway,hyprland,all}
+                             Window manager(s) to set up (default: auto)
   --dry-run                  Run pre-flight checks and show the plan; change nothing
   --purge                    uninstall: also remove tools that were built from source
   -y, --yes                  Never ask; accept automatic prerequisite installs

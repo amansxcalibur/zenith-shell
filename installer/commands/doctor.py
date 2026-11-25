@@ -16,7 +16,10 @@ from installer.wm import (
 def cmd_doctor(args, backend) -> int:
     wms = resolve_wms(args.wm)
     if not wms:
-        raise InstallError("Could not detect i3 or sway. Re-run with --wm i3|sway|all.")
+        raise InstallError(
+            "Could not detect i3, sway or Hyprland. "
+            "Re-run with --wm i3|sway|hyprland|all."
+        )
     plan = backend.plan(wms)
 
     lines = []

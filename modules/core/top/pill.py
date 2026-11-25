@@ -25,7 +25,7 @@ from widgets.clipping_box import ClippingBox
 from widgets.variable_font_label import VariableIconLabel
 from widgets.elastic.elastic_stack import ElasticStack
 
-from wm import glass_mode
+from wm import get_wm, glass_mode
 
 if IS_WAYLAND:
     from gi.repository import GtkLayerShell  # type: ignore
@@ -56,7 +56,7 @@ class TopPill(Window, Service):
             super().__init__(
                 layer="overlay",
                 title=self.WIN_ROLE,
-                keyboard_mode="on-demand",
+                keyboard_mode="none",
                 anchor=f"{pill_config_node.get('POSITION.y')} {pill_config_node.get('POSITION.x')}",
                 exclusivity="none",
                 margin=(0, 0, 0, 0),
@@ -309,16 +309,18 @@ class TopPill(Window, Service):
             GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, y)
             GtkLayerShell.set_margin(self, GtkLayerShell.Edge.LEFT, x)
 
-        self._drag_state["offset_x"] = event.x_root - x
-        self._drag_state["offset_y"] = event.y_root - y
+        pointer_x, pointer_y = get_wm().get_pointer_position(event)
+        self._drag_state["offset_x"] = pointer_x - x
+        self._drag_state["offset_y"] = pointer_y - y
         self._drag_state["start_pos"] = (x, y)
 
     def on_motion(self, widget, event):
         if not self._drag_state["dragging"]:
             return
 
-        new_x = int(event.x_root - self._drag_state["offset_x"])
-        new_y = int(event.y_root - self._drag_state["offset_y"])
+        pointer_x, pointer_y = get_wm().get_pointer_position(event)
+        new_x = int(pointer_x - self._drag_state["offset_x"])
+        new_y = int(pointer_y - self._drag_state["offset_y"])
 
         # self._drag_state["last_x"] = event.x_root
         # self._drag_state["last_y"] = event.y_root

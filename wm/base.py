@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 class WindowManager(ABC):
     name: str  # key in wm.detect.BACKENDS
     label: str = ""  # display name
+    keybind_hint: str = ""  # for settings UI
     can_round_corners = False
     can_blur = False  # for glass mode
 
@@ -44,11 +45,20 @@ class WindowManager(ABC):
 
         return get_screen_resolution_gdk()
 
+    def get_pointer_position(self, event) -> tuple[float, float]:
+        return event.x_root, event.y_root
+
     def find_conflicts(self, config_path=None) -> list:
         return []
 
     def get_corner_radius(self) -> int | None:
-        return None
+        # what every window gets rounded to, None when we don't set it
+        from config.config import config
+
+        borders = config.get_node("i3.borders")
+        if not self.can_round_corners or not borders.get("enabled"):
+            return None
+        return borders.get("props.corner_radius")
 
     @abstractmethod
     def build_workspaces(self, vertical: bool = False): ...

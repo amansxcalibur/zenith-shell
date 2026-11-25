@@ -1,16 +1,19 @@
 from fabric.widgets.box import Box
-from fabric.i3.widgets import (
-    # I3Language,
-    I3ActiveWindow,
-    I3Workspaces,
-    # WorkspaceButton,
+from fabric.core.widgets import (
+    ActiveWindow as FabricActiveWindow,
+    Workspaces as FabricWorkspaces,
 )
 
 from .workspace_button import WorkspaceButton
 
 
 class Workspaces(Box):
-    def __init__(self, vertical: bool = False, **kwargs):
+    def __init__(
+        self,
+        workspaces_class: type[FabricWorkspaces],
+        vertical: bool = False,
+        **kwargs,
+    ):
         super().__init__(
             name="workspaces-container",
             visible=True,
@@ -21,7 +24,7 @@ class Workspaces(Box):
         )
 
         self.children = (
-            I3Workspaces(
+            workspaces_class(
                 name="workspaces",
                 orientation="h" if not vertical else "v",
                 buttons=[
@@ -37,7 +40,7 @@ class Workspaces(Box):
 
 
 class ActiveWindow(Box):
-    def __init__(self, **kwargs):
+    def __init__(self, active_window_class: type[FabricActiveWindow], **kwargs):
         super().__init__(
             name="active-windows",
             visible=True,
@@ -47,4 +50,4 @@ class ActiveWindow(Box):
             v_align="center",
             **kwargs,
         )
-        self.active_window = I3ActiveWindow(name="active-window")
+        self.active_window = active_window_class(name="active-window")

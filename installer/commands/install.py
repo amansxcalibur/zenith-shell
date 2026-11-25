@@ -159,7 +159,10 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
 
     wms = resolve_wms(args.wm)
     if not wms:
-        raise InstallError("Could not detect i3 or sway. Re-run with --wm i3|sway|all.")
+        raise InstallError(
+            "Could not detect i3, sway or Hyprland. "
+            "Re-run with --wm i3|sway|hyprland|all."
+        )
 
     if command == "install":
         print(f"{BLUE}{LOGO}{NC}", end="")

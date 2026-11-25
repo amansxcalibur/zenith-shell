@@ -2,7 +2,7 @@
 # zsh completion for zenith-shell
 
 _zenith_shell_setup() {
-    local -a wm=('--wm[window manager to set up]:window manager:(auto i3 sway all)')
+    local -a wm=('--wm[window manager to set up]:window manager:(auto i3 sway hyprland all)')
     local -a yes=('(-y --yes)'{-y,--yes}'[never ask for confirmation]')
     local -a verbose=('(-v --verbose)'{-v,--verbose}'[show command output as it runs]')
     local -a dry=('--dry-run[show the plan without changing anything]')

@@ -149,12 +149,13 @@ def get_screen_resolution_gdk() -> tuple[int, int]:
     from gi.repository import Gdk  # type: ignore
 
     display = Gdk.Display.get_default()
-    if not display:
+    if display is None:  # fabric makes it falsy
         raise RuntimeError("No Gdk display")
 
-    monitor = display.get_primary_monitor()
+    # wayland has no primary monitor
+    monitor = display.get_primary_monitor() or display.get_monitor(0)
     if not monitor:
-        raise RuntimeError("No primary monitor")
+        raise RuntimeError("No monitor")
 
     geometry = monitor.get_geometry()
     return geometry.width, geometry.height

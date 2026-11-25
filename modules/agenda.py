@@ -1,12 +1,11 @@
 import os
 import glob
-import shutil
 import json
 import uuid
 import cairo
+import shutil
 from loguru import logger
 
-from fabric.utils.helpers import exec_shell_command_async
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 from fabric.widgets.stack import Stack
@@ -16,18 +15,22 @@ from fabric.widgets.eventbox import EventBox
 from fabric.widgets.revealer import Revealer
 from fabric.widgets.checkbutton import CheckButton
 from fabric.widgets.scrolledwindow import ScrolledWindow
+from fabric.utils.helpers import exec_shell_command_async
 
 import icons
+
 from config.info import DATA_DIR, CACHE_DIR, USER_CONFIG_DIR, IS_WAYLAND
-from widgets.glass_well import glass_file_chooser
+
 from services.animator import CubicBezierCurves
 
 from utils.colors import bind_theme
+from utils.file_chooser import fit_to_monitor
 from utils.text_view import add_undo, keep_cursor_visible
 
+from widgets.graphs import rounded_rect
+from widgets.glass_well import glass_file_chooser
 from widgets.variable_font_label import VariableIconLabel
 from widgets.clipping_box import ClippingBox, AnimatedClippingBox
-from widgets.graphs import rounded_rect
 
 from wm import glass_mode
 
@@ -132,6 +135,7 @@ class AgendaItem(Gtk.ListBoxRow):
         text: str,
         on_delete: callable,
         on_save: callable,
+        on_choosing_image: callable,
         image_path: str | None = None,
         order: float = 0,
     ):
@@ -140,6 +144,7 @@ class AgendaItem(Gtk.ListBoxRow):
         self.text = text
         self.image_path = image_path
         self.on_save = on_save
+        self.on_choosing_image = on_choosing_image
         self._order = order  # place in the list, see `_by_order`
         self._leaving = False
         self.lifted = False  # picked up by a drag, its space closed
@@ -446,9 +451,11 @@ class AgendaItem(Gtk.ListBoxRow):
 
     def _on_select_background(self, _widget):
         dialog = self._make_file_dialog()
+        self.on_choosing_image(True)
         if dialog.run() == Gtk.ResponseType.OK:
             self._process_and_cache_image(dialog.get_filename())
         dialog.destroy()
+        self.on_choosing_image(False)
 
     def _on_remove_background(self, _widget):
         self.image_path = None
@@ -502,6 +509,7 @@ class AgendaItem(Gtk.ListBoxRow):
             glass_file_chooser(dialog)
         if IS_WAYLAND:
             dialog.get_style_context().add_class("wayland")
+            fit_to_monitor(dialog, self.get_toplevel())
         dialog.set_visual(dialog.get_screen().get_rgba_visual())
 
         for stock, response, extra_class in [
@@ -522,8 +530,9 @@ class AgendaItem(Gtk.ListBoxRow):
 
 
 class AgendaApp(Box):
-    def __init__(self, **kwargs):
+    def __init__(self, on_choosing_image: callable, **kwargs):
         super().__init__(name="agenda-app", **kwargs)
+        self.on_choosing_image = on_choosing_image
         self.reorder_mode = False
         self._dragged: AgendaItem | None = None
         self._load_failed = False
@@ -673,7 +682,14 @@ class AgendaApp(Box):
     def _make_item(
         self, text: str, image: str | None = None, order: float = 0
     ) -> AgendaItem:
-        item = AgendaItem(text, self._remove_item, self.save_to_disk, image, order)
+        item = AgendaItem(
+            text,
+            self._remove_item,
+            self.save_to_disk,
+            self.on_choosing_image,
+            image,
+            order,
+        )
         item.setup_dnd(self._on_drag_begin, self._on_drag_end)
         item.stack.connect(
             "notify::visible-child-name", lambda *_: self._sync_overlays()

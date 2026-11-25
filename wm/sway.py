@@ -9,16 +9,6 @@ from services.i3 import I3, get_i3_connection
 
 from wm.i3 import I3WM
 
-# blurred in glass mode
-GLASS_LAYERS = (
-    namespaces.DOCK,
-    namespaces.TOP_BAR,
-    namespaces.TOP_PILL,
-    namespaces.POPUP,
-    namespaces.PILL,
-    namespaces.FLYING,
-    namespaces.OSD,
-)
 GLASS_BLUR = (
     "blur_passes 3",
     "blur_radius 5",
@@ -111,20 +101,23 @@ class SwayWM(I3WM):
         config_block.append("}")
         lines.append("\n".join(config_block))
 
+        file_choosers = [
+            "# floating file choosers",
+            f'for_window [app_id="{SHELL_NAME}-core" title="^Select "] {{',
+            "    floating enable",
+            "    border none",
+        ]
         if glass_mode():
-            # for the shell's file choosers (agenda image, wallpaper folder)
-            lines.append(
-                f'for_window [app_id="{SHELL_NAME}-core" title="^Select "] {{\n'
-                "    shadows disable\n"
-                "    blur enable\n"
-                "}"
-            )
+            file_choosers += ["    shadows disable", "    blur enable"]
+        file_choosers.append("}")
+        lines.append("\n".join(file_choosers))
 
+        if glass_mode():
             # ignore_transparent keeps the blur to what each surface paints, so
             # the dock's holes and the pill's corners stay clear
             lines.append("")
             lines.append("# swayfx only: glass mode")
-            for layer in GLASS_LAYERS:
+            for layer in namespaces.GLASS_LAYERS:
                 effects = (
                     f'layer_effects "{layer}" '
                     "'blur enable; blur_ignore_transparent enable'"
@@ -139,7 +132,7 @@ class SwayWM(I3WM):
                 self._live(setting)
         elif os.environ.get("SWAYSOCK") and self.is_swayfx:
             # the rules above outlive a restart until sway reloads its config
-            for layer in GLASS_LAYERS:
+            for layer in namespaces.GLASS_LAYERS:
                 I3.send_command(f"layer_effects \"{layer}\" 'blur disable'")
 
         return lines

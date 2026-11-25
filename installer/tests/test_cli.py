@@ -1,6 +1,7 @@
 """python3 -m unittest discover -s installer/tests"""  # :|
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -11,7 +12,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.wm_conflicts import find_wm_conflicts, parse_i3_output, parse_sway_output
+from config.wm_conflicts import (
+    find_wm_conflicts,
+    parse_hyprland_binds,
+    parse_i3_output,
+    parse_sway_output,
+)
 from installer.cli import build_parser, normalize_argv
 from installer.commands.steps import LAUNCHER
 from installer.paths import COMPLETIONS, SHELL_PROCESS
@@ -94,7 +100,7 @@ class ArgumentTests(unittest.TestCase):
         self.assertTrue(args.after_pull and args.yes)
 
     def test_wm_all_means_every_wm(self):
-        self.assertEqual(resolve_wms("all"), ["i3", "sway"])
+        self.assertEqual(resolve_wms("all"), ["i3", "sway", "hyprland"])
 
     def test_purge_only_applies_to_uninstall(self):
         with self.assertRaises(SystemExit):
@@ -192,6 +198,35 @@ class WmConflictTests(unittest.TestCase):
         conflicts = parse_sway_output(output)
         self.assertEqual(conflicts[0].key, "Mod4+d")
         self.assertEqual(conflicts[0].commands, ("exec zenith-open", "exec dmenu_run"))
+
+    def test_hyprland_only_reports_keys_zenith_shares(self):
+        def bind(key, mask=64, description="", **kinds):
+            return {
+                "modmask": mask,
+                "key": key,
+                "submap": "",
+                "release": False,
+                "description": description,
+                "dispatcher": "exec_cmd",
+                **kinds,
+            }
+
+        output = json.dumps(
+            [
+                bind("d", description="exec zenith open"),
+                bind("D"),
+                bind("p", description="exec zenith power"),
+                bind("p", release=True),
+                bind("n", description="exec zenith notifs"),
+                bind("n", mask=65),
+                bind("x"),
+                bind("x"),
+            ]
+        )
+        conflicts = parse_hyprland_binds(output)
+        self.assertEqual([c.key for c in conflicts], ["SUPER+d"])
+        self.assertEqual(conflicts[0].commands, ("exec zenith open", "exec_cmd"))
+        self.assertEqual(parse_hyprland_binds("Couldn't connect"), [])
 
     def test_real_wms_follow_includes_and_ignore_modifier_order(self):
         for wm in ("i3", "sway"):
