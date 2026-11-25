@@ -11,6 +11,14 @@ output_path = "../../data/colors.dark.css"
 input_path = "./templates/colors.light.css"
 output_path = "../../data/colors.light.css"
 
+[templates.zenith_foot_dark]
+input_path = "./templates/foot.dark.ini"
+output_path = "../../data/foot.dark.ini"
+
+[templates.zenith_foot_light]
+input_path = "./templates/foot.light.ini"
+output_path = "../../data/foot.light.ini"
+
 # [templates.gtk3]
 # input_path = './gtk3.css'
 # output_path = '~/.config/gtk-3.0/colors.css'

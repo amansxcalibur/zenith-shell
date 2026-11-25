@@ -246,6 +246,10 @@ class ThemeService(Service):
             shutil.copy2(source_path, temp_path)
             os.replace(temp_path, colors_path)
             self.emit("colors-changed")
+            # for anyone who includes it in their foot config
+            foot_path = ROOT_DIR / "data" / f"foot.{value.value}.ini"
+            if foot_path.exists():
+                shutil.copy2(foot_path, foot_path.with_name("foot.ini"))
             return True
         except Exception as e:
             logger.error(f"Failed to apply theme {value.value}: {e}")
