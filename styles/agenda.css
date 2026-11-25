@@ -12,6 +12,7 @@
 #agenda {
   background-color: var(--surface);
 }
+
 #agenda-check check {
   border: 2px solid var(--surface-bright);
   background-color: var(--shadow);
@@ -35,32 +36,40 @@
   border-radius: 20px;
   margin-top: 2px;
 }
+
 .light #agenda-btn-group {
   background-color: var(--primary);
 }
+
 #agenda-btn {
   background-color: transparent;
   padding: 6px 7px;
   border-radius: 20px;
 }
+
 .light #agenda-btn,
-.light #agenda-btn > * {
+.light #agenda-btn>* {
   color: var(--on-primary);
 }
+
 #agenda-btn:hover {
   background-color: var(--outline-variant);
 }
+
 .light #agenda-btn:hover {
   background-color: var(--on-primary-fixed-variant);
 }
+
 #agenda-btn.delete-btn:hover {
   background-color: var(--error-container);
   color: var(--error);
 }
+
 .light #agenda-btn.delete-btn:hover {
   background-color: var(--error);
   color: var(--on-error);
 }
+
 .agenda-icon {
   font-size: 20px;
   padding: 0 2px;
@@ -71,10 +80,12 @@
   border-radius: 20px;
   padding: 8px;
 }
+
 .light textview#text-editor {
   background-color: var(--true-surface-bright);
   box-shadow: inset 0 0 0 2px var(--primary);
 }
+
 #text-editor selection {
   background-color: var(--primary);
   color: var(--shadow);
@@ -87,14 +98,16 @@
   box-shadow: -4px -4px 12px 4px var(--background);
   transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+
 .light #add-new-agenda-btn {
   box-shadow: -4px -4px 12px 4px var(--surface-semi-bright);
 }
+
 #add-new-agenda-btn:hover {
   border-radius: 99px;
 }
 
-#add-new-agenda-btn > * {
+#add-new-agenda-btn>* {
   font-size: 40px;
   color: var(--background);
 }
@@ -116,44 +129,57 @@
   border-radius: 20px;
   font-size: 15px;
 }
+
 #editor-btn:hover {
   background-color: var(--surface-semi-bright);
 }
+
 .light #editor-btn {
   background-color: var(--surface-semi-bright);
 }
+
 .light #editor-btn:hover {
   background-color: var(--surface-bright);
 }
+
 /* the new-note editor's panel is already --surface-bright */
 .light #editor-box #editor-btn:not(:first-child):hover {
   background-color: var(--true-surface-bright);
 }
+
 /* the confirming action (Save / Add) comes first; Cancel stays neutral */
 .light #editor-btn:first-child {
   background-color: var(--primary);
 }
-.light #editor-btn:first-child > * {
+
+.light #editor-btn:first-child>* {
   color: var(--on-primary);
 }
+
 .light #editor-btn:first-child:hover {
   background-color: var(--on-primary-fixed-variant);
 }
+
 #editor-btn.delete-btn {
   background-color: var(--error-container);
 }
-#editor-btn.delete-btn > :first-child {
+
+#editor-btn.delete-btn> :first-child {
   color: var(--error);
 }
+
 #editor-btn.delete-btn:hover {
   background-color: shade(var(--error-container), 1.25);
 }
+
 .light #editor-btn.delete-btn {
   background-color: var(--error);
 }
-.light #editor-btn.delete-btn > :first-child {
+
+.light #editor-btn.delete-btn> :first-child {
   color: var(--on-error);
 }
+
 .light #editor-btn.delete-btn:hover {
   background-color: shade(var(--error), 0.9);
 }
@@ -166,6 +192,7 @@
   border-radius: 24px;
   padding: 5px;
 }
+
 .light #agenda-box {
   background-color: var(--true-surface-bright);
 }
@@ -176,6 +203,7 @@
   background-blend-mode: multiply;
   border-radius: 20px;
 }
+
 .light #display-box {
   padding: 8px;
   background-color: rgba(250, 250, 250, 0.5);
@@ -188,16 +216,17 @@
 }
 
 #agenda-list-box {
-  padding-bottom: 61px; /* 64px with the last card's margin */
+  padding-bottom: 61px;
+  /* 64px with the last card's margin */
 }
 
-/* file chooser dialog styles (agenda background + wallpaper directory) */
-
+/* file chooser dialog styles */
 .file-chooser-dialog {
   background-color: var(--surface);
   border-radius: 25px;
   border: 2px solid var(--surface-bright);
 }
+
 .file-chooser-dialog.light {
   color: var(--foreground);
 }
@@ -206,6 +235,7 @@ filechooser {
   background-color: transparent;
   padding: 10px;
 }
+
 .light filechooser {
   color: var(--foreground);
 }
@@ -216,16 +246,17 @@ dialog.wayland:not(.glass) {
   background-image: linear-gradient(var(--surface), var(--surface));
 }
 
-filechooser > box {
+filechooser>box {
   background-color: var(--shadow);
   border-radius: 20px;
   padding: 10px;
 }
-.light filechooser > box {
+
+.light filechooser>box {
   background-color: var(--surface-semi-bright);
 }
 
-filechooser paned > box {
+filechooser paned>box {
   background-color: var(--surface);
   border-radius: 20px;
 }
@@ -261,6 +292,7 @@ filechooser .sidebar {
   margin: 10px;
   border-radius: 15px;
 }
+
 .light #pathbarbox {
   background-color: var(--surface-semi-bright);
 }
@@ -277,30 +309,32 @@ pathbar button:hover,
 }
 
 /* Specific button types in the path bar */
-.path-bar > .toggle {
+.path-bar>.toggle {
   background-color: var(--surface-semi-bright);
   border-radius: 4px;
   padding: 0 6px;
   margin: 0 2px;
 }
-.light .path-bar > .toggle {
+
+.light .path-bar>.toggle {
   background-color: var(--surface);
 }
 
-.path-bar > .toggle:hover {
+.path-bar>.toggle:hover {
   background-color: var(--surface-bright);
 }
-.light .path-bar > .toggle:hover {
+
+.light .path-bar>.toggle:hover {
   background-color: var(--outline-variant);
 }
 
 /* Pathbar Icons and Internal Boxes */
-.image-button > * {
+.image-button>* {
   margin-right: 4px;
 }
 
-pathbar button > box image,
-.path-bar button > box image {
+pathbar button>box image,
+.path-bar button>box image {
   margin-right: 4px;
 }
 
@@ -312,7 +346,7 @@ pathbar button > box image,
 }
 
 /* file list */
-filechooser paned > box > box > stack {
+filechooser paned>box>box>stack {
   padding: 10px;
   border-radius: 20px;
 }
@@ -342,25 +376,31 @@ filechooser combobox {
   padding: 4px;
   box-shadow: 4px -4px 12px 4px var(--background);
 }
+
 .light #agenda-actions-pill {
   box-shadow: 4px -4px 12px 4px var(--surface-semi-bright);
 }
+
 #agenda-pill-btn {
   background-color: transparent;
   border-radius: 20px;
   padding: 6px 10px;
   transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-#agenda-pill-btn > * {
+
+#agenda-pill-btn>* {
   font-size: 22px;
 }
+
 #agenda-pill-btn:hover {
   background-color: var(--outline-variant);
 }
+
 #agenda-pill-btn.active {
   background-color: var(--primary);
 }
-#agenda-pill-btn.active > * {
+
+#agenda-pill-btn.active>* {
   color: var(--background);
 }
 
@@ -371,6 +411,7 @@ filechooser combobox {
 #agenda-drop-slot:hover {
   background-color: transparent;
 }
+
 #agenda-drop-placeholder {
   margin-bottom: 3px;
   min-height: 25px;

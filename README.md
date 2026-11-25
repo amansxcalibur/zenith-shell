@@ -36,9 +36,6 @@ I've had a **LOT** of fun working with fabric and building this. I hope you do t
 
 <img src="https://amansxcalibur.github.io/zenith-resources/reverse-bar/screenshots/v3/lockscreen.png" alt="Zenith lockscreen" />
 
-> [!NOTE]
-> On X11, like i3lock or any other X locker, the lock can be bypassed by switching to another TTY or killing X. Set `DontVTSwitch` and `DontZap` in your Xorg config if that matters to you.
-
 ## Installation
 
 ### Requirements

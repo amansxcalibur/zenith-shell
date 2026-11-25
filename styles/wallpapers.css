@@ -3,7 +3,8 @@
   background-color: var(--shadow);
   border-radius: 25px;
   min-height: 680px;
-  min-width: 637px; /* image-widths (96*6) + scrollbar-width (22+8+6) + image-spacing(5*5) */
+  min-width: 637px;
+  /* image-widths (96*6) + scrollbar-width (22+8+6) + image-spacing(5*5) */
 }
 
 #wallpaper-flowbox {
@@ -23,18 +24,24 @@
 }
 
 #wallpaper-thumbnail-container:selected {
-  background-color: var(--primary);
+  background-color: transparent;
+  box-shadow: inset 0 0 0 3px var(--primary);
   padding: 6px;
 }
 
-#wallpaper-thumbnail-container:selected > * {
+#wallpaper-thumbnail-container:selected>* {
   margin: -6px;
+}
+
+#wallpaper-thumbnail-container:selected #badge-container {
+  margin: 6px;
 }
 
 #theme-switcher {
   background-color: var(--surface-semi-bright);
   border-radius: 28px;
 }
+
 .light #theme-switcher {
   background-color: var(--true-surface-bright);
 }
@@ -51,12 +58,9 @@
 #source-panel.expanded {
   background-color: var(--surface-semi-bright);
 }
+
 .light #source-panel.expanded {
   background-color: var(--true-surface-bright);
-}
-
-#source-panel #panel-row {
-  padding-right: 4px;
 }
 
 #variant-panel {
@@ -120,11 +124,15 @@
 }
 
 #mode-button {
-  background-color: var(--shadow);
-  border-radius: 25px;
+  background-color: var(--surface-semi-bright);
+  border-radius: 29px;
   padding: 0;
-  min-width: 50px;
-  min-height: 50px;
+  min-width: 58px;
+  min-height: 58px;
+}
+
+.light #mode-button {
+  background-color: var(--true-surface-bright);
 }
 
 #mode-button:hover {
@@ -146,6 +154,7 @@
   background-color: var(--surface-semi-bright);
   margin-right: 10px;
 }
+
 .light #search-entry-walls {
   background-color: var(--true-surface-bright);
 }
@@ -194,8 +203,10 @@
   background-color: var(--surface);
   margin-left: 6px;
   padding: 4px;
-  margin-top: 12px; /* to balance padding after viewport clipping */
+  margin-top: 12px;
+  /* to balance padding after viewport clipping */
 }
+
 .light #scrolled-window scrollbar {
   background-color: var(--surface-semi-bright);
 }
@@ -218,11 +229,13 @@
   border: 4px solid var(--primary);
   border-radius: 10px;
 }
+
 #badge-hole {
   border: 2px solid var(--on-primary);
   box-shadow: 0px 12px 0px 0px var(--primary);
   border-radius: 6px;
 }
+
 #badge-label {
   background-color: var(--primary);
   color: var(--on-primary);

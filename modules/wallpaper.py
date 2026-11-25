@@ -297,6 +297,7 @@ class WallpaperSelector(Box):
         vp.set_max_children_per_line(self.COLUMNS)
         vp.set_min_children_per_line(self.COLUMNS)
         vp.set_vexpand(False)
+        vp.set_halign(Gtk.Align.START)
         vp.set_valign(Gtk.Align.START)
         # focus stays in the search entry, selection is driven by code
         vp.set_can_focus(False)

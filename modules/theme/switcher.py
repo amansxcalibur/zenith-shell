@@ -159,14 +159,13 @@ class ThemeSwitcher(Box):
         for side in ("start", "top", "bottom"):
             self._options.set_property(f"margin-{side}", self.OPTIONS_INSET)
         self._options_revealer = self._build_revealer(self._options)
-        for side in ("end", "top", "bottom"):
-            self.mode_button.set_property(f"margin-{side}", self.OPTIONS_INSET)
         self.tray = Backdrop(
             self.get_rest_height,
             name="theme-switcher",
-            children=[self._options_revealer, self.source_panel, self.mode_button],
+            children=[self._options_revealer, self.source_panel],
         )
-        self.add(self.tray)
+        self.row = Box(spacing=8, children=[self.tray, self.mode_button])
+        self.add(self.row)
 
         for panel, on_picked in (
             (self.source_panel, self._on_source_picked),
@@ -375,7 +374,7 @@ class ThemeSwitcherSlot(Box):
         super().__init__(**kwargs)
         self._switcher = switcher
         self._width_group = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
-        self._width_group.add_widget(switcher.tray)
+        self._width_group.add_widget(switcher.row)
         self._width_group.add_widget(self)
         self.connect("size-allocate", lambda *_: GLib.idle_add(self._pin_switcher))
 

@@ -121,7 +121,7 @@
 .glass #notif-group-toggle-btn,
 .glass #notif-group-clear-btn,
 .glass #close-button.critical,
-.glass #img-expander > * > *,
+.glass #img-expander>*>*,
 .glass .tile.off .tile-icon-btn,
 .glass #tile-menu-separator,
 .glass .tile-menu-placeholder,
@@ -177,7 +177,7 @@
 .glass .calendar-nav-btn:hover,
 .glass .menu-item:hover,
 .glass .menu-item:focus,
-.glass #action-btn.active > * > *,
+.glass #action-btn.active>*>*,
 .glass .top-bar-control-btn:hover,
 .glass .top-bar-control-btn:active,
 .glass .action-button:focus,
@@ -265,10 +265,8 @@
 .light.glass #agenda-actions-pill,
 .light .glass #agenda-actions-pill {
   background-color: var(--glass-tint);
-  background-image: linear-gradient(
-    var(--glass-pane-raised),
-    var(--glass-pane-raised)
-  );
+  background-image: linear-gradient(var(--glass-pane-raised),
+      var(--glass-pane-raised));
   box-shadow: inset 0 1px 0 0 var(--glass-highlight);
 }
 
@@ -569,7 +567,7 @@
 }
 
 .glass .settings-btn:hover,
-.glass .settings-btn:hover > *,
+.glass .settings-btn:hover>*,
 .glass .settings-item.binding-recording,
 .light.glass .settings-btn.bright,
 .light.glass .settings-value {
@@ -656,10 +654,8 @@
 .glass #agenda-actions-pill,
 .glass #editor-box {
   background-color: var(--glass-tint);
-  background-image: linear-gradient(
-    var(--glass-pane-raised),
-    var(--glass-pane-raised)
-  );
+  background-image: linear-gradient(var(--glass-pane-raised),
+      var(--glass-pane-raised));
   box-shadow: inset 0 1px 0 0 var(--glass-highlight);
 }
 
@@ -718,13 +714,13 @@ menu.glass {
   box-shadow: inset 0 1px 0 0 var(--glass-highlight);
 }
 
-.glass #theme-switcher {
+.glass #theme-switcher,
+.glass #mode-button {
   background-color: var(--glass-pane);
   box-shadow: inset 0 1px 0 0 var(--glass-highlight);
 }
 
-.glass #theme-options,
-.glass #mode-button {
+.glass #theme-options {
   background-color: var(--glass-well);
 }
 
@@ -752,7 +748,7 @@ menu.glass {
   border-color: var(--glass-edge);
 }
 
-.glass filechooser paned > box,
+.glass filechooser paned>box,
 .glass #pathbarbox {
   background-color: var(--glass-pane);
   box-shadow: inset 0 1px 0 0 var(--glass-highlight);
@@ -768,11 +764,11 @@ menu.glass {
 }
 
 .glass #pathbarbox stack entry,
-.glass .path-bar > .toggle {
+.glass .path-bar>.toggle {
   background-color: var(--glass-pane-raised);
 }
 
-.glass .path-bar > .toggle:hover {
+.glass .path-bar>.toggle:hover {
   background-color: var(--glass-pane-hover);
 }
 
@@ -785,8 +781,8 @@ menu.glass {
 /* the well cuts out the page background */
 .glass #settings-content,
 .glass #settings-stack-container,
-.glass filechooser > box,
-.glass filechooser paned > box {
+.glass filechooser>box,
+.glass filechooser paned>box {
   background-color: transparent;
 }
 
@@ -807,8 +803,6 @@ menu.glass {
 .glass #agenda-actions-pill,
 .light.glass #agenda-actions-pill,
 .light .glass #agenda-actions-pill {
-  background-image: linear-gradient(
-    var(--glass-pane-hover),
-    var(--glass-pane-hover)
-  );
+  background-image: linear-gradient(var(--glass-pane-hover),
+      var(--glass-pane-hover));
 }

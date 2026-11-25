@@ -8,7 +8,8 @@
   border-radius: 25px;
   background-color: var(--shadow);
 }
-#notif-group-children-box.contract > :last-child > :last-child {
+
+#notif-group-children-box.contract> :last-child> :last-child {
   /* no size transition: NotificationGroup measures its target height right
      after toggling, and its clip animates the height */
   /* HEIGHT MEASUREMENT FLAG */
@@ -18,18 +19,21 @@
 #notification-box {
   transition: all 0.15s linear;
 }
+
 #notification-widget {
   /* padding transitions so rows glide instead of jumping when a group
      toggles; NotificationGroup re-measures its target every frame */
   transition: background-color 0.15s linear, border-radius 0.15s linear,
     padding 0.15s linear;
 }
+
 #notification-box,
 #notification-widget {
   background-color: var(--shadow);
   border-radius: 25px;
   padding: 10px;
-  min-width: 364px; /* 290+74 */
+  min-width: 364px;
+  /* 290+74 */
 }
 
 #notification-box.critical,
@@ -42,6 +46,7 @@
   /* HEIGHT MEASUREMENT FLAG */
   padding: 5px 10px 5px 10px;
 }
+
 #notif-group-container #notification-widget.expand {
   border-radius: 0px;
   padding: 10px;
@@ -50,7 +55,8 @@
 #notification-source {
   color: var(--outline);
 }
-.light #notification-source{
+
+.light #notification-source {
   color: var(--on-surface-variant);
 }
 
@@ -60,16 +66,20 @@
   margin-left: 7px;
   color: var(--surface-bright);
 }
-.light #notification-icon{
+
+.light #notification-icon {
   color: var(--on-surface-variant);
 }
+
 #notification-icon.critical {
   color: var(--surface);
 }
+
 #close-button.critical {
   background-color: var(--surface-semi-bright);
 }
-#close-button.critical > * {
+
+#close-button.critical>* {
   color: var(--surface-semi-bright);
 }
 
@@ -98,14 +108,17 @@
   /* min-width: 27px; */
   color: var(--outline);
 }
+
 #notification-clear-label {
   /* min-width: 27px; */
   font-size: 18px;
   color: var(--outline);
 }
+
 .light #notification-clear-label {
   color: var(--foreground);
 }
+
 .trash-icon-adjust {
   /* font-size: 25px; */
   margin-bottom: -3px;
@@ -113,6 +126,7 @@
   margin-left: -1px;
   margin-right: 1px;
 }
+
 .trash-up-icon-adjust {
   font-size: 21px;
   margin-left: -2px;
@@ -124,7 +138,7 @@
   border-radius: 25px;
 }
 
-#notification-scrolled-window viewport > * {
+#notification-scrolled-window viewport>* {
   border-radius: 25px;
   border-top-left-radius: 0px;
   border-top-right-radius: 0px;
@@ -137,6 +151,7 @@
   padding: 5px;
   border: 1px solid var(--surface-semi-bright);
 }
+
 .light .action-button {
   color: var(--foreground);
 }
@@ -152,6 +167,7 @@
   font-family: Roboto Flex;
   margin-bottom: -4px;
 }
+
 .light .timestamp {
   color: var(--foreground);
 }
@@ -163,6 +179,7 @@
   border-radius: 100%;
   margin-bottom: -2px;
 }
+
 .light .notif-dot-separator {
   background-color: var(--foreground);
 }
@@ -171,6 +188,7 @@
   color: var(--outline);
   font-size: 15px;
 }
+
 .light .app-name {
   color: var(--foreground);
 }
@@ -178,6 +196,7 @@
 .summary {
   font-weight: 600;
 }
+
 .light .summary {
   color: var(--foreground);
 }
@@ -193,6 +212,7 @@
   padding: 0 6px;
   /* margin: 0 2px; */
 }
+
 #notif-expander-btn:hover,
 #notif-group-toggle-btn:hover {
   background-color: var(--surface-bright);
@@ -201,24 +221,30 @@
 #notif-expander-btn {
   padding: 3px 6px;
 }
+
 #notif-expander-btn.critical,
 #notif-expander-btn.critical {
   background-color: var(--primary);
 }
-#notif-expander-btn > *,
+
+#notif-expander-btn>*,
 .notif-toggle-arrow {
   color: var(--foreground);
 }
-#notif-expander-btn.critical > * {
+
+#notif-expander-btn.critical>* {
   color: var(--background);
 }
+
 #notif-group-toggle-btn {
   padding: 3px 6px;
 }
+
 #notif-group-toggle-btn.critical {
   background-color: var(--primary);
 }
-#notif-group-toggle-btn.critical > * > *,
+
+#notif-group-toggle-btn.critical>*>*,
 #notif-expander-btn.critical .notif-toggle-arrow {
   color: var(--background);
 }
@@ -231,9 +257,11 @@
   background-color: var(--shadow);
   transition: background-color 200ms ease;
 }
+
 #notif-group-header.critical {
   background-color: alpha(var(--error), 0.15);
 }
+
 #notif-group-header image {
   min-width: 28px;
   min-height: 28px;
@@ -249,6 +277,7 @@
   border-radius: 10px;
   color: var(--foreground);
 }
+
 .light .notif-group-count {
   color: var(--foreground);
 }
@@ -258,9 +287,11 @@
   padding: 0 10px;
   background-color: var(--surface-semi-bright);
 }
+
 .light #notif-group-clear-btn {
   background-color: var(--surface-semi-bright);
 }
+
 #notif-group-clear-btn:hover {
   background-color: var(--surface-bright);
 }
@@ -271,6 +302,7 @@
   min-width: 50px;
   min-height: 50px;
 }
+
 #expand-img.expand {
   min-width: 10px;
   min-height: 10px;
@@ -292,6 +324,7 @@
   font-family: Roboto Flex;
   /* margin-bottom: -4px; */
 }
+
 .light .notif-timestamp {
   color: var(--foreground);
 }
@@ -307,30 +340,37 @@
   background-color: var(--surface-bright);
   background-size: cover;
   background-position: center;
-  border-radius: 12px;
+  border-radius: 16px;
 }
+
 .light #img-expander {
   background-color: var(--surface-semi-bright);
 }
+
 #notif-expressive-shape-container {
   padding: 2px;
   color: var(--surface-semi-bright);
 }
+
 .light #notif-expressive-shape-container {
   color: var(--surface-dull);
 }
+
 #img-expander.contract {
   min-width: 24px;
   min-height: 24px;
   margin-left: 26px;
 }
+
 #img-expander.expand {
   min-width: 48px;
   min-height: 48px;
 }
-#img-expander > * > * {
+
+#img-expander>*>* {
   background-color: var(--surface-semi-bright);
 }
+
 #img-expander.critical {
   background-color: var(--primary);
 }
@@ -359,6 +399,7 @@
 #notification-popup #notification-box {
   font-size: 15px;
 }
-.light #notif-banner-msg{
+
+.light #notif-banner-msg {
   color: var(--foreground);
 }
