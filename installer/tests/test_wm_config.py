@@ -24,8 +24,9 @@ from loguru import logger
 
 from wm.sway import SwayWM
 from wm.hyprland import HyprlandWM
-from wm.detect import has_autostart
-from wm.i3 import I3WM, LEGACY_HEADER
+from wm.detect import has_autostart, needs_sync
+from wm.i3 import I3WM
+from wm.legacy import HEADER as LEGACY_HEADER
 
 from installer.commands import steps
 
@@ -145,6 +146,25 @@ class I3ConfigTests(TempHome):
                     f"set $mod Mod4\n{user_bind}\n\n# Zenith Shell\n{I3_HOOK}\n",
                 )
                 self.assertFalse(old_dir.exists())
+
+    def test_leftovers_next_to_the_new_include_still_get_synced(self):
+        wm = self.make_wm(I3WM)
+        old_dir = wm.config_dir / "conf.d"
+        old_dir.mkdir()
+        (old_dir / "keybinds.conf").write_text(f"{LEGACY_HEADER}\n")
+        wm.config_path.write_text(
+            f"set $mod Mod4\n\n# Zenith Shell\n{I3_HOOK}\n"
+            f"\n# zenith startup\nexec --no-startup-id zenith-shell\n"
+            f"# globbing all .conf in /conf.d\ninclude {old_dir}/*.conf\n"
+        )
+        self.assertTrue(has_autostart(wm.name))
+        self.assertTrue(needs_sync(wm.name))
+        wm.bootstrap(can_edit_user_wm_config=True)
+        self.assertEqual(
+            wm.config_path.read_text(), f"set $mod Mod4\n\n# Zenith Shell\n{I3_HOOK}\n"
+        )
+        self.assertFalse(old_dir.exists())
+        self.assertFalse(needs_sync(wm.name))
 
     def test_migration_keeps_conf_d_with_user_files(self):
         wm = self.make_wm(I3WM)

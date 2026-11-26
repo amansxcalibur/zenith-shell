@@ -2,6 +2,8 @@ import os
 import re
 from pathlib import Path
 
+from wm.legacy import has_legacy_config
+
 # wm -> (display server, backend class)
 BACKENDS = {
     "i3": ("x11", "wm.i3:I3WM"),
@@ -33,6 +35,7 @@ def detect_session() -> str | None:
 SHELL_EXEC = r"^\s*exec\w*\b.*\bzenith-shell\b"
 
 
+
 def has_autostart(wm: str) -> bool:
     try:
         text = (Path.home() / ".config" / CONFIG_FILES[wm]).read_text(errors="ignore")
@@ -44,6 +47,10 @@ def has_autostart(wm: str) -> bool:
         # not the binds, those use hl.dsp
         pattern = r"""^(?!\s*--).*\bhl\.exec_cmd\(\s*["'][^"']*\bzenith-shell["']"""
     return re.search(pattern, text, re.MULTILINE) is not None
+
+
+def needs_sync(wm: str) -> bool:
+    return not has_autostart(wm) or has_legacy_config(wm)
 
 
 def bootstrap_wm() -> str | None:

@@ -11,6 +11,7 @@ from installer.wm import (
     resolve_wms,
 )
 
+from wm.legacy import has_legacy_config
 from wm.detect import has_autostart
 
 
@@ -39,6 +40,7 @@ def cmd_doctor(args, backend) -> int:
     launcher = BIN_DIR / SHELL_NAME
     on_path = str(BIN_DIR) in ORIGINAL_PATH.split(":")
     unconfigured = [wm for wm in wms if have(wm) and not has_autostart(wm)]
+    legacy = [wm for wm in wms if have(wm) and has_legacy_config(wm)]
     not_installed = [wm for wm in wms if not have(wm)]
     conflicts = keybinding_conflicts(wms)
     setup_checks = {
@@ -54,6 +56,8 @@ def cmd_doctor(args, backend) -> int:
             lines.append(f"{mark(False)} {wm} is not installed")
         else:
             lines.append(f"{mark(wm not in unconfigured)} {wm} autostart")
+            if wm in legacy:
+                lines.append(f"{mark(False)} {wm} old conf.d config")
             lines.append(f"{mark(wm not in conflicts)} {wm} keybindings")
             lines += [
                 f"    {DIM}{line}{NC}" for line in conflict_lines(conflicts.get(wm, []))
@@ -63,7 +67,7 @@ def cmd_doctor(args, backend) -> int:
     fixes = []
     if not all(setup_checks.values()):
         fixes.append(f"{INSTALL_DIR}/installer/install.sh --wm {target}")
-    elif plan.needs_work or unconfigured:
+    elif plan.needs_work or unconfigured or legacy:
         fixes.append(f"zenith-shell setup sync --wm {target}")
     if not_installed:
         fixes.append(

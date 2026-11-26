@@ -31,7 +31,7 @@ from installer.ui import (
 )
 from installer.wm import report_keybinding_conflicts, resolve_wms
 
-from wm.detect import has_autostart
+from wm.detect import needs_sync
 
 
 LOGO = r"""
@@ -179,9 +179,9 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
     )
 
     plan = backend.plan(wms)
-    # sync only targets WMs that lack our hook; install and update refresh them all
+    # sync only targets WMs that lack our hook or still have conf.d leftovers
     targets = (
-        [wm for wm in wms if not has_autostart(wm)]
+        [wm for wm in wms if needs_sync(wm)]
         if command == "sync"
         else wms
     )
