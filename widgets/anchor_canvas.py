@@ -6,6 +6,8 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, Gtk  # type: ignore
 
+from widgets.window_shape import shape_window
+
 
 class AnchorCanvas(Gtk.Fixed):
     def __init__(self, child: Gtk.Widget, width: int, height: int):
@@ -17,6 +19,10 @@ class AnchorCanvas(Gtk.Fixed):
         self._input_rect: tuple[int, int, int, int] | None = None
         self.put(child, 0, 0)
         self._child = child
+        # without alpha the window itself gets clipped to the pill too, not just its input
+        Gdk.Screen.get_default().connect(
+            "composited-changed", lambda *_: self.reapply_shapes()
+        )
         self.show()
 
     @property
@@ -68,9 +74,9 @@ class AnchorCanvas(Gtk.Fixed):
         # before allocating: the child's size-allocate handlers read it
         self._child_rect = (x, y, w, h)
         self._child.size_allocate(rect)
-        self._update_input_shape()
+        self._update_shapes()
 
-    def _update_input_shape(self):
+    def _update_shapes(self):
         window = self.get_toplevel()
         if not isinstance(window, Gtk.Window) or self._child_rect is None:
             return
@@ -78,8 +84,10 @@ class AnchorCanvas(Gtk.Fixed):
             return
         self._input_rect = self._child_rect
         x, y, w, h = self._child_rect
-        window.input_shape_combine_region(cairo.Region(cairo.RectangleInt(x, y, w, h)))
+        region = cairo.Region(cairo.RectangleInt(x, y, w, h))
+        window.input_shape_combine_region(region)
+        shape_window(window, region)
 
-    def reapply_input_shape(self):
+    def reapply_shapes(self):
         self._input_rect = None
-        self._update_input_shape()
+        self._update_shapes()

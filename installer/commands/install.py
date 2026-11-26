@@ -117,8 +117,8 @@ def notices(plan) -> None:
             ),
             "",
             (
-                "Do NOT enable screen corners without picom running: the corner window spans the "
-                "whole screen and is not transparent, so everything turns black."
+                "Without picom, screen corners and pill edges are drawn without anti-aliasing, "
+                "so curves look jagged."
             ),
         ]
         if not have("picom"):

@@ -195,7 +195,7 @@ class Pill(Window, Service):
             self.move(geo.x, geo.y)
             # mapping resets the input shape to the whole window
             self.connect_after(
-                "map-event", lambda *_: self.canvas.reapply_input_shape()
+                "map-event", lambda *_: self.canvas.reapply_shapes()
             )
 
         self.add_keybinding("Escape", self._on_escape)
