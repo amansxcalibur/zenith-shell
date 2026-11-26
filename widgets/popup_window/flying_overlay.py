@@ -195,6 +195,9 @@ class FlyingOverlay(Window):
         self.connect("focus-out-event", self._on_focus_out)
 
     def _on_focus_out(self, *_):
+        # a context menu grabs the keyboard on X, focus comes back when it closes
+        if Gtk.grab_get_current() is not None:
+            return
         if not self._has_open_dialog():
             self.dismiss()
 
