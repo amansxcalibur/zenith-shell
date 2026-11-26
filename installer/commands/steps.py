@@ -130,14 +130,19 @@ def step_completions() -> None:
     ok(f"Tab completion: {', '.join(installed) or 'no supported shell found'}")
 
 
-def step_bootstrap(wms: list[str]) -> None:
+def step_bootstrap(wms: list[str], can_edit_user_wm_config: bool = False) -> None:
     """Write the config for each WM, whichever session the installer is running in."""
     for wm in wms:
         env = os.environ.copy()
         env["PYTHONPATH"] = str(INSTALL_DIR)
         env["ZENITH_BOOTSTRAP_WM"] = wm
         run(
-            [VENV_DIR / "bin" / "python", "-m", "config.bootstrap"],
+            [
+                VENV_DIR / "bin" / "python",
+                "-m",
+                "config.bootstrap",
+                *(["--edit-user-wm-config"] if can_edit_user_wm_config else []),
+            ],
             cwd=INSTALL_DIR,
             env=env,
             label=f"Writing {wm} config",

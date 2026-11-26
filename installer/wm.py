@@ -1,11 +1,8 @@
-import re
-
 from config.wm_conflicts import find_wm_conflicts
-from installer.paths import HOME, SHELL_NAME
 from installer.state import load_state
 from installer.system import have
 from installer.ui import RED, choose, info, panel
-from wm.detect import BACKENDS, CONFIG_FILES, detect_session
+from wm.detect import BACKENDS, detect_session
 
 
 # window manager -> feature set of dependencies it needs
@@ -35,19 +32,6 @@ def resolve_wms(choice: str) -> list[str]:
         if picked:
             wms = list(WM_FEATURE) if picked == "all" else [picked]
     return sorted(set(wms), key=list(WM_FEATURE).index)
-
-
-def wm_autostart_configured(wm: str) -> bool:
-    try:
-        text = (HOME / ".config" / CONFIG_FILES[wm]).read_text(errors="ignore")
-    except OSError:
-        return False
-    if wm == "hyprland":
-        pattern = rf"^(?!\s*--).*\bexec_cmd\(.*\b{SHELL_NAME}\b"
-        return re.search(pattern, text, re.MULTILINE) is not None
-    return (
-        re.search(rf"^\s*exec\w*\b.*\b{SHELL_NAME}\s*$", text, re.MULTILINE) is not None
-    )
 
 
 CONFLICT_FIX = (

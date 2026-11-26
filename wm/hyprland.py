@@ -15,10 +15,15 @@ from config.wm_conflicts import find_wm_conflicts
 from config.info import CONFIG_FILE, ROOT_DIR, SHELL_NAME
 
 from wm.base import WindowManager
+from wm.detect import has_autostart
 from wm.common import get_configured_keybindings, get_theme_color, write_atomic
 
 SYSTEM_CONFIG = Path("/usr/share/hypr/hyprland.lua")
 DEFAULT_MOD = "SUPER"
+# require or pcall(require, ...)
+REQUIRE_ACTIVE = re.compile(
+    rf"""^(?!\s*--).*\brequire\b\W*["']{SHELL_NAME}["']""", re.MULTILINE
+)
 MOD_VARIABLE = re.compile(
     r"""^\s*(?:local\s+)?(?:main_?)?mod(?:_?key|ifier)?\s*=\s*["']([^"']+)["']""",
     re.IGNORECASE | re.MULTILINE,
@@ -71,21 +76,44 @@ class HyprlandWM(WindowManager):
         return True
 
     def _append_to_config(self, comment: str, line: str):
-        if line in self.config_path.read_text():
-            return
         logger.info("Adding {!r} to {}", line, self.config_path)
         with open(self.config_path, "a") as f:
             f.write(f"\n-- {comment}\n{line}\n")
 
     def add_autostart(self):
-        if self._ensure_lua_config():
-            self._append_to_config(
+        hooks = [
+            (
                 f"{SHELL_NAME} startup",
                 f'hl.on("hyprland.start", function() hl.exec_cmd("{SHELL_NAME}-shell") end)',
+            ),
+            (
+                # pcall so deleting the file doesn't break their config
+                f"{SHELL_NAME} keybinds, gaps, borders and rules, put your overrides below",
+                f'pcall(require, "{SHELL_NAME}")',
+            ),
+        ]
+        try:
+            if not self._ensure_lua_config():
+                return
+            # commented out doesn't count, they asked for setup
+            if not has_autostart(self.name):
+                self._append_to_config(*hooks[0])
+            if not REQUIRE_ACTIVE.search(self.config_path.read_text(errors="ignore")):
+                self._append_to_config(*hooks[1])
+        except Exception as e:
+            logger.warning(
+                "Couldn't edit {} ({}), add these lines to it yourself:\n{}",
+                self.config_path,
+                e,
+                "\n".join(line for _, line in hooks),
             )
 
     def get_mod(self) -> str:
-        match = MOD_VARIABLE.search(self.config_path.read_text())
+        try:
+            text = self.config_path.read_text(errors="ignore")
+        except OSError:
+            return DEFAULT_MOD
+        match = MOD_VARIABLE.search(text)
         return match.group(1) if match else DEFAULT_MOD
 
     def build_keybind_lines(self) -> list[str]:
@@ -231,17 +259,11 @@ class HyprlandWM(WindowManager):
 
     def _write_config(self):
         try:
-            if not self._ensure_lua_config():
-                return
-            # pcall so deleting the file doesn't break their config
-            self._append_to_config(
-                f"{SHELL_NAME} keybinds, gaps, borders and rules, put your overrides below",
-                f'pcall(require, "{SHELL_NAME}")',
-            )
             text = self.build_config()
             path = self.generated_path
             if path.exists() and path.read_text() == text:
                 return
+            path.parent.mkdir(parents=True, exist_ok=True)
             write_atomic(path, text)
             logger.info("Wrote {}", path)
             self.reload()

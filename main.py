@@ -117,6 +117,7 @@ if __name__ == "__main__":
     WallpaperService().initialize()
 
     # write the WM config, don't reload yet
+    get_wm().write_autostart()
     get_wm().write_keybinds()
     get_wm().write_general()
 

@@ -8,14 +8,20 @@ class WindowManager(ABC):
     can_round_corners = False
     can_blur = False  # for glass mode
 
-    def bootstrap(self, runtime: bool = False):
-        self.add_autostart()
+    def bootstrap(self, runtime: bool = False, can_edit_user_wm_config: bool = False):
+        # install/sync only, after that their config is theirs
+        if can_edit_user_wm_config:
+            self.add_autostart()
+        self.write_autostart()
         self.write_keybinds(reload=runtime)
         self.write_general(reload=runtime)
         self.write_theme(reload=runtime)
 
     @abstractmethod
     def add_autostart(self): ...
+
+    def write_autostart(self):
+        pass
 
     @abstractmethod
     def write_keybinds(self, reload: bool = False): ...

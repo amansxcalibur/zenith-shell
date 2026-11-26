@@ -29,7 +29,9 @@ from installer.ui import (
     step,
     warn,
 )
-from installer.wm import report_keybinding_conflicts, resolve_wms, wm_autostart_configured
+from installer.wm import report_keybinding_conflicts, resolve_wms
+
+from wm.detect import has_autostart
 
 
 LOGO = r"""
@@ -177,9 +179,9 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
     )
 
     plan = backend.plan(wms)
-    # sync only touches WM configs that lack our lines; install and update refresh them all
+    # sync only targets WMs that lack our hook; install and update refresh them all
     targets = (
-        [wm for wm in wms if not wm_autostart_configured(wm)]
+        [wm for wm in wms if not has_autostart(wm)]
         if command == "sync"
         else wms
     )
@@ -206,7 +208,16 @@ def cmd_install_or_sync(args, backend, command: str) -> int:
     elif configure and not venv_ok():  # bootstrap runs inside the virtualenv
         steps.append(("Python environment", lambda _: step_python_env(backend)))
     if configure:
-        steps.append(("Window manager config", lambda _: step_bootstrap(configure)))
+        # update never edits their config, only our own files
+        can_edit_user_wm_config = command in ("install", "sync")
+        steps.append(
+            (
+                "Window manager config",
+                lambda _: step_bootstrap(
+                    configure, can_edit_user_wm_config=can_edit_user_wm_config
+                ),
+            )
+        )
 
     set_total(len(steps) + 1)
     plan = preflight_stage(backend, plan, command)

@@ -9,8 +9,9 @@ from installer.wm import (
     conflict_lines,
     keybinding_conflicts,
     resolve_wms,
-    wm_autostart_configured,
 )
+
+from wm.detect import has_autostart
 
 
 def cmd_doctor(args, backend) -> int:
@@ -37,9 +38,7 @@ def cmd_doctor(args, backend) -> int:
 
     launcher = BIN_DIR / SHELL_NAME
     on_path = str(BIN_DIR) in ORIGINAL_PATH.split(":")
-    unconfigured = [
-        wm for wm in wms if have(wm) and not wm_autostart_configured(wm)
-    ]
+    unconfigured = [wm for wm in wms if have(wm) and not has_autostart(wm)]
     not_installed = [wm for wm in wms if not have(wm)]
     conflicts = keybinding_conflicts(wms)
     setup_checks = {

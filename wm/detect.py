@@ -1,5 +1,6 @@
 import os
 import re
+from pathlib import Path
 
 # wm -> (display server, backend class)
 BACKENDS = {
@@ -27,6 +28,22 @@ def detect_session() -> str | None:
     if os.environ.get("I3SOCK") or re.search(r"\bi3\b", desktop):
         return "i3"
     return None
+
+
+SHELL_EXEC = r"^\s*exec\w*\b.*\bzenith-shell\b"
+
+
+def has_autostart(wm: str) -> bool:
+    try:
+        text = (Path.home() / ".config" / CONFIG_FILES[wm]).read_text(errors="ignore")
+    except OSError:
+        return False
+    # only our include counts, so legacy installs still get migrated
+    pattern = r"^\s*include\s+\S*zenith\.d/"
+    if wm == "hyprland":
+        # not the binds, those use hl.dsp
+        pattern = r"""^(?!\s*--).*\bhl\.exec_cmd\(\s*["'][^"']*\bzenith-shell["']"""
+    return re.search(pattern, text, re.MULTILINE) is not None
 
 
 def bootstrap_wm() -> str | None:

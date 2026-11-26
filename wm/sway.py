@@ -100,6 +100,7 @@ class SwayWM(I3WM):
             )
         config_block.append("}")
         lines.append("\n".join(config_block))
+        lines.append("")
 
         file_choosers = [
             "# floating file choosers",
