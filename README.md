@@ -43,7 +43,7 @@ I've had a **LOT** of fun working with fabric and building this. I hope you do t
 Zenith supports **Arch-based** and **Ubuntu/Debian-based** distributions with **i3wm**, **sway** or **Hyprland**. **Python 3.10+** is required.
 
 > [!IMPORTANT]
-> **i3 users:** Rounded corners, true transparency, and other compositor effects require **picom v12 or newer**. **Do NOT enable screen corners** without a compatible picom compositor; the screen may appear black. See [Troubleshooting](#troubleshooting).
+> **i3 users:** Rounded corners, true transparency, and other compositor effects require **picom v12 or newer**. Without it, curves are drawn without anti-aliasing.
 
 > [!NOTE]
 > **Hyprland users:** Version 0.55 or newer with a `hyprland.lua` config is required. Zenith won't touch a `hyprland.conf`.
@@ -53,8 +53,6 @@ Zenith supports **Arch-based** and **Ubuntu/Debian-based** distributions with **
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/amansxcalibur/zenith-shell/main/installer/install.sh)
 ```
-
-It checks your system first, then installs everything and adds a `zenith-shell` command with tab completion.
 
 <details>
 <summary>Want to inspect the installer before running it?</summary>
@@ -167,7 +165,6 @@ Built tools are kept by default since other Fabric shells may use them. Decide o
 - **Missing dependencies:** Run `zenith-shell setup doctor` to see what's missing.
 - **Installer issues:** Check the full log at `~/.cache/zenith-shell/install.log`.
 - **Conflicting keybindings:** Zenith never edits your existing bindings. If one of its keys is taken, the installer and the Keybindings tab in settings point it out. Rebind it with `zenith-shell settings` or remove it from your config, then reload your window manager.
-- **Black screen or missing effects on i3:** Screen corners, rounded corners and transparency need [picom](https://github.com/yshui/picom) v12 or newer. Older or distro-patched builds may lack effects; turn screen corners off until a compatible picom is running.
 
 ## Dependencies and technical reference
 
